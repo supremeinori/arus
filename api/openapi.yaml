@@ -107,21 +107,78 @@ paths:
         '204':
           description: Password berhasil diubah
 
-  /users:
-    get:
-      summary: Daftar pengguna (Owner only)
+  /users/{id}:
+    patch:
+      summary: Update pengguna (Owner only)
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: List pengguna terdaftar
+          description: Pengguna berhasil diupdate
+
+  /categories:
+    get:
+      summary: Daftar kategori produk
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List kategori produk
     post:
-      summary: Tambah pengguna baru (Owner only)
+      summary: Tambah kategori (Owner / Manager)
       security:
         - BearerAuth: []
       responses:
         '201':
-          description: Pengguna berhasil dibuat
+          description: Kategori berhasil dibuat
+
+  /products:
+    get:
+      summary: Daftar produk katalog (dengan filter dan pencarian)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [name, price_asc, price_desc, created_at]
+      responses:
+        '200':
+          description: List produk (cost_idr disembunyikan untuk Staff)
+    post:
+      summary: Tambah produk baru (Owner / Manager)
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Produk berhasil dibuat
+        '409':
+          description: SKU sudah ada
+
+  /products/{id}:
+    get:
+      summary: Detail produk
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Detail produk beserta stok per outlet
+    patch:
+      summary: Update produk (Owner / Manager)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Produk berhasil diperbarui
 
 components:
   securitySchemes:

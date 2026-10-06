@@ -7,6 +7,7 @@ import { AppError, ErrorCodes } from './shared/errors';
 import healthRoute from './modules/health/health.route';
 import authRoute from './modules/auth/auth.route';
 import usersRoute from './modules/users/users.route';
+import catalogRoute from './modules/catalog/catalog.route';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(requestIdMiddleware);
 app.use('/api', healthRoute);
 app.use('/api', authRoute);
 app.use('/api', usersRoute);
+app.use('/api', catalogRoute);
 app.use('/', healthRoute); // Direct /health fallback
 
 // 404 Handler
