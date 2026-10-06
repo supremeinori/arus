@@ -46,6 +46,16 @@ class OperationsHubScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildOperationTile(
             context,
+            icon: Icons.assessment_outlined,
+            title: 'Laporan & Audit Snapshot',
+            subtitle: 'Dokumen ringkasan berkala dengan verifikasi integritas SHA-256',
+            badgeText: 'Audit',
+            badgeColor: Colors.teal,
+            onTap: () => context.push('/reports'),
+          ),
+          const SizedBox(height: 12),
+          _buildOperationTile(
+            context,
             icon: Icons.receipt_long_outlined,
             title: 'Riwayat Transaksi',
             subtitle: 'Daftar struk transaksi dan pembatalan (Void)',

@@ -10,6 +10,8 @@ import '../../features/catalog/presentation/product_list_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/inventory/presentation/inventory_list_screen.dart';
 import '../../features/inventory/presentation/stock_movement_screen.dart';
+import '../../features/reports/presentation/report_detail_screen.dart';
+import '../../features/reports/presentation/report_list_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
@@ -50,6 +52,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/shell',
         builder: (context, state) => const MainShell(),
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportListScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => ReportDetailScreen(
+              reportId: state.pathParameters['id']!,
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/insights',
