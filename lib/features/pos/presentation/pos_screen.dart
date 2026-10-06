@@ -65,20 +65,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Cari produk atau SKU...',
-                prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.accentBlack),
+                prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMuted),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
                 ),
               ),
               onChanged: (_) => setState(() {}),
@@ -107,8 +107,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       selected: _selectedCategoryId == null,
                       selectedColor: AppTheme.primaryBlue,
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
                         color: _selectedCategoryId == null ? Colors.white : AppTheme.accentBlack,
                       ),
@@ -132,8 +132,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           selected: isSelected,
                           selectedColor: AppTheme.primaryBlue,
                           backgroundColor: Colors.white,
-                          side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           labelStyle: TextStyle(
                             color: isSelected ? Colors.white : AppTheme.accentBlack,
                           ),
@@ -194,15 +194,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
                     return InkWell(
                       onTap: () => ref.read(posCartProvider.notifier).addProduct(product),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: inCart ? const Color(0xFFEFF6FF) : Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: inCart ? AppTheme.primaryBlue : AppTheme.borderOutline,
-                            width: inCart ? 2.0 : 1.5,
+                            width: inCart ? 1.5 : 1.0,
                           ),
                         ),
                         child: Column(
@@ -223,7 +223,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               product.categoryName ?? 'Umum',
                               style: GoogleFonts.lexend(
                                 fontSize: 11,
-                                color: const Color(0xFF64748B),
+                                color: AppTheme.textMuted,
                               ),
                             ),
                             const Spacer(),
@@ -239,13 +239,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color: inCart ? AppTheme.primaryBlue : AppTheme.accentBlack,
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: AppTheme.borderOutline, width: 1),
+                                    color: inCart ? AppTheme.primaryBlue : const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(Icons.add, color: Colors.white, size: 15),
+                                  child: Icon(
+                                    Icons.add,
+                                    color: inCart ? Colors.white : AppTheme.primaryBlue,
+                                    size: 16,
+                                  ),
                                 ),
                               ],
                             ),
@@ -266,7 +269,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
-                  top: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
                 ),
               ),
               child: SafeArea(

@@ -94,16 +94,16 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
                     ),
                   ),
                   onSubmitted: (val) {
@@ -125,8 +125,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       selected: !filterState.lowStockOnly,
                       selectedColor: AppTheme.primaryBlue,
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
                         color: !filterState.lowStockOnly ? Colors.white : AppTheme.accentBlack,
                       ),
@@ -142,7 +142,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       avatar: Icon(
                         Icons.warning_amber_rounded,
                         size: 16,
-                        color: filterState.lowStockOnly ? Colors.white : AppTheme.accentBlack,
+                        color: filterState.lowStockOnly ? Colors.white : AppTheme.dangerRed,
                       ),
                       label: Text(
                         'Stok Menipis',
@@ -152,10 +152,10 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                         ),
                       ),
                       selected: filterState.lowStockOnly,
-                      selectedColor: AppTheme.accentBlack,
+                      selectedColor: AppTheme.dangerRed,
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
                         color: filterState.lowStockOnly ? Colors.white : AppTheme.accentBlack,
                       ),
@@ -239,10 +239,10 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isLow ? const Color(0xFFFEF2F2) : Colors.white,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLow ? const Color(0xFFDC2626) : AppTheme.borderOutline,
-          width: 1.5,
+          color: isLow ? const Color(0xFFFCA5A5) : AppTheme.borderOutline,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -266,7 +266,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     const SizedBox(height: 2),
                     Text(
                       'SKU: ${item.sku} • Outlet: ${item.outletName}',
-                      style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 11.5),
+                      style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 11.5),
                     ),
                   ],
                 ),
@@ -274,14 +274,17 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isLow ? const Color(0xFFDC2626) : AppTheme.primaryBlue,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.borderOutline, width: 1),
+                  color: isLow ? const Color(0xFFFEE2E2) : AppTheme.lightBlueBg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isLow ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                    width: 1.0,
+                  ),
                 ),
                 child: Text(
                   '${item.quantity} ${item.unit}',
                   style: GoogleFonts.lexend(
-                    color: Colors.white,
+                    color: isLow ? AppTheme.dangerRed : AppTheme.primaryBlue,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),

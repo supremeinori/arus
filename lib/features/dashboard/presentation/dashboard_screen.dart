@@ -63,13 +63,13 @@ class DashboardScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Welcome Header dengan garis tegas
+            // Welcome Header Enterprise
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.borderOutline, width: 1.0),
               ),
               child: Row(
                 children: [
@@ -77,9 +77,12 @@ class DashboardScreen extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -268,25 +271,32 @@ class DashboardScreen extends ConsumerWidget {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderOutline, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: AppTheme.primaryBlue),
-              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.lightBlueBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 16, color: AppTheme.primaryBlue),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
                   style: GoogleFonts.lexend(
                     fontSize: 11.5,
-                    color: const Color(0xFF64748B),
+                    color: AppTheme.textMuted,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -295,13 +305,14 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             value,
             style: GoogleFonts.lexend(
-              fontSize: 15,
+              fontSize: 15.5,
               fontWeight: FontWeight.w700,
               color: AppTheme.accentBlack,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -315,13 +326,13 @@ class DashboardScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.borderOutline, width: 1.0),
         ),
         child: Center(
           child: Text(
             'Belum ada data tren.',
-            style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 13),
+            style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 13),
           ),
         ),
       );
@@ -333,8 +344,8 @@ class DashboardScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderOutline, width: 1.0),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -345,12 +356,11 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 24,
+                width: 22,
                 height: 85.0 * ratio,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppTheme.primaryBlue,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.borderOutline, width: 1.2),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -358,7 +368,7 @@ class DashboardScreen extends ConsumerWidget {
                 p.date.length >= 5 ? p.date.substring(5) : p.date,
                 style: GoogleFonts.lexend(
                   fontSize: 11,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),

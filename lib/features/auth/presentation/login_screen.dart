@@ -60,20 +60,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Brand Header with sharp borders
+                  // App Brand Header
                   Center(
                     child: Container(
-                      width: 68,
-                      height: 68,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryBlue,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppTheme.borderOutline, width: 2),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x331D4ED8),
+                            blurRadius: 16,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.insights_rounded,
                         color: Colors.white,
-                        size: 38,
+                        size: 34,
                       ),
                     ),
                   ),
@@ -104,8 +114,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFCA5A5), width: 1.0),
                       ),
                       child: Row(
                         children: [
@@ -232,25 +242,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ActionChip(
                         avatar: const Icon(Icons.star, size: 16, color: AppTheme.primaryBlue),
                         label: Text('Owner', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12)),
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        backgroundColor: const Color(0xFFF8FAFC),
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         onPressed: () => _fillAccount('owner@arus.demo', 'Demo1234'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.storefront, size: 16, color: AppTheme.primaryBlue),
                         label: Text('Manager', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12)),
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        backgroundColor: const Color(0xFFF8FAFC),
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         onPressed: () => _fillAccount('manager@arus.demo', 'Demo1234'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.primaryBlue),
                         label: Text('Kasir', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12)),
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        backgroundColor: const Color(0xFFF8FAFC),
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         onPressed: () => _fillAccount('staff@arus.demo', 'Demo1234'),
                       ),
                     ],

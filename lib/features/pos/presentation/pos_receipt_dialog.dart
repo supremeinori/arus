@@ -16,8 +16,8 @@ class PosReceiptDialog extends StatelessWidget {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
       ),
       title: Row(
         children: [
@@ -164,8 +164,7 @@ class PosReceiptDialog extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryBlue,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
           child: Text(

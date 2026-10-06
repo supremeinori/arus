@@ -28,8 +28,8 @@ class ProfileScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
             ),
             child: Row(
               children: [
@@ -38,8 +38,8 @@ class ProfileScreen extends ConsumerWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
                   ),
                   child: Center(
                     child: Text(
@@ -70,16 +70,16 @@ class ProfileScreen extends ConsumerWidget {
                         user?.email ?? '',
                         style: GoogleFonts.lexend(
                           fontSize: 13,
-                          color: const Color(0xFF64748B),
+                          color: AppTheme.textMuted,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppTheme.borderOutline, width: 1),
+                          color: AppTheme.lightBlueBg,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
                         ),
                         child: Text(
                           user?.role.toDisplayString() ?? '',
@@ -111,15 +111,15 @@ class ProfileScreen extends ConsumerWidget {
                 color: Colors.white,
                 margin: const EdgeInsets.only(bottom: 8),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                 ),
                 child: ListTile(
                   leading: const Icon(Icons.storefront_outlined, color: AppTheme.primaryBlue),
                   title: Text(o.name, style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14)),
                   subtitle: Text(
                     '${o.timezone} • ${o.address ?? "-"}',
-                    style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                    style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
                   ),
                   dense: true,
                 ),

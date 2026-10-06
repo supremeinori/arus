@@ -106,7 +106,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         decoration: const BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+            top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
           ),
         ),
         child: BottomNavigationBar(
@@ -120,9 +120,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppTheme.primaryBlue,
-          unselectedItemColor: AppTheme.accentBlack,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
+          unselectedItemColor: AppTheme.textMuted,
+          selectedFontSize: 11.5,
+          unselectedFontSize: 11.5,
           items: navItems,
         ),
       ),

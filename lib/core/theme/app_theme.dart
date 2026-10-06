@@ -2,16 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Brand Colors - Strict Minimalist Palette: Biru & Putih dengan Aksen Hitam Garis Tegas
-  static const primaryBlue = Color(0xFF1D4ED8); // Royal Blue Tajam
+  // Brand Colors - Modern Professional Enterprise Palette
+  static const primaryBlue = Color(0xFF1D4ED8); // Royal Blue Enterprise
+  static const primaryBlueHover = Color(0xFF1E40AF); // Deeper Royal Blue
+  static const lightBlueBg = Color(0xFFEFF6FF); // Soft Blue Surface (Blue-50)
   static const darkBlue = Color(0xFF1E3A8A);
   static const pureWhite = Color(0xFFFFFFFF);
-  static const backgroundWhite = Color(0xFFF8FAFC);
-  static const accentBlack = Color(0xFF0F172A); // Hitam Pekat Tegas
-  static const borderOutline = Color(0xFF0F172A); // Garis Outline Tegas 1.5px
-  static const subtleBorder = Color(0xFFE2E8F0); // Garis Tipis Bersih
-  static const dangerRed = Color(0xFFDC2626); // Merah Status
-  static const successGreen = Color(0xFF16A34A); // Hijau Status
+  static const backgroundWhite = Color(0xFFF8FAFC); // Clean Canvas (Slate-50)
+  static const surfaceWhite = Color(0xFFFFFFFF);
+  static const accentBlack = Color(0xFF0F172A); // High-contrast Charcoal Typography (Slate-900)
+  static const textSecondary = Color(0xFF475569); // Slate-600
+  static const textMuted = Color(0xFF64748B); // Slate-500
+  static const borderOutline = Color(0xFFE2E8F0); // Delicate Hairline Enterprise Border (Slate-200)
+  static const subtleBorder = Color(0xFFF1F5F9); // Ultra-light Divider (Slate-100)
+  static const dangerRed = Color(0xFFDC2626); // Status Red
+  static const successGreen = Color(0xFF16A34A); // Status Green
+  static const warningAmber = Color(0xFFD97706); // Status Amber
 
   static ThemeData get lightTheme {
     final baseTextTheme = GoogleFonts.lexendTextTheme();
@@ -32,13 +38,14 @@ class AppTheme {
         color: accentBlack,
         fontWeight: FontWeight.w600,
         fontSize: 15,
+        letterSpacing: -0.2,
       ),
       bodyLarge: baseTextTheme.bodyLarge?.copyWith(
         color: accentBlack,
         fontSize: 14.5,
       ),
       bodyMedium: baseTextTheme.bodyMedium?.copyWith(
-        color: const Color(0xFF334155),
+        color: textSecondary,
         fontSize: 13.5,
       ),
       labelLarge: baseTextTheme.labelLarge?.copyWith(
@@ -53,11 +60,11 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: primaryBlue,
         onPrimary: pureWhite,
-        secondary: accentBlack,
+        secondary: darkBlue,
         onSecondary: pureWhite,
         surface: pureWhite,
         onSurface: accentBlack,
-        error: Color(0xFFDC2626),
+        error: dangerRed,
         outline: borderOutline,
       ),
       scaffoldBackgroundColor: backgroundWhite,
@@ -69,21 +76,23 @@ class AppTheme {
         centerTitle: false,
         scrolledUnderElevation: 0,
         shape: const Border(
-          bottom: BorderSide(color: borderOutline, width: 1.5),
+          bottom: BorderSide(color: borderOutline, width: 1.0),
         ),
         titleTextStyle: GoogleFonts.lexend(
           color: accentBlack,
-          fontSize: 17,
+          fontSize: 16.5,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-          side: const BorderSide(color: borderOutline, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: borderOutline, width: 1.0),
         ),
         color: pureWhite,
+        margin: EdgeInsets.zero,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -92,12 +101,12 @@ class AppTheme {
           minimumSize: const Size.fromHeight(46),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-            side: const BorderSide(color: borderOutline, width: 1.5),
+            borderRadius: BorderRadius.circular(10),
           ),
           textStyle: GoogleFonts.lexend(
             fontSize: 14,
             fontWeight: FontWeight.w600,
+            letterSpacing: 0.1,
           ),
         ),
       ),
@@ -106,9 +115,9 @@ class AppTheme {
           foregroundColor: accentBlack,
           backgroundColor: pureWhite,
           minimumSize: const Size.fromHeight(46),
-          side: const BorderSide(color: borderOutline, width: 1.5),
+          side: const BorderSide(color: borderOutline, width: 1.0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(10),
           ),
           textStyle: GoogleFonts.lexend(
             fontSize: 14,
@@ -121,22 +130,22 @@ class AppTheme {
         fillColor: pureWhite,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: borderOutline, width: 1.5),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: borderOutline, width: 1.0),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: borderOutline, width: 1.5),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: borderOutline, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: primaryBlue, width: 2),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: primaryBlue, width: 1.5),
         ),
-        labelStyle: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 13),
+        labelStyle: GoogleFonts.lexend(color: textMuted, fontSize: 13),
       ),
       dividerTheme: const DividerThemeData(
         color: borderOutline,
-        thickness: 1.2,
+        thickness: 1.0,
         space: 1,
       ),
     );

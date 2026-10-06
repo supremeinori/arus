@@ -48,8 +48,8 @@ class ProductDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.borderOutline, width: 1.0),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,11 +60,11 @@ class ProductDetailScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: prod.isActive ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2),
-                            borderRadius: BorderRadius.circular(4),
+                            color: prod.isActive ? AppTheme.lightBlueBg : const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: prod.isActive ? AppTheme.primaryBlue : AppTheme.dangerRed,
-                              width: 1.2,
+                              color: prod.isActive ? const Color(0xFFBFDBFE) : const Color(0xFFFCA5A5),
+                              width: 1.0,
                             ),
                           ),
                           child: Text(
@@ -80,7 +80,7 @@ class ProductDetailScreen extends ConsumerWidget {
                           prod.sku,
                           style: GoogleFonts.lexend(
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF64748B),
+                            color: AppTheme.textMuted,
                             fontSize: 12,
                           ),
                         ),
@@ -95,10 +95,10 @@ class ProductDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Kategori: ${prod.categoryName}',
-                        style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF64748B)),
+                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMuted),
                       ),
                     ],
-                    const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
+                    const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.0),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -107,7 +107,7 @@ class ProductDetailScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'Harga Jual / ${prod.unit}',
-                              style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
+                              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -126,7 +126,7 @@ class ProductDetailScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 'HPP (Modal)',
-                                style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
+                                style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -157,12 +157,12 @@ class ProductDetailScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderOutline, width: 1.0),
                   ),
                   child: Text(
                     'Belum ada data stok yang terhubung.',
-                    style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 13),
+                    style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 13),
                   ),
                 )
               else
@@ -172,8 +172,8 @@ class ProductDetailScreen extends ConsumerWidget {
                     color: Colors.white,
                     margin: const EdgeInsets.only(bottom: 8),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                     ),
                     child: ListTile(
                       leading: Icon(

@@ -136,12 +136,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   labelText: 'Nama Produk *',
                   hintText: 'Contoh: Es Kopi Susu Aren',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                   ),
                 ),
                 validator: (val) => val == null || val.trim().isEmpty ? 'Nama wajib diisi' : null,
@@ -161,12 +161,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         labelText: 'Kode SKU *',
                         hintText: 'KOP-11',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                       ),
                       validator: (val) =>
@@ -182,12 +182,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         labelText: 'Satuan',
                         hintText: 'cup / pcs',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                       ),
                     ),
@@ -204,12 +204,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   decoration: InputDecoration(
                     labelText: 'Kategori Produk',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                     ),
                   ),
                   items: categories.map((cat) {
@@ -242,12 +242,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         labelText: 'Harga Jual (Rp) *',
                         hintText: '22000',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                       ),
                       validator: (val) =>
@@ -265,12 +265,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         labelText: 'HPP / Modal (Rp)',
                         hintText: '9000',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                         ),
                       ),
                     ),
@@ -287,8 +287,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isLoading

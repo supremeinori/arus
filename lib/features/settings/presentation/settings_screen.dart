@@ -53,8 +53,8 @@ class SettingsScreen extends ConsumerWidget {
             elevation: 0,
             color: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
             ),
             child: Column(
               children: [
@@ -144,8 +144,8 @@ class SettingsScreen extends ConsumerWidget {
             elevation: 0,
             color: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
             ),
             child: Column(
               children: [

@@ -117,11 +117,9 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
-          top: BorderSide(color: AppTheme.borderOutline, width: 2),
-          left: BorderSide(color: AppTheme.borderOutline, width: 1.5),
-          right: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+          top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
         ),
       ),
       child: SingleChildScrollView(
@@ -142,7 +140,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 ),
               ],
             ),
-            const Divider(color: AppTheme.borderOutline, thickness: 1.2),
+            const Divider(color: AppTheme.borderOutline, thickness: 1.0),
             const SizedBox(height: 8),
 
             // Summary Subtotal & Diskon
@@ -256,24 +254,24 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   ActionChip(
                     label: Text('Uang Pas', style: GoogleFonts.lexend(fontSize: 12)),
                     backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     onPressed: () => _setExactCash(total),
                   ),
                   if (total <= 50000)
                     ActionChip(
                       label: Text('Rp 50.000', style: GoogleFonts.lexend(fontSize: 12)),
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       onPressed: () => _setPresetCash(50000),
                     ),
                   if (total <= 100000)
                     ActionChip(
                       label: Text('Rp 100.000', style: GoogleFonts.lexend(fontSize: 12)),
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       onPressed: () => _setPresetCash(100000),
                     ),
                 ],
@@ -305,8 +303,8 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFCA5A5), width: 1.0),
                 ),
                 child: Text(
                   _errorMessage!,
@@ -324,8 +322,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryBlue,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isLoading
@@ -354,15 +351,15 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
           ref.read(posCartProvider.notifier).setPaymentMethod(method);
           setState(() {});
         },
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? AppTheme.primaryBlue : AppTheme.borderOutline,
-              width: isSelected ? 2.0 : 1.5,
+              width: isSelected ? 1.5 : 1.0,
             ),
           ),
           child: Column(

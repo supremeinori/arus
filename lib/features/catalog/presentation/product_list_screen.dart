@@ -93,8 +93,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       selected: selectedCategory == null,
                       selectedColor: AppTheme.primaryBlue,
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
                         color: selectedCategory == null ? Colors.white : AppTheme.accentBlack,
                         fontWeight: selectedCategory == null ? FontWeight.w700 : FontWeight.w500,
@@ -112,8 +112,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                         selected: selectedCategory == cat.id,
                         selectedColor: AppTheme.primaryBlue,
                         backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         labelStyle: TextStyle(
                           color: selectedCategory == cat.id ? Colors.white : AppTheme.accentBlack,
                           fontWeight: selectedCategory == cat.id ? FontWeight.w700 : FontWeight.w500,
@@ -161,11 +161,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       return Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.borderOutline, width: 1.0),
                         ),
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           onTap: () {
                             context.push('/catalog/${prod.id}');
                           },
@@ -180,8 +180,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                   height: 44,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFEFF6FF),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: AppTheme.borderOutline, width: 1),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppTheme.borderOutline, width: 1.0),
                                   ),
                                   child: const Center(
                                     child: Icon(

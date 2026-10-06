@@ -123,8 +123,8 @@ class OperationsHubScreen extends ConsumerWidget {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -134,8 +134,7 @@ class OperationsHubScreen extends ConsumerWidget {
           height: 44,
           decoration: BoxDecoration(
             color: const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: AppTheme.borderOutline, width: 1),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppTheme.primaryBlue, size: 24),
         ),
@@ -154,9 +153,9 @@ class OperationsHubScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: AppTheme.borderOutline, width: 1),
+                color: AppTheme.lightBlueBg,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
               ),
               child: Text(
                 badgeText,
@@ -173,10 +172,10 @@ class OperationsHubScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 3),
           child: Text(
             subtitle,
-            style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B), height: 1.3),
+            style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted, height: 1.3),
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.accentBlack, size: 14),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.textMuted, size: 14),
       ),
     );
   }

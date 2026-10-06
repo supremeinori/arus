@@ -106,8 +106,8 @@ class InsightsScreen extends ConsumerWidget {
                   selected: selectedSeverity == null,
                   selectedColor: AppTheme.primaryBlue,
                   backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   labelStyle: TextStyle(color: selectedSeverity == null ? Colors.white : AppTheme.accentBlack),
                   onSelected: (selected) {
                     if (selected) ref.read(selectedSeverityFilterProvider.notifier).state = null;
@@ -123,10 +123,10 @@ class InsightsScreen extends ConsumerWidget {
                     ),
                   ),
                   selected: selectedSeverity == 'critical',
-                  selectedColor: const Color(0xFFDC2626),
+                  selectedColor: AppTheme.dangerRed,
                   backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   labelStyle: TextStyle(color: selectedSeverity == 'critical' ? Colors.white : AppTheme.accentBlack),
                   onSelected: (selected) {
                     ref.read(selectedSeverityFilterProvider.notifier).state = selected ? 'critical' : null;
@@ -142,10 +142,10 @@ class InsightsScreen extends ConsumerWidget {
                     ),
                   ),
                   selected: selectedSeverity == 'warning',
-                  selectedColor: AppTheme.accentBlack,
+                  selectedColor: AppTheme.warningAmber,
                   backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   labelStyle: TextStyle(color: selectedSeverity == 'warning' ? Colors.white : AppTheme.accentBlack),
                   onSelected: (selected) {
                     ref.read(selectedSeverityFilterProvider.notifier).state = selected ? 'warning' : null;
@@ -215,10 +215,10 @@ class InsightsScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isCritical ? const Color(0xFFFEF2F2) : Colors.white,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCritical ? const Color(0xFFDC2626) : AppTheme.borderOutline,
-          width: 1.5,
+          color: isCritical ? const Color(0xFFFCA5A5) : AppTheme.borderOutline,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -229,7 +229,7 @@ class InsightsScreen extends ConsumerWidget {
               Icon(
                 isCritical ? Icons.warning_rounded : Icons.info_outline_rounded,
                 size: 20,
-                color: isCritical ? const Color(0xFFDC2626) : AppTheme.primaryBlue,
+                color: isCritical ? AppTheme.dangerRed : AppTheme.primaryBlue,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -245,13 +245,20 @@ class InsightsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.borderOutline, width: 1),
+                  color: isCritical ? const Color(0xFFFEE2E2) : AppTheme.lightBlueBg,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isCritical ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                    width: 1.0,
+                  ),
                 ),
                 child: Text(
                   item.ruleCode,
-                  style: GoogleFonts.lexend(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                  style: GoogleFonts.lexend(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isCritical ? AppTheme.dangerRed : AppTheme.primaryBlue,
+                  ),
                 ),
               ),
             ],
