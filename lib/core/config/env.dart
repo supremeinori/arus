@@ -19,14 +19,14 @@ class AppEnv {
     }
 
     if (kIsWeb) {
-      return 'http://localhost:3000/api';
+      return 'http://localhost:5000/api';
     }
 
     // Android emulator menggunakan 10.0.2.2 untuk mengarah ke localhost host machine
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000/api';
+      return 'http://10.0.2.2:5000/api';
     }
 
-    return 'http://localhost:3000/api';
+    return 'http://localhost:5000/api';
   }
 }
