@@ -7,6 +7,8 @@ import 'package:arus/features/auth/domain/user_model.dart';
 import 'package:arus/features/auth/presentation/auth_provider.dart';
 import 'package:arus/features/auth/presentation/auth_state.dart';
 import 'package:arus/features/auth/presentation/login_screen.dart';
+import 'package:arus/features/analytics/domain/analytics_models.dart';
+import 'package:arus/features/analytics/presentation/analytics_provider.dart';
 import 'package:arus/features/catalog/presentation/catalog_provider.dart';
 import 'package:arus/features/inventory/presentation/inventory_provider.dart';
 import 'package:arus/features/shell/presentation/main_shell.dart';
@@ -58,6 +60,12 @@ void main() {
             inventoryListProvider.overrideWith((ref) async => []),
             categoriesProvider.overrideWith((ref) async => []),
             productListProvider.overrideWith((ref) async => []),
+            shiftSummaryProvider.overrideWith((ref) async => const ShiftSummaryModel(
+                  todayRevenueIdr: 0,
+                  cashRevenueIdr: 0,
+                  qrisRevenueIdr: 0,
+                  transactionCount: 0,
+                )),
           ],
           child: const MaterialApp(
             home: MainShell(),
@@ -97,6 +105,15 @@ void main() {
               notifier.state = AuthState.authenticated(ownerUser);
               return notifier;
             }),
+            analyticsOverviewProvider.overrideWith((ref) async => const AnalyticsOverviewModel(
+                  revenueIdr: 0,
+                  subtotalIdr: 0,
+                  discountIdr: 0,
+                  transactionCount: 0,
+                  avgBasketSizeIdr: 0,
+                )),
+            salesTrendProvider.overrideWith((ref) async => []),
+            peakHoursProvider.overrideWith((ref) async => []),
           ],
           child: const MaterialApp(
             home: MainShell(),
