@@ -19,12 +19,32 @@ export class AuthService {
         name: 'Rina Kartika (Owner)',
         role: 'owner',
       },
+      'owner@arus.local': {
+        id: 'u-owner-001',
+        name: 'Rina Kartika (Owner)',
+        role: 'owner',
+      },
       'manager@arus.demo': {
         id: 'u-mgr-001',
         name: 'Budi Santoso (Manager)',
         role: 'manager',
       },
+      'manager@arus.local': {
+        id: 'u-mgr-001',
+        name: 'Budi Santoso (Manager)',
+        role: 'manager',
+      },
       'staff@arus.demo': {
+        id: 'u-staff-001',
+        name: 'Siti Rahma (Kasir)',
+        role: 'staff',
+      },
+      'cashier@arus.local': {
+        id: 'u-staff-001',
+        name: 'Siti Rahma (Kasir)',
+        role: 'staff',
+      },
+      'staff@arus.local': {
         id: 'u-staff-001',
         name: 'Siti Rahma (Kasir)',
         role: 'staff',

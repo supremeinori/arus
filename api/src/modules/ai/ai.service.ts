@@ -1,10 +1,58 @@
 import { AiMessageStatus, AiRole, PrismaClient, Role } from '@prisma/client';
 import { prisma } from '../../config/db';
+import { isDbAvailable } from '../../config/db-health';
 import { analyticsService } from '../analytics/analytics.service';
 import { inventoryService } from '../inventory/inventory.service';
 import { AppError } from '../../shared/errors';
+import { env } from '../../config/env';
 
 export class AiAssistantService {
+  private async callGemini(userMessage: string, facts: any[]): Promise<string | null> {
+    const apiKey = env.LLM_API_KEY;
+    if (!apiKey || apiKey === 'dummy_key_for_dev' || !apiKey.startsWith('AIza')) {
+      return null;
+    }
+
+    try {
+      const model = env.LLM_MODEL || 'gemini-2.0-flash';
+      const prompt = `Anda adalah ARUS AI Business Decision Support Assistant untuk retail & F&B multi-outlet di Indonesia.
+Jawab pertanyaan pemilik bisnis / manajer toko dengan gaya ramah, profesional, dan ringkas dalam Bahasa Indonesia.
+PENTING: Gunakan FAKTA DATA TOKO di bawah ini sebagai sumber kebenaran tunggal untuk angka omset, stok, atau metrik. Jangan mengarang angka di luar fakta ini!
+
+FAKTA DATA TOKO:
+${JSON.stringify(facts, null, 2)}
+
+PERTANYAAN PENGGUNA:
+"${userMessage}"`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+          signal: AbortSignal.timeout(3000),
+        }
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const json: any = await response.json();
+      const candidateText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      return candidateText || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /**
    * Menjawab pertanyaan pengguna dengan sistem Grounded Facts (Anti-Halusinasi).
    * Fakta bisnis ditarik langsung dari database terlebih dahulu sebelum disusun responnya.
@@ -25,29 +73,32 @@ export class AiAssistantService {
 
     // 1. Dapatkan atau buat sesi AiConversation
     let conversationId = query.conversation_id || 'demo-conv-001';
-    try {
-      if (!query.conversation_id) {
-        const conv = await prisma.aiConversation.create({
+    const dbUp = await isDbAvailable();
+
+    if (dbUp) {
+      try {
+        if (!query.conversation_id) {
+          const conv = await prisma.aiConversation.create({
+            data: {
+              user_id: userId,
+              title: userMessage.length > 40 ? `${userMessage.substring(0, 37)}...` : userMessage,
+            },
+          });
+          conversationId = conv.id;
+        }
+
+        // Simpan pesan user
+        await prisma.aiMessage.create({
           data: {
-            user_id: userId,
-            title: userMessage.length > 40 ? `${userMessage.substring(0, 37)}...` : userMessage,
+            conversation_id: conversationId,
+            role: AiRole.user,
+            content: userMessage,
+            status: AiMessageStatus.ok,
           },
         });
-        conversationId = conv.id;
+      } catch (_) {
+        conversationId = query.conversation_id || 'demo-conv-001';
       }
-
-      // Simpan pesan user
-      await prisma.aiMessage.create({
-        data: {
-          conversation_id: conversationId,
-          role: AiRole.user,
-          content: userMessage,
-          status: AiMessageStatus.ok,
-        },
-      });
-    } catch (_) {
-      // Offline fallback: gunakan ID percakapan demo di memori
-      conversationId = query.conversation_id || 'demo-conv-001';
     }
 
     // 2. RETRIEVER: Klasifikasi Intent & Pengambilan Fakta Akurat dari DB
@@ -113,14 +164,18 @@ export class AiAssistantService {
       });
     }
 
-    // 3. GENERATOR / FALLBACK TEMPLATE:
-    // Susun jawaban terstruktur yang 100% konsisten dengan fakta
+    // 3. GENERATOR: Panggil Live Google Gemini API atau Gunakan Grounded Facts Template
     let aiResponseText = '';
     let suggestionText = '';
 
-    if (facts.length === 0) {
+    const liveGeminiText = await this.callGemini(userMessage, facts);
+
+    if (liveGeminiText) {
+      aiResponseText = liveGeminiText;
+      suggestionText = 'Analisis di atas disusun secara real-time oleh Google Gemini berdasarkan data toko Anda.';
+    } else if (facts.length === 0) {
       aiResponseText =
-        'Saya adalah AI Business Assistant ARUS. Anda dapat menanyakan ringkasan omset penjualan, status stok menipis, produk slow-moving, atau analisis jam ramai transaksi cabang.';
+        'Saya adalah AI Business Assistant ARUS didukung oleh Google Gemini. Anda dapat menanyakan ringkasan omset penjualan, status stok menipis, produk slow-moving, atau analisis jam ramai transaksi cabang.';
       suggestionText = 'Coba tanyakan: "Bagaimana omset penjualan saya?" atau "Produk apa saja yang stoknya menipis?"';
     } else {
       const lines: string[] = ['Berdasarkan data operasional terkini:'];
@@ -163,27 +218,29 @@ export class AiAssistantService {
         suggestion: suggestionText,
       },
       facts_used: facts,
-      model: 'gemini-2.0-flash-grounded',
+      model: liveGeminiText ? env.LLM_MODEL : 'grounded-local-engine',
       status: 'ok',
       created_at: new Date(),
     };
 
-    try {
-      savedAiMessage = await prisma.aiMessage.create({
-        data: {
-          conversation_id: conversationId,
-          role: AiRole.assistant,
-          content: aiResponseText,
-          structured: {
-            suggestion: suggestionText,
+    if (dbUp) {
+      try {
+        savedAiMessage = await prisma.aiMessage.create({
+          data: {
+            conversation_id: conversationId,
+            role: AiRole.assistant,
+            content: aiResponseText,
+            structured: {
+              suggestion: suggestionText,
+            },
+            facts_used: facts,
+            model: 'gemini-2.0-flash-grounded',
+            status: AiMessageStatus.ok,
           },
-          facts_used: facts,
-          model: 'gemini-2.0-flash-grounded',
-          status: AiMessageStatus.ok,
-        },
-      });
-    } catch (_) {
-      // Offline fallback: gunakan message objek lokal
+        });
+      } catch (_) {
+        // Offline fallback: gunakan message objek lokal
+      }
     }
 
     return {
