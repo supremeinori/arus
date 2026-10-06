@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
-import '../../features/bca_dark/presentation/bca_dark_screen.dart';
 import '../../features/catalog/presentation/product_detail_screen.dart';
 import '../../features/catalog/presentation/product_form_screen.dart';
 import '../../features/catalog/presentation/product_list_screen.dart';
@@ -30,7 +29,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (BuildContext context, GoRouterState state) {
       final isSplash = state.matchedLocation == '/splash';
       final isLoggingIn = state.matchedLocation == '/login';
-      final isBcaDark = state.matchedLocation == '/bca-dark';
 
       if (authState.status == AuthStatus.initial) {
         return null; // Tetap di splash saat sedang memverifikasi sesi
@@ -38,7 +36,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isAuthenticated = authState.isAuthenticated;
 
-      if (!isAuthenticated && !isLoggingIn && !isBcaDark) {
+      if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
 
@@ -56,10 +54,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/bca-dark',
-        builder: (context, state) => const BcaDarkScreen(),
       ),
       GoRoute(
         path: '/shell',

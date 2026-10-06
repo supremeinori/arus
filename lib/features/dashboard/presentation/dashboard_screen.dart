@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
@@ -45,11 +44,6 @@ class DashboardScreen extends ConsumerWidget {
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.nightlight_round, color: AppTheme.primaryBlue),
-            tooltip: 'Mode BCA Mobile (Dark)',
-            onPressed: () => context.push('/bca-dark'),
-          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
             tooltip: 'Segarkan Data',
