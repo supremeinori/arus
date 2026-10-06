@@ -31,7 +31,7 @@ class OperationsHubScreen extends StatelessWidget {
             subtitle: 'Pantau sisa stok per cabang dan peringatan menipis',
             badgeText: 'Stok',
             badgeColor: Colors.teal,
-            onTap: () {},
+            onTap: () => context.push('/inventory'),
           ),
           const SizedBox(height: 12),
           _buildOperationTile(

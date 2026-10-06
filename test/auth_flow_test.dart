@@ -7,6 +7,7 @@ import 'package:arus/features/auth/domain/user_model.dart';
 import 'package:arus/features/auth/presentation/auth_provider.dart';
 import 'package:arus/features/auth/presentation/auth_state.dart';
 import 'package:arus/features/auth/presentation/login_screen.dart';
+import 'package:arus/features/inventory/presentation/inventory_provider.dart';
 import 'package:arus/features/shell/presentation/main_shell.dart';
 
 void main() {
@@ -53,6 +54,7 @@ void main() {
               notifier.state = AuthState.authenticated(staffUser);
               return notifier;
             }),
+            inventoryListProvider.overrideWith((ref) async => []),
           ],
           child: const MaterialApp(
             home: MainShell(),

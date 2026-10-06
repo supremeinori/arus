@@ -7,6 +7,8 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/catalog/presentation/product_detail_screen.dart';
 import '../../features/catalog/presentation/product_form_screen.dart';
 import '../../features/catalog/presentation/product_list_screen.dart';
+import '../../features/inventory/presentation/inventory_list_screen.dart';
+import '../../features/inventory/presentation/stock_movement_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
@@ -47,6 +49,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/shell',
         builder: (context, state) => const MainShell(),
+      ),
+      GoRoute(
+        path: '/inventory',
+        builder: (context, state) => const InventoryListScreen(),
+        routes: [
+          GoRoute(
+            path: 'movements',
+            builder: (context, state) => StockMovementScreen(
+              outletId: state.uri.queryParameters['outlet_id'],
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/catalog',
