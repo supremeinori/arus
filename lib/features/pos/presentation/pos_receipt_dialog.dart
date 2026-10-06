@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../core/theme/app_theme.dart';
 import '../domain/pos_models.dart';
 
 class PosReceiptDialog extends StatelessWidget {
@@ -13,11 +15,18 @@ class PosReceiptDialog extends StatelessWidget {
     final dateFormatter = DateFormat('dd MMM yyyy, HH:mm');
 
     return AlertDialog(
-      title: const Row(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+      ),
+      title: Row(
         children: [
-          Icon(Icons.check_circle_rounded, color: Colors.green),
-          SizedBox(width: 8),
-          Text('Transaksi Berhasil!'),
+          const Icon(Icons.check_circle_rounded, color: AppTheme.primaryBlue, size: 22),
+          const SizedBox(width: 8),
+          Text(
+            'Transaksi Berhasil!',
+            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
+          ),
         ],
       ),
       content: SingleChildScrollView(
@@ -28,16 +37,28 @@ class PosReceiptDialog extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  const Text('ARUS POS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text(
+                    'ARUS POS',
+                    style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 18, color: AppTheme.accentBlack),
+                  ),
                   const SizedBox(height: 2),
-                  Text(transaction.outletName, style: const TextStyle(color: Colors.grey)),
+                  Text(
+                    transaction.outletName,
+                    style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12),
+                  ),
                   const SizedBox(height: 4),
-                  Text('No: ${transaction.receiptNo}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                  Text(dateFormatter.format(transaction.createdAt), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(
+                    'No: ${transaction.receiptNo}',
+                    style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.accentBlack),
+                  ),
+                  Text(
+                    dateFormatter.format(transaction.createdAt),
+                    style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
+                  ),
                 ],
               ),
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
 
             // Item List
             ...transaction.items.map((item) {
@@ -47,20 +68,29 @@ class PosReceiptDialog extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text('${item.productName} x${item.quantity}'),
+                      child: Text(
+                        '${item.productName} x${item.quantity}',
+                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.accentBlack),
+                      ),
                     ),
-                    Text(currencyFormatter.format(item.lineTotalIdr)),
+                    Text(
+                      currencyFormatter.format(item.lineTotalIdr),
+                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentBlack),
+                    ),
                   ],
                 ),
               );
             }),
 
-            const Divider(height: 24),
+            const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Subtotal'),
-                Text(currencyFormatter.format(transaction.subtotalIdr)),
+                Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF64748B))),
+                Text(
+                  currencyFormatter.format(transaction.subtotalIdr),
+                  style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentBlack),
+                ),
               ],
             ),
             if (transaction.discountIdr > 0) ...[
@@ -68,43 +98,61 @@ class PosReceiptDialog extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Diskon', style: TextStyle(color: Colors.red)),
-                  Text('- ${currencyFormatter.format(transaction.discountIdr)}', style: const TextStyle(color: Colors.red)),
+                  Text('Diskon', style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFFDC2626))),
+                  Text(
+                    '- ${currencyFormatter.format(transaction.discountIdr)}',
+                    style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
+                  ),
                 ],
               ),
             ],
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  'Total',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
+                ),
                 Text(
                   transaction.formattedTotal,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal),
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.primaryBlue),
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Metode (${transaction.paymentMethod.toUpperCase()})'),
-                Text(currencyFormatter.format(transaction.paidIdr)),
+                Text(
+                  'Metode (${transaction.paymentMethod.toUpperCase()})',
+                  style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
+                ),
+                Text(
+                  currencyFormatter.format(transaction.paidIdr),
+                  style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.accentBlack),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Kembalian', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(currencyFormatter.format(transaction.changeIdr), style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'Kembalian',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+                ),
+                Text(
+                  currencyFormatter.format(transaction.changeIdr),
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Center(
               child: Text(
                 'Kasir: ${transaction.cashierName}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
               ),
             ),
           ],
@@ -113,8 +161,17 @@ class PosReceiptDialog extends StatelessWidget {
       actions: [
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(),
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-          child: const Text('Selesai / Transaksi Baru', style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryBlue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+              side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+            ),
+          ),
+          child: Text(
+            'Selesai / Transaksi Baru',
+            style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+          ),
         ),
       ],
     );

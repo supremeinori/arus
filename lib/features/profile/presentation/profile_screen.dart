@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -12,71 +13,87 @@ class ProfileScreen extends ConsumerWidget {
     final user = authState.user;
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text('Profil & Pengaturan'),
+        title: Text(
+          'Profil & Akun',
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           // User Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.15),
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                  ),
+                  child: Center(
                     child: Text(
                       user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.lexend(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                         color: AppTheme.primaryBlue,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.name ?? 'Pengguna',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? 'Pengguna',
+                        style: GoogleFonts.lexend(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.accentBlack,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? '',
+                        style: GoogleFonts.lexend(
+                          fontSize: 13,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppTheme.borderOutline, width: 1),
+                        ),
+                        child: Text(
+                          user?.role.toDisplayString() ?? '',
+                          style: GoogleFonts.lexend(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primaryBlue,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.email ?? '',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            user?.role.toDisplayString() ?? '',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryBlue,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -84,51 +101,82 @@ class ProfileScreen extends ConsumerWidget {
           // Outlet Scopes List
           if (user != null && user.outlets.isNotEmpty) ...[
             Text(
-              'Akses Outlet (${user.outlets.length}):',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              'Akses Outlet Cabang (${user.outlets.length}):',
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
             ),
             const SizedBox(height: 8),
             ...user.outlets.map(
-              (o) => ListTile(
-                leading: const Icon(Icons.storefront_outlined),
-                title: Text(o.name),
-                subtitle: Text('${o.timezone} • ${o.address ?? "-"}'),
-                dense: true,
+              (o) => Card(
+                elevation: 0,
+                color: Colors.white,
+                margin: const EdgeInsets.only(bottom: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.storefront_outlined, color: AppTheme.primaryBlue),
+                  title: Text(o.name, style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: Text(
+                    '${o.timezone} • ${o.address ?? "-"}',
+                    style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                  ),
+                  dense: true,
+                ),
               ),
             ),
-            const Divider(),
+            const SizedBox(height: 12),
           ],
 
-          const SizedBox(height: 20),
           // Logout Button
           OutlinedButton.icon(
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Keluar dari Akun?'),
-                  content: const Text('Apakah Anda yakin ingin keluar dari sesi saat ini?'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  ),
+                  title: Text(
+                    'Keluar dari Akun?',
+                    style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
+                  content: Text(
+                    'Apakah Anda yakin ingin keluar dari sesi saat ini?',
+                    style: GoogleFonts.lexend(fontSize: 13.5),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Batal'),
+                      child: Text('Batal', style: GoogleFonts.lexend(color: const Color(0xFF64748B))),
                     ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppTheme.dangerRed),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.dangerRed,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                          side: const BorderSide(color: AppTheme.borderOutline, width: 1),
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         ref.read(authProvider.notifier).logout();
                       },
-                      child: const Text('Keluar'),
+                      child: Text('Keluar', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ],
                 ),
               );
             },
-            icon: const Icon(Icons.logout, color: AppTheme.dangerRed),
-            label: const Text('Keluar Akun', style: TextStyle(color: AppTheme.dangerRed)),
+            icon: const Icon(Icons.logout, color: AppTheme.dangerRed, size: 18),
+            label: Text(
+              'Keluar Akun',
+              style: GoogleFonts.lexend(color: AppTheme.dangerRed, fontWeight: FontWeight.w700, fontSize: 14),
+            ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppTheme.dangerRed),
+              side: const BorderSide(color: AppTheme.dangerRed, width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),

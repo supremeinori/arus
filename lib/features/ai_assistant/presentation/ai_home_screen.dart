@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/ai_models.dart';
 import 'ai_provider.dart';
@@ -18,9 +20,9 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
 
   final List<String> _quickPrompts = [
     'Bagaimana ringkasan penjualan hari ini?',
+    'Ada berapa sih gerai kita dan lokasinya di mana?',
     'Apakah ada produk yang butuh restock segera?',
-    'Produk apa yang paling laris minggu ini?',
-    'Berapa rata-rata transaksi dan margin kita?',
+    'Menu apa yang paling laris minggu ini?',
   ];
 
   @override
@@ -35,7 +37,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -71,24 +73,25 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Asisten AI Bisnis',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             if (outlets.isNotEmpty)
               Text(
-                'Outlet: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                'Cabang: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
+                style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
               ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
             tooltip: 'Mulai Percakapan Baru',
             onPressed: () {
               ref.read(aiChatProvider.notifier).startNewChat();
@@ -101,16 +104,21 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           if (chatState.errorMessage != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.red.shade100,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF2F2),
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                ),
+              ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                  const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       chatState.errorMessage!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                      style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
                     ),
                   ),
                 ],
@@ -132,43 +140,44 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.shade50,
-              shape: BoxShape.circle,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.borderOutline, width: 1.5),
             ),
             child: const Icon(
-              Icons.auto_awesome_rounded,
-              size: 56,
-              color: Colors.deepPurple,
+              Icons.analytics_outlined,
+              size: 42,
+              color: AppTheme.primaryBlue,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'ARUS AI Decision Support',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Asisten analitik cerdas yang menjawab pertanyaan bisnis Anda berdasarkan data transaksi, inventaris, dan margin riil di sistem (Anti-Halusinasi).',
+          Text(
+            'Asisten analitik cerdas berbasis data riil (Anti-Halusinasi). Tanyakan omset, status stok, jam ramai, hingga performa gerai cabang.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black54, fontSize: 14),
+            style: GoogleFonts.lexend(color: const Color(0xFF475569), fontSize: 13, height: 1.4),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Coba tanyakan:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-                fontSize: 13,
+              'Rekomendasi Pertanyaan Cepat:',
+              style: GoogleFonts.lexend(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.accentBlack,
+                fontSize: 12,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Column(
             children: _quickPrompts.map((prompt) {
               return Padding(
@@ -177,17 +186,19 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.accentBlack,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       alignment: Alignment.centerLeft,
-                      side: BorderSide(color: Colors.deepPurple.shade200),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                    icon: const Icon(Icons.help_outline_rounded, size: 16, color: AppTheme.primaryBlue),
                     label: Text(
                       prompt,
-                      style: const TextStyle(fontSize: 13, color: Colors.deepPurple),
+                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     onPressed: () => _handleSend(prompt),
                   ),
@@ -203,7 +214,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
   Widget _buildMessageList(List<AiMessageModel> messages, bool isLoading) {
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       itemCount: messages.length + (isLoading ? 1 : 0),
       itemBuilder: (context, index) {
         if (index < messages.length) {
@@ -227,25 +238,25 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
         children: [
           if (!isUser) ...[
             Container(
-              margin: const EdgeInsets.only(top: 4, right: 8),
+              margin: const EdgeInsets.only(top: 2, right: 8),
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.deepPurple.shade50,
-                shape: BoxShape.circle,
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppTheme.borderOutline, width: 1.5),
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.deepPurple, size: 18),
+              child: const Icon(Icons.smart_toy_outlined, color: AppTheme.primaryBlue, size: 16),
             ),
           ],
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isUser ? Colors.deepPurple : Colors.grey.shade100,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(4),
-                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(16),
+                color: isUser ? AppTheme.primaryBlue : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppTheme.borderOutline,
+                  width: 1.5,
                 ),
               ),
               child: Column(
@@ -253,34 +264,32 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 children: [
                   Text(
                     message.content,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : Colors.black87,
-                      fontSize: 14,
-                      height: 1.35,
+                    style: GoogleFonts.lexend(
+                      color: isUser ? Colors.white : AppTheme.accentBlack,
+                      fontSize: 13.5,
+                      height: 1.45,
                     ),
                   ),
                   if (!isUser && message.factsUsed.isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.shade200),
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppTheme.borderOutline, width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.verified_user_outlined, size: 14, color: Colors.green.shade700),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              'Data Terverifikasi Sistem (${message.factsUsed.length} indikator)',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green.shade800,
-                              ),
+                          const Icon(Icons.verified_outlined, size: 12, color: AppTheme.primaryBlue),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Data Terverifikasi Sistem (${message.factsUsed.length} fakta)',
+                            style: GoogleFonts.lexend(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.accentBlack,
                             ),
                           ),
                         ],
@@ -294,21 +303,22 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.deepPurple.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: AppTheme.primaryBlue, width: 1.2),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.lightbulb_outline, size: 14, color: Colors.deepPurple),
+                            const Icon(Icons.lightbulb_outline, size: 13, color: AppTheme.primaryBlue),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 'Saran: ${message.suggestion!}',
-                                style: const TextStyle(
-                                  fontSize: 11,
+                                style: GoogleFonts.lexend(
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.deepPurple,
+                                  color: AppTheme.primaryBlue,
                                 ),
                               ),
                             ),
@@ -321,9 +331,6 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
               ),
             ),
           ),
-          if (isUser) ...[
-            const SizedBox(width: 4),
-          ],
         ],
       ),
     );
@@ -335,32 +342,34 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
       child: Row(
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 4, right: 8),
+            margin: const EdgeInsets.only(top: 2, right: 8),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.shade50,
-              shape: BoxShape.circle,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.borderOutline, width: 1.5),
             ),
-            child: const Icon(Icons.auto_awesome, color: Colors.deepPurple, size: 18),
+            child: const Icon(Icons.smart_toy_outlined, color: AppTheme.primaryBlue, size: 16),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.borderOutline, width: 1.5),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 14,
                   height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryBlue),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Text(
-                  'ARUS AI sedang menganalisa data...',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
+                  'ARUS AI menganalisis data...',
+                  style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
                 ),
               ],
             ),
@@ -372,16 +381,12 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
 
   Widget _buildInputBar(bool isLoading) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 4,
-            offset: const Offset(0, -1),
-          ),
-        ],
+        border: Border(
+          top: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -393,24 +398,39 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 textInputAction: TextInputAction.send,
                 onSubmitted: isLoading ? null : (_) => _handleSend(),
                 enabled: !isLoading,
+                style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.accentBlack),
                 decoration: InputDecoration(
                   hintText: 'Tanyakan sesuatu tentang bisnis...',
-                  hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                  hintStyle: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF94A3B8)),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.send_rounded),
-              color: Colors.deepPurple,
-              onPressed: isLoading ? null : () => _handleSend(),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryBlue,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+                onPressed: isLoading ? null : () => _handleSend(),
+              ),
             ),
           ],
         ),

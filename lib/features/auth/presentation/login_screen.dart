@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
 import 'auth_provider.dart';
@@ -59,85 +60,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Brand Header
+                  // App Brand Header with sharp borders
                   Center(
                     child: Container(
-                      width: 72,
-                      height: 72,
+                      width: 68,
+                      height: 68,
                       decoration: BoxDecoration(
                         color: AppTheme.primaryBlue,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryBlue.withValues(alpha: 0.25),
-                            blurRadius: 14,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppTheme.borderOutline, width: 2),
                       ),
                       child: const Icon(
                         Icons.insights_rounded,
                         color: Colors.white,
-                        size: 40,
+                        size: 38,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  const Text(
+                  const SizedBox(height: 18),
+                  Text(
                     'Masuk ke ${StringsId.appName}',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                    style: GoogleFonts.lexend(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.accentBlack,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Kelola performa bisnis & outlet Anda secara real-time',
+                    'Decision Support System Multi-Cabang',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.lexend(
                       fontSize: 13,
-                      color: Colors.grey.shade600,
+                      color: const Color(0xFF64748B),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Error Message Banner
+                  // Error Banner
                   if (authState.errorMessage != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                          const SizedBox(width: 10),
+                          const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               authState.errorMessage!,
-                              style: TextStyle(fontSize: 13, color: Colors.red.shade900),
+                              style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFFDC2626)),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                   ],
 
                   // Email Input
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    style: GoogleFonts.lexend(fontSize: 14, color: AppTheme.accentBlack),
                     decoration: InputDecoration(
                       labelText: 'Alamat Email',
                       hintText: 'nama@email.com',
-                      prefixIcon: const Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.accentBlack, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
                       ),
                     ),
                     validator: (val) {
@@ -156,12 +153,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+                    style: GoogleFonts.lexend(fontSize: 14, color: AppTheme.accentBlack),
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.accentBlack, size: 20),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: AppTheme.accentBlack,
+                          size: 20,
                         ),
                         onPressed: () {
                           setState(() {
@@ -170,17 +170,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
                       ),
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
                         return 'Password wajib diisi';
                       }
+                      if (val.length < 6) {
+                        return 'Password minimal 6 karakter';
+                      }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 22),
 
                   // Submit Button
                   ElevatedButton(
@@ -190,52 +194,63 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
                       ),
                     ),
                     child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Masuk',
+                            style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700),
                           ),
-                        )
-                      : const Text(
-                          'Masuk',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
 
                   // Quick Demo Accounts Fill Chips
-                  const Divider(),
-                  const SizedBox(height: 12),
+                  const Divider(color: AppTheme.borderOutline, thickness: 1.5),
+                  const SizedBox(height: 14),
                   Text(
-                    'Akun Cepat untuk Demo (Tap untuk isi):',
+                    'Pilih Akun Demo (Garis Cepat):',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     alignment: WrapAlignment.center,
                     children: [
                       ActionChip(
-                        avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
-                        label: const Text('Owner'),
+                        avatar: const Icon(Icons.star, size: 16, color: AppTheme.primaryBlue),
+                        label: Text('Owner', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12)),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         onPressed: () => _fillAccount('owner@arus.demo', 'Demo1234'),
                       ),
                       ActionChip(
-                        avatar: const Icon(Icons.storefront, size: 16, color: Colors.blue),
-                        label: const Text('Manager'),
+                        avatar: const Icon(Icons.storefront, size: 16, color: AppTheme.primaryBlue),
+                        label: Text('Manager', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12)),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         onPressed: () => _fillAccount('manager@arus.demo', 'Demo1234'),
                       ),
                       ActionChip(
-                        avatar: const Icon(Icons.point_of_sale, size: 16, color: Colors.green),
-                        label: const Text('Kasir'),
+                        avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.primaryBlue),
+                        label: Text('Kasir', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12)),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         onPressed: () => _fillAccount('staff@arus.demo', 'Demo1234'),
                       ),
                     ],

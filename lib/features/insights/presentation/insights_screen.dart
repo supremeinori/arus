@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/app_theme.dart';
 import '../data/insights_repository.dart';
 import '../domain/insight_models.dart';
 import 'insights_provider.dart';
@@ -14,15 +16,21 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(status == 'acknowledged' ? 'Rekomendasi diterima.' : 'Rekomendasi diabaikan.'),
-            backgroundColor: Colors.teal,
+            content: Text(
+              status == 'acknowledged' ? 'Rekomendasi diterima.' : 'Rekomendasi diabaikan.',
+              style: GoogleFonts.lexend(fontSize: 13),
+            ),
+            backgroundColor: AppTheme.accentBlack,
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengubah status: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Gagal mengubah status: $e', style: GoogleFonts.lexend(fontSize: 13)),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
         );
       }
     }
@@ -34,16 +42,22 @@ class InsightsScreen extends ConsumerWidget {
       ref.invalidate(insightsListProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Rule engine selesai mengevaluasi inventaris & transaksi!'),
-            backgroundColor: Colors.teal,
+          SnackBar(
+            content: Text(
+              'Rule engine selesai mengevaluasi inventaris & transaksi!',
+              style: GoogleFonts.lexend(fontSize: 13),
+            ),
+            backgroundColor: AppTheme.primaryBlue,
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menjalankan rule engine: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Gagal menjalankan rule engine: $e', style: GoogleFonts.lexend(fontSize: 13)),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
         );
       }
     }
@@ -55,16 +69,20 @@ class InsightsScreen extends ConsumerWidget {
     final selectedSeverity = ref.watch(selectedSeverityFilterProvider);
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text('Rekomendasi Keputusan (AI/DSS)'),
+        title: Text(
+          'Rekomendasi Keputusan (AI/DSS)',
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bolt_rounded),
+            icon: const Icon(Icons.bolt_rounded, color: AppTheme.primaryBlue),
             tooltip: 'Evaluasi Rule Engine Sekarang',
             onPressed: () => _triggerGeneration(context, ref),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
             tooltip: 'Segarkan',
             onPressed: () => ref.invalidate(insightsListProvider),
           ),
@@ -74,30 +92,61 @@ class InsightsScreen extends ConsumerWidget {
         children: [
           // Filter Chips
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
                 ChoiceChip(
-                  label: const Text('Semua'),
+                  label: Text(
+                    'Semua',
+                    style: GoogleFonts.lexend(
+                      fontSize: 12.5,
+                      fontWeight: selectedSeverity == null ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
                   selected: selectedSeverity == null,
+                  selectedColor: AppTheme.primaryBlue,
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  labelStyle: TextStyle(color: selectedSeverity == null ? Colors.white : AppTheme.accentBlack),
                   onSelected: (selected) {
                     if (selected) ref.read(selectedSeverityFilterProvider.notifier).state = null;
                   },
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
-                  label: const Text('Kritis'),
+                  label: Text(
+                    'Kritis',
+                    style: GoogleFonts.lexend(
+                      fontSize: 12.5,
+                      fontWeight: selectedSeverity == 'critical' ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
                   selected: selectedSeverity == 'critical',
-                  selectedColor: Colors.red.shade100,
+                  selectedColor: const Color(0xFFDC2626),
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  labelStyle: TextStyle(color: selectedSeverity == 'critical' ? Colors.white : AppTheme.accentBlack),
                   onSelected: (selected) {
                     ref.read(selectedSeverityFilterProvider.notifier).state = selected ? 'critical' : null;
                   },
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
-                  label: const Text('Peringatan'),
+                  label: Text(
+                    'Peringatan',
+                    style: GoogleFonts.lexend(
+                      fontSize: 12.5,
+                      fontWeight: selectedSeverity == 'warning' ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
                   selected: selectedSeverity == 'warning',
-                  selectedColor: Colors.amber.shade100,
+                  selectedColor: AppTheme.accentBlack,
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  labelStyle: TextStyle(color: selectedSeverity == 'warning' ? Colors.white : AppTheme.accentBlack),
                   onSelected: (selected) {
                     ref.read(selectedSeverityFilterProvider.notifier).state = selected ? 'warning' : null;
                   },
@@ -110,24 +159,28 @@ class InsightsScreen extends ConsumerWidget {
           // List Insights
           Expanded(
             child: insightsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Gagal memuat rekomendasi: $err')),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+              ),
+              error: (err, _) => Center(
+                child: Text('Gagal memuat rekomendasi: $err', style: GoogleFonts.lexend()),
+              ),
               data: (insights) {
                 if (insights.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.verified_rounded, size: 64, color: Colors.green),
-                        SizedBox(height: 16),
+                        const Icon(Icons.verified_rounded, size: 56, color: AppTheme.primaryBlue),
+                        const SizedBox(height: 16),
                         Text(
                           'Kondisi Bisnis Prima!',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Tidak ada peringatan kritis atau anomali stok yang terdeteksi.',
-                          style: TextStyle(color: Colors.grey),
+                          style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 13),
                         ),
                       ],
                     ),
@@ -135,6 +188,7 @@ class InsightsScreen extends ConsumerWidget {
                 }
 
                 return RefreshIndicator(
+                  color: AppTheme.primaryBlue,
                   onRefresh: () async => ref.invalidate(insightsListProvider),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
@@ -155,108 +209,115 @@ class InsightsScreen extends ConsumerWidget {
   }
 
   Widget _buildInsightCard(BuildContext context, WidgetRef ref, BusinessInsightModel item) {
-    Color cardColor;
-    Color borderColor;
-    IconData icon;
+    final isCritical = item.isCritical;
 
-    if (item.isCritical) {
-      cardColor = Colors.red.shade50;
-      borderColor = Colors.red.shade300;
-      icon = Icons.warning_rounded;
-    } else if (item.isWarning) {
-      cardColor = Colors.amber.shade50;
-      borderColor = Colors.amber.shade300;
-      icon = Icons.info_rounded;
-    } else {
-      cardColor = Colors.blue.shade50;
-      borderColor = Colors.blue.shade200;
-      icon = Icons.lightbulb_rounded;
-    }
-
-    return Card(
-      elevation: 0,
-      color: cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor, width: 1.2),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isCritical ? const Color(0xFFFEF2F2) : Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isCritical ? const Color(0xFFDC2626) : AppTheme.borderOutline,
+          width: 1.5,
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isCritical ? Icons.warning_rounded : Icons.info_outline_rounded,
+                size: 20,
+                color: isCritical ? const Color(0xFFDC2626) : AppTheme.primaryBlue,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: GoogleFonts.lexend(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14.5,
+                    color: AppTheme.accentBlack,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppTheme.borderOutline, width: 1),
+                ),
+                child: Text(
+                  item.ruleCode,
+                  style: GoogleFonts.lexend(fontSize: 10, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            item.message,
+            style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF334155), height: 1.35),
+          ),
+          const SizedBox(height: 10),
+
+          // Saran / Rekomendasi
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: AppTheme.primaryBlue, width: 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 20, color: item.isCritical ? Colors.red.shade700 : Colors.amber.shade800),
-                const SizedBox(width: 8),
+                const Icon(Icons.tips_and_updates_outlined, size: 16, color: AppTheme.primaryBlue),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    item.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Text(
-                    item.ruleCode,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    'Rekomendasi: ${item.recommendation}',
+                    style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(item.message, style: const TextStyle(fontSize: 13, height: 1.3)),
-            const SizedBox(height: 10),
+          ),
+          const SizedBox(height: 12),
 
-            // Saran / Rekomendasi
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.tips_and_updates_outlined, size: 16, color: Colors.teal),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Rekomendasi: ${item.recommendation}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.teal),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Action Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => _updateStatus(context, ref, item.id, 'dismissed'),
-                  child: const Text('Abaikan', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => _updateStatus(context, ref, item.id, 'dismissed'),
+                child: Text(
+                  'Abaikan',
+                  style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => _updateStatus(context, ref, item.id, 'acknowledged'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => _updateStatus(context, ref, item.id, 'acknowledged'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBlue,
+                  minimumSize: const Size(110, 36),
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.2),
                   ),
-                  child: const Text('Tindak Lanjuti', style: TextStyle(color: Colors.white, fontSize: 12)),
                 ),
-              ],
-            ),
-          ],
-        ),
+                child: Text(
+                  'Tindak Lanjuti',
+                  style: GoogleFonts.lexend(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

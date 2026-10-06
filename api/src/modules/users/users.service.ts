@@ -1,5 +1,6 @@
 import { Role, Currency } from '@prisma/client';
 import { prisma } from '../../config/db';
+import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 import { hashPassword } from '../../shared/tokens';
 
@@ -7,6 +8,22 @@ export class UsersService {
   private inMemorySettings: Record<string, any> = {};
 
   async getUserSettings(userId: string) {
+    if (!(await isDbAvailable())) {
+      if (!this.inMemorySettings[userId]) {
+        this.inMemorySettings[userId] = {
+          user_id: userId,
+          display_currency: 'IDR',
+          display_timezone: 'Asia/Jakarta',
+          biometric_enabled: false,
+          shake_refresh_enabled: true,
+          tilt_enabled: true,
+          daily_revenue_target_idr: 5000000,
+          updated_at: new Date(),
+        };
+      }
+      return this.inMemorySettings[userId];
+    }
+
     try {
       let settings = await prisma.userSettings.findUnique({
         where: { user_id: userId },
@@ -52,6 +69,16 @@ export class UsersService {
       daily_revenue_target_idr?: number | null;
     }
   ) {
+    if (!(await isDbAvailable())) {
+      const current = await this.getUserSettings(userId);
+      this.inMemorySettings[userId] = {
+        ...current,
+        ...data,
+        updated_at: new Date(),
+      };
+      return this.inMemorySettings[userId];
+    }
+
     try {
       const settings = await prisma.userSettings.upsert({
         where: { user_id: userId },

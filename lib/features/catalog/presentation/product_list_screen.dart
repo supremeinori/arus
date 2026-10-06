@@ -60,12 +60,16 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
                 ),
               ),
               onChanged: (val) {
@@ -87,6 +91,14 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     child: FilterChip(
                       label: const Text('Semua'),
                       selected: selectedCategory == null,
+                      selectedColor: AppTheme.primaryBlue,
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      labelStyle: TextStyle(
+                        color: selectedCategory == null ? Colors.white : AppTheme.accentBlack,
+                        fontWeight: selectedCategory == null ? FontWeight.w700 : FontWeight.w500,
+                      ),
                       onSelected: (_) {
                         ref.read(selectedCategoryProvider.notifier).state = null;
                       },
@@ -98,6 +110,14 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       child: FilterChip(
                         label: Text(cat.name),
                         selected: selectedCategory == cat.id,
+                        selectedColor: AppTheme.primaryBlue,
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        labelStyle: TextStyle(
+                          color: selectedCategory == cat.id ? Colors.white : AppTheme.accentBlack,
+                          fontWeight: selectedCategory == cat.id ? FontWeight.w700 : FontWeight.w500,
+                        ),
                         onSelected: (_) {
                           ref.read(selectedCategoryProvider.notifier).state =
                               selectedCategory == cat.id ? null : cat.id;
@@ -138,14 +158,14 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     itemBuilder: (context, index) {
                       final prod = products[index];
 
-                      return Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey.shade200),
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppTheme.borderOutline, width: 1.5),
                         ),
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(6),
                           onTap: () {
                             context.push('/catalog/${prod.id}');
                           },
@@ -156,17 +176,18 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                               children: [
                                 // Icon Box
                                 Container(
-                                  width: 48,
-                                  height: 48,
+                                  width: 44,
+                                  height: 44,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(10),
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: AppTheme.borderOutline, width: 1),
                                   ),
                                   child: const Center(
                                     child: Icon(
                                       Icons.coffee_rounded,
                                       color: AppTheme.primaryBlue,
-                                      size: 26,
+                                      size: 24,
                                     ),
                                   ),
                                 ),
@@ -278,6 +299,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               },
               backgroundColor: AppTheme.primaryBlue,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+                side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+              ),
               icon: const Icon(Icons.add),
               label: const Text('Tambah Produk'),
             )

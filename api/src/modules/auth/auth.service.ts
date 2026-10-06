@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { prisma } from '../../config/db';
+import { isDbAvailable } from '../../config/db-health';
 import { env } from '../../config/env';
 import { AppError } from '../../shared/errors';
 import { signAccessToken } from '../../shared/jwt';
@@ -12,7 +13,7 @@ import {
 
 export class AuthService {
   private demoLogin(email: string, passwordInput: string) {
-    const validPasswords = ['Demo1234', 'password123', 'demo1234'];
+    const validPasswords = ['Demo1234', 'password123', 'demo1234', 'Password123!', 'password123!', 'owner123', 'staff123'];
     const demoAccounts: Record<string, { id: string; name: string; role: any }> = {
       'owner@arus.demo': {
         id: 'u-owner-001',
@@ -97,6 +98,10 @@ export class AuthService {
     const email = emailInput.trim().toLowerCase();
 
     let user: any = null;
+    if (!(await isDbAvailable())) {
+      return this.demoLogin(email, passwordInput);
+    }
+
     try {
       user = await prisma.user.findUnique({
         where: { email },

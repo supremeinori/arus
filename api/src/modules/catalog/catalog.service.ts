@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from '@prisma/client';
 import { prisma } from '../../config/db';
+import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
 export class CatalogService {
@@ -7,6 +8,14 @@ export class CatalogService {
   // CATEGORIES
   // ----------------------------------------------------
   async listCategories() {
+    if (!(await isDbAvailable())) {
+      return [
+        { id: 'cat-001', name: 'Coffee', _count: { products: 5 } },
+        { id: 'cat-002', name: 'Non-Coffee', _count: { products: 3 } },
+        { id: 'cat-003', name: 'Pastry & Food', _count: { products: 4 } },
+      ];
+    }
+
     try {
       return await prisma.productCategory.findMany({
         orderBy: { name: 'asc' },
@@ -97,6 +106,26 @@ export class CatalogService {
     if (query.sort === 'price_asc') orderBy = { price_idr: 'asc' };
     if (query.sort === 'price_desc') orderBy = { price_idr: 'desc' };
     if (query.sort === 'created_at') orderBy = { created_at: 'desc' };
+
+    if (!(await isDbAvailable())) {
+      const demoProducts = [
+        { id: 'prod-001', name: 'Kopi Susu Gula Aren', sku: 'BEV-COF-01', price_idr: 22000, cost_idr: 8500, category_id: 'cat-001', is_active: true, category: { id: 'cat-001', name: 'Coffee' } },
+        { id: 'prod-002', name: 'Americano Double Shot', sku: 'BEV-COF-02', price_idr: 18000, cost_idr: 5000, category_id: 'cat-001', is_active: true, category: { id: 'cat-001', name: 'Coffee' } },
+        { id: 'prod-003', name: 'Matcha Latte Oatmilk', sku: 'BEV-NCH-01', price_idr: 28000, cost_idr: 11000, category_id: 'cat-002', is_active: true, category: { id: 'cat-002', name: 'Non-Coffee' } },
+        { id: 'prod-004', name: 'Croissant Butter Original', sku: 'FOD-PST-01', price_idr: 25000, cost_idr: 12000, category_id: 'cat-003', is_active: true, category: { id: 'cat-003', name: 'Pastry & Food' } },
+      ];
+
+      return {
+        products: demoProducts.map((p) => {
+          const { cost_idr, ...rest } = p;
+          return {
+            ...rest,
+            ...(userRole !== Role.staff ? { cost_idr } : {}),
+          };
+        }),
+        meta: { page: 1, page_size: 20, total: demoProducts.length },
+      };
+    }
 
     try {
       const [total, products] = await Promise.all([

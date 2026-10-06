@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/pos_repository.dart';
 import 'pos_provider.dart';
@@ -65,7 +67,6 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
 
     try {
       final repo = ref.read(posRepositoryProvider);
-      // Generate client request id UUID secara random untuk idempotency
       final clientRequestId = 'req-${DateTime.now().millisecondsSinceEpoch}-${user?.id.substring(0, 5)}';
 
       final transaction = await repo.createTransaction(
@@ -116,7 +117,12 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        border: Border(
+          top: BorderSide(color: AppTheme.borderOutline, width: 2),
+          left: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+          right: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+        ),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -126,39 +132,56 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Pembayaran & Checkout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(
+                  'Pembayaran & Checkout',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17, color: AppTheme.accentBlack),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const Icon(Icons.close_rounded, color: AppTheme.accentBlack),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
-            const Divider(),
+            const Divider(color: AppTheme.borderOutline, thickness: 1.2),
+            const SizedBox(height: 8),
 
             // Summary Subtotal & Diskon
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Subtotal (${cartState.totalItemsCount} item)'),
-                Text(currencyFormatter.format(subtotal), style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  'Subtotal (${cartState.totalItemsCount} item)',
+                  style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF64748B)),
+                ),
+                Text(
+                  currencyFormatter.format(subtotal),
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             // Diskon Field
             Row(
               children: [
-                const Text('Diskon:'),
-                const SizedBox(width: 12),
+                Text(
+                  'Diskon:',
+                  style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF64748B)),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: TextField(
                     controller: _discountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
+                    style: GoogleFonts.lexend(fontSize: 13.5),
+                    decoration: InputDecoration(
                       hintText: 'Rp 0',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      border: OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      ),
                     ),
                     onChanged: (val) {
                       final disc = int.tryParse(val) ?? 0;
@@ -168,27 +191,33 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
             // Total Tagihan
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total Tagihan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  'Total Tagihan',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
+                ),
                 Text(
                   currencyFormatter.format(total),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.teal),
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.primaryBlue),
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
 
             // Pilihan Metode Pembayaran
-            const Text('Metode Pembayaran:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            Text(
+              'Metode Pembayaran:',
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
-                _buildMethodChoice('cash', 'Tunai / Cash', Icons.payments_outlined, cartState.paymentMethod),
+                _buildMethodChoice('cash', 'Tunai', Icons.payments_outlined, cartState.paymentMethod),
                 const SizedBox(width: 8),
                 _buildMethodChoice('qris_simulated', 'QRIS', Icons.qr_code_2_rounded, cartState.paymentMethod),
                 const SizedBox(width: 8),
@@ -202,53 +231,68 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               TextField(
                 controller: _paidController,
                 keyboardType: TextInputType.number,
+                style: GoogleFonts.lexend(fontSize: 14),
                 decoration: InputDecoration(
                   labelText: 'Uang Diterima',
                   hintText: 'Masukkan nominal',
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  ),
                   prefixText: 'Rp ',
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.check_circle_outline),
+                    icon: const Icon(Icons.check_circle_outline, color: AppTheme.primaryBlue),
                     tooltip: 'Uang Pas',
                     onPressed: () => _setExactCash(total),
                   ),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
-              // Preset uang pas, 50k, 100k
               Wrap(
                 spacing: 8,
                 children: [
                   ActionChip(
-                    label: const Text('Uang Pas'),
+                    label: Text('Uang Pas', style: GoogleFonts.lexend(fontSize: 12)),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     onPressed: () => _setExactCash(total),
                   ),
                   if (total <= 50000)
                     ActionChip(
-                      label: const Text('Rp 50.000'),
+                      label: Text('Rp 50.000', style: GoogleFonts.lexend(fontSize: 12)),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       onPressed: () => _setPresetCash(50000),
                     ),
                   if (total <= 100000)
                     ActionChip(
-                      label: const Text('Rp 100.000'),
+                      label: Text('Rp 100.000', style: GoogleFonts.lexend(fontSize: 12)),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       onPressed: () => _setPresetCash(100000),
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Kembalian:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(
+                    'Kembalian:',
+                    style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.accentBlack),
+                  ),
                   Text(
                     currencyFormatter.format(change),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.lexend(
+                      fontWeight: FontWeight.w800,
                       fontSize: 18,
-                      color: currentPaid >= total ? Colors.green.shade700 : Colors.grey,
+                      color: currentPaid >= total ? AppTheme.accentBlack : const Color(0xFF94A3B8),
                     ),
                   ),
                 ],
@@ -257,9 +301,17 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
 
             if (_errorMessage != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
+                ),
+                child: Text(
+                  _errorMessage!,
+                  style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
+                ),
               ),
             ],
 
@@ -270,8 +322,11 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _processCheckout,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: AppTheme.primaryBlue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  ),
                 ),
                 child: _isLoading
                     ? const SizedBox(
@@ -279,9 +334,9 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text(
+                    : Text(
                         'Konfirmasi & Bayar',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                       ),
               ),
             ),
@@ -299,24 +354,27 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
           ref.read(posCartProvider.notifier).setPaymentMethod(method);
           setState(() {});
         },
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.teal.shade50 : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isSelected ? Colors.teal : Colors.grey.shade300, width: 1.5),
+            color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isSelected ? AppTheme.primaryBlue : AppTheme.borderOutline,
+              width: isSelected ? 2.0 : 1.5,
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: isSelected ? Colors.teal : Colors.grey.shade700),
+              Icon(icon, color: isSelected ? AppTheme.primaryBlue : AppTheme.accentBlack, size: 22),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.teal : Colors.black87,
+                style: GoogleFonts.lexend(
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppTheme.primaryBlue : AppTheme.accentBlack,
                 ),
               ),
             ],
