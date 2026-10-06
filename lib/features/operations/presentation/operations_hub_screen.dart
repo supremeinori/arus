@@ -91,6 +91,16 @@ class OperationsHubScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           _buildOperationTile(
             context,
+            icon: Icons.currency_exchange_rounded,
+            title: 'Pengaturan Kurs & Waktu',
+            subtitle: 'Preferensi multi-currency (IDR/USD/EUR) & zona waktu lokal cabang',
+            badgeText: 'Kurs',
+            badgeColor: Colors.deepPurple,
+            onTap: () => context.push('/settings'),
+          ),
+          const SizedBox(height: 12),
+          _buildOperationTile(
+            context,
             icon: Icons.receipt_long_outlined,
             title: 'Riwayat Transaksi',
             subtitle: 'Daftar struk transaksi dan pembatalan (Void)',
