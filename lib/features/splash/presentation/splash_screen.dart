@@ -3,13 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../auth/presentation/auth_provider.dart';
 import 'health_provider.dart';
 
-class SplashScreen extends ConsumerWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Beri jeda 1.2 detik agar logo terlihat lalu periksa sesi login pengguna
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        ref.read(authProvider.notifier).checkAuth();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final healthState = ref.watch(healthCheckProvider);
 
     return Scaffold(

@@ -1,16 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/env.dart';
+import '../storage/secure_store.dart';
 import 'app_exception.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient();
+  final secureStore = ref.watch(secureStoreProvider);
+  return ApiClient(secureStore: secureStore);
 });
 
 class ApiClient {
   late final Dio _dio;
+  final SecureStore secureStore;
+  bool _isRefreshing = false;
 
-  ApiClient({Dio? customDio}) {
+  ApiClient({required this.secureStore, Dio? customDio}) {
     _dio = customDio ??
         Dio(
           BaseOptions(
@@ -26,11 +30,56 @@ class ApiClient {
 
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
-          // Hook untuk penambahan access token akan aktif di Milestone 3
+        onRequest: (options, handler) async {
+          // Lampirkan access token jika tersedia
+          final token = await secureStore.getAccessToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
+        onError: (DioException error, handler) async {
+          // Tangani silent refresh jika 401 dan bukan endpoint auth dasar
+          final path = error.requestOptions.path;
+          final isAuthEndpoint = path.contains('/auth/login') || path.contains('/auth/refresh');
+
+          if (error.response?.statusCode == 401 && !isAuthEndpoint && !_isRefreshing) {
+            _isRefreshing = true;
+            try {
+              final refreshToken = await secureStore.getRefreshToken();
+              if (refreshToken != null && refreshToken.isNotEmpty) {
+                // Panggil refresh endpoint secara terpisah
+                final refreshDio = Dio(BaseOptions(baseUrl: AppEnv.apiBaseUrl));
+                final refreshResponse = await refreshDio.post(
+                  '/auth/refresh',
+                  data: {'refresh_token': refreshToken},
+                );
+
+                if (refreshResponse.statusCode == 200) {
+                  final data = refreshResponse.data['data'] as Map<String, dynamic>;
+                  final newAccessToken = data['access_token'] as String;
+                  final newRefreshToken = data['refresh_token'] as String;
+
+                  await secureStore.setAccessToken(newAccessToken);
+                  await secureStore.setRefreshToken(newRefreshToken);
+
+                  // Ulangi request asli dengan token baru
+                  final opts = error.requestOptions;
+                  opts.headers['Authorization'] = 'Bearer $newAccessToken';
+                  _isRefreshing = false;
+
+                  final clonedResponse = await _dio.fetch(opts);
+                  return handler.resolve(clonedResponse);
+                }
+              }
+            } catch (_) {
+              // Jika refresh gagal, bersihkan token dan logout
+              await secureStore.clearTokens();
+            } finally {
+              _isRefreshing = false;
+            }
+          }
+
           final appException = _mapDioError(error);
           return handler.reject(
             DioException(
@@ -60,9 +109,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
+      if (e.error is AppException) throw e.error as AppException;
       throw _mapDioError(e);
     }
   }
@@ -81,9 +128,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
+      if (e.error is AppException) throw e.error as AppException;
       throw _mapDioError(e);
     }
   }
@@ -102,9 +147,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
+      if (e.error is AppException) throw e.error as AppException;
       throw _mapDioError(e);
     }
   }
@@ -123,9 +166,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
-      if (e.error is AppException) {
-        throw e.error as AppException;
-      }
+      if (e.error is AppException) throw e.error as AppException;
       throw _mapDioError(e);
     }
   }
