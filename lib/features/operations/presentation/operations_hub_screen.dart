@@ -36,6 +36,16 @@ class OperationsHubScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildOperationTile(
             context,
+            icon: Icons.lightbulb_outline_rounded,
+            title: 'Rekomendasi Keputusan (AI/DSS)',
+            subtitle: 'Evaluasi Rule Engine untuk deteksi stok habis & slow moving',
+            badgeText: 'Insight',
+            badgeColor: Colors.purple,
+            onTap: () => context.push('/insights'),
+          ),
+          const SizedBox(height: 12),
+          _buildOperationTile(
+            context,
             icon: Icons.receipt_long_outlined,
             title: 'Riwayat Transaksi',
             subtitle: 'Daftar struk transaksi dan pembatalan (Void)',
