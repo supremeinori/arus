@@ -1,0 +1,566 @@
+[
+  {
+    "code": "STOCK-EASY-01",
+    "difficulty": "easy",
+    "title": "Stok Menipis Menjelang Akhir Pekan",
+    "situation": {
+      "product": "Es Kopi Susu",
+      "stock": 20,
+      "avg_daily_sales": 10,
+      "sales_trend_pct": 30,
+      "lead_time_days": 3,
+      "unit_cost_idr": 9000,
+      "unit_price_idr": 22000,
+      "note": "Pengiriman supplier butuh waktu 3 hari kerja."
+    },
+    "choices": [
+      {
+        "key": "restock_now",
+        "label": "Restock Sekarang (60 unit)",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 0 },
+        "score": { "availability": 40, "cost": 26, "revenue": 28 },
+        "feedback": "Pilihan tepat! Stok 20 hanya cukup 1.5 hari pada tren 13/hari. Restock segera mencegah kehabisan sebelum delivery 3 hari tiba."
+      },
+      {
+        "key": "wait",
+        "label": "Tunggu Sampai Stok Habis",
+        "outcome": { "stockout_days": 1.5, "overstock_units": 0, "profit_delta_idr": -300000 },
+        "score": { "availability": 12, "cost": 30, "revenue": 14 },
+        "feedback": "Kurang tepat. Menunggu membuat toko kehabisan stok selama 1.5 hari dan kehilangan potensi omzet."
+      },
+      {
+        "key": "run_promo",
+        "label": "Bikin Promo Diskon",
+        "outcome": { "stockout_days": 2, "overstock_units": 0, "profit_delta_idr": -450000 },
+        "score": { "availability": 4, "cost": 18, "revenue": 12 },
+        "feedback": "Keliru. Promo justru mempercepat stok habis saat pasokan belum siap."
+      },
+      {
+        "key": "reduce_order",
+        "label": "Restock Sangat Sedikit (10 unit)",
+        "outcome": { "stockout_days": 1, "overstock_units": 0, "profit_delta_idr": -200000 },
+        "score": { "availability": 15, "cost": 25, "revenue": 15 },
+        "feedback": "Kurang cukup. 10 unit habis dalam kurun waktu kurang dari 1 hari."
+      }
+    ],
+    "scoring": { "best_key": "restock_now", "max_score": 94 },
+    "explanation": "Days of cover = 20 / 13 ≈ 1.5 hari < lead time 3 hari -> risiko kehabisan stok (Aturan Rule R2 RESTOCK_URGENT)."
+  },
+  {
+    "code": "STOCK-EASY-02",
+    "difficulty": "easy",
+    "title": "Produk Lambat Terjual Menumpuk",
+    "situation": {
+      "product": "Cokelat Panas",
+      "stock": 50,
+      "avg_daily_sales": 1,
+      "sales_trend_pct": -20,
+      "lead_time_days": 2,
+      "unit_cost_idr": 12000,
+      "unit_price_idr": 25000,
+      "note": "Stok setara 50 hari penjualan."
+    },
+    "choices": [
+      {
+        "key": "hold_restock",
+        "label": "Tahan Restock & Bundling Promo",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 150000 },
+        "score": { "availability": 35, "cost": 30, "revenue": 28 },
+        "feedback": "Keputusan cerdas! Days of cover 50 hari sangat aman, bundling promo mencairkan modal tertahan."
+      },
+      {
+        "key": "restock_more",
+        "label": "Tetap Restock Rutin",
+        "outcome": { "stockout_days": 0, "overstock_units": 40, "profit_delta_idr": -480000 },
+        "score": { "availability": 40, "cost": 5, "revenue": 10 },
+        "feedback": "Pemborosan modal! Menambah stok pada barang lambat terjual membebani arus kas."
+      },
+      {
+        "key": "dump_stock",
+        "label": "Buang Seluruh Stok",
+        "outcome": { "stockout_days": 50, "overstock_units": 0, "profit_delta_idr": -600000 },
+        "score": { "availability": 0, "cost": 0, "revenue": 0 },
+        "feedback": "Tindakan ekstrim yang merugikan. Barang masih layak jual dan tidak kadaluarsa."
+      },
+      {
+        "key": "increase_price",
+        "label": "Naikkan Harga Jual",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -50000 },
+        "score": { "availability": 25, "cost": 20, "revenue": 15 },
+        "feedback": "Menaikkan harga barang lambat laku akan makin menurunkan minat pembeli."
+      }
+    ],
+    "scoring": { "best_key": "hold_restock", "max_score": 93 },
+    "explanation": "Days of cover > 30 hari pada produk slow-moving -> kandidat promosi dan penahanan restock (Rule R8 PROMO_CANDIDATE)."
+  },
+  {
+    "code": "STOCK-EASY-03",
+    "difficulty": "easy",
+    "title": "Jam Sibuk Makan Siang",
+    "situation": {
+      "product": "Paket Nasi Ayam Geprek",
+      "stock": 40,
+      "avg_daily_sales": 35,
+      "sales_trend_pct": 10,
+      "lead_time_days": 1,
+      "unit_cost_idr": 15000,
+      "unit_price_idr": 28000,
+      "note": "70% penjualan terjadi antara pukul 11:30 - 13:30."
+    },
+    "choices": [
+      {
+        "key": "prep_and_restock",
+        "label": "Persiapkan Bahan Pagi & Restock H-1",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 200000 },
+        "score": { "availability": 40, "cost": 28, "revenue": 30 },
+        "feedback": "Luar biasa! Mengantisipasi jam puncak (peak hour) memaksimalkan omzet makan siang."
+      },
+      {
+        "key": "ignore_peak",
+        "label": "Jalankan Seperti Biasa",
+        "outcome": { "stockout_days": 0.5, "overstock_units": 0, "profit_delta_idr": -150000 },
+        "score": { "availability": 20, "cost": 20, "revenue": 18 },
+        "feedback": "Kurang sigap. Menghadapi jam ramai tanpa persiapan menimbulkan antrean panjang dan potensi stok habis."
+      },
+      {
+        "key": "close_early",
+        "label": "Batasi Porsi Penjualan",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -300000 },
+        "score": { "availability": 15, "cost": 20, "revenue": 10 },
+        "feedback": "Membatasi penjualan saat permintaan tinggi menyia-nyiakan potensi laba."
+      },
+      {
+        "key": "change_menu",
+        "label": "Ganti Menu Lain",
+        "outcome": { "stockout_days": 0, "overstock_units": 20, "profit_delta_idr": -100000 },
+        "score": { "availability": 20, "cost": 15, "revenue": 15 },
+        "feedback": "Menu terlaris tidak boleh diganti saat sedang ramai peminat."
+      }
+    ],
+    "scoring": { "best_key": "prep_and_restock", "max_score": 98 },
+    "explanation": "Analisis jam sibuk membantu alokasi stok dan staf secara optimal (Rule R5 SALES_PEAK)."
+  },
+  {
+    "code": "STOCK-EASY-04",
+    "difficulty": "easy",
+    "title": "Produk Terlaris Kehabisan Bahan",
+    "situation": {
+      "product": "Croissant Butter",
+      "stock": 4,
+      "avg_daily_sales": 18,
+      "sales_trend_pct": 25,
+      "lead_time_days": 1,
+      "unit_cost_idr": 11000,
+      "unit_price_idr": 24000,
+      "note": "Status stok: LOW. Peringatan restock aktif."
+    },
+    "choices": [
+      {
+        "key": "urgent_order",
+        "label": "Order Mendesak Hari Ini",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 234000 },
+        "score": { "availability": 40, "cost": 27, "revenue": 29 },
+        "feedback": "Tepat sekali. Stok tinggal 4 pcs padahal laku 18/hari. Harus pesan segera!"
+      },
+      {
+        "key": "postpone",
+        "label": "Tunggu Jadwal Mingguan",
+        "outcome": { "stockout_days": 2, "overstock_units": 0, "profit_delta_idr": -400000 },
+        "score": { "availability": 5, "cost": 25, "revenue": 10 },
+        "feedback": "Salah fatal. Menunda pesanan produk best-seller membuat pelanggan kecewa."
+      },
+      {
+        "key": "substitute",
+        "label": "Alihkan Penjualan ke Donat",
+        "outcome": { "stockout_days": 1, "overstock_units": 0, "profit_delta_idr": -100000 },
+        "score": { "availability": 25, "cost": 25, "revenue": 20 },
+        "feedback": "Cukup membantu tapi tetap harus melakukan restock Croissant secepatnya."
+      },
+      {
+        "key": "hide_menu",
+        "label": "Nonaktifkan Menu Sementara",
+        "outcome": { "stockout_days": 1, "overstock_units": 0, "profit_delta_idr": -250000 },
+        "score": { "availability": 10, "cost": 20, "revenue": 10 },
+        "feedback": "Menonaktifkan menu best-seller adalah kerugian langsung bagi outlet."
+      }
+    ],
+    "scoring": { "best_key": "urgent_order", "max_score": 96 },
+    "explanation": "Status low pada produk best-seller memerlukan tindakan prioritas tinggi (Rule R1 LOW_STOCK)."
+  },
+  {
+    "code": "STOCK-MED-01",
+    "difficulty": "medium",
+    "title": "Produk Segar Menjelang Tanggal Kedaluwarsa",
+    "situation": {
+      "product": "Susu Pasteurisasi Segar",
+      "stock": 35,
+      "avg_daily_sales": 8,
+      "sales_trend_pct": 0,
+      "lead_time_days": 1,
+      "unit_cost_idr": 18000,
+      "unit_price_idr": 28000,
+      "note": "Masa simpan tersisa 3 hari. Potensi basi 11 liter."
+    },
+    "choices": [
+      {
+        "key": "flash_sale",
+        "label": "Flash Sale Diskon 25% untuk Habiskan Stok",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 120000 },
+        "score": { "availability": 35, "cost": 28, "revenue": 28 },
+        "feedback": "Keputusan brilian! Diskon kecil menyelamatkan modal daripada basi total."
+      },
+      {
+        "key": "keep_normal",
+        "label": "Pertahankan Harga Normal",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -198000 },
+        "score": { "availability": 30, "cost": 10, "revenue": 15 },
+        "feedback": "Sisa 11 botol akhirnya basi dan terbuang sebagai waste kerugian."
+      },
+      {
+        "key": "order_fresh",
+        "label": "Pesan Stok Baru Sekarang",
+        "outcome": { "stockout_days": 0, "overstock_units": 20, "profit_delta_idr": -250000 },
+        "score": { "availability": 35, "cost": 5, "revenue": 10 },
+        "feedback": "Stok lama belum habis malah ditumpuk stok baru, memperbesar risiko waste."
+      },
+      {
+        "key": "stop_selling",
+        "label": "Tarik dari Rak Display",
+        "outcome": { "stockout_days": 3, "overstock_units": 0, "profit_delta_idr": -630000 },
+        "score": { "availability": 0, "cost": 0, "revenue": 0 },
+        "feedback": "Menarik barang sebelum waktunya menyebabkan kerugian 100% modal."
+      }
+    ],
+    "scoring": { "best_key": "flash_sale", "max_score": 91 },
+    "explanation": "Pada barang perishable, kecepatan perputaran stok lebih utama daripada mempertahankan margin tinggi."
+  },
+  {
+    "code": "STOCK-MED-02",
+    "difficulty": "medium",
+    "title": "Performa Outlet Jauh di Bawah Rata-rata",
+    "situation": {
+      "product": "Seluruh Menu Outlet Solo",
+      "stock": 200,
+      "avg_daily_sales": 25,
+      "sales_trend_pct": -35,
+      "lead_time_days": 2,
+      "unit_cost_idr": 10000,
+      "unit_price_idr": 22000,
+      "note": "Indeks performa outlet 62 (di bawah batas sehat 70)."
+    },
+    "choices": [
+      {
+        "key": "audit_and_align",
+        "label": "Bandingkan Top Menu & Promo dengan Outlet Terbaik",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 400000 },
+        "score": { "availability": 35, "cost": 28, "revenue": 30 },
+        "feedback": "Sangat tepat. Menganalisis perbedaan menu terlaris dan jam ramai membantu mendongkrak performa."
+      },
+      {
+        "key": "close_outlet",
+        "label": "Tutup Outlet Seketika",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -2000000 },
+        "score": { "availability": 0, "cost": 10, "revenue": 0 },
+        "feedback": "Terlalu gegabah. Perlu evaluasi operasional terlebih dahulu."
+      },
+      {
+        "key": "double_stock",
+        "label": "Kirim Pasokan Dua Kali Lipat",
+        "outcome": { "stockout_days": 0, "overstock_units": 150, "profit_delta_idr": -800000 },
+        "score": { "availability": 40, "cost": 5, "revenue": 10 },
+        "feedback": "Masalah outlet adalah penjualan rendah, menambah stok justru memperparah penumpukan modal."
+      },
+      {
+        "key": "do_nothing",
+        "label": "Biarkan Berjalan Saja",
+        "outcome": { "stockout_days": 0, "overstock_units": 50, "profit_delta_idr": -300000 },
+        "score": { "availability": 25, "cost": 20, "revenue": 15 },
+        "feedback": "Membiarkan outlet tertinggal berisiko membuat bisnis rugi berkelanjutan."
+      }
+    ],
+    "scoring": { "best_key": "audit_and_align", "max_score": 93 },
+    "explanation": "Indeks performa outlet < 70 memicu Rule R7 OUTLET_GAP untuk audit perbandingan antar outlet."
+  },
+  {
+    "code": "STOCK-MED-03",
+    "difficulty": "medium",
+    "title": "Kenaikan Harga Bahan Baku dari Supplier",
+    "situation": {
+      "product": "Biji Kopi Arabika House Blend",
+      "stock": 15,
+      "avg_daily_sales": 5,
+      "sales_trend_pct": 5,
+      "lead_time_days": 4,
+      "unit_cost_idr": 110000,
+      "unit_price_idr": 180000,
+      "note": "Supplier mengumumkan kenaikan harga 15% minggu depan."
+    },
+    "choices": [
+      {
+        "key": "pre_order_safe",
+        "label": "Kunci Harga dengan Pesan 20kg Sebelum Naik",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 330000 },
+        "score": { "availability": 38, "cost": 30, "revenue": 26 },
+        "feedback": "Langkah strategis! Menyelamatkan margin laba untuk penjualan sebulan ke depan."
+      },
+      {
+        "key": "stop_arabica",
+        "label": "Ganti Total ke Kopi Kualitas Rendah",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -400000 },
+        "score": { "availability": 30, "cost": 25, "revenue": 10 },
+        "feedback": "Rasa kopi berubah drastis dan pelanggan setia kabur."
+      },
+      {
+        "key": "raise_price_now",
+        "label": "Naikkan Harga Jual Sekarang Juga",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -100000 },
+        "score": { "availability": 35, "cost": 20, "revenue": 18 },
+        "feedback": "Menaikkan harga sebelum biaya riil naik menimbulkan penolakan konsumen."
+      },
+      {
+        "key": "ignore_warning",
+        "label": "Pesan Nanti Saja Setelah Naik",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -330000 },
+        "score": { "availability": 35, "cost": 15, "revenue": 20 },
+        "feedback": "Melewatkan kesempatan penghematan biaya secara cuma-cuma."
+      }
+    ],
+    "scoring": { "best_key": "pre_order_safe", "max_score": 94 },
+    "explanation": "Manajemen rantai pasok cerdas memanfaatkan jeda pengumuman harga untuk efisiensi modal."
+  },
+  {
+    "code": "STOCK-MED-04",
+    "difficulty": "medium",
+    "title": "Penjualan Turun Drastis di Hari Hujan",
+    "situation": {
+      "product": "Es Kopi Jelly & Minuman Dingin",
+      "stock": 80,
+      "avg_daily_sales": 15,
+      "sales_trend_pct": -45,
+      "lead_time_days": 2,
+      "unit_cost_idr": 8000,
+      "unit_price_idr": 20000,
+      "note": "Musim hujan ekstrem diprediksi berlangsung 1 minggu."
+    },
+    "choices": [
+      {
+        "key": "pivot_warm",
+        "label": "Dorong Menu Panas & Tahan Order Es",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 250000 },
+        "score": { "availability": 35, "cost": 29, "revenue": 28 },
+        "feedback": "Adaptasi cepat! Mengalihkan fokus penjualan ke menu panas menstabilkan pendapatan."
+      },
+      {
+        "key": "double_down",
+        "label": "Buat Diskon Besar Minuman Es",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -120000 },
+        "score": { "availability": 35, "cost": 15, "revenue": 18 },
+        "feedback": "Saat udara dingin, diskon es tidak efektif menarik minat konsumen."
+      },
+      {
+        "key": "close_shop",
+        "label": "Tutup Toko Saat Hujan",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -600000 },
+        "score": { "availability": 10, "cost": 15, "revenue": 5 },
+        "feedback": "Kehilangan kesempatan melayani pelanggan takeaway dan delivery."
+      },
+      {
+        "key": "keep_ordering",
+        "label": "Tetap Pesan Pasokan Es Rutin",
+        "outcome": { "stockout_days": 0, "overstock_units": 60, "profit_delta_idr": -400000 },
+        "score": { "availability": 40, "cost": 5, "revenue": 10 },
+        "feedback": "Menumpuk stok minuman dingin di musim hujan memicu pemborosan."
+      }
+    ],
+    "scoring": { "best_key": "pivot_warm", "max_score": 92 },
+    "explanation": "Penurunan penjualan akibat faktor cuaca direspon dengan diversifikasi menu aktif (Rule R3 SALES_DECLINE)."
+  },
+  {
+    "code": "STOCK-HARD-01",
+    "difficulty": "hard",
+    "title": "Dilema Anggaran Terbatas Menghadapi Festival Kampus",
+    "situation": {
+      "product": "Es Kopi Susu (A) vs Matcha Latte (B)",
+      "stock": 10,
+      "avg_daily_sales": 20,
+      "sales_trend_pct": 50,
+      "lead_time_days": 2,
+      "unit_cost_idr": 10000,
+      "unit_price_idr": 22000,
+      "note": "Budget restock hanya Rp 1.000.000. Produk A margin 55%, Produk B margin 35%."
+    },
+    "choices": [
+      {
+        "key": "prioritize_high_margin",
+        "label": "Alokasikan 80% Dana ke Produk A (Margin Tinggi & Terlaris)",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 720000 },
+        "score": { "availability": 36, "cost": 30, "revenue": 30 },
+        "feedback": "Analisis tajam! Dalam keterbatasan modal, prioritaskan produk dengan kontribusi omzet dan margin terbesar."
+      },
+      {
+        "key": "split_fifty",
+        "label": "Bagi 50:50 Rata untuk Kedua Produk",
+        "outcome": { "stockout_days": 0.5, "overstock_units": 0, "profit_delta_idr": 480000 },
+        "score": { "availability": 25, "cost": 25, "revenue": 20 },
+        "feedback": "Produk A cepat habis sehingga potensi keuntungan maksimal tidak tercapai."
+      },
+      {
+        "key": "all_in_b",
+        "label": "Beli Produk B Semua karena Lebih Murah Modal Awal",
+        "outcome": { "stockout_days": 2, "overstock_units": 20, "profit_delta_idr": 150000 },
+        "score": { "availability": 15, "cost": 15, "revenue": 12 },
+        "feedback": "Keputusan buruk. Produk A kehabisan stok total padahal paling diminati."
+      },
+      {
+        "key": "borrow_debt",
+        "label": "Pinjam Uang Berbunga Tinggi untuk Beli Keduanya Berlebih",
+        "outcome": { "stockout_days": 0, "overstock_units": 50, "profit_delta_idr": -300000 },
+        "score": { "availability": 40, "cost": 5, "revenue": 15 },
+        "feedback": "Beban bunga dan sisa barang festival justru menyebabkan kerugian finansial."
+      }
+    ],
+    "scoring": { "best_key": "prioritize_high_margin", "max_score": 96 },
+    "explanation": "Optimasi alokasi modal kerja berbasis kontribusi pendapatan (P5 Revenue Contribution) dan margin laba."
+  },
+  {
+    "code": "STOCK-HARD-02",
+    "difficulty": "hard",
+    "title": "Tren Penjualan Turun Berturut-turut 14 Hari",
+    "situation": {
+      "product": "Roti Bakar Cokelat Keju",
+      "stock": 60,
+      "avg_daily_sales": 6,
+      "sales_trend_pct": -32,
+      "lead_time_days": 2,
+      "unit_cost_idr": 14000,
+      "unit_price_idr": 28000,
+      "note": "Review pelanggan mengeluhkan waktu tunggu penyajian terlalu lama."
+    },
+    "choices": [
+      {
+        "key": "audit_sop_and_bundle",
+        "label": "Perbaiki Waktu Masak (SOP) & Buat Paket Cepat Saji",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 350000 },
+        "score": { "availability": 35, "cost": 28, "revenue": 30 },
+        "feedback": "Diagnosis tepat sasaran! Penurunan omzet bukan karena produk, tapi kendala operasional penyajian."
+      },
+      {
+        "key": "cut_price",
+        "label": "Potong Harga Jual 40%",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -120000 },
+        "score": { "availability": 30, "cost": 10, "revenue": 15 },
+        "feedback": "Memotong harga tidak menyelesaikan masalah antrean lambat dan merusak margin."
+      },
+      {
+        "key": "remove_product",
+        "label": "Hapus Menu Roti Bakar dari Daftar",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -500000 },
+        "score": { "availability": 10, "cost": 15, "revenue": 5 },
+        "feedback": "Menghapus menu favorit tanpa memperbaiki dapur adalah keputusan ceroboh."
+      },
+      {
+        "key": "increase_stock",
+        "label": "Tambah Stok Bahan Dua Kali Lipat",
+        "outcome": { "stockout_days": 0, "overstock_units": 80, "profit_delta_idr": -400000 },
+        "score": { "availability": 40, "cost": 5, "revenue": 10 },
+        "feedback": "Bahan baku makin menumpuk dan berisiko basi."
+      }
+    ],
+    "scoring": { "best_key": "audit_sop_and_bundle", "max_score": 93 },
+    "explanation": "Penurunan penjualan memerlukan investigasi akar masalah operasional (Rule R3 SALES_DECLINE)."
+  },
+  {
+    "code": "STOCK-HARD-03",
+    "difficulty": "hard",
+    "title": "Ekspansi Menu Baru vs Efisiensi Stok Lama",
+    "situation": {
+      "product": "Menu Baru 'Matcha Strawberry Boba'",
+      "stock": 0,
+      "avg_daily_sales": 0,
+      "sales_trend_pct": 0,
+      "lead_time_days": 5,
+      "unit_cost_idr": 20000,
+      "unit_price_idr": 38000,
+      "note": "Bahan baku khusus impor, minimal order 100 paket."
+    },
+    "choices": [
+      {
+        "key": "pilot_testing",
+        "label": "Uji Coba Terbatas di 1 Outlet Utama Selama 2 Minggu",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 450000 },
+        "score": { "availability": 35, "cost": 30, "revenue": 29 },
+        "feedback": "Manajemen risiko terbaik! Menguji animo pasar di satu outlet sebelum ekspansi ke semua cabang."
+      },
+      {
+        "key": "launch_all",
+        "label": "Langsung Beli 500 Paket & Pasarkan di Seluruh Outlet",
+        "outcome": { "stockout_days": 0, "overstock_units": 280, "profit_delta_idr": -1200000 },
+        "score": { "availability": 40, "cost": 5, "revenue": 15 },
+        "feedback": "Risiko sangat tinggi. Jika menu tidak disukai, kerugian modal sangat besar."
+      },
+      {
+        "key": "reject_menu",
+        "label": "Tolak Ide Menu Baru Sepenuhnya",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 0 },
+        "score": { "availability": 25, "cost": 25, "revenue": 10 },
+        "feedback": "Anti inovasi. Bisnis F&B butuh produk baru secara berkala untuk menjaga antusiasme pelanggan."
+      },
+      {
+        "key": "pre_order_only",
+        "label": "Jual Hanya Melalui Sistem Pre-Order 7 Hari",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 50000 },
+        "score": { "availability": 20, "cost": 28, "revenue": 15 },
+        "feedback": "Pelanggan kafe menginginkan minuman langsung saji, pre-order 7 hari minim peminat."
+      }
+    ],
+    "scoring": { "best_key": "pilot_testing", "max_score": 94 },
+    "explanation": "Validasi produk baru dengan metode pilot project membatasi resiko finansial modal kerja."
+  },
+  {
+    "code": "STOCK-HARD-04",
+    "difficulty": "hard",
+    "title": "Audit Integritas Stok & Selisih Data Penjualan",
+    "situation": {
+      "product": "Kopi Botol 1 Liter",
+      "stock": 12,
+      "avg_daily_sales": 8,
+      "sales_trend_pct": 0,
+      "lead_time_days": 2,
+      "unit_cost_idr": 45000,
+      "unit_price_idr": 85000,
+      "note": "Stok fisik di kulkas hanya ada 7 botol, ada selisih 5 botol tanpa transaksi tercatat."
+    },
+    "choices": [
+      {
+        "key": "adjust_and_investigate",
+        "label": "Catat Koreksi Stok Resmi (Waste/Loss) & Audit Log Kasir",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": 100000 },
+        "score": { "availability": 35, "cost": 30, "revenue": 30 },
+        "feedback": "Prosedur operasional yang benar! Data inventaris harus mencerminkan kondisi fisik riil agar keputusan restock akurat."
+      },
+      {
+        "key": "ignore_discrepancy",
+        "label": "Biarkan Data Sistem Tetap 12 Botol",
+        "outcome": { "stockout_days": 1, "overstock_units": 0, "profit_delta_idr": -340000 },
+        "score": { "availability": 10, "cost": 15, "revenue": 10 },
+        "feedback": "Data fiktif menyebabkan sistem tidak memesan restock tepat waktu saat pelanggan mencari produk."
+      },
+      {
+        "key": "blame_cashier",
+        "label": "Langsung Potong Gaji Semua Karyawan Tanpa Bukti",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -200000 },
+        "score": { "availability": 25, "cost": 15, "revenue": 10 },
+        "feedback": "Merusak moral tim dan berisiko terjadi pengunduran diri massal."
+      },
+      {
+        "key": "fake_sale",
+        "label": "Input Transaksi Palsu untuk Menutupi Selisih",
+        "outcome": { "stockout_days": 0, "overstock_units": 0, "profit_delta_idr": -425000 },
+        "score": { "availability": 5, "cost": 5, "revenue": 5 },
+        "feedback": "Pelanggaran integritas berat. Merusak catatan pajak, pendapatan, dan rantai integritas (hash chain)."
+      }
+    ],
+    "scoring": { "best_key": "adjust_and_investigate", "max_score": 95 },
+    "explanation": "Audit integritas stok wajib mempertahankan audit trail yang bersih melalui penyesuaian resmi (BR-INV-01)."
+  }
+]
