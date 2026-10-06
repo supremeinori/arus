@@ -14,6 +14,7 @@ import analyticsRoute from './modules/analytics/analytics.route';
 import insightsRoute from './modules/insights/insights.route';
 import aiRoute from './modules/ai/ai.route';
 import reportsRoute from './modules/reports/reports.route';
+import outletsRoute from './modules/outlets/outlets.route';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(requestIdMiddleware);
 app.use('/api', healthRoute);
 app.use('/api', authRoute);
 app.use('/api', usersRoute);
+app.use('/api', outletsRoute);
 app.use('/api', catalogRoute);
 app.use('/api', inventoryRoute);
 app.use('/api', transactionsRoute);
