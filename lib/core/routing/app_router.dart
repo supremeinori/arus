@@ -10,6 +10,7 @@ import '../../features/catalog/presentation/product_list_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/inventory/presentation/inventory_list_screen.dart';
 import '../../features/inventory/presentation/stock_movement_screen.dart';
+import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/outlets/presentation/outlet_detail_screen.dart';
 import '../../features/outlets/presentation/outlet_form_screen.dart';
 import '../../features/outlets/presentation/outlet_list_screen.dart';
@@ -55,6 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/shell',
         builder: (context, state) => const MainShell(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationScreen(),
       ),
       GoRoute(
         path: '/outlets',

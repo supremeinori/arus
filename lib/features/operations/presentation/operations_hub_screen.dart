@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../notifications/presentation/notifications_provider.dart';
 
-class OperationsHubScreen extends StatelessWidget {
+class OperationsHubScreen extends ConsumerWidget {
   const OperationsHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pusat Operasi'),
+        actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text('$unreadCount'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            tooltip: 'Pusat Notifikasi',
+            onPressed: () => context.push('/notifications'),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -66,6 +81,16 @@ class OperationsHubScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildOperationTile(
             context,
+            icon: Icons.notifications_active_outlined,
+            title: 'Notifikasi & Peringatan Sistem',
+            subtitle: 'Peringatan stok menipis, evaluasi pencapaian target & pesan sistem',
+            badgeText: 'Peringatan',
+            badgeColor: Colors.deepOrange,
+            onTap: () => context.push('/notifications'),
+          ),
+          const SizedBox(height: 12),
+          _buildOperationTile(
+            context,
             icon: Icons.receipt_long_outlined,
             title: 'Riwayat Transaksi',
             subtitle: 'Daftar struk transaksi dan pembatalan (Void)',
@@ -99,7 +124,7 @@ class OperationsHubScreen extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: badgeColor.withValues(alpha: 0.1),
+            color: badgeColor.withAlpha(25),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: badgeColor, size: 26),
