@@ -6,6 +6,7 @@ info:
 servers:
   - url: http://localhost:3000/api
     description: Local Development Server
+
 paths:
   /health:
     get:
@@ -26,14 +27,109 @@ paths:
                     properties:
                       request_id:
                         type: string
-        '503':
-          description: Database atau server sedang bermasalah
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /auth/login:
+    post:
+      summary: Login pengguna
+      description: Verifikasi kredensial email dan password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login berhasil
+        '401':
+          description: Email atau password salah
+        '423':
+          description: Akun dikunci sementara (5x gagal)
+
+  /auth/refresh:
+    post:
+      summary: Perbarui JWT Access Token
+      description: Menukar refresh token lama dengan pasangan token baru (Token Rotation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token berhasil diperbarui
+        '401':
+          description: Refresh token tidak valid atau terdeteksi reuse
+
+  /auth/logout:
+    post:
+      summary: Logout pengguna
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Logout berhasil
+
+  /auth/me:
+    get:
+      summary: Profil pengguna aktif
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Data profil dan outlet pengguna
+    patch:
+      summary: Perbarui nama profil
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil berhasil diperbarui
+
+  /auth/change-password:
+    post:
+      summary: Ubah password pengguna
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Password berhasil diubah
+
+  /users:
+    get:
+      summary: Daftar pengguna (Owner only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List pengguna terdaftar
+    post:
+      summary: Tambah pengguna baru (Owner only)
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Pengguna berhasil dibuat
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthData:
       type: object
@@ -66,7 +162,3 @@ components:
             request_id:
               type: string
               example: c1b9e072-87ad-4522-83fb-628e8fef4e57
-            details:
-              type: array
-              items:
-                type: object
