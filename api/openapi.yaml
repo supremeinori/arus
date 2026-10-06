@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: ARUS API
+  description: Backend REST API untuk Sistem Pendukung Keputusan Bisnis Multi-Outlet ARUS
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local Development Server
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Memeriksa ketersediaan server dan database
+      responses:
+        '200':
+          description: Server berjalan normal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/HealthData'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+        '503':
+          description: Database atau server sedang bermasalah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+components:
+  schemas:
+    HealthData:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        db:
+          type: string
+          example: connected
+        time:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: 1.0.0
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: NOT_FOUND
+            message:
+              type: string
+              example: Endpoint tidak ditemukan.
+            request_id:
+              type: string
+              example: c1b9e072-87ad-4522-83fb-628e8fef4e57
+            details:
+              type: array
+              items:
+                type: object
