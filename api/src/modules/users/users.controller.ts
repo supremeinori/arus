@@ -1,7 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
 import { usersService } from './users.service';
-import { createUserSchema, updateUserSchema } from './users.schema';
+import { createUserSchema, updateUserSchema, updateUserSettingsSchema } from './users.schema';
 import { Role } from '@prisma/client';
+
+export async function getUserSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = (req as any).user.id;
+    const result = await usersService.getUserSettings(userId);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateUserSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = (req as any).user.id;
+    const data = updateUserSettingsSchema.parse(req.body);
+    const result = await usersService.updateUserSettings(userId, data);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function listUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

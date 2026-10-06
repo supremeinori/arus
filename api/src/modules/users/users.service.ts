@@ -1,9 +1,57 @@
-import { Role } from '@prisma/client';
+import { Role, Currency } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
 import { hashPassword } from '../../shared/tokens';
 
 export class UsersService {
+  async getUserSettings(userId: string) {
+    let settings = await prisma.userSettings.findUnique({
+      where: { user_id: userId },
+    });
+    if (!settings) {
+      settings = await prisma.userSettings.create({
+        data: {
+          user_id: userId,
+          display_currency: 'IDR',
+          display_timezone: 'Asia/Jakarta',
+          biometric_enabled: false,
+          shake_refresh_enabled: true,
+          tilt_enabled: true,
+        },
+      });
+    }
+    return settings;
+  }
+
+  async updateUserSettings(
+    userId: string,
+    data: {
+      display_currency?: Currency;
+      display_timezone?: string;
+      biometric_enabled?: boolean;
+      shake_refresh_enabled?: boolean;
+      tilt_enabled?: boolean;
+      daily_revenue_target_idr?: number | null;
+    }
+  ) {
+    const settings = await prisma.userSettings.upsert({
+      where: { user_id: userId },
+      update: {
+        ...data,
+      },
+      create: {
+        user_id: userId,
+        display_currency: data.display_currency ?? 'IDR',
+        display_timezone: data.display_timezone ?? 'Asia/Jakarta',
+        biometric_enabled: data.biometric_enabled ?? false,
+        shake_refresh_enabled: data.shake_refresh_enabled ?? true,
+        tilt_enabled: data.tilt_enabled ?? true,
+        daily_revenue_target_idr: data.daily_revenue_target_idr ?? null,
+      },
+    });
+    return settings;
+  }
+
   async listUsers(query: { role?: Role; is_active?: boolean; q?: string; page?: number; page_size?: number }) {
     const page = query.page ?? 1;
     const pageSize = Math.min(query.page_size ?? 20, 100);
