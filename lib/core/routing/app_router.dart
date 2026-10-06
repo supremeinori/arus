@@ -10,6 +10,9 @@ import '../../features/catalog/presentation/product_list_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/inventory/presentation/inventory_list_screen.dart';
 import '../../features/inventory/presentation/stock_movement_screen.dart';
+import '../../features/outlets/presentation/outlet_detail_screen.dart';
+import '../../features/outlets/presentation/outlet_form_screen.dart';
+import '../../features/outlets/presentation/outlet_list_screen.dart';
 import '../../features/reports/presentation/report_detail_screen.dart';
 import '../../features/reports/presentation/report_list_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
@@ -52,6 +55,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/shell',
         builder: (context, state) => const MainShell(),
+      ),
+      GoRoute(
+        path: '/outlets',
+        builder: (context, state) => const OutletListScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const OutletFormScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => OutletDetailScreen(
+              outletId: state.pathParameters['id']!,
+            ),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) => OutletFormScreen(
+                  outletId: state.pathParameters['id'],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/reports',
