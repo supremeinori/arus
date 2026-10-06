@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -127,6 +128,30 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
           ],
+
+          // Uji Coba Mode BCA Mobile Dark Edition
+          Card(
+            elevation: 0,
+            color: const Color(0xFF0F1A2E),
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+              side: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.nightlight_round, color: Color(0xFF38BDF8)),
+              title: Text(
+                'Mode BCA Mobile (Dark Vibe)',
+                style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
+              ),
+              subtitle: Text(
+                'Uji coba tampilan bergaya BCA Mobile dengan tema gelap',
+                style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF94A3B8)),
+              ),
+              trailing: const Icon(Icons.chevron_right, color: Colors.white),
+              onTap: () => context.push('/bca-dark'),
+            ),
+          ),
 
           // Logout Button
           OutlinedButton.icon(

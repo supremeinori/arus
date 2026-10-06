@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
@@ -254,6 +255,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: () => _fillAccount('staff@arus.demo', 'Demo1234'),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.dark_mode, size: 18, color: Color(0xFF1D4ED8)),
+                    label: Text(
+                      'Uji Coba UI BCA Mobile (Dark Vibe)',
+                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      minimumSize: const Size.fromHeight(46),
+                    ),
+                    onPressed: () => context.push('/bca-dark'),
                   ),
                 ],
               ),
