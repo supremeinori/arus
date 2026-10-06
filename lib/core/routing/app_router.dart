@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/catalog/presentation/product_detail_screen.dart';
+import '../../features/catalog/presentation/product_form_screen.dart';
+import '../../features/catalog/presentation/product_list_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
@@ -44,6 +47,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/shell',
         builder: (context, state) => const MainShell(),
+      ),
+      GoRoute(
+        path: '/catalog',
+        builder: (context, state) => const ProductListScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => const ProductFormScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => ProductDetailScreen(
+              productId: state.pathParameters['id']!,
+            ),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) => ProductFormScreen(
+                  productId: state.pathParameters['id'],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
