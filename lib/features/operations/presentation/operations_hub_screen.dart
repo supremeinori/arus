@@ -101,6 +101,16 @@ class OperationsHubScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           _buildOperationTile(
             context,
+            icon: Icons.sensors_rounded,
+            title: 'Diagnostik Sensor & Biometrik',
+            subtitle: 'Simulasi biometrik, shake-to-refresh, gauge akselerometer & giroskop',
+            badgeText: 'Sensor',
+            badgeColor: Colors.blueGrey,
+            onTap: () => context.push('/sensors'),
+          ),
+          const SizedBox(height: 12),
+          _buildOperationTile(
+            context,
             icon: Icons.receipt_long_outlined,
             title: 'Riwayat Transaksi',
             subtitle: 'Daftar struk transaksi dan pembatalan (Void)',

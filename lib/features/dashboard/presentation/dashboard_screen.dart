@@ -4,12 +4,27 @@ import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../analytics/presentation/analytics_provider.dart';
+import '../../sensors/presentation/sensor_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<DateTime?>(shakeEventProvider, (prev, next) {
+      if (next != null) {
+        ref.invalidate(analyticsOverviewProvider);
+        ref.invalidate(salesTrendProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📳 Guncangan terdeteksi! Memperbarui data KPI dashboard...'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
     final user = ref.watch(authProvider).user;
     final isOwnerOrManager = user?.role == UserRole.owner || user?.role == UserRole.manager;
     final overviewAsync = ref.watch(analyticsOverviewProvider);
