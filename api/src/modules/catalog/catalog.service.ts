@@ -3,17 +3,87 @@ import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
+// Data in-memory saat database PostgreSQL offline
+const inMemoryCategories = [
+  { id: 'cat-001', name: 'Coffee', _count: { products: 5 } },
+  { id: 'cat-002', name: 'Non-Coffee', _count: { products: 3 } },
+  { id: 'cat-003', name: 'Pastry & Food', _count: { products: 4 } },
+];
+
+const inMemoryProducts: Array<{
+  id: string;
+  name: string;
+  sku: string;
+  unit: string;
+  price_idr: number;
+  cost_idr?: number;
+  category_id?: string | null;
+  is_active: boolean;
+  category?: { id: string; name: string } | null;
+  created_at: Date;
+  updated_at: Date;
+}> = [
+  {
+    id: 'prod-001',
+    name: 'Kopi Susu Gula Aren',
+    sku: 'BEV-COF-01',
+    unit: 'cup',
+    price_idr: 22000,
+    cost_idr: 8500,
+    category_id: 'cat-001',
+    is_active: true,
+    category: { id: 'cat-001', name: 'Coffee' },
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: 'prod-002',
+    name: 'Americano Double Shot',
+    sku: 'BEV-COF-02',
+    unit: 'cup',
+    price_idr: 18000,
+    cost_idr: 5000,
+    category_id: 'cat-001',
+    is_active: true,
+    category: { id: 'cat-001', name: 'Coffee' },
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: 'prod-003',
+    name: 'Matcha Latte Oatmilk',
+    sku: 'BEV-NCH-01',
+    unit: 'cup',
+    price_idr: 28000,
+    cost_idr: 11000,
+    category_id: 'cat-002',
+    is_active: true,
+    category: { id: 'cat-002', name: 'Non-Coffee' },
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: 'prod-004',
+    name: 'Croissant Butter Original',
+    sku: 'FOD-PST-01',
+    unit: 'pcs',
+    price_idr: 25000,
+    cost_idr: 12000,
+    category_id: 'cat-003',
+    is_active: true,
+    category: { id: 'cat-003', name: 'Pastry & Food' },
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+];
+
 export class CatalogService {
   // ----------------------------------------------------
   // CATEGORIES
   // ----------------------------------------------------
   async listCategories() {
     if (!(await isDbAvailable())) {
-      return [
-        { id: 'cat-001', name: 'Coffee', _count: { products: 5 } },
-        { id: 'cat-002', name: 'Non-Coffee', _count: { products: 3 } },
-        { id: 'cat-003', name: 'Pastry & Food', _count: { products: 4 } },
-      ];
+      return [...inMemoryCategories];
     }
 
     try {
@@ -26,15 +96,25 @@ export class CatalogService {
         },
       });
     } catch (_) {
-      return [
-        { id: 'cat-001', name: 'Coffee', _count: { products: 5 } },
-        { id: 'cat-002', name: 'Non-Coffee', _count: { products: 3 } },
-        { id: 'cat-003', name: 'Pastry & Food', _count: { products: 4 } },
-      ];
+      return [...inMemoryCategories];
     }
   }
 
   async createCategory(name: string) {
+    if (!(await isDbAvailable())) {
+      const existing = inMemoryCategories.find((c) => c.name.toLowerCase() === name.trim().toLowerCase());
+      if (existing) {
+        throw new AppError('CATALOG_CATEGORY_DUPLICATE', 409, 'Kategori dengan nama tersebut sudah ada.');
+      }
+      const newCat = {
+        id: `cat-${Date.now()}`,
+        name: name.trim(),
+        _count: { products: 0 },
+      };
+      inMemoryCategories.push(newCat);
+      return newCat;
+    }
+
     const existing = await prisma.productCategory.findUnique({
       where: { name: name.trim() },
     });
@@ -48,6 +128,15 @@ export class CatalogService {
   }
 
   async updateCategory(id: string, name: string) {
+    if (!(await isDbAvailable())) {
+      const cat = inMemoryCategories.find((c) => c.id === id);
+      if (!cat) {
+        throw new AppError('NOT_FOUND', 404, 'Kategori tidak ditemukan.');
+      }
+      cat.name = name.trim();
+      return cat;
+    }
+
     const existing = await prisma.productCategory.findUnique({ where: { id } });
     if (!existing) {
       throw new AppError('NOT_FOUND', 404, 'Kategori tidak ditemukan.');
@@ -77,22 +166,62 @@ export class CatalogService {
     const pageSize = Math.min(query.page_size ?? 20, 100);
     const skip = (page - 1) * pageSize;
 
+    if (!(await isDbAvailable())) {
+      let filtered = [...inMemoryProducts];
+
+      if (query.category_id) {
+        filtered = filtered.filter((p) => p.category_id === query.category_id);
+      }
+
+      if (query.is_active !== undefined) {
+        filtered = filtered.filter((p) => String(p.is_active) === query.is_active);
+      } else if (userRole === Role.staff) {
+        filtered = filtered.filter((p) => p.is_active);
+      }
+
+      if (query.q && query.q.trim().length > 0) {
+        const q = query.q.trim().toLowerCase();
+        filtered = filtered.filter(
+          (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+        );
+      }
+
+      if (query.sort === 'price_asc') {
+        filtered.sort((a, b) => a.price_idr - b.price_idr);
+      } else if (query.sort === 'price_desc') {
+        filtered.sort((a, b) => b.price_idr - a.price_idr);
+      } else if (query.sort === 'created_at') {
+        filtered.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+      } else {
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+      }
+
+      const paginated = filtered.slice(skip, skip + pageSize);
+
+      return {
+        products: paginated.map((p) => {
+          const { cost_idr, ...rest } = p;
+          return {
+            ...rest,
+            ...(userRole !== Role.staff ? { cost_idr } : {}),
+          };
+        }),
+        meta: { page, page_size: pageSize, total: filtered.length },
+      };
+    }
+
     const where: any = {};
 
-    // Filter kategori
     if (query.category_id) {
       where.category_id = query.category_id;
     }
 
-    // Filter status aktif
     if (query.is_active !== undefined) {
       where.is_active = query.is_active === 'true';
     } else if (userRole === Role.staff) {
-      // Kasir secara default hanya melihat produk aktif (SRS Section 6.3)
       where.is_active = true;
     }
 
-    // Pencarian SKU atau Nama Produk
     if (query.q && query.q.trim().length > 0) {
       const searchTerm = query.q.trim();
       where.OR = [
@@ -101,31 +230,10 @@ export class CatalogService {
       ];
     }
 
-    // Urutan (Sort)
     let orderBy: any = { name: 'asc' };
     if (query.sort === 'price_asc') orderBy = { price_idr: 'asc' };
     if (query.sort === 'price_desc') orderBy = { price_idr: 'desc' };
     if (query.sort === 'created_at') orderBy = { created_at: 'desc' };
-
-    if (!(await isDbAvailable())) {
-      const demoProducts = [
-        { id: 'prod-001', name: 'Kopi Susu Gula Aren', sku: 'BEV-COF-01', price_idr: 22000, cost_idr: 8500, category_id: 'cat-001', is_active: true, category: { id: 'cat-001', name: 'Coffee' } },
-        { id: 'prod-002', name: 'Americano Double Shot', sku: 'BEV-COF-02', price_idr: 18000, cost_idr: 5000, category_id: 'cat-001', is_active: true, category: { id: 'cat-001', name: 'Coffee' } },
-        { id: 'prod-003', name: 'Matcha Latte Oatmilk', sku: 'BEV-NCH-01', price_idr: 28000, cost_idr: 11000, category_id: 'cat-002', is_active: true, category: { id: 'cat-002', name: 'Non-Coffee' } },
-        { id: 'prod-004', name: 'Croissant Butter Original', sku: 'FOD-PST-01', price_idr: 25000, cost_idr: 12000, category_id: 'cat-003', is_active: true, category: { id: 'cat-003', name: 'Pastry & Food' } },
-      ];
-
-      return {
-        products: demoProducts.map((p) => {
-          const { cost_idr, ...rest } = p;
-          return {
-            ...rest,
-            ...(userRole !== Role.staff ? { cost_idr } : {}),
-          };
-        }),
-        meta: { page: 1, page_size: 20, total: demoProducts.length },
-      };
-    }
 
     try {
       const [total, products] = await Promise.all([
@@ -143,17 +251,14 @@ export class CatalogService {
         }),
       ]);
 
-      // PROTEKSI HPP: Sembunyikan cost_idr jika pemanggil adalah Staff (SRS Section 17)
-      const sanitizedProducts = products.map((p) => {
-        const { cost_idr, ...rest } = p;
-        return {
-          ...rest,
-          ...(userRole !== Role.staff ? { cost_idr } : {}),
-        };
-      });
-
       return {
-        products: sanitizedProducts,
+        products: products.map((p) => {
+          const { cost_idr, ...rest } = p;
+          return {
+            ...rest,
+            ...(userRole !== Role.staff ? { cost_idr } : {}),
+          };
+        }),
         meta: {
           page,
           page_size: pageSize,
@@ -161,27 +266,33 @@ export class CatalogService {
         },
       };
     } catch (_) {
-      const demoProducts = [
-        { id: 'prod-001', name: 'Kopi Susu Gula Aren', sku: 'BEV-COF-01', price_idr: 22000, cost_idr: 8500, category_id: 'cat-001', is_active: true, category: { id: 'cat-001', name: 'Coffee' } },
-        { id: 'prod-002', name: 'Americano Double Shot', sku: 'BEV-COF-02', price_idr: 18000, cost_idr: 5000, category_id: 'cat-001', is_active: true, category: { id: 'cat-001', name: 'Coffee' } },
-        { id: 'prod-003', name: 'Matcha Latte Oatmilk', sku: 'BEV-NCH-01', price_idr: 28000, cost_idr: 11000, category_id: 'cat-002', is_active: true, category: { id: 'cat-002', name: 'Non-Coffee' } },
-        { id: 'prod-004', name: 'Croissant Butter Original', sku: 'FOD-PST-01', price_idr: 25000, cost_idr: 12000, category_id: 'cat-003', is_active: true, category: { id: 'cat-003', name: 'Pastry & Food' } },
-      ];
-
       return {
-        products: demoProducts.map((p) => {
+        products: inMemoryProducts.map((p) => {
           const { cost_idr, ...rest } = p;
           return {
             ...rest,
             ...(userRole !== Role.staff ? { cost_idr } : {}),
           };
         }),
-        meta: { page: 1, page_size: 20, total: demoProducts.length },
+        meta: { page: 1, page_size: 20, total: inMemoryProducts.length },
       };
     }
   }
 
   async getProductById(id: string, userRole: Role) {
+    if (!(await isDbAvailable())) {
+      const product = inMemoryProducts.find((p) => p.id === id);
+      if (!product) {
+        throw new AppError('NOT_FOUND', 404, 'Produk tidak ditemukan.');
+      }
+      const { cost_idr, ...rest } = product;
+      return {
+        ...rest,
+        inventory: [],
+        ...(userRole !== Role.staff ? { cost_idr } : {}),
+      };
+    }
+
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
@@ -216,6 +327,31 @@ export class CatalogService {
       category_id?: string;
     }
   ) {
+    if (!(await isDbAvailable())) {
+      const existingSku = inMemoryProducts.find((p) => p.sku.toLowerCase() === data.sku.trim().toLowerCase());
+      if (existingSku) {
+        throw new AppError('CATALOG_SKU_DUPLICATE', 409, `SKU “${data.sku}” sudah digunakan.`);
+      }
+
+      const cat = inMemoryCategories.find((c) => c.id === data.category_id);
+      const newProduct = {
+        id: `prod-${Date.now()}`,
+        name: data.name.trim(),
+        sku: data.sku.trim().toUpperCase(),
+        unit: data.unit.trim(),
+        price_idr: data.price_idr,
+        cost_idr: data.cost_idr,
+        category_id: data.category_id || null,
+        is_active: true,
+        category: cat ? { id: cat.id, name: cat.name } : null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      inMemoryProducts.unshift(newProduct);
+      return newProduct;
+    }
+
     const existingSku = await prisma.product.findUnique({
       where: { sku: data.sku.trim() },
     });
@@ -248,7 +384,6 @@ export class CatalogService {
         },
       });
 
-      // Inisialisasi baris inventory untuk seluruh outlet aktif (qty: 0)
       const outlets = await tx.outlet.findMany({
         where: { is_active: true },
         select: { id: true },
@@ -282,6 +417,37 @@ export class CatalogService {
       is_active?: boolean;
     }
   ) {
+    if (!(await isDbAvailable())) {
+      const existing = inMemoryProducts.find((p) => p.id === id);
+      if (!existing) {
+        throw new AppError('NOT_FOUND', 404, 'Produk tidak ditemukan.');
+      }
+
+      if (data.sku && data.sku.trim().toUpperCase() !== existing.sku) {
+        const duplicate = inMemoryProducts.find(
+          (p) => p.id !== id && p.sku.toLowerCase() === data.sku!.trim().toLowerCase()
+        );
+        if (duplicate) {
+          throw new AppError('CATALOG_SKU_DUPLICATE', 409, `SKU “${data.sku}” sudah digunakan.`);
+        }
+      }
+
+      if (data.name !== undefined) existing.name = data.name.trim();
+      if (data.sku !== undefined) existing.sku = data.sku.trim().toUpperCase();
+      if (data.unit !== undefined) existing.unit = data.unit.trim();
+      if (data.price_idr !== undefined) existing.price_idr = data.price_idr;
+      if (data.cost_idr !== undefined) existing.cost_idr = data.cost_idr;
+      if (data.category_id !== undefined) {
+        existing.category_id = data.category_id;
+        const cat = inMemoryCategories.find((c) => c.id === data.category_id);
+        existing.category = cat ? { id: cat.id, name: cat.name } : null;
+      }
+      if (data.is_active !== undefined) existing.is_active = data.is_active;
+      existing.updated_at = new Date();
+
+      return existing;
+    }
+
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
       throw new AppError('NOT_FOUND', 404, 'Produk tidak ditemukan.');

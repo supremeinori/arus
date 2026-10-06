@@ -14,7 +14,7 @@ export const createProductSchema = z.object({
   unit: z.string().min(1).max(20).default('pcs'),
   price_idr: z.number().int().positive('Harga jual harus lebih dari 0'),
   cost_idr: z.number().int().nonnegative('HPP tidak boleh negatif').optional(),
-  category_id: z.string().uuid().optional(),
+  category_id: z.string().min(1).optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -23,12 +23,12 @@ export const updateProductSchema = z.object({
   unit: z.string().min(1).max(20).optional(),
   price_idr: z.number().int().positive().optional(),
   cost_idr: z.number().int().nonnegative().optional(),
-  category_id: z.string().uuid().nullable().optional(),
+  category_id: z.string().min(1).nullable().optional(),
   is_active: z.boolean().optional(),
 });
 
 export const productQuerySchema = z.object({
-  category_id: z.string().uuid().optional(),
+  category_id: z.string().min(1).optional(),
   is_active: z.enum(['true', 'false']).optional(),
   q: z.string().optional(),
   sort: z.enum(['name', 'price_asc', 'price_desc', 'created_at']).default('name'),

@@ -359,16 +359,47 @@ export class AuthService {
   }
 
   async logout(rawToken?: string) {
+    if (!(await isDbAvailable())) {
+      return;
+    }
     if (rawToken) {
       const tokenHash = hashRefreshToken(rawToken);
-      await prisma.refreshToken.updateMany({
-        where: { token_hash: tokenHash },
-        data: { revoked_at: new Date() },
-      });
+      try {
+        await prisma.refreshToken.updateMany({
+          where: { token_hash: tokenHash },
+          data: { revoked_at: new Date() },
+        });
+      } catch (_) {
+        // Abaikan error DB saat offline
+      }
     }
   }
 
   async getMe(userId: string) {
+    if (!(await isDbAvailable())) {
+      return {
+        id: userId,
+        email: 'owner@arus.demo',
+        name: 'Rina Kartika (Owner)',
+        role: 'owner',
+        outlets: [
+          {
+            id: 'out-001',
+            name: 'Kopi Arus - Sudirman (HQ)',
+            timezone: 'Asia/Jakarta',
+            address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
+          },
+        ],
+        settings: {
+          display_currency: 'IDR',
+          display_timezone: 'Asia/Jakarta',
+          biometric_enabled: false,
+          shake_refresh_enabled: true,
+          tilt_enabled: true,
+        },
+      };
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
