@@ -6,7 +6,7 @@ export class InventoryController {
   async getStocks(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const allowedOutletIds = req.allowedOutletIds || [];
+      const allowedOutletIds = req.userOutlets || [];
       const { outlet_id, low_stock, category_id, q, page, page_size } = req.query;
 
       const result = await inventoryService.listStocks(
@@ -30,7 +30,7 @@ export class InventoryController {
   async createAdjustment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const allowedOutletIds = req.allowedOutletIds || [];
+      const allowedOutletIds = req.userOutlets || [];
       const { outlet_id, product_id, movement_type, quantity_delta, note } = req.body;
 
       const result = await inventoryService.createAdjustment(
@@ -54,7 +54,7 @@ export class InventoryController {
   async getMovements(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const allowedOutletIds = req.allowedOutletIds || [];
+      const allowedOutletIds = req.userOutlets || [];
       const { outlet_id, product_id, movement_type, page, page_size } = req.query;
 
       const result = await inventoryService.listMovements(

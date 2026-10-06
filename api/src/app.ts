@@ -9,6 +9,7 @@ import authRoute from './modules/auth/auth.route';
 import usersRoute from './modules/users/users.route';
 import catalogRoute from './modules/catalog/catalog.route';
 import inventoryRoute from './modules/inventory/inventory.route';
+import transactionsRoute from './modules/transactions/transactions.route';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api', authRoute);
 app.use('/api', usersRoute);
 app.use('/api', catalogRoute);
 app.use('/api', inventoryRoute);
+app.use('/api', transactionsRoute);
 app.use('/', healthRoute); // Direct /health fallback
 
 // 404 Handler
