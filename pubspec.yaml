@@ -59,6 +59,11 @@ dev_dependencies:
   json_serializable: ^6.9.4
   mocktail: ^1.0.4
 
+dependency_overrides:
+  # Pin path_provider_foundation to 2.4.0 to prevent pulling objective_c 9.5.0
+  # which fails during native asset hook compilation on Windows user paths containing spaces ('C:\Users\HYPE AMD')
+  path_provider_foundation: 2.4.0
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
