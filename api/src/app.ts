@@ -15,6 +15,7 @@ import insightsRoute from './modules/insights/insights.route';
 import aiRoute from './modules/ai/ai.route';
 import reportsRoute from './modules/reports/reports.route';
 import outletsRoute from './modules/outlets/outlets.route';
+import notificationsRoute from './modules/notifications/notifications.route';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api', analyticsRoute);
 app.use('/api', insightsRoute);
 app.use('/api', aiRoute);
 app.use('/api', reportsRoute);
+app.use('/api', notificationsRoute);
 app.use('/', healthRoute); // Direct /health fallback
 
 // 404 Handler
