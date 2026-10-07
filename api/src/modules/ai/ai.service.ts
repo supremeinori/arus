@@ -34,14 +34,14 @@ export class AiAssistantService {
     }
 
     try {
-      const model = env.LLM_MODEL || 'gemini-3.8-flash';
+      const model = env.LLM_MODEL || 'gemini-3.5-flash-lite';
       const systemInstruction = `Anda adalah ARUS Business Copilot, asisten kecerdasan bisnis & rekan diskusi keputusan (DSS) pribadi untuk ${userContext.name} (${userContext.role}) di platform bisnis ARUS.
 
 Karakter & Gaya Komunikasi:
 - Cerdas, hangat, humoris jika diajak bercanda, namun tajam dan berwawasan saat membahas bisnis.
-- Jika pengguna mengajak bercanda, menggoda, atau menyapa santai (misal: "panggil aku sayang", "makasih", "kamu siapa"), tanggapi dengan luwes, ramah, dan bersahabat.
-- Panggil pengguna dengan personal sesuai konteks (${userContext.name}).
-- Ingat konteks percakapan sebelumnya agar diskusi tidak putus.
+- Jika pengguna mengajak bercanda, meminta dipanggil dengan panggilan tertentu (misal: "panggil aku kanjeng ratu", "panggil aku bos", "sayang"), IKUTI DAN PATUHI DENGAN SENANG HATI secara luwes dan ramah.
+- Panggil pengguna dengan panggilan yang diminta atau secara personal (${userContext.name}).
+- Ingat konteks percakapan sebelumnya agar diskusi mengalir alami.
 - Jika membahas data bisnis, gunakan FAKTA DATA BISNIS berikut sebagai kebenaran mutlak (jangan halusinasi angka di luar data ini):
 ${JSON.stringify(facts, null, 2)}`;
 
@@ -73,11 +73,13 @@ ${JSON.stringify(facts, null, 2)}`;
             },
             contents,
           }),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(8000),
         }
       );
 
       if (!response.ok) {
+        const errJson: any = await response.json().catch(() => null);
+        console.warn('[Gemini API Warning]', response.status, errJson?.error?.message || response.statusText);
         return null;
       }
 
@@ -404,11 +406,14 @@ ${JSON.stringify(facts, null, 2)}`;
       suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini.';
     } else if (currentTopic === 'chitchat' || facts.length === 0) {
       // RESPONS NATURAL UNTUK INTERAKSI MANUSIAWI / BERCANDA
-      if (lower.includes('sayang') || lower.includes('panggil')) {
-        aiResponseText = `Hahaha siap, sayang! 🥰 
-
-Tapi jangan lupa ya, sebagai asisten bisnis setia kamu, tugasku tetap mengingatkan: mau aku panggil sayang sambil kita evaluasi omset toko yang manis hari ini, atau mau ngecek stok bahan baku dulu nih? 😉`;
-        suggestionText = 'Coba tanyakan: "Omset kita hari ini manis gak?" atau "Berapa penjualan hari ini?"';
+      if (lower.includes('panggil')) {
+        const match = userMessage.match(/panggil (?:aku|saya|gue|gua) (.*)/i);
+        const customName = match ? match[1].replace(/dong|ya|plis|please|\?|\!/gi, '').trim() : 'Kanjeng Ratu';
+        aiResponseText = `Baik, ${customName}! Siap, ada yang bisa saya bantu hari ini untuk ${customName}? Silakan tanyakan apa saja seputar operasional toko atau santai saja ya. 😊`;
+        suggestionText = `Coba tanyakan: "Bagaimana omset ${customName} hari ini?" atau "Menu apa yang paling laris?"`;
+      } else if (lower.includes('sayang')) {
+        aiResponseText = `Hahaha siap, sayang! 🥰 Tapi jangan lupa ya, sebagai asisten bisnis setia kamu: ada omset atau stok yang mau dicek bareng hari ini? 😉`;
+        suggestionText = 'Coba tanyakan: "Berapa penjualan hari ini?"';
       } else if (lower.includes('terima kasih') || lower.includes('makasih') || lower.includes('thanks')) {
         aiResponseText = `Sama-sama ${userName}! Senang banget bisa membantu bisnis Anda. Kalau ada data atau keputusan lain yang butuh dianalisis, panggil saya kapan saja ya! 🚀`;
         suggestionText = 'Coba tanyakan: "Apa ada rekomendasi untuk meningkatkan penjualan?"';
