@@ -147,7 +147,7 @@ PERTANYAAN PENGGUNA:
         facts.push({
           type: 'outlets_list',
           title: 'Daftar Gerai & Cabang',
-          value: outlets.map((o) => ({
+          value: outlets.map((o: any) => ({
             name: o.name,
             address: o.address,
             timezone: o.timezone,
@@ -223,8 +223,8 @@ PERTANYAAN PENGGUNA:
         userScope
       );
       const busiest = peakHours
-        .filter((h) => h.transactionCount > 0)
-        .sort((a, b) => b.transactionCount - a.transactionCount)
+        .filter((h) => h.transaction_count > 0)
+        .sort((a, b) => b.transaction_count - a.transaction_count)
         .slice(0, 3);
 
       facts.push({
@@ -232,7 +232,7 @@ PERTANYAAN PENGGUNA:
         title: 'Jam Paling Ramai',
         value: busiest.map((b) => ({
           time: b.label,
-          transactions: b.transactionCount,
+          transactions: b.transaction_count,
           revenue_idr: b.total_revenue_idr,
         })),
       });

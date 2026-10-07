@@ -371,3 +371,5 @@ export class OutletsService {
     };
   }
 }
+
+export const outletsService = new OutletsService();

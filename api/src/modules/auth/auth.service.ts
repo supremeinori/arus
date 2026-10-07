@@ -211,7 +211,7 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      accessibleOutlets = user.user_outlets.map((uo) => ({
+      accessibleOutlets = user.user_outlets.map((uo: any) => ({
         id: uo.outlet.id,
         name: uo.outlet.name,
         timezone: uo.outlet.timezone,

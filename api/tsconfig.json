@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "CommonJS",
     "moduleResolution": "node",
+    "ignoreDeprecations": "5.0",
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
@@ -10,5 +11,6 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "tests"]
 }

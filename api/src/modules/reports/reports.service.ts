@@ -124,7 +124,7 @@ export class ReportsService {
           period_from: fromDate,
           period_to: toDate,
           outlet_scope: outletScope,
-          payload: reportPayload,
+          payload: reportPayload as any,
           payload_hash: payloadHash,
           has_data: true,
           created_by: userId,
@@ -321,7 +321,7 @@ export class ReportsService {
       paymentMethods[t.payment_method] = (paymentMethods[t.payment_method] || 0) + t.total_idr;
 
       for (const item of t.items) {
-        const itemCost = item.cost_at_sale_idr || item.product?.cost_idr || 0;
+        const itemCost = item.unit_cost_idr ?? item.product?.cost_idr ?? 0;
         totalEstimatedCost += itemCost * item.quantity;
 
         if (!itemSales[item.product_id]) {
@@ -332,7 +332,7 @@ export class ReportsService {
           };
         }
         itemSales[item.product_id].quantity += item.quantity;
-        itemSales[item.product_id].revenue += item.subtotal_idr;
+        itemSales[item.product_id].revenue += item.line_total_idr;
       }
     }
 
