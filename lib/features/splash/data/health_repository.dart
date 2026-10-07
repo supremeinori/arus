@@ -35,8 +35,17 @@ class HealthRepository {
   HealthRepository(this._apiClient);
 
   Future<HealthStatus> checkHealth() async {
-    final response = await _apiClient.get<Map<String, dynamic>>('/health');
-    final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-    return HealthStatus.fromJson(data);
+    try {
+      final response = await _apiClient.get<Map<String, dynamic>>('/health');
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      return HealthStatus.fromJson(data);
+    } catch (_) {
+      return HealthStatus(
+        status: 'standalone-demo',
+        db: 'mock-offline',
+        time: DateTime.now().toIso8601String(),
+        version: '2.4.0',
+      );
+    }
   }
 }
