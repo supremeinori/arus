@@ -34,26 +34,20 @@ export class AiAssistantService {
     }
 
     try {
-      const model = env.LLM_MODEL || 'gemini-2.0-flash';
-      const systemInstruction = `Anda adalah ARUS Business Copilot, konsultan bisnis & asisten pengambil keputusan (DSS) pribadi untuk ${userContext.name} (${userContext.role}) di platform bisnis ARUS.
+      const model = env.LLM_MODEL || 'gemini-3.8-flash';
+      const systemInstruction = `Anda adalah ARUS Business Copilot, asisten kecerdasan bisnis & rekan diskusi keputusan (DSS) pribadi untuk ${userContext.name} (${userContext.role}) di platform bisnis ARUS.
 
-Karakter & Gaya Komunikasi Anda:
-- Cerdas, hangat, berwawasan bisnis tajam seperti Senior Business Advisor / CFO pribadi.
-- Panggil pengguna dengan ramah dan personal (misal: "Halo ${userContext.name}" atau sesuaikan gelar perannya).
-- Ingat riwayat percakapan sebelumnya agar diskusi mengalir alami dan TIDAK KEHILANGAN KONTEKS.
-- Format jawaban selalu terstruktur, rapi, dan mudah dibaca:
-  1. 📌 **Ringkasan Langsung**: Jawaban to-the-point menjawab pertanyaan pengguna.
-  2. 📊 **Analisis Bisnis**: Penjelasan metrik, konteks perbandingan, dan dampaknya.
-  3. 💡 **Rekomendasi Keputusan (DSS)**: Saran langkah aksi konkret yang bisa diambil sekarang.
-- PENTING: FAKTA DATA TOKO DI BAWAH INI ADALAH SUMBER KEBENARAN TUNGGAL untuk angka omset, stok, atau metrik. Jangan mengarang angka di luar fakta ini!
-
-FAKTA DATA BISNIS TERKINI DARI DATABASE:
+Karakter & Gaya Komunikasi:
+- Cerdas, hangat, humoris jika diajak bercanda, namun tajam dan berwawasan saat membahas bisnis.
+- Jika pengguna mengajak bercanda, menggoda, atau menyapa santai (misal: "panggil aku sayang", "makasih", "kamu siapa"), tanggapi dengan luwes, ramah, dan bersahabat.
+- Panggil pengguna dengan personal sesuai konteks (${userContext.name}).
+- Ingat konteks percakapan sebelumnya agar diskusi tidak putus.
+- Jika membahas data bisnis, gunakan FAKTA DATA BISNIS berikut sebagai kebenaran mutlak (jangan halusinasi angka di luar data ini):
 ${JSON.stringify(facts, null, 2)}`;
 
-      // Bangun riwayat percakapan (multi-turn chat)
       const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-      // Masukkan hingga 4 riwayat percakapan sebelumnya
+      // Masukkan riwayat percakapan sebelumnya (hingga 4 turn)
       const recentHistory = history.slice(-4);
       for (const turn of recentHistory) {
         contents.push({
@@ -79,7 +73,7 @@ ${JSON.stringify(facts, null, 2)}`;
             },
             contents,
           }),
-          signal: AbortSignal.timeout(4000),
+          signal: AbortSignal.timeout(3500),
         }
       );
 
@@ -96,7 +90,7 @@ ${JSON.stringify(facts, null, 2)}`;
 
   /**
    * Menjawab pertanyaan pengguna dengan sistem Grounded Facts (Anti-Halusinasi),
-   * dilengkapi memori percakapan berlanjut (Multi-Turn) dan personalisasi peran.
+   * memori percakapan berlanjut (Multi-Turn), dan responsif terhadap gaya bicara pengguna.
    */
   async handleChat(
     userId: string,
@@ -115,7 +109,7 @@ ${JSON.stringify(facts, null, 2)}`;
     const dbUp = await isDbAvailable();
     let conversationId = query.conversation_id || `conv-${userId.substring(0, 8)}-${Date.now()}`;
 
-    // 1. Profil Pengguna & Personalisasi (Siapa yang sedang bertanya?)
+    // 1. Profil Pengguna & Personalisasi
     let userName = userScope.role === Role.owner ? 'Ibu Rina Kartika' : userScope.role === Role.manager ? 'Bapak Budi' : 'Kak Siti';
     let userRoleTitle = userScope.role === Role.owner ? 'Owner' : userScope.role === Role.manager ? 'Manager' : 'Staff Kasir';
 
@@ -154,67 +148,142 @@ ${JSON.stringify(facts, null, 2)}`;
       }
     }
 
-    // 2. Muat Riwayat Konteks Percakapan (Memory Continuity)
+    // 2. Analisis Input Pengguna: Apakah Chitchat/Candaan atau Pertanyaan Bisnis?
     const memory = AiAssistantService.conversationMemory.get(conversationId) || [];
     const lower = userMessage.toLowerCase();
 
-    // Deteksi topik dari pertanyaan saat ini
-    let currentTopic: string | null = null;
-    if (
+    const hasBusinessKeyword =
       lower.includes('jual') ||
       lower.includes('omset') ||
       lower.includes('pendapatan') ||
       lower.includes('laba') ||
       lower.includes('untung') ||
       lower.includes('revenue') ||
-      lower.includes('target')
-    ) {
-      currentTopic = 'sales';
-    } else if (
+      lower.includes('target') ||
       lower.includes('stok') ||
       lower.includes('barang') ||
       lower.includes('sisa') ||
       lower.includes('menipis') ||
       lower.includes('habis') ||
       lower.includes('restock') ||
-      lower.includes('gudang')
-    ) {
-      currentTopic = 'inventory';
-    } else if (
+      lower.includes('gudang') ||
       lower.includes('laris') ||
       lower.includes('laku') ||
       lower.includes('menu') ||
       lower.includes('favorit') ||
       lower.includes('best seller') ||
-      lower.includes('produk')
-    ) {
-      currentTopic = 'products';
-    } else if (
+      lower.includes('produk') ||
       lower.includes('ramai') ||
       lower.includes('jam') ||
       lower.includes('shift') ||
       lower.includes('padat') ||
       lower.includes('sibuk') ||
-      lower.includes('peak')
-    ) {
-      currentTopic = 'peak_hours';
-    } else if (
+      lower.includes('peak') ||
       lower.includes('gerai') ||
       lower.includes('cabang') ||
       lower.includes('outlet') ||
-      lower.includes('toko') ||
-      lower.includes('lokasi')
-    ) {
-      currentTopic = 'outlets';
-    }
+      lower.includes('lokasi');
 
-    // KONTEKS KELANJUTAN (Context Inheritance):
-    // Jika pertanyaan user pendek/merujuk konteks sebelumnya (misal: "kalau senopati?", "bandingkan sama kemarin?", "kenapa?", "solusinya apa?")
-    if (!currentTopic && memory.length > 0) {
-      const lastTurn = memory[memory.length - 1];
-      if (lastTurn.topic) {
-        currentTopic = lastTurn.topic;
+    const isChitChatOrCasual = !hasBusinessKeyword && (
+      lower.includes('sayang') ||
+      lower.includes('panggil') ||
+      lower.includes('beb') ||
+      lower.includes('nama kamu') ||
+      lower.includes('siapa kamu') ||
+      lower.includes('kamu siapa') ||
+      lower.includes('bisa apa') ||
+      lower.includes('terima kasih') ||
+      lower.includes('makasih') ||
+      lower.includes('thanks') ||
+      lower.includes('joke') ||
+      lower.includes('lelucon') ||
+      lower.includes('lucu') ||
+      lower.includes('gombal') ||
+      lower.includes('hai') ||
+      lower.includes('halo') ||
+      lower.includes('hello') ||
+      lower.includes('hei') ||
+      lower.includes('kabar') ||
+      lower.includes('apa kabar') ||
+      lower.includes('sehat')
+    );
+
+    let currentTopic: string | null = null;
+
+    if (!isChitChatOrCasual) {
+      if (
+        lower.includes('jual') ||
+        lower.includes('omset') ||
+        lower.includes('pendapatan') ||
+        lower.includes('laba') ||
+        lower.includes('untung') ||
+        lower.includes('revenue') ||
+        lower.includes('target')
+      ) {
+        currentTopic = 'sales';
+      } else if (
+        lower.includes('stok') ||
+        lower.includes('barang') ||
+        lower.includes('sisa') ||
+        lower.includes('menipis') ||
+        lower.includes('habis') ||
+        lower.includes('restock') ||
+        lower.includes('gudang')
+      ) {
+        currentTopic = 'inventory';
+      } else if (
+        lower.includes('laris') ||
+        lower.includes('laku') ||
+        lower.includes('menu') ||
+        lower.includes('favorit') ||
+        lower.includes('best seller') ||
+        lower.includes('produk')
+      ) {
+        currentTopic = 'products';
+      } else if (
+        lower.includes('ramai') ||
+        lower.includes('jam') ||
+        lower.includes('shift') ||
+        lower.includes('padat') ||
+        lower.includes('sibuk') ||
+        lower.includes('peak')
+      ) {
+        currentTopic = 'peak_hours';
+      } else if (
+        lower.includes('gerai') ||
+        lower.includes('cabang') ||
+        lower.includes('outlet') ||
+        lower.includes('toko') ||
+        lower.includes('lokasi')
+      ) {
+        currentTopic = 'outlets';
       }
+
+      // KONTEKS KELANJUTAN (Context Inheritance): Hanya jika pertanyaan adalah follow-up bisnis nyata
+      const isBusinessFollowUp =
+        lower.includes('kalau') ||
+        lower.includes('bagaimana') ||
+        lower.includes('gimana') ||
+        lower.includes('kenapa') ||
+        lower.includes('mengapa') ||
+        lower.includes('banding') ||
+        lower.includes('kemarin') ||
+        lower.includes('senopati') ||
+        lower.includes('sudirman') ||
+        lower.includes('canggu') ||
+        lower.includes('terus') ||
+        lower.includes('lalu') ||
+        lower.includes('solusi') ||
+        lower.includes('saran');
+
+      if (!currentTopic && isBusinessFollowUp && memory.length > 0) {
+        const lastTurn = memory[memory.length - 1];
+        if (lastTurn.topic && lastTurn.topic !== 'chitchat') {
+          currentTopic = lastTurn.topic;
+        }
+      }
+    } else {
+      currentTopic = 'chitchat';
     }
 
     // 3. RETRIEVER: Tarik Data Fakta Database Berdasarkan Topik
@@ -321,7 +390,7 @@ ${JSON.stringify(facts, null, 2)}`;
       }
     }
 
-    // 4. GENERATOR: Panggil Gemini API atau Mesin Analisis Lokal yang Cerdas & Personal
+    // 4. GENERATOR: Respons Pintar, Alami & Fleksibel
     let aiResponseText = '';
     let suggestionText = '';
 
@@ -332,22 +401,32 @@ ${JSON.stringify(facts, null, 2)}`;
 
     if (liveGeminiText) {
       aiResponseText = liveGeminiText;
-      suggestionText = 'Analisis di atas disusun secara real-time oleh Google Gemini berdasarkan data toko Anda.';
-    } else if (facts.length === 0) {
-      const isGreeting =
+      suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini.';
+    } else if (currentTopic === 'chitchat' || facts.length === 0) {
+      // RESPONS NATURAL UNTUK INTERAKSI MANUSIAWI / BERCANDA
+      if (lower.includes('sayang') || lower.includes('panggil')) {
+        aiResponseText = `Hahaha siap, sayang! 🥰 
+
+Tapi jangan lupa ya, sebagai asisten bisnis setia kamu, tugasku tetap mengingatkan: mau aku panggil sayang sambil kita evaluasi omset toko yang manis hari ini, atau mau ngecek stok bahan baku dulu nih? 😉`;
+        suggestionText = 'Coba tanyakan: "Omset kita hari ini manis gak?" atau "Berapa penjualan hari ini?"';
+      } else if (lower.includes('terima kasih') || lower.includes('makasih') || lower.includes('thanks')) {
+        aiResponseText = `Sama-sama ${userName}! Senang banget bisa membantu bisnis Anda. Kalau ada data atau keputusan lain yang butuh dianalisis, panggil saya kapan saja ya! 🚀`;
+        suggestionText = 'Coba tanyakan: "Apa ada rekomendasi untuk meningkatkan penjualan?"';
+      } else if (lower.includes('lucu') || lower.includes('joke') || lower.includes('lelucon') || lower.includes('gombal')) {
+        aiResponseText = `Kopi boleh pahit, tapi omset bisnis kita harus tetap manis kayak kamu, ${userName}! 😄☕
+
+Mau saya carikan data omset yang bikin senyum hari ini?`;
+        suggestionText = 'Coba tanyakan: "Berapa omset kita hari ini?"';
+      } else if (
         lower.includes('hai') ||
         lower.includes('halo') ||
         lower.includes('hello') ||
-        lower.includes('hi') ||
+        lower.includes('kabar') ||
+        lower.includes('apa kabar') ||
         lower.includes('pagi') ||
         lower.includes('siang') ||
-        lower.includes('sore') ||
-        lower.includes('malam') ||
-        lower.includes('bro') ||
-        lower.includes('kabar') ||
-        lower.includes('siapa');
-
-      if (isGreeting) {
+        lower.includes('malam')
+      ) {
         aiResponseText = `Halo ${userName}! Senang bisa berdiskusi kembali dengan Anda hari ini. 😊
 
 Saya **ARUS Business Copilot**, asisten pendukung keputusan bisnis pribadi Anda. Saya memantau data penjualan, kondisi inventaris, hingga kinerja cabang secara real-time.
@@ -365,9 +444,9 @@ Apa fokus bisnis yang ingin kita evaluasi bersama hari ini?`;
         suggestionText = 'Pilih salah satu topik di atas untuk memulai analisis mendalam.';
       }
     } else {
-      // SMART GROUNDED REASONING ENGINE (DSS Berstruktur 3 Lapisan)
+      // SMART GROUNDED REASONING ENGINE (DSS Berstruktur 3 Lapisan untuk Pertanyaan Bisnis Nyata)
       const sections: string[] = [];
-      const isFollowUp = memory.length > 0;
+      const isFollowUp = memory.length > 0 && memory[memory.length - 1].topic === currentTopic;
       const greetingPrefix = isFollowUp
         ? `Melanjutkan diskusi kita sebelumnya, ${userName}:\n\n`
         : `Halo ${userName}, berikut laporan analitis terkini yang berhasil saya himpun dari sistem:\n\n`;
@@ -471,12 +550,11 @@ Anda dapat menyaring laporan atau meminta analisis khusus per cabang kapan saja.
       timestamp: new Date(),
     };
 
-    // Update in-memory buffer (simpan user & assistant turns)
     const updatedMemory = [
       ...memory,
       { role: 'user' as const, content: userMessage, topic: currentTopic || undefined, timestamp: new Date() },
       memoryTurn,
-    ].slice(-10); // Simpan 10 turn terakhir
+    ].slice(-10);
     AiAssistantService.conversationMemory.set(conversationId, updatedMemory);
 
     let savedAiMessage: any = {
