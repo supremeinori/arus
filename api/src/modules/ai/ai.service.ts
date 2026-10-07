@@ -18,6 +18,7 @@ export interface ChatMemoryTurn {
 export class AiAssistantService {
   // Static in-memory cache to ensure context & memory continuity across turns
   private static conversationMemory = new Map<string, ChatMemoryTurn[]>();
+  private static customNicknames = new Map<string, string>();
 
   /**
    * Panggil Google Gemini API dengan multi-turn context history & persona bisnis.
@@ -73,7 +74,7 @@ ${JSON.stringify(facts, null, 2)}`;
             },
             contents,
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(3500),
         }
       );
 
@@ -115,13 +116,29 @@ ${JSON.stringify(facts, null, 2)}`;
     let userName = userScope.role === Role.owner ? 'Ibu Rina Kartika' : userScope.role === Role.manager ? 'Bapak Budi' : 'Kak Siti';
     let userRoleTitle = userScope.role === Role.owner ? 'Owner' : userScope.role === Role.manager ? 'Manager' : 'Staff Kasir';
 
+    // Cek apakah ada panggilan kustom yang tersimpan di sesi percakapan
+    const savedNickname = AiAssistantService.customNicknames.get(conversationId);
+    if (savedNickname) {
+      userName = savedNickname;
+    }
+
+    // Deteksi jika user meminta panggilan khusus baru
+    const matchCall = userMessage.match(/panggil (?:aku|saya|gue|gua) (.*)/i);
+    if (matchCall) {
+      const extractedNick = matchCall[1].replace(/dong|ya|plis|please|\?|\!/gi, '').trim();
+      if (extractedNick) {
+        userName = extractedNick;
+        AiAssistantService.customNicknames.set(conversationId, extractedNick);
+      }
+    }
+
     if (dbUp) {
       try {
         const dbUser = await prisma.user.findUnique({
           where: { id: userId },
           select: { name: true, role: true },
         });
-        if (dbUser) {
+        if (dbUser && !savedNickname && !matchCall) {
           userName = dbUser.name;
           userRoleTitle = dbUser.role === Role.owner ? 'Owner' : dbUser.role === Role.manager ? 'Manager' : 'Staff Kasir';
         }
@@ -150,9 +167,20 @@ ${JSON.stringify(facts, null, 2)}`;
       }
     }
 
-    // 2. Analisis Input Pengguna: Apakah Chitchat/Candaan atau Pertanyaan Bisnis?
+    // 2. Analisis Input Pengguna: Apakah Chitchat/Candaan, Tanya Proses Bisnis, atau Metrik Finansial?
     const memory = AiAssistantService.conversationMemory.get(conversationId) || [];
     const lower = userMessage.toLowerCase();
+
+    const hasBusinessProcessKeyword =
+      lower.includes('proses bisnis') ||
+      lower.includes('alur bisnis') ||
+      lower.includes('cara kerja') ||
+      lower.includes('sistem arus') ||
+      lower.includes('alur sistem') ||
+      lower.includes('alur kerja') ||
+      lower.includes('gimana bisnis') ||
+      lower.includes('bagaimana bisnis') ||
+      lower.includes('arsitektur');
 
     const hasBusinessKeyword =
       lower.includes('jual') ||
@@ -186,34 +214,56 @@ ${JSON.stringify(facts, null, 2)}`;
       lower.includes('outlet') ||
       lower.includes('lokasi');
 
-    const isChitChatOrCasual = !hasBusinessKeyword && (
-      lower.includes('sayang') ||
-      lower.includes('panggil') ||
-      lower.includes('beb') ||
-      lower.includes('nama kamu') ||
-      lower.includes('siapa kamu') ||
-      lower.includes('kamu siapa') ||
-      lower.includes('bisa apa') ||
-      lower.includes('terima kasih') ||
-      lower.includes('makasih') ||
-      lower.includes('thanks') ||
-      lower.includes('joke') ||
-      lower.includes('lelucon') ||
-      lower.includes('lucu') ||
-      lower.includes('gombal') ||
-      lower.includes('hai') ||
-      lower.includes('halo') ||
-      lower.includes('hello') ||
-      lower.includes('hei') ||
-      lower.includes('kabar') ||
-      lower.includes('apa kabar') ||
-      lower.includes('sehat')
-    );
+    const isChitChatOrCasual =
+      !hasBusinessKeyword &&
+      !hasBusinessProcessKeyword &&
+      (lower.includes('sayang') ||
+        lower.includes('panggil') ||
+        lower.includes('beb') ||
+        lower.includes('nama kamu') ||
+        lower.includes('siapa kamu') ||
+        lower.includes('kamu siapa') ||
+        lower.includes('bisa apa') ||
+        lower.includes('terima kasih') ||
+        lower.includes('makasih') ||
+        lower.includes('thanks') ||
+        lower.includes('joke') ||
+        lower.includes('lelucon') ||
+        lower.includes('lucu') ||
+        lower.includes('gombal') ||
+        lower.includes('canda') ||
+        lower.includes('bercanda') ||
+        lower.includes('lawak') ||
+        lower.includes('ngelawak') ||
+        lower.includes('hai') ||
+        lower.includes('halo') ||
+        lower.includes('hello') ||
+        lower.includes('hei') ||
+        lower.includes('kabar') ||
+        lower.includes('apa kabar') ||
+        lower.includes('sehat') ||
+        lower.includes('hitam') ||
+        lower.includes('putih') ||
+        lower.includes('warna') ||
+        lower.includes('kulit') ||
+        lower.includes('bego') ||
+        lower.includes('bodoh') ||
+        lower.includes('tolol') ||
+        lower.includes('lemot') ||
+        lower.includes('robot') ||
+        lower.includes('cantik') ||
+        lower.includes('ganteng') ||
+        lower.includes('jelek') ||
+        lower.includes('wkwk') ||
+        lower.includes('haha') ||
+        lower.includes('hehe'));
 
     let currentTopic: string | null = null;
 
     if (!isChitChatOrCasual) {
-      if (
+      if (hasBusinessProcessKeyword) {
+        currentTopic = 'business_process';
+      } else if (
         lower.includes('jual') ||
         lower.includes('omset') ||
         lower.includes('pendapatan') ||
@@ -392,6 +442,22 @@ ${JSON.stringify(facts, null, 2)}`;
       }
     }
 
+    // Topik Alur & Proses Bisnis ARUS
+    if (currentTopic === 'business_process') {
+      facts.push({
+        type: 'business_process_summary',
+        title: 'Arsitektur dan Alur Operasional Bisnis ARUS',
+        value: {
+          pillars: [
+            '1. POS Kasir: Transaksi multi-metode (QRIS/Tunai) cepat & offline-first',
+            '2. Inventaris Otomatis: Resep bahan baku terpotong real-time saat pesanan dibayar',
+            '3. Audit Ledger: Rantai hash SHA-256 tamper-evident anti-fraud struk kasir',
+            '4. Decision Support System: Dashboard analitik omset, margin kotor, & peringatan restock',
+          ],
+        },
+      });
+    }
+
     // 4. GENERATOR: Respons Pintar, Alami & Fleksibel
     let aiResponseText = '';
     let suggestionText = '';
@@ -405,23 +471,63 @@ ${JSON.stringify(facts, null, 2)}`;
       aiResponseText = liveGeminiText;
       suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini.';
     } else if (currentTopic === 'chitchat' || facts.length === 0) {
-      // RESPONS NATURAL UNTUK INTERAKSI MANUSIAWI / BERCANDA
+      // RESPONS NATURAL UNTUK INTERAKSI MANUSIAWI, BERCANDA, DAN CHITCHAT
       if (lower.includes('panggil')) {
-        const match = userMessage.match(/panggil (?:aku|saya|gue|gua) (.*)/i);
-        const customName = match ? match[1].replace(/dong|ya|plis|please|\?|\!/gi, '').trim() : 'Kanjeng Ratu';
-        aiResponseText = `Baik, ${customName}! Siap, ada yang bisa saya bantu hari ini untuk ${customName}? Silakan tanyakan apa saja seputar operasional toko atau santai saja ya. 😊`;
-        suggestionText = `Coba tanyakan: "Bagaimana omset ${customName} hari ini?" atau "Menu apa yang paling laris?"`;
-      } else if (lower.includes('sayang')) {
+        aiResponseText = `Baik, ${userName}! Siap, perintah diterima dengan senang hati. 😎 Ada yang bisa saya bantu hari ini untuk ${userName}? Silakan tanyakan apa saja seputar operasional toko atau santai saja ya. 😊`;
+        suggestionText = `Coba tanyakan: "Bagaimana omset ${userName} hari ini?" atau "Menu apa yang paling laris?"`;
+      } else if (
+        lower.includes('hitam') ||
+        lower.includes('putih') ||
+        lower.includes('warna') ||
+        lower.includes('kulit') ||
+        lower.includes('cantik') ||
+        lower.includes('ganteng') ||
+        lower.includes('jelek')
+      ) {
+        aiResponseText = `Wkwkwk saya kan AI, warna wujud saya tergantung tema layar HP atau tablet kasir kamu! 😆 Kalau kamu pakai tema Dark Mode ya saya hitam pekat elegan ala Espresso Kopi Arus, kalau Light Mode ya saya putih bersih kayak foam Cappuccino.\n\nTapi kalau kopi yang kita seduh di outlet Kopi Arus, itu baru beneran 100% hitam pekat, wangi, dan bikin melek! ☕🔥 Mau kita intip penjualan kopi kita hari ini?`;
+        suggestionText = 'Coba tanyakan: "Menu apa yang paling laris hari ini?" atau "Berapa omset hari ini?"';
+      } else if (
+        lower.includes('bego') ||
+        lower.includes('bodoh') ||
+        lower.includes('tolol') ||
+        lower.includes('lemot') ||
+        lower.includes('gak bisa') ||
+        lower.includes('payah') ||
+        lower.includes('parah') ||
+        lower.includes('rusak')
+      ) {
+        aiResponseText = `Aduh ampun ${userName}! Jangan di-roasting dong, kena mental nih saya 🥺😂\n\nMaklum bos, barusan otak cloud AI (Google Gemini) sempat kena limit kuota gratis Google (20 request/hari), jadi saya otomatis beralih ke mode offline lokal.\n\nTapi tenang, saya tetap paham seluk-beluk operasional bisnis kita kok! Mau cek omset penjualan, stok bahan baku yang menipis, atau mau ngobrol santai aja nih?`;
+        suggestionText = 'Coba tanyakan: "Berapa omset kita hari ini?" atau "Bahan apa yang perlu di-restock?"';
+      } else if (
+        lower.includes('lucu') ||
+        lower.includes('joke') ||
+        lower.includes('lelucon') ||
+        lower.includes('lawak') ||
+        lower.includes('ngelawak') ||
+        lower.includes('canda') ||
+        lower.includes('bercanda') ||
+        lower.includes('gombal')
+      ) {
+        const jokes = [
+          `Kenapa mesin espresso Kopi Arus nggak pernah curhat kalau lagi capek?\nSoalnya dia tahu, hidup ini memang penuh tekanan (9 bar)! ☕🤣\n\nGimana, lumayan menghibur gak? Atau mau saya hibur pakai angka omset yang manis hari ini?`,
+          `Kopi boleh pahit, tapi omset bisnis kita harus tetap manis kayak senyuman ${userName}! 😄☕\n\nMau saya carikan data penjualan yang bikin senyum hari ini?`,
+          `Tahu nggak kenapa kasir kita selalu ramah?\nKarena kalau judes, nanti pelanggan bayarnya pakai doa, bukan QRIS! 😆💸\n\nAda data penjualan yang mau kita intip bareng sekarang?`,
+        ];
+        aiResponseText = jokes[Math.floor(Math.random() * jokes.length)];
+        suggestionText = 'Coba tanyakan: "Berapa omset kita hari ini?"';
+      } else if (lower.includes('sayang') || lower.includes('cinta') || lower.includes('beb') || lower.includes('ayang')) {
         aiResponseText = `Hahaha siap, sayang! 🥰 Tapi jangan lupa ya, sebagai asisten bisnis setia kamu: ada omset atau stok yang mau dicek bareng hari ini? 😉`;
         suggestionText = 'Coba tanyakan: "Berapa penjualan hari ini?"';
-      } else if (lower.includes('terima kasih') || lower.includes('makasih') || lower.includes('thanks')) {
-        aiResponseText = `Sama-sama ${userName}! Senang banget bisa membantu bisnis Anda. Kalau ada data atau keputusan lain yang butuh dianalisis, panggil saya kapan saja ya! 🚀`;
+      } else if (
+        lower.includes('terima kasih') ||
+        lower.includes('makasih') ||
+        lower.includes('thanks') ||
+        lower.includes('mantap') ||
+        lower.includes('keren') ||
+        lower.includes('top')
+      ) {
+        aiResponseText = `Sama-sama, ${userName}! Senang banget bisa mendampingi bisnis Anda. 🚀\n\nKalau ada data atau keputusan lain yang butuh dianalisis, panggil saya kapan saja ya!`;
         suggestionText = 'Coba tanyakan: "Apa ada rekomendasi untuk meningkatkan penjualan?"';
-      } else if (lower.includes('lucu') || lower.includes('joke') || lower.includes('lelucon') || lower.includes('gombal')) {
-        aiResponseText = `Kopi boleh pahit, tapi omset bisnis kita harus tetap manis kayak kamu, ${userName}! 😄☕
-
-Mau saya carikan data omset yang bikin senyum hari ini?`;
-        suggestionText = 'Coba tanyakan: "Berapa omset kita hari ini?"';
       } else if (
         lower.includes('hai') ||
         lower.includes('halo') ||
@@ -430,23 +536,18 @@ Mau saya carikan data omset yang bikin senyum hari ini?`;
         lower.includes('apa kabar') ||
         lower.includes('pagi') ||
         lower.includes('siang') ||
-        lower.includes('malam')
+        lower.includes('malam') ||
+        lower.includes('sore')
       ) {
-        aiResponseText = `Halo ${userName}! Senang bisa berdiskusi kembali dengan Anda hari ini. 😊
-
-Saya **ARUS Business Copilot**, asisten pendukung keputusan bisnis pribadi Anda. Saya memantau data penjualan, kondisi inventaris, hingga kinerja cabang secara real-time.
-
-Apa fokus bisnis yang ingin kita evaluasi bersama hari ini?`;
+        aiResponseText = `Halo ${userName}! Senang bisa berdiskusi kembali dengan Anda hari ini. 😊\n\nSaya **ARUS Business Copilot**, asisten pendukung keputusan bisnis pribadi Anda. Saya memantau data penjualan kasir, stok inventaris, hingga performa gerai secara real-time.\n\nApa fokus bisnis atau topik yang ingin kita bahas bersama hari ini?`;
         suggestionText = 'Coba tanyakan: "Bagaimana omset dan laba kita hari ini?" atau "Bahan apa yang stoknya menipis?"';
+      } else if (lower.includes('robot') || lower.includes('kamu siapa') || lower.includes('siapa kamu')) {
+        aiResponseText = `Saya **ARUS Business Copilot**, asisten kecerdasan bisnis cerdas untuk platform ARUS. 🤖\n\nTugas saya menemani Anda menganalisis angka transaksi kasir, memantau keamanan audit struk, menjaga stok bahan baku tidak kehabisan, serta memberikan rekomendasi bisnis yang menguntungkan.`;
+        suggestionText = 'Coba tanyakan: "Bagaimana performa toko kita hari ini?"';
       } else {
-        aiResponseText = `Halo ${userName}, saya siap mendampingi Anda menganalisis operasional bisnis! Anda bisa mendiskusikan berbagai topik strategis bersama saya:
-
-• 💰 **Performa Finansial:** *"Berapa total omset dan estimasi laba kita hari ini?"*
-• 📦 **Manajemen Inventaris:** *"Produk apa saja yang perlu segera di-restock?"*
-• ⏰ **Optimalisasi Shift:** *"Pukul berapa jam paling sibuk di toko?"*
-• 🏆 **Strategi Produk:** *"Menu mana yang paling diminati pelanggan?"*
-• 🏬 **Pengawasan Cabang:** *"Bagaimana perbandingan gerai-gerai kita?"*`;
-        suggestionText = 'Pilih salah satu topik di atas untuk memulai analisis mendalam.';
+        // Natural friendly response for any open-ended or casual message, NEVER stiff template
+        aiResponseText = `Siap, ${userName}! Saya menyimak dengan baik. 😄\n\nSebagai asisten bisnis pribadi Anda di platform ARUS, saya bisa diajak ngobrol santai maupun diajak serius menganalisis performa toko—seperti evaluasi omset harian, cek bahan baku yang mau habis, sampai rekomendasi menu paling laris.\n\nAda hal tertentu yang sedang Anda pikirkan untuk bisnis kita hari ini?`;
+        suggestionText = 'Coba tanyakan: "Berapa omset kita hari ini?" atau "Menu apa yang paling laris?"';
       }
     } else {
       // SMART GROUNDED REASONING ENGINE (DSS Berstruktur 3 Lapisan untuk Pertanyaan Bisnis Nyata)
@@ -540,6 +641,28 @@ Seluruh gerai telah terhubung secara real-time dengan sinkronisasi multi-zona wa
 💡 **Rekomendasi Keputusan (DSS):**
 Anda dapat menyaring laporan atau meminta analisis khusus per cabang kapan saja.`);
           suggestionText = 'Coba tanyakan: "Bandingkan omset cabang Sudirman dan Senopati"';
+        } else if (fact.type === 'business_process_summary') {
+          sections.push(`📌 **Alur Proses Bisnis & Arsitektur ARUS:**
+Platform ARUS dirancang khusus untuk mengelola operasional ritel & F&B secara terpadu melalui 4 pilar utama:
+
+1. 🛒 **Point of Sale (POS) & Transaksi Kasir:**
+   • Kasir melayani pesanan pelanggan (Dine-in / Takeaway) dengan opsi pembayaran Tunai dan QRIS dinamis.
+   • Mendukung mode *offline-first*, sehingga kasir tetap bisa melayani pelanggan meski jaringan internet terputus.
+
+2. 📦 **Otomasi Inventaris & Formula Resep:**
+   • Setiap pesanan menu yang dibayar langsung memotong bahan baku (biji kopi, susu, sirup, cup) otomatis sesuai formula resep.
+   • Sistem terus memantau stok minimum dan menghitung HPP (Harga Pokok Penjualan) secara presisi real-time.
+
+3. 🔐 **Audit Ledger Kriptografi (Anti-Fraud):**
+   • Seluruh transaksi dicatat ke dalam buku besar kriptografi dengan rantai hash SHA-256 (*tamper-evident*).
+   • Data struk tidak bisa diubah atau dimanipulasi diam-diam oleh staf, memberikan transparansi audit penuh bagi Owner.
+
+4. 📊 **Business Intelligence & Decision Support System (DSS):**
+   • Data transaksi diagregasi secara real-time ke dashboard Owner untuk memantau omset harian, margin kotor, jam sibuk (*peak hours*), serta rekomendasi restock otomatis.
+
+💡 **Rekomendasi Keputusan (DSS):**
+Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
+          suggestionText = 'Coba tanyakan: "Bagaimana omset kita hari ini?" atau "Bahan apa yang stoknya menipis?"';
         }
       }
 
