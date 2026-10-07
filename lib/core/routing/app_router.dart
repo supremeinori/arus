@@ -21,6 +21,12 @@ import '../../features/sensors/presentation/sensor_test_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/integrity/presentation/integrity_chain_screen.dart';
+import '../../features/game/presentation/game_home_screen.dart';
+import '../../features/search/presentation/global_search_screen.dart';
+import '../../features/about/presentation/about_screen.dart';
+import '../../features/feedback/presentation/feedback_screen.dart';
+import '../../features/users/presentation/user_management_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
@@ -151,6 +157,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/integrity',
+        builder: (context, state) => const IntegrityChainScreen(),
+      ),
+      GoRoute(
+        path: '/game',
+        builder: (context, state) => const GameHomeScreen(),
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (context, state) => const GlobalSearchScreen(),
+      ),
+      GoRoute(
+        path: '/about',
+        builder: (context, state) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: '/feedback',
+        builder: (context, state) => const FeedbackScreen(),
+      ),
+      GoRoute(
+        path: '/users',
+        builder: (context, state) => const UserManagementScreen(),
       ),
     ],
   );

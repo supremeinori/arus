@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -127,6 +128,48 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
           ],
+
+          Text(
+            'Administrasi & Aplikasi',
+            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 0,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.people_outline_rounded, color: AppTheme.primaryBlue),
+                  title: Text('Kelola Staf & Akun', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  subtitle: Text('Atur hak akses kasir, manager, dan role pengguna', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
+                  onTap: () => context.push('/users'),
+                ),
+                const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),
+                ListTile(
+                  leading: const Icon(Icons.feedback_outlined, color: AppTheme.primaryBlue),
+                  title: Text('Kirim Masukan & Feedback', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  subtitle: Text('Saran pengembangan fitur dan laporan bug sistem', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
+                  onTap: () => context.push('/feedback'),
+                ),
+                const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),
+                ListTile(
+                  leading: const Icon(Icons.info_outline_rounded, color: AppTheme.primaryBlue),
+                  title: Text('Tentang ARUS Decision Hub', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  subtitle: Text('Versi rilis v2.4.0, lisensi, & arsitektur sistem', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
+                  onTap: () => context.push('/about'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
 
           // Logout Button
           OutlinedButton.icon(

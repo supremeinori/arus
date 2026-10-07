@@ -21,6 +21,11 @@ class OperationsHubScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.search_rounded, color: AppTheme.accentBlack),
+            tooltip: 'Pencarian Global',
+            onPressed: () => context.push('/search'),
+          ),
+          IconButton(
             icon: Badge(
               isLabelVisible: unreadCount > 0,
               backgroundColor: const Color(0xFFDC2626),
@@ -105,6 +110,24 @@ class OperationsHubScreen extends ConsumerWidget {
             subtitle: 'Preferensi multi-currency (IDR/USD/EUR) & zona waktu cabang',
             badgeText: 'Kurs',
             onTap: () => context.push('/settings'),
+          ),
+          const SizedBox(height: 10),
+          _buildOperationTile(
+            context,
+            icon: Icons.security_rounded,
+            title: 'Ledger Integritas & Verifikasi',
+            subtitle: 'Audit trail rantai blok SHA-256 untuk mendeteksi manipulasi data',
+            badgeText: 'Audit Chain',
+            onTap: () => context.push('/integrity'),
+          ),
+          const SizedBox(height: 10),
+          _buildOperationTile(
+            context,
+            icon: Icons.sports_esports_outlined,
+            title: 'Simulasi Keputusan Bisnis',
+            subtitle: 'Mini game interaktif uji ketangkasan strategi operasional toko',
+            badgeText: 'Simulasi',
+            onTap: () => context.push('/game'),
           ),
           const SizedBox(height: 10),
           _buildOperationTile(
