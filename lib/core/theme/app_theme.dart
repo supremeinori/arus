@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Brand Colors - Modern Professional Enterprise Palette
-  static const primaryBlue = Color(0xFF1D4ED8); // Royal Blue Enterprise
-  static const primaryBlueHover = Color(0xFF1E40AF); // Deeper Royal Blue
-  static const lightBlueBg = Color(0xFFEFF6FF); // Soft Blue Surface (Blue-50)
-  static const darkBlue = Color(0xFF1E3A8A);
+  // Brand Colors - Modern Professional Toska / Teal Palette
+  static const primaryToska = Color(0xFF0D9488); // Modern Toska Enterprise (Teal 600)
+  static const primaryToskaHover = Color(0xFF0F766E); // Deeper Toska (Teal 700)
+  static const lightToskaBg = Color(0xFFF0FDFA); // Soft Toska Surface (Teal 50)
+  static const darkToska = Color(0xFF115E59); // Deep Forest Toska (Teal 800)
+
+  // Backward compatible aliases
+  static const primaryBlue = primaryToska;
+  static const primaryBlueHover = primaryToskaHover;
+  static const lightBlueBg = lightToskaBg;
+  static const darkBlue = darkToska;
+
   static const pureWhite = Color(0xFFFFFFFF);
   static const backgroundWhite = Color(0xFFF8FAFC); // Clean Canvas (Slate-50)
   static const surfaceWhite = Color(0xFFFFFFFF);

@@ -3,6 +3,13 @@ import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
+// Persistent in-memory demo stock data for offline/demo operation
+const sharedDemoStocks = [
+  { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-001', sku: 'BEV-COF-01', product_name: 'Kopi Susu Gula Aren', unit: 'Cup', price_idr: 22000, cost_idr: 8500, quantity: 45, reorder_level: 15, avg_lead_time_days: 2, is_low_stock: false, updated_at: new Date() },
+  { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-002', sku: 'ING-MILK-01', product_name: 'Susu Fresh Milk Pasteurisasi', unit: 'Liter', price_idr: 18000, cost_idr: 14000, quantity: 3, reorder_level: 10, avg_lead_time_days: 1, is_low_stock: true, updated_at: new Date() },
+  { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-003', sku: 'ING-BEA-01', product_name: 'Biji Kopi House Blend 1kg', unit: 'Pack', price_idr: 120000, cost_idr: 80000, quantity: 12, reorder_level: 6, avg_lead_time_days: 3, is_low_stock: false, updated_at: new Date() },
+];
+
 export class InventoryService {
   /**
    * Menampilkan daftar stok per outlet.
@@ -36,15 +43,24 @@ export class InventoryService {
     }
 
     if (!(await isDbAvailable())) {
-      const demoStocks = [
-        { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-001', sku: 'BEV-COF-01', product_name: 'Kopi Susu Gula Aren', unit: 'Cup', price_idr: 22000, cost_idr: userScope.role !== Role.staff ? 8500 : undefined, quantity: 45, reorder_level: 15, avg_lead_time_days: 2, is_low_stock: false, updated_at: new Date() },
-        { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-002', sku: 'ING-MILK-01', product_name: 'Susu Fresh Milk Pasteurisasi', unit: 'Liter', price_idr: 18000, cost_idr: userScope.role !== Role.staff ? 14000 : undefined, quantity: 3, reorder_level: 10, avg_lead_time_days: 1, is_low_stock: true, updated_at: new Date() },
-        { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-003', sku: 'ING-BEA-01', product_name: 'Biji Kopi House Blend 1kg', unit: 'Pack', price_idr: 120000, cost_idr: userScope.role !== Role.staff ? 80000 : undefined, quantity: 12, reorder_level: 6, avg_lead_time_days: 3, is_low_stock: false, updated_at: new Date() },
-      ];
-
+      let filtered = [...sharedDemoStocks];
+      if (query.outlet_id) {
+        filtered = filtered.filter((s) => s.outlet_id === query.outlet_id);
+      }
+      if (query.low_stock) {
+        filtered = filtered.filter((s) => s.is_low_stock);
+      }
+      if (query.q) {
+        const q = query.q.toLowerCase();
+        filtered = filtered.filter((s) => s.product_name.toLowerCase().includes(q) || s.sku.toLowerCase().includes(q));
+      }
+      const mapped = filtered.map((item) => ({
+        ...item,
+        cost_idr: userScope.role !== Role.staff ? item.cost_idr : undefined,
+      }));
       return {
-        stocks: demoStocks,
-        meta: { page: 1, page_size: 50, total: demoStocks.length },
+        stocks: mapped,
+        meta: { page: 1, page_size: pageSize, total: mapped.length },
       };
     }
 
@@ -115,15 +131,24 @@ export class InventoryService {
         },
       };
     } catch (_) {
-      const demoStocks = [
-        { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-001', sku: 'BEV-COF-01', product_name: 'Kopi Susu Gula Aren', unit: 'Cup', price_idr: 22000, cost_idr: userScope.role !== Role.staff ? 8500 : undefined, quantity: 45, reorder_level: 15, avg_lead_time_days: 2, is_low_stock: false, updated_at: new Date() },
-        { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-002', sku: 'ING-MILK-01', product_name: 'Susu Fresh Milk Pasteurisasi', unit: 'Liter', price_idr: 18000, cost_idr: userScope.role !== Role.staff ? 14000 : undefined, quantity: 3, reorder_level: 10, avg_lead_time_days: 1, is_low_stock: true, updated_at: new Date() },
-        { outlet_id: 'out-001', outlet_name: 'Kopi Arus - Sudirman (HQ)', product_id: 'prod-003', sku: 'ING-BEA-01', product_name: 'Biji Kopi House Blend 1kg', unit: 'Pack', price_idr: 120000, cost_idr: userScope.role !== Role.staff ? 80000 : undefined, quantity: 12, reorder_level: 6, avg_lead_time_days: 3, is_low_stock: false, updated_at: new Date() },
-      ];
-
+      let filtered = [...sharedDemoStocks];
+      if (query.outlet_id) {
+        filtered = filtered.filter((s) => s.outlet_id === query.outlet_id);
+      }
+      if (query.low_stock) {
+        filtered = filtered.filter((s) => s.is_low_stock);
+      }
+      if (query.q) {
+        const q = query.q.toLowerCase();
+        filtered = filtered.filter((s) => s.product_name.toLowerCase().includes(q) || s.sku.toLowerCase().includes(q));
+      }
+      const mapped = filtered.map((item) => ({
+        ...item,
+        cost_idr: userScope.role !== Role.staff ? item.cost_idr : undefined,
+      }));
       return {
-        stocks: demoStocks,
-        meta: { page: 1, page_size: 50, total: demoStocks.length },
+        stocks: mapped,
+        meta: { page: 1, page_size: pageSize, total: mapped.length },
       };
     }
   }
@@ -155,12 +180,45 @@ export class InventoryService {
       throw new AppError('INVALID_INPUT', 400, 'Tipe penyesuaian hanya mendukung correction, waste, atau restock.');
     }
 
-    if (!(await isDbAvailable())) {
+    const applyDemoAdjustment = () => {
+      const targetItem = sharedDemoStocks.find(
+        (s) => s.product_id === data.product_id || s.sku === data.product_id
+      );
+      if (targetItem) {
+        const newQuantity = targetItem.quantity + data.quantity_delta;
+        if (newQuantity < 0) {
+          throw new AppError('INSUFFICIENT_STOCK', 400, `Stok tidak mencukupi untuk pengurangan ini (stok saat ini: ${targetItem.quantity}).`);
+        }
+        targetItem.quantity = newQuantity;
+        targetItem.is_low_stock = targetItem.quantity <= targetItem.reorder_level;
+        targetItem.updated_at = new Date();
+
+        return {
+          inventory: {
+            outlet_id: targetItem.outlet_id,
+            product_id: targetItem.product_id,
+            quantity: targetItem.quantity,
+          },
+          movement: {
+            id: `mov-${Date.now()}`,
+            outlet_id: targetItem.outlet_id,
+            product_id: targetItem.product_id,
+            movement_type: data.movement_type,
+            quantity_delta: data.quantity_delta,
+            quantity_after: targetItem.quantity,
+            note: data.note?.trim() || null,
+            created_by: userId,
+            created_at: new Date(),
+          },
+        };
+      }
+
+      const fallbackQty = Math.max(0, 10 + data.quantity_delta);
       return {
         inventory: {
           outlet_id: data.outlet_id,
           product_id: data.product_id,
-          quantity: Math.max(0, 10 + data.quantity_delta),
+          quantity: fallbackQty,
         },
         movement: {
           id: `mov-${Date.now()}`,
@@ -168,70 +226,79 @@ export class InventoryService {
           product_id: data.product_id,
           movement_type: data.movement_type,
           quantity_delta: data.quantity_delta,
-          quantity_after: Math.max(0, 10 + data.quantity_delta),
+          quantity_after: fallbackQty,
           note: data.note?.trim() || null,
           created_by: userId,
           created_at: new Date(),
         },
       };
+    };
+
+    if (!(await isDbAvailable())) {
+      return applyDemoAdjustment();
     }
 
-    return prisma.$transaction(async (tx) => {
-      // Ambil stok terkini
-      const inventory = await tx.inventory.findUnique({
-        where: {
-          outlet_id_product_id: {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        // Ambil stok terkini
+        const inventory = await tx.inventory.findUnique({
+          where: {
+            outlet_id_product_id: {
+              outlet_id: data.outlet_id,
+              product_id: data.product_id,
+            },
+          },
+        });
+
+        if (!inventory) {
+          throw new AppError('NOT_FOUND', 404, 'Data inventaris produk di outlet ini tidak ditemukan.');
+        }
+
+        const newQuantity = inventory.quantity + data.quantity_delta;
+        if (newQuantity < 0) {
+          throw new AppError('INSUFFICIENT_STOCK', 400, `Stok tidak mencukupi untuk pengurangan ini (stok saat ini: ${inventory.quantity}).`);
+        }
+
+        // 1. Update jumlah stok di tabel Inventory
+        const updatedInventory = await tx.inventory.update({
+          where: {
+            outlet_id_product_id: {
+              outlet_id: data.outlet_id,
+              product_id: data.product_id,
+            },
+          },
+          data: {
+            quantity: newQuantity,
+          },
+        });
+
+        // 2. Buat rekaman audit mutasi (InventoryMovement)
+        const movement = await tx.inventoryMovement.create({
+          data: {
             outlet_id: data.outlet_id,
             product_id: data.product_id,
+            movement_type: data.movement_type,
+            quantity_delta: data.quantity_delta,
+            quantity_after: newQuantity,
+            note: data.note?.trim() || null,
+            created_by: userId,
           },
-        },
-      });
-
-      if (!inventory) {
-        throw new AppError('NOT_FOUND', 404, 'Data inventaris produk di outlet ini tidak ditemukan.');
-      }
-
-      const newQuantity = inventory.quantity + data.quantity_delta;
-      if (newQuantity < 0) {
-        throw new AppError('INSUFFICIENT_STOCK', 400, `Stok tidak mencukupi untuk pengurangan ini (stok saat ini: ${inventory.quantity}).`);
-      }
-
-      // 1. Update jumlah stok di tabel Inventory
-      const updatedInventory = await tx.inventory.update({
-        where: {
-          outlet_id_product_id: {
-            outlet_id: data.outlet_id,
-            product_id: data.product_id,
+          include: {
+            product: { select: { sku: true, name: true, unit: true } },
+            outlet: { select: { id: true, name: true } },
+            creator: { select: { id: true, name: true, role: true } },
           },
-        },
-        data: {
-          quantity: newQuantity,
-        },
-      });
+        });
 
-      // 2. Buat rekaman audit mutasi (InventoryMovement)
-      const movement = await tx.inventoryMovement.create({
-        data: {
-          outlet_id: data.outlet_id,
-          product_id: data.product_id,
-          movement_type: data.movement_type,
-          quantity_delta: data.quantity_delta,
-          quantity_after: newQuantity,
-          note: data.note?.trim() || null,
-          created_by: userId,
-        },
-        include: {
-          product: { select: { sku: true, name: true, unit: true } },
-          outlet: { select: { id: true, name: true } },
-          creator: { select: { id: true, name: true, role: true } },
-        },
+        return {
+          inventory: updatedInventory,
+          movement,
+        };
       });
-
-      return {
-        inventory: updatedInventory,
-        movement,
-      };
-    });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      return applyDemoAdjustment();
+    }
   }
 
   /**

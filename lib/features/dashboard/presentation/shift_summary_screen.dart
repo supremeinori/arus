@@ -32,9 +32,9 @@ class ShiftSummaryScreen extends ConsumerWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.blue.shade100,
+                  backgroundColor: Colors.teal.shade100,
                   radius: 24,
-                  child: const Icon(Icons.badge_outlined, color: Colors.blue),
+                  child: const Icon(Icons.badge_outlined, color: Colors.teal),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -99,7 +99,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
                             title: 'Non-Tunai (QRIS)',
                             value: shift.formattedQrisRevenue,
                             icon: Icons.qr_code_2_rounded,
-                            color: Colors.blue,
+                            color: Colors.teal,
                           ),
                         ),
                       ],
@@ -125,7 +125,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: AppTheme.primaryToska,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -135,18 +135,18 @@ class ShiftSummaryScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Colors.teal.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: Colors.teal.shade200),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue),
+                  Icon(Icons.info_outline, color: Colors.teal),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Pastikan jumlah uang tunai di laci kasir cocok dengan total kas di atas saat serah terima shift.',
-                      style: TextStyle(fontSize: 12, color: Colors.blue),
+                      style: TextStyle(fontSize: 12, color: Colors.teal),
                     ),
                   ),
                 ],

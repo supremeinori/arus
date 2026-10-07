@@ -175,7 +175,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
         final item = list[index];
 
         IconData icon = Icons.info_outline;
-        Color color = Colors.blue;
+        Color color = AppTheme.primaryToska;
 
         if (item.type == 'low_stock') {
           icon = Icons.warning_amber_rounded;
@@ -191,7 +191,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 10),
           elevation: 0,
-          color: item.isRead ? Colors.white : Colors.blue.shade50.withAlpha(50),
+          color: item.isRead ? Colors.white : AppTheme.lightToskaBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(

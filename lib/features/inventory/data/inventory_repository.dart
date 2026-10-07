@@ -19,11 +19,11 @@ class InventoryRepository {
       productId: 'prod-001',
       sku: 'BEV-COF-01',
       productName: 'Kopi Susu Gula Aren',
-      unit: 'cup',
+      unit: 'Cup',
       priceIdr: 22000,
       costIdr: 8500,
       quantity: 45,
-      reorderLevel: 10,
+      reorderLevel: 15,
       avgLeadTimeDays: 2,
       isLowStock: false,
       updatedAt: DateTime.now(),
@@ -32,14 +32,14 @@ class InventoryRepository {
       outletId: 'out-001',
       outletName: 'Kopi Arus - Sudirman (HQ)',
       productId: 'prod-002',
-      sku: 'BEV-COF-02',
-      productName: 'Americano Double Shot',
-      unit: 'cup',
+      sku: 'ING-MILK-01',
+      productName: 'Susu Fresh Milk Pasteurisasi',
+      unit: 'Liter',
       priceIdr: 18000,
-      costIdr: 5000,
-      quantity: 4,
+      costIdr: 14000,
+      quantity: 3,
       reorderLevel: 10,
-      avgLeadTimeDays: 2,
+      avgLeadTimeDays: 1,
       isLowStock: true,
       updatedAt: DateTime.now(),
     ),
@@ -47,30 +47,15 @@ class InventoryRepository {
       outletId: 'out-001',
       outletName: 'Kopi Arus - Sudirman (HQ)',
       productId: 'prod-003',
-      sku: 'BEV-NCH-01',
-      productName: 'Matcha Latte Oatmilk',
-      unit: 'cup',
-      priceIdr: 28000,
-      costIdr: 11000,
-      quantity: 18,
-      reorderLevel: 5,
+      sku: 'ING-BEA-01',
+      productName: 'Biji Kopi House Blend 1kg',
+      unit: 'Pack',
+      priceIdr: 120000,
+      costIdr: 80000,
+      quantity: 12,
+      reorderLevel: 6,
       avgLeadTimeDays: 3,
       isLowStock: false,
-      updatedAt: DateTime.now(),
-    ),
-    InventoryStockItem(
-      outletId: 'out-001',
-      outletName: 'Kopi Arus - Sudirman (HQ)',
-      productId: 'prod-004',
-      sku: 'FOD-PST-01',
-      productName: 'Croissant Butter Original',
-      unit: 'pcs',
-      priceIdr: 25000,
-      costIdr: 12000,
-      quantity: 3,
-      reorderLevel: 8,
-      avgLeadTimeDays: 1,
-      isLowStock: true,
       updatedAt: DateTime.now(),
     ),
   ];
@@ -115,19 +100,11 @@ class InventoryRepository {
     required int quantityDelta,
     String? note,
   }) async {
-    try {
-      await _client.post('/inventory/adjustments', data: {
-        'outlet_id': outletId,
-        'product_id': productId,
-        'movement_type': movementType,
-        'quantity_delta': quantityDelta,
-        'note': note,
-      });
-    } catch (_) {
-      final idx = _demoStocks.indexWhere((i) => i.productId == productId);
+    void updateLocal() {
+      final idx = _demoStocks.indexWhere((i) => i.productId == productId || i.sku == productId);
       if (idx >= 0) {
         final current = _demoStocks[idx];
-        final newQty = current.quantity + quantityDelta;
+        final newQty = (current.quantity + quantityDelta).clamp(0, 999999);
         _demoStocks[idx] = InventoryStockItem(
           outletId: current.outletId,
           outletName: current.outletName,
@@ -137,13 +114,26 @@ class InventoryRepository {
           unit: current.unit,
           priceIdr: current.priceIdr,
           costIdr: current.costIdr,
-          quantity: newQty < 0 ? 0 : newQty,
+          quantity: newQty,
           reorderLevel: current.reorderLevel,
           avgLeadTimeDays: current.avgLeadTimeDays,
           isLowStock: newQty <= current.reorderLevel,
           updatedAt: DateTime.now(),
         );
       }
+    }
+
+    try {
+      await _client.post('/inventory/adjustments', data: {
+        'outlet_id': outletId,
+        'product_id': productId,
+        'movement_type': movementType,
+        'quantity_delta': quantityDelta,
+        'note': note,
+      });
+      updateLocal();
+    } catch (_) {
+      updateLocal();
     }
   }
 
