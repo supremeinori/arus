@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import { requestIdMiddleware } from './middleware/request-id';
 import { errorHandler } from './middleware/error';
 import { AppError, ErrorCodes } from './shared/errors';
@@ -21,10 +22,20 @@ import fxRoute from './modules/fx/fx.route';
 const app = express();
 
 // Security and utility middlewares
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 app.use(requestIdMiddleware);
+
+// Serve Simple POS Static Web Frontend
+const publicDir = path.join(__dirname, '../public');
+app.use(express.static(publicDir));
+app.get('/pos', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'pos.html'));
+});
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'pos.html'));
+});
 
 // Mount routes
 app.use('/api', healthRoute);

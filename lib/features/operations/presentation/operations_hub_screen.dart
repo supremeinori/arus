@@ -37,6 +37,15 @@ class OperationsHubScreen extends ConsumerWidget {
         children: [
           _buildOperationTile(
             context,
+            icon: Icons.point_of_sale_rounded,
+            title: 'Mesin Kasir (POS)',
+            subtitle: 'Catat transaksi penjualan kasir, kelola keranjang & cetak struk',
+            badgeText: 'Kasir',
+            onTap: () => context.push('/pos'),
+          ),
+          const SizedBox(height: 10),
+          _buildOperationTile(
+            context,
             icon: Icons.inventory_2_outlined,
             title: 'Katalog Produk & Kategori',
             subtitle: 'Lihat daftar harga, HPP, tambah produk baru & kategori',

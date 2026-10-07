@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
@@ -43,11 +44,23 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppTheme.accentBlack),
+                tooltip: 'Kembali',
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         title: Text(
           'Kasir POS',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_business_outlined, color: AppTheme.primaryBlue),
+            tooltip: 'Tambah Produk Baru',
+            onPressed: () => context.push('/catalog/new'),
+          ),
           if (cartState.items.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_outlined, color: AppTheme.accentBlack),
@@ -172,9 +185,60 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
                 if (filtered.isEmpty) {
                   return Center(
-                    child: Text(
-                      'Tidak ada produk yang cocok.',
-                      style: GoogleFonts.lexend(color: const Color(0xFF64748B)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEFF6FF),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.inventory_2_outlined, size: 36, color: AppTheme.primaryBlue),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            products.isEmpty ? 'Katalog Masih Kosong' : 'Tidak Ada Produk Sesuai',
+                            style: GoogleFonts.lexend(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.accentBlack,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            products.isEmpty
+                                ? 'Tambahkan produk baru ke katalog untuk mulai transaksi.'
+                                : 'Coba ubah kata kunci atau pilih kategori lain.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.lexend(
+                              fontSize: 12.5,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => context.push('/catalog/new'),
+                            icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                            label: Text(
+                              'Tambah Produk Baru',
+                              style: GoogleFonts.lexend(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryBlue,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -311,11 +375,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryBlue,
+                        elevation: 0,
                         minimumSize: const Size(130, 44),
                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                          side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
