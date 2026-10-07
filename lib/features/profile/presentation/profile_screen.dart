@@ -44,7 +44,9 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   child: Center(
                     child: Text(
-                      user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                      (user != null && user.name.isNotEmpty)
+                          ? user.name[0].toUpperCase()
+                          : 'U',
                       style: GoogleFonts.lexend(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,

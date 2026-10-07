@@ -243,11 +243,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   );
                 }
 
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+
                 return GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 1.05,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: screenWidth >= 600 ? 1.2 : 1.05,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),

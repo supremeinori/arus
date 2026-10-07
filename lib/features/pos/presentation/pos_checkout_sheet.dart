@@ -62,8 +62,11 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
     });
 
     try {
+      final userSuffix = (user != null && user.id.length >= 4)
+          ? user.id.substring(0, 4)
+          : 'demo';
+      final clientRequestId = 'req-${DateTime.now().millisecondsSinceEpoch}-$userSuffix';
       final repo = ref.read(posRepositoryProvider);
-      final clientRequestId = 'req-${DateTime.now().millisecondsSinceEpoch}-${user?.id.substring(0, 5)}';
 
       final transaction = await repo.createTransaction(
         clientRequestId: clientRequestId,

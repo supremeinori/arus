@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 
@@ -114,7 +116,22 @@ class ShiftSummaryScreen extends ConsumerWidget {
               },
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: () => context.push('/pos'),
+              icon: const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 20),
+              label: const Text(
+                'Buka Mesin Kasir Sekarang',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
