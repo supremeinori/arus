@@ -74,7 +74,7 @@ ${JSON.stringify(facts, null, 2)}`;
             },
             contents,
           }),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(10000),
         }
       );
 
@@ -85,8 +85,13 @@ ${JSON.stringify(facts, null, 2)}`;
       }
 
       const json: any = await response.json();
-      return json.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    } catch (_) {
+      const text = json.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      if (text) {
+        console.log('[Gemini API Success] Received response length:', text.length);
+      }
+      return text;
+    } catch (err: any) {
+      console.warn('[Gemini API Error]', err?.message || err);
       return null;
     }
   }
