@@ -27,7 +27,7 @@ export class TransactionsController {
       const { id } = req.params;
       const { reason } = req.body;
 
-      const updated = await transactionsService.voidTransaction(id, user.id, reason);
+      const updated = await transactionsService.voidTransaction(id, user.id, reason, user.role);
 
       res.status(200).json({ data: updated });
     } catch (err) {

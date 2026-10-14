@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { aiAssistantController } from './ai.controller';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, requireRole } from '../../middleware/auth';
+import { Role } from '@prisma/client';
 
 const router = Router();
 
-// Proteksi auth untuk seluruh endpoint AI
-router.use('/ai', requireAuth);
+// Proteksi auth & role untuk seluruh endpoint AI (Owner & Manager only per SRS 2.2)
+router.use('/ai', requireAuth, requireRole([Role.owner, Role.manager]));
 
 // 1. POST /api/ai/chat - Kirim pesan & dapatkan jawaban grounded fakta
 router.post('/ai/chat', (req, res, next) => aiAssistantController.chat(req, res, next));

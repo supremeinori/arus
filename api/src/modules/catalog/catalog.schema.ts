@@ -15,6 +15,7 @@ export const createProductSchema = z.object({
   price_idr: z.number().int().positive('Harga jual harus lebih dari 0'),
   cost_idr: z.number().int().nonnegative('HPP tidak boleh negatif').optional(),
   category_id: z.string().min(1).optional(),
+  image_url: z.string().url().or(z.literal('')).optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -24,6 +25,7 @@ export const updateProductSchema = z.object({
   price_idr: z.number().int().positive().optional(),
   cost_idr: z.number().int().nonnegative().optional(),
   category_id: z.string().min(1).nullable().optional(),
+  image_url: z.string().url().or(z.literal('')).nullable().optional(),
   is_active: z.boolean().optional(),
 });
 

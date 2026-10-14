@@ -24,10 +24,43 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   final _unitController = TextEditingController(text: 'cup');
   final _priceController = TextEditingController();
   final _costController = TextEditingController();
+  final _imageUrlController = TextEditingController();
 
   String? _selectedCategoryId;
   bool _isLoading = false;
+  bool _isFetchingInitial = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.productId != null) {
+      _loadProductData();
+    }
+  }
+
+  Future<void> _loadProductData() async {
+    setState(() => _isFetchingInitial = true);
+    try {
+      final repo = ref.read(catalogRepositoryProvider);
+      final product = await repo.getProductById(widget.productId!);
+      _nameController.text = product.name;
+      _skuController.text = product.sku;
+      _unitController.text = product.unit;
+      _priceController.text = product.priceIdr.toString();
+      if (product.costIdr != null) {
+        _costController.text = product.costIdr.toString();
+      }
+      if (product.imageUrl != null) {
+        _imageUrlController.text = product.imageUrl!;
+      }
+      _selectedCategoryId = product.categoryId;
+    } catch (e) {
+      _errorMessage = 'Gagal memuat data produk: $e';
+    } finally {
+      if (mounted) setState(() => _isFetchingInitial = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -36,6 +69,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _unitController.dispose();
     _priceController.dispose();
     _costController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -53,15 +87,30 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       final cost = _costController.text.isNotEmpty
           ? int.parse(_costController.text.replaceAll(RegExp(r'[^0-9]'), ''))
           : null;
+      final imageUrl = _imageUrlController.text.trim().isEmpty ? null : _imageUrlController.text.trim();
 
-      await repo.createProduct(
-        name: _nameController.text.trim(),
-        sku: _skuController.text.trim(),
-        unit: _unitController.text.trim(),
-        priceIdr: price,
-        costIdr: cost,
-        categoryId: _selectedCategoryId,
-      );
+      if (widget.productId == null) {
+        await repo.createProduct(
+          name: _nameController.text.trim(),
+          sku: _skuController.text.trim(),
+          unit: _unitController.text.trim(),
+          priceIdr: price,
+          costIdr: cost,
+          categoryId: _selectedCategoryId,
+          imageUrl: imageUrl,
+        );
+      } else {
+        await repo.updateProduct(
+          widget.productId!,
+          name: _nameController.text.trim(),
+          sku: _skuController.text.trim(),
+          unit: _unitController.text.trim(),
+          priceIdr: price,
+          costIdr: cost,
+          categoryId: _selectedCategoryId,
+          imageUrl: imageUrl,
+        );
+      }
 
       ref.invalidate(productListProvider);
 
@@ -70,7 +119,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           SnackBar(
             backgroundColor: AppTheme.accentBlack,
             content: Text(
-              'Produk baru berhasil ditambahkan!',
+              widget.productId == null
+                  ? 'Produk baru berhasil ditambahkan ke database!'
+                  : 'Produk berhasil diperbarui di database!',
               style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
             ),
           ),
@@ -97,69 +148,46 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_errorMessage != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12.5),
+      body: _isFetchingInitial
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12.5),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 16),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
 
-              // Nama Produk
-              TextFormField(
-                controller: _nameController,
-                style: GoogleFonts.lexend(fontSize: 14),
-                decoration: InputDecoration(
-                  labelText: 'Nama Produk *',
-                  hintText: 'Contoh: Es Kopi Susu Aren',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                  ),
-                ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Nama wajib diisi' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // SKU & Satuan
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _skuController,
-                      textCapitalization: TextCapitalization.characters,
+                    // Nama Produk
+                    TextFormField(
+                      controller: _nameController,
                       style: GoogleFonts.lexend(fontSize: 14),
                       decoration: InputDecoration(
-                        labelText: 'Kode SKU *',
-                        hintText: 'KOP-11',
+                        labelText: 'Nama Produk *',
+                        hintText: 'Contoh: Es Kopi Susu Aren',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
@@ -170,17 +198,104 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         ),
                       ),
                       validator: (val) =>
-                          val == null || val.trim().isEmpty ? 'SKU wajib diisi' : null,
+                          val == null || val.trim().isEmpty ? 'Nama produk wajib diisi' : null,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _unitController,
+                    const SizedBox(height: 16),
+
+                    // Baris SKU & Satuan
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _skuController,
+                            style: GoogleFonts.lexend(fontSize: 14),
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: InputDecoration(
+                              labelText: 'SKU *',
+                              hintText: 'KOP-03',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                            ),
+                            validator: (val) =>
+                                val == null || val.trim().isEmpty ? 'SKU wajib diisi' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 1,
+                          child: TextFormField(
+                            controller: _unitController,
+                            style: GoogleFonts.lexend(fontSize: 14),
+                            decoration: InputDecoration(
+                              labelText: 'Satuan *',
+                              hintText: 'cup',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                            ),
+                            validator: (val) =>
+                                val == null || val.trim().isEmpty ? 'Wajib diisi' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Kategori Dropdown
+                    categoriesState.when(
+                      data: (categories) {
+                        return DropdownButtonFormField<String>(
+                          initialValue: _selectedCategoryId,
+                          decoration: InputDecoration(
+                            labelText: 'Kategori Produk',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                            ),
+                          ),
+                          items: categories.map((c) {
+                            return DropdownMenuItem(
+                              value: c.id,
+                              child: Text(c.name, style: GoogleFonts.lexend(fontSize: 14)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedCategoryId = val;
+                            });
+                          },
+                        );
+                      },
+                      loading: () => const LinearProgressIndicator(),
+                      error: (err, stack) => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // URL Foto / Gambar Produk
+                    TextFormField(
+                      controller: _imageUrlController,
                       style: GoogleFonts.lexend(fontSize: 14),
+                      keyboardType: TextInputType.url,
                       decoration: InputDecoration(
-                        labelText: 'Satuan',
-                        hintText: 'cup / pcs',
+                        labelText: 'URL Gambar Menu (Unsplash / Web)',
+                        hintText: 'https://images.unsplash.com/...',
+                        prefixIcon: const Icon(Icons.image_outlined, color: AppTheme.primaryBlue, size: 20),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
@@ -191,123 +306,87 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-              // Kategori Dropdown
-              categoriesState.when(
-                data: (categories) => DropdownButtonFormField<String>(
-                  initialValue: _selectedCategoryId,
-                  style: GoogleFonts.lexend(fontSize: 14, color: AppTheme.accentBlack),
-                  decoration: InputDecoration(
-                    labelText: 'Kategori Produk',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                    // Baris Harga Jual & HPP
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _priceController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            style: GoogleFonts.lexend(fontSize: 14),
+                            decoration: InputDecoration(
+                              labelText: 'Harga Jual (Rp) *',
+                              hintText: '22000',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                            ),
+                            validator: (val) =>
+                                val == null || val.trim().isEmpty ? 'Harga jual wajib diisi' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _costController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            style: GoogleFonts.lexend(fontSize: 14),
+                            decoration: InputDecoration(
+                              labelText: 'HPP / Modal (Rp)',
+                              hintText: '9000',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                    const SizedBox(height: 28),
+
+                    // Submit Button
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              widget.productId == null ? 'Simpan Produk Baru' : 'Simpan Perubahan',
+                              style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                            ),
                     ),
-                  ),
-                  items: categories.map((cat) {
-                    return DropdownMenuItem(
-                      value: cat.id,
-                      child: Text(cat.name, style: GoogleFonts.lexend(fontSize: 13.5)),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedCategoryId = val;
-                    });
-                  },
+                  ],
                 ),
-                loading: () => const LinearProgressIndicator(),
-                error: (_, _) => const SizedBox.shrink(),
               ),
-              const SizedBox(height: 16),
-
-              // Harga Jual & HPP
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: GoogleFonts.lexend(fontSize: 14),
-                      decoration: InputDecoration(
-                        labelText: 'Harga Jual (Rp) *',
-                        hintText: '22000',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                        ),
-                      ),
-                      validator: (val) =>
-                          val == null || val.trim().isEmpty ? 'Harga jual wajib diisi' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _costController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: GoogleFonts.lexend(fontSize: 14),
-                      decoration: InputDecoration(
-                        labelText: 'HPP / Modal (Rp)',
-                        hintText: '9000',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              // Submit Button
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Simpan Produk',
-                        style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

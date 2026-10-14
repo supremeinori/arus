@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
@@ -239,6 +240,47 @@ export class TransactionsService {
         });
       }
 
+      // 5. Anchor ke Rantai Blok SHA-256 (Blockchain Record)
+      const lastBlock = await tx.blockchainRecord.findFirst({
+        where: { outlet_id: data.outlet_id },
+        orderBy: { block_index: 'desc' },
+      });
+
+      const blockIndex = (lastBlock?.block_index ?? 0) + 1;
+      const prevHash = lastBlock?.block_hash ?? '0'.repeat(64);
+
+      const canonicalData = {
+        cashier_id: cashierId,
+        created_at: newTransaction.created_at.toISOString(),
+        discount_idr: newTransaction.discount_idr,
+        id: newTransaction.id,
+        items: preparedItems.map((it) => ({
+          line_total_idr: it.line_total_idr,
+          product_id: it.product_id,
+          quantity: it.quantity,
+          unit_price_idr: it.unit_price_idr,
+        })),
+        outlet_id: newTransaction.outlet_id,
+        payment_method: newTransaction.payment_method,
+        receipt_no: newTransaction.receipt_no,
+        subtotal_idr: newTransaction.subtotal_idr,
+        total_idr: newTransaction.total_idr,
+      };
+
+      const dataHash = crypto.createHash('sha256').update(JSON.stringify(canonicalData)).digest('hex');
+      const blockHash = crypto.createHash('sha256').update(`${data.outlet_id}${blockIndex}${dataHash}${prevHash}`).digest('hex');
+
+      await tx.blockchainRecord.create({
+        data: {
+          outlet_id: data.outlet_id,
+          transaction_id: newTransaction.id,
+          block_index: blockIndex,
+          data_hash: dataHash,
+          prev_hash: prevHash,
+          block_hash: blockHash,
+        },
+      });
+
       return newTransaction;
     });
   }
@@ -250,7 +292,8 @@ export class TransactionsService {
   async voidTransaction(
     transactionId: string,
     voidedByUserId: string,
-    reason: string
+    reason: string,
+    userRole?: Role
   ) {
     if (!reason || reason.trim().length === 0) {
       throw new AppError('INVALID_INPUT', 400, 'Alasan pembatalan (void reason) wajib diisi.');
@@ -268,6 +311,15 @@ export class TransactionsService {
 
       if (transaction.status === TxnStatus.voided) {
         throw new AppError('TRANSACTION_ALREADY_VOIDED', 400, 'Transaksi ini sudah pernah dibatalkan.');
+      }
+
+      // SRS Section 2.2: Manager hanya berhak void maksimal 24 jam sejak transaksi terbit
+      if (userRole === Role.manager) {
+        const diffMs = Date.now() - transaction.created_at.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        if (diffHours > 24) {
+          throw new AppError('FORBIDDEN', 403, 'Manager hanya diizinkan membatalkan transaksi maksimal dalam waktu 24 jam.');
+        }
       }
 
       // 1. Ubah status transaksi menjadi voided

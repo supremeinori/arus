@@ -414,6 +414,7 @@ export class CatalogService {
       price_idr?: number;
       cost_idr?: number;
       category_id?: string | null;
+      image_url?: string | null;
       is_active?: boolean;
     }
   ) {
@@ -471,6 +472,7 @@ export class CatalogService {
         price_idr: data.price_idr,
         cost_idr: data.cost_idr,
         category_id: data.category_id,
+        image_url: data.image_url,
         is_active: data.is_active,
       },
       include: {
