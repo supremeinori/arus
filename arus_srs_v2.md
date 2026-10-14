@@ -179,7 +179,7 @@ Modul penalaran cerdas berbasis data nyata dan simulasi pelatihan keputusan bisn
 
 * **Fitur 25 — Rule-Based Decision Support (Insights):** Mesin aturan analitik deterministik (R1 s/d R8) yang mendeteksi stok kritis, barang mati (*slow-moving*), anomali jam ramai, dan penurunan omzet disertai bukti angka (*evidence*).
 * **Fitur 26 — ARUS AI Business Assistant (Gemini LLM):** Chatbot konsultasi bisnis cerdas di mana backend mengumpulkan fakta angka dari PostgreSQL, lalu memintakan kesimpulan ke Gemini API dengan format wajib: **Data / Dugaan / Saran** tanpa mengarang angka.
-* **Fitur 27 — Mini Game (*Business Decision Challenge*):** Kuis edukatif simulasi pengambilan keputusan bisnis interaktif (5 skenario penanganan stok dan omzet) dengan pencatatan skor akhir ke server.
+* **Fitur 27 — Mini Game (Guess the Menu): Permainan kuis kasual interaktif berbasis data katalog POS untuk melatih pengenalan produk (product knowledge). Memiliki 2 mode permainan: Mode Tebak Nama (melihat foto menu dan memilih nama produk yang tepat) dan Mode Tebak Harga (melihat foto beserta nama menu dan menebak harga jual price_idr yang benar). Soal dibangkitkan secara dinamis dari tabel products dengan batas waktu hitung mundur dan sistem poin, serta mengacu pada spesifikasi lengkap di dokumen C:\MyProjects\arus\minigame_design.md
 
 **Tautan Source Code:**
 * Flutter UI: [`lib/features/insights/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/insights) · [`lib/features/ai_assistant/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/ai_assistant) · [`lib/features/game/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/game)
@@ -192,10 +192,10 @@ Modul penalaran cerdas berbasis data nyata dan simulasi pelatihan keputusan bisn
 ### 4.1 Autentikasi & Keamanan (BR-AUTH)
 * **BR-AUTH-01:** Password wajib di-hash menggunakan algoritma **argon2id** dengan salt unik sebelum disimpan ke tabel `users`.
 * **BR-AUTH-02:** Percobaan login gagal sebanyak 5 kali berturut-turut mengakibatkan akun terkunci selama 15 menit (HTTP 423 Locked).
-* **BR-AUTH-03:** Sesi JWT menggunakan Access Token (TTL 900 detik / 15 menit) dan Refresh Token (TTL 7 hari) yang disimpan di tabel `refresh_tokens`.
-* **BR-AUTH-04:** *Refresh Token Rotation*: Penggunaan ulang refresh token yang sudah usang dianggap sebagai indikasi pencurian token, menyebabkan seluruh sesi token user terkait dicabut seketika.
+* **BR-AUTH-03:** Sesi autentikasi menggunakan Stateless JWT (TTL 7 hari) yang disimpan aman di `flutter_secure_storage` (Android Keystore) pada perangkat mobile.
+* **BR-AUTH-04:** *Client-Side Session Revocation*: Logout dilakukan dengan menghapus JWT dari secure storage dan SQLite lokal; validasi sesi dilakukan secara berkala ke endpoint `/api/auth/me`.
 * **BR-AUTH-05:** Pengguna non-aktif (`is_active = false`) ditolak seketika pada request berikutnya melalui pengecekan DB per request.
-* **BR-AUTH-06:** Biometrik hanya bertindak sebagai kunci gerbang ke refresh token yang tersimpan di Android Keystore; biometrik tidak membuat token baru di server.
+* **BR-AUTH-06:** Biometrik bertindak sebagai pengaman sesi lokal untuk mengakses token di Android Keystore tanpa meminta password ulang.
 * **BR-AUTH-07:** Tiga kali kegagalan otentikasi biometrik memaksa aplikasi kembali meminta input email & password manual.
 
 ### 4.2 Katalog Produk & Harga (BR-CAT)
@@ -252,6 +252,34 @@ Modul penalaran cerdas berbasis data nyata dan simulasi pelatihan keputusan bisn
 
 ## 5. Desain Database Lengkap (PostgreSQL & SQLite)
 
+Sistem ARUS menggunakan arsitektur database ramping dan padat: **14 Tabel Inti PostgreSQL (Supabase)** dan **3 Tabel Backup Offline SQLite (`sqflite`)**.
+
+### 5.0 Daftar Final 14 Tabel PostgreSQL & Rationale Perampingan
+
+**4 Tabel yang Dihapus dari Rancangan Awal:**
+* ❌ `game_scenarios` — Dihapus karena soal mini-game *"Guess the Menu"* diambil secara dinamis langsung dari tabel master `products` (`image_url`, `name`, `price_idr`).
+* ❌ `refresh_tokens` — Dihapus dan disederhanakan menjadi **Stateless JWT (7 hari)** yang disimpan aman di `flutter_secure_storage` dengan perlindungan kunci biometrik perangkat.
+* ❌ `exchange_rates` — Dihapus dari cloud DB. Nilai kurs dari Frankfurter API disimpan di in-memory cache backend Express.js dan di-backup ke tabel `local_session_settings` SQLite di HP.
+* ❌ `business_insights` — Dihapus dari penyimpanan tabel statis. Mesin aturan bisnis (R1–R8) dievaluasi secara **real-time (*on-the-fly*)** setiap kali endpoint `/api/insights` dipanggil, sehingga data temuan selalu segar (*reactive*) saat demo transaksi baru.
+
+**14 Tabel Inti PostgreSQL yang Dipertahankan:**
+1. `users` — Akun pengguna, role RBAC (`owner`, `manager`, `staff`), hash password, dan avatar.
+2. `outlets` — Master cabang toko, koordinat LBS (`latitude`, `longitude`), dan zona waktu IANA (`timezone`).
+3. `user_outlets` — Relasi penugasan cabang untuk Manager dan Staff (penegakan *outlet scoping*).
+4. `feedback` — Formulir testimoni kesan dan saran mata kuliah PAM.
+5. `product_categories` — Kategori barang dagangan untuk filter dan navigasi POS.
+6. `products` — Katalog master menu/produk POS + kolom `image_url` untuk katalog dan kuis game.
+7. `inventory` — Sisa kuantitas stok aktif per cabang beserta batas `reorder_level`.
+8. `inventory_movements` — (Dipertahankan) Ledger audit keluar-masuk stok (`sale`, `void_return`, `restock`, `correction`, `waste`).
+9. `transactions` — Header struk transaksi penjualan kasir POS, omzet, dan metode bayar.
+10. `transaction_items` — Detail barang belanjaan per transaksi dengan snapshot harga jual dan modal.
+11. `blockchain_records` — Rantai hash SHA-256 independen per cabang untuk mendeteksi manipulasi struk.
+12. `notifications` — Kotak masuk notifikasi stok menipis dan pengumuman sistem.
+13. `ai_chat_logs` — Riwayat tanya-jawab konsultasi bisnis dengan asisten AI Gemini.
+14. `game_sessions` — Riwayat skor dan capaian permainan kuis *"Guess the Menu"*.
+
+---
+
 ### 5.1 Skema Lengkap PostgreSQL (`prisma/schema.prisma`)
 
 Salin skema Prisma lengkap berikut ke `api/prisma/schema.prisma` di backend Express.js:
@@ -291,10 +319,9 @@ enum TxnStatus {
   voided
 }
 
-enum Severity {
-  info
-  warning
-  critical
+enum GameMode {
+  guess_name
+  guess_price
 }
 
 // ==========================================
@@ -319,7 +346,6 @@ model User {
   notifications Notification[]
   ai_logs       AiChatLog[]
   game_sessions GameSession[]
-  tokens        RefreshToken[]
 
   @@map("users")
 }
@@ -339,7 +365,6 @@ model Outlet {
   inventory    Inventory[]
   transactions Transaction[]
   blocks       BlockchainRecord[]
-  insights     BusinessInsight[]
 
   @@map("outlets")
 }
@@ -355,19 +380,6 @@ model UserOutlet {
   @@map("user_outlets")
 }
 
-model RefreshToken {
-  id         String   @id @default(uuid()) @db.Uuid
-  user_id    String   @db.Uuid
-  token_hash String   @unique @db.VarChar(64)
-  expires_at DateTime @db.Timestamptz()
-  is_revoked Boolean  @default(false)
-  created_at DateTime @default(now()) @db.Timestamptz()
-
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@map("refresh_tokens")
-}
-
 model Feedback {
   id         String   @id @default(uuid()) @db.Uuid
   user_id    String   @db.Uuid
@@ -381,7 +393,7 @@ model Feedback {
 }
 
 // ==========================================
-// MODUL 2: KATALOG & INVENTARIS
+// MODUL 2: KATALOG & INVENTARIS (DENGAN MUTASI)
 // ==========================================
 
 model ProductCategory {
@@ -399,6 +411,7 @@ model Product {
   category_id String?          @db.Uuid
   sku         String           @unique @db.VarChar(40)
   name        String           @db.VarChar(120)
+  image_url   String?          @db.Text // Dipakai untuk Katalog POS & Mini-Game "Guess the Menu"
   unit        String           @default("pcs") @db.VarChar(20)
   price_idr   Int
   cost_idr    Int?
@@ -409,7 +422,6 @@ model Product {
   category    ProductCategory?  @relation(fields: [category_id], references: [id])
   inventory   Inventory[]
   txn_items   TransactionItem[]
-  insights    BusinessInsight[]
 
   @@map("products")
 }
@@ -442,15 +454,16 @@ model InventoryMovement {
   created_by     String       @db.Uuid
   created_at     DateTime     @default(now()) @db.Timestamptz()
 
-  inventory      Inventory    @relation(fields: [outlet_id, product_id], references: [outlet_id, product_id])
+  inventory      Inventory    @relation(fields: [outlet_id, product_id], references: [outlet_id, product_id], onDelete: Cascade)
   transaction    Transaction? @relation(fields: [transaction_id], references: [id])
   creator        User         @relation(fields: [created_by], references: [id])
 
+  @@index([outlet_id, product_id, created_at])
   @@map("inventory_movements")
 }
 
 // ==========================================
-// MODUL 2 & 3: TRANSAKSI POS & BLOCKCHAIN
+// MODUL 2 & 3: TRANSAKSI POS, BLOCKCHAIN & NOTIF
 // ==========================================
 
 model Transaction {
@@ -526,37 +539,8 @@ model Notification {
 }
 
 // ==========================================
-// MODUL 4 & 5: UTILITAS, AI & MINI GAME
+// MODUL 5: AI ASSISTANT & MINI GAME "GUESS THE MENU"
 // ==========================================
-
-model ExchangeRate {
-  id         String   @id @default(uuid()) @db.Uuid
-  currency   String   @unique @db.VarChar(3)
-  rate_to_idr Decimal @db.Decimal(12, 4)
-  updated_at DateTime @default(now()) @db.Timestamptz()
-
-  @@map("exchange_rates")
-}
-
-model BusinessInsight {
-  id             String    @id @default(uuid()) @db.Uuid
-  rule_code      String    @db.VarChar(40)
-  severity       Severity  @default(info)
-  outlet_id      String?   @db.Uuid
-  product_id     String?   @db.Uuid
-  title          String    @db.Text
-  message        String    @db.Text
-  evidence       Json
-  recommendation String    @db.Text
-  is_dismissed   Boolean   @default(false)
-  insight_date   DateTime  @db.Date
-  created_at     DateTime  @default(now()) @db.Timestamptz()
-
-  outlet         Outlet?   @relation(fields: [outlet_id], references: [id])
-  product        Product?  @relation(fields: [product_id], references: [id])
-
-  @@map("business_insights")
-}
 
 model AiChatLog {
   id          String   @id @default(uuid()) @db.Uuid
@@ -571,31 +555,19 @@ model AiChatLog {
   @@map("ai_chat_logs")
 }
 
-model GameScenario {
-  id             String        @id @default(uuid()) @db.Uuid
-  code           String        @unique @db.VarChar(40)
-  difficulty     String        @db.VarChar(20)
-  title          String        @db.VarChar(150)
-  situation_json Json
-  choices_json   Json
-  explanation    String        @db.Text
-
-  sessions       GameSession[]
-
-  @@map("game_scenarios")
-}
-
 model GameSession {
-  id          String       @id @default(uuid()) @db.Uuid
-  user_id     String       @db.Uuid
-  scenario_id String       @db.Uuid
-  choice_key  String       @db.VarChar(40)
-  score       Int
-  played_at   DateTime     @default(now()) @db.Timestamptz()
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  mode            GameMode // 'guess_name' atau 'guess_price'
+  score           Int
+  correct_count   Int
+  total_questions Int      @default(5)
+  duration_sec    Int
+  played_at       DateTime @default(now()) @db.Timestamptz()
 
-  user        User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  scenario    GameScenario @relation(fields: [scenario_id], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([user_id, score(sort: Desc)])
   @@map("game_sessions")
 }
 ```
@@ -607,7 +579,7 @@ model GameSession {
 Jalankan query DDL berikut di Flutter saat inisialisasi database lokal (`lib/core/storage/local_db.dart`) untuk memenuhi syarat database lokal dan backup offline:
 
 ```sql
--- 1. Menyimpan Sesi User & Pengaturan Utilitas
+--- 1. Menyimpan Sesi User, Pengaturan Utilitas & Cache Kurs Terakhir
 CREATE TABLE IF NOT EXISTS local_session_settings (
   user_id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -618,15 +590,18 @@ CREATE TABLE IF NOT EXISTS local_session_settings (
   display_currency TEXT DEFAULT 'IDR',
   display_timezone TEXT DEFAULT 'WIB',
   shake_sensor_enabled INTEGER DEFAULT 1,
-  tilt_sensor_enabled INTEGER DEFAULT 1
+  tilt_sensor_enabled INTEGER DEFAULT 1,
+  cached_usd_rate REAL DEFAULT 0.000064,
+  cached_eur_rate REAL DEFAULT 0.000059
 );
 
--- 2. Backup Katalog Produk & Stok untuk Mode Offline (Kasir)
+-- 2. Backup Katalog Produk, Gambar & Stok untuk Mode Offline / Mini-Game
 CREATE TABLE IF NOT EXISTS backup_products (
   product_id TEXT,
   outlet_id TEXT,
   sku TEXT NOT NULL,
   name TEXT NOT NULL,
+  image_url TEXT,
   category_name TEXT,
   price_idr INTEGER NOT NULL,
   stock_quantity INTEGER NOT NULL,
@@ -646,7 +621,6 @@ CREATE TABLE IF NOT EXISTS backup_transactions (
   block_hash TEXT,
   created_at TEXT NOT NULL
 );
-```
 
 ---
 
@@ -686,9 +660,9 @@ Semua response API wajib mengikuti format envelope standar:
 ### 6.2 Katalog Endpoint per Modul
 
 #### MOD-1: Autentikasi, Pengguna & Profil
-* `POST /api/auth/login` — Autentikasi email & password, mengembalikan JWT token.
-* `POST /api/auth/refresh` — Rotasi token sesi baru dengan refresh token.
-* `POST /api/auth/logout` — Pencabutan refresh token dari database.
+* `POST /api/auth/login` — Autentikasi email & password, mengembalikan Stateless JWT token.
+* `POST /api/auth/refresh` — Verifikasi dan perpanjangan sesi token aktif.
+* `POST /api/auth/logout` — Pemutusan sesi dan pembersihan token lokal dari storage.
 * `GET /api/auth/me` — Profil user saat ini dan status feature flags.
 * `PUT /api/auth/change-password` — Mengubah password user saat ini.
 * `GET /api/users` — [Owner] Daftar semua user beserta penugasan cabang.
@@ -732,20 +706,20 @@ Semua response API wajib mengikuti format envelope standar:
 * `PUT /api/outlets/:id` — [Owner] Memperbarui koordinat/alamat cabang.
 * `GET /api/outlets/nearest` — Cabang terdekat berdasarkan koordinat GPS pengguna.
 * `GET /api/outlets/performance` — [Owner, Manager] Indeks performa penjualan cabang.
-* `GET /api/fx/rates` — Kurs mata uang terbaru (IDR, USD, EUR) dari cache Frankfurter.
+* `GET /api/fx/rates` — Kurs mata uang terbaru (IDR, USD, EUR) dari in-memory cache backend.
 * `GET /api/settings` — Mengambil preferensi user (currency, timezone, sensor, biometrik).
 * `PUT /api/settings` — Memperbarui preferensi user.
 
 #### MOD-5: Kecerdasan Buatan & Mini Game
-* `GET /api/insights` — [Owner, Manager] Temuan otomatis mesin aturan bisnis (R1–R8).
-* `GET /api/insights/:id` — [Owner, Manager] Detail temuan dan bukti angka (*evidence*).
-* `POST /api/insights/:id/dismiss` — [Owner, Manager] Mengabaikan notifikasi insight.
+* `GET /api/insights` — [Owner, Manager] Evaluasi real-time (*on-the-fly*) mesin aturan bisnis (R1–R8) terhadap data stok & transaksi terkini.
+* `GET /api/insights/:id` — [Owner, Manager] Detail temuan aturan dan bukti angka (*evidence*).
+* `POST /api/insights/:id/dismiss` — [Owner, Manager] Mengabaikan rekomendasi insight.
 * `POST /api/ai/ask` — [Owner, Manager] Tanya jawab bisnis ke LLM Gemini (format: Data, Dugaan, Saran).
 * `GET /api/ai/conversations` — Riwayat tanya jawab chat AI.
 * `DELETE /api/ai/conversations/:id` — Menghapus percakapan AI.
-* `GET /api/game/scenarios/next` — Mengambil skenario studi kasus mini game berikutnya.
-* `POST /api/game/sessions` — Mengirim pilihan jawaban dan mendapatkan skor penilaian.
-* `GET /api/game/sessions` — Riwayat skor permainan user.
+* `GET /api/game/questions` — Membangkitkan 5 soal kuis mini-game *"Guess the Menu"* secara dinamis dari tabel `products`.
+* `POST /api/game/sessions` — Mengirimkan hasil jawaban kuis tebak menu/harga dan menyimpan skor ke `game_sessions`.
+* `GET /api/game/sessions` — Riwayat skor permainan dan capaian user.
 
 ---
 
@@ -799,9 +773,8 @@ npm run db:seed
 Data seed minimal mencakup:
 * 3 akun pengguna: Owner (`owner@arus.com`), Manager (`manager@arus.com`), Staff (`staff@arus.com`) password `Password123!`.
 * 4 outlet: 3 outlet di Indonesia (Jakarta - WIB, Makassar - WITA, Jayapura - WIT) dan 1 outlet di London (`Europe/London`).
-* 40 produk terbagi ke dalam 5 kategori.
-* 90 hari riwayat transaksi untuk kalkulasi KPI analitik.
-* 5 skenario soal studi kasus mini game.
+* 40 produk terbagi ke dalam 5 kategori dengan field `image_url` terisi untuk katalog dan kuis.
+* 90 hari riwayat transaksi untuk kalkulasi KPI analitik dan audit mutasi stok.
 
 ---
 
@@ -829,11 +802,11 @@ Setiap pengembang (manusia maupun AI coding assistant) wajib mematuhi **15 Laran
 
 ## 10. Panduan Post-Production, Cron & Maintenance
 
-### 10.1 Tugas Terjadwal (Cron Jobs)
+### 10.1 Tugas Terjadwal (Cron Jobs) & Background Tasks
 Backend mengeksekusi tugas otomatis berikut menggunakan `node-cron`:
-1. **Insights Generator (Daily 02:00 Waktu Lokal Cabang):** Mengevaluasi aturan R1–R8 terhadap data transaksi terbaru dan memasukkan hasil rekomendasi ke `business_insights`.
-2. **FX Rate Sync (Daily 06:00 UTC):** Mengambil nilai tukar mata uang terbaru dari Frankfurter API dan memperbarui tabel `exchange_rates`.
-3. **Notification Cleanup (Monthly):** Menghapus notifikasi terbaca yang sudah berusia lebih dari 30 hari.
+1. **FX Rate In-Memory Sync (Daily 06:00 UTC):** Mengambil nilai tukar mata uang terbaru dari Frankfurter API dan memperbarui cache in-memory Express.js serta diteruskan ke SQLite lokal HP (tanpa membebani DB cloud).
+2. **Notification Cleanup (Monthly):** Menghapus notifikasi terbaca yang sudah berusia lebih dari 30 hari.
+*(Catatan: Business Insights R1–R8 tidak memerlukan cron statis karena dihitung secara real-time / on-the-fly saat endpoint dipanggil).*
 
 ### 10.2 Skrip Demo Presentasi
 Tersedia skrip otomatis di backend untuk kebutuhan pengujian dan presentasi dosen:
@@ -925,7 +898,7 @@ arus/
 | **T-SEN-03** | Memiringkan HP (*Gyroscope*) pada grafik analitik | Filter rentang waktu grafik berganti secara otomatis |
 | **T-LBS-01** | Membuka peta lokasi cabang | Menampilkan titik cabang dan jarak km dari posisi GPS user |
 | **T-AI-01** | Mengajukan pertanyaan kondisi penjualan ke AI | AI menjawab dengan format: Data, Dugaan, dan Saran |
-| **T-GAME-01**| Menyelesaikan 5 soal mini game studi kasus bisnis | Skor tersimpan di server dan muncul di riwayat game |
+| **T-GAME-01**| Menyelesaikan 5 soal kuis tebak menu/harga ("Guess the Menu") | Skor tersimpan di tabel `game_sessions` dan muncul di riwayat game |
 
 ---
 
@@ -935,11 +908,11 @@ arus/
 2. **Uji Konversi Utilitas:** Ubah preferensi mata uang ke **USD** dan zona waktu ke **London**; saksikan angka omzet dan jam transaksi menyesuaikan secara realtime.
 3. **Operasional Kasir & Notifikasi:** Login sebagai **Staff** di HP kedua; lakukan transaksi barang hingga menyentuh batas minimum; amati stok terpotong dan notifikasi stok menipis muncul di HP Manager/Owner.
 4. **Interaksi Sensor:** Goyangkan HP (*shake*) untuk memperbarui data dashboard; miringkan HP (*tilt*) untuk mengubah periode grafik analitik.
-5. **Decision Support & Bukti Data:** Buka menu Insights; periksa temuan stok kritis atau penurunan omzet lengkap beserta bukti data angkanya.
+5. **Decision Support & Bukti Data:** Buka menu Insights; periksa temuan stok kritis atau penurunan omzet lengkap beserta bukti data angkanya (dihitung *on-the-fly* secara real-time).
 6. **Konsultasi AI Cerdas:** Tanyakan *"Produk apa yang perlu direstock?"* ke AI Assistant; periksa respon terstruktur **Data / Dugaan / Saran** yang angkanya cocok dengan dashboard.
 7. **Peta Cabang & LBS:** Buka Peta Cabang; periksa titik lokasi cabang, indikator warna performa, dan kalkulasi jarak terdekat dari GPS perangkat.
 8. **Audit Keaslian Blockchain:** Buka detail struk terbaru; klik tombol audit blockchain $\rightarrow$ status **VALID**. Jalankan skrip `npm run demo:tamper` di backend, refresh struk $\rightarrow$ status berubah menjadi **TAMPERED**.
-9. **Mini Game Simulasi:** Buka menu Game; selesaikan skenario keputusan bisnis dan periksa skor akhir yang didapat.
+9. **Mini Game Guess the Menu:** Buka menu Game; tebak nama menu dan harga dari foto produk toko nyata; periksa kalkulasi skor akhir dan sistem poinnya.
 10. **Pengujian Biometrik:** Tutup aplikasi, buka kembali dari latar belakang; lakukan pemindaian sidik jari untuk membuka sesi secara instan.
 
 ---
@@ -949,8 +922,8 @@ arus/
 ### 15.1 Pembagian Tanggung Jawab Tim (3 Anggota)
 
 * **Anggota 1 — Backend Web Service, Database & Blockchain:**
-  * Skema Prisma PostgreSQL (Supabase) & Seeding data 90 hari.
-  * Autentikasi JWT (argon2), RBAC, dan Outlet Scoping.
+  * Skema Prisma PostgreSQL (Supabase 14 tabel) & Seeding data 90 hari.
+  * Autentikasi Stateless JWT (argon2), RBAC, dan Outlet Scoping.
   * API Katalog, Inventaris, dan Transaksi Kasir POS atomik.
   * Implementasi rantai hash **Blockchain SHA-256** & endpoint verifikasi integritas.
   * Kueri SQL agregasi untuk **Dashboard Analitik KPI**.
@@ -968,8 +941,8 @@ arus/
   * Deteksi sensor **Accelerometer (Shake)** & **Gyroscope (Tilt)** via `sensors_plus`.
   * Layar **Peta Cabang LBS** (`flutter_map`) & kalkulasi jarak GPS (`geolocator`).
   * Integrasi **ARUS AI Business Assistant** dengan Google Gemini API.
-  * Mesin aturan **Decision Support (Insights)** R1–R8.
-  * Desain antarmuka & skenario soal **Mini Game (*Business Decision Challenge*)**.
+  * Mesin aturan **Decision Support (Insights)** R1–R8 (evaluasi *on-the-fly*).
+  * Desain antarmuka & logika generator soal **Mini Game (*Guess the Menu*)**.
 
 ---
 
@@ -1003,7 +976,7 @@ arus/
 | 24 | Peta LBS & Haversine | MOD-4 | `outlet_map_screen.dart` · `outlets.service.ts` | Web Service & Fasilitas LBS | T-LBS-01 |
 | 25 | Decision Support | MOD-5 | `insights.service.ts` (Rules R1–R8) | AI Sesuai Konsep Tema | T-DS-01 |
 | 26 | Chatbot AI Gemini | MOD-5 | `ai.service.ts` · `ai_chat_screen.dart` | Fitur AI & LLM Sesuai Tema | T-AI-01 |
-| 27 | Mini Game Bisnis | MOD-5 | `game_screen.dart` · `game.service.ts` | Mini Games Terkait Konsep | T-GAME-01 |
+| 27 | Mini Game Guess Menu | MOD-5 | `game_screen.dart` · `game.service.ts` | Mini Games Terkait Konsep | T-GAME-01 |
 
 ---
 
