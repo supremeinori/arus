@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { Role, Currency } from '@prisma/client';
+import { Role } from '@prisma/client';
+
+export type Currency = 'IDR' | 'USD' | 'EUR';
 
 export const createUserSchema = z.object({
   name: z.string().min(1).max(100),
@@ -17,7 +19,7 @@ export const updateUserSchema = z.object({
 });
 
 export const updateUserSettingsSchema = z.object({
-  display_currency: z.nativeEnum(Currency).optional(),
+  display_currency: z.enum(['IDR', 'USD', 'EUR']).optional(),
   display_timezone: z.string().min(1).max(50).optional(),
   biometric_enabled: z.boolean().optional(),
   shake_refresh_enabled: z.boolean().optional(),

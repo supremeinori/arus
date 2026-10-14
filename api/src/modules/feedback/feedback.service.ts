@@ -22,7 +22,6 @@ export class FeedbackService {
           user_id: userId,
           kesan: input.kesan,
           saran: input.saran,
-          rating: input.rating ?? 5,
         },
         include: {
           user: {

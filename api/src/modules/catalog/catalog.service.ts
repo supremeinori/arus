@@ -377,7 +377,7 @@ export class CatalogService {
           price_idr: data.price_idr,
           cost_idr: data.cost_idr,
           category_id: data.category_id,
-          created_by: userId,
+          image_url: (data as any).image_url,
         },
         include: {
           category: true,

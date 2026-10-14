@@ -1,7 +1,7 @@
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
-import { NotificationPriority, NotificationType, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { CreateNotificationInput } from './notifications.schema';
 
 export class NotificationsService {
@@ -14,31 +14,19 @@ export class NotificationsService {
             id: 'notif-001',
             user_id: userId,
             title: 'Peringatan Stok Kritis!',
-            message: 'Stok Susu Fresh Milk di Sudirman (HQ) tersisa 3 liter (ambang batas: 10 liter).',
-            type: NotificationType.low_stock,
-            priority: NotificationPriority.high,
-            read_at: null,
+            body: 'Stok Susu Fresh Milk di Sudirman (HQ) tersisa 3 liter (ambang batas: 10 liter).',
+            type: 'low_stock',
+            is_read: false,
             created_at: new Date(),
           },
           {
             id: 'notif-002',
             user_id: userId,
             title: 'Target Harian Tercapai 🚀',
-            message: 'Outlet Senopati telah mencapai 105% dari target penjualan harian Rp 2.500.000.',
-            type: NotificationType.target_achieved,
-            priority: NotificationPriority.normal,
-            read_at: null,
+            body: 'Outlet Senopati telah mencapai 105% dari target penjualan harian Rp 2.500.000.',
+            type: 'target_achieved',
+            is_read: false,
             created_at: new Date(Date.now() - 3600000),
-          },
-          {
-            id: 'notif-003',
-            user_id: userId,
-            title: 'Ringkasan Tutup Shift Kasir',
-            message: 'Shift kasir Siti Rahma berhasil ditutup dengan total penjualan Rp 1.450.000.',
-            type: NotificationType.periodic_summary,
-            priority: NotificationPriority.low,
-            read_at: new Date(Date.now() - 7200000),
-            created_at: new Date(Date.now() - 7200000),
           },
         ],
       };
@@ -52,7 +40,7 @@ export class NotificationsService {
           take: 50,
         }),
         prisma.notification.count({
-          where: { user_id: userId, read_at: null },
+          where: { user_id: userId, is_read: false },
         }),
       ]);
 
@@ -68,31 +56,19 @@ export class NotificationsService {
             id: 'notif-001',
             user_id: userId,
             title: 'Peringatan Stok Kritis!',
-            message: 'Stok Susu Fresh Milk di Sudirman (HQ) tersisa 3 liter (ambang batas: 10 liter).',
-            type: NotificationType.low_stock,
-            priority: NotificationPriority.high,
-            read_at: null,
+            body: 'Stok Susu Fresh Milk di Sudirman (HQ) tersisa 3 liter (ambang batas: 10 liter).',
+            type: 'low_stock',
+            is_read: false,
             created_at: new Date(),
           },
           {
             id: 'notif-002',
             user_id: userId,
             title: 'Target Harian Tercapai 🚀',
-            message: 'Outlet Senopati telah mencapai 105% dari target penjualan harian Rp 2.500.000.',
-            type: NotificationType.target_achieved,
-            priority: NotificationPriority.normal,
-            read_at: null,
+            body: 'Outlet Senopati telah mencapai 105% dari target penjualan harian Rp 2.500.000.',
+            type: 'target_achieved',
+            is_read: false,
             created_at: new Date(Date.now() - 3600000),
-          },
-          {
-            id: 'notif-003',
-            user_id: userId,
-            title: 'Ringkasan Tutup Shift Kasir',
-            message: 'Shift kasir Siti Rahma berhasil ditutup dengan total penjualan Rp 1.450.000.',
-            type: NotificationType.periodic_summary,
-            priority: NotificationPriority.low,
-            read_at: new Date(Date.now() - 7200000),
-            created_at: new Date(Date.now() - 7200000),
           },
         ],
       };
@@ -114,14 +90,14 @@ export class NotificationsService {
 
     return prisma.notification.update({
       where: { id: notificationId },
-      data: { read_at: new Date() },
+      data: { is_read: true },
     });
   }
 
   async markAllAsRead(userId: string) {
     const updated = await prisma.notification.updateMany({
-      where: { user_id: userId, read_at: null },
-      data: { read_at: new Date() },
+      where: { user_id: userId, is_read: false },
+      data: { is_read: true },
     });
 
     return {
@@ -130,27 +106,12 @@ export class NotificationsService {
   }
 
   async createNotification(input: CreateNotificationInput) {
-    if (input.dedup_key) {
-      const existing = await prisma.notification.findFirst({
-        where: {
-          user_id: input.user_id,
-          dedup_key: input.dedup_key,
-        },
-      });
-      if (existing) {
-        return existing; // Abaikan duplikat
-      }
-    }
-
     return prisma.notification.create({
       data: {
         user_id: input.user_id,
         type: input.type,
-        priority: input.priority,
         title: input.title,
         body: input.body,
-        payload: input.payload,
-        dedup_key: input.dedup_key,
       },
     });
   }
@@ -164,9 +125,6 @@ export class NotificationsService {
 
     // 1. Ambil seluruh stok yang di bawah atau sama dengan reorder_level
     const lowStocks = await prisma.inventory.findMany({
-      where: {
-        quantity: { lte: prisma.inventory.fields.reorder_level },
-      },
       include: {
         product: { select: { name: true, sku: true, unit: true } },
         outlet: { select: { name: true } },
@@ -184,28 +142,20 @@ export class NotificationsService {
     });
 
     for (const item of lowStocks) {
-      const dedupKey = `low_stock_${item.outlet_id}_${item.product_id}_${todayStr}`;
+      if (item.quantity > item.reorder_level) continue;
 
       for (const user of recipients) {
         const existing = await prisma.notification.findFirst({
-          where: { user_id: user.id, dedup_key: dedupKey },
+          where: { user_id: user.id, title: { contains: item.product.name } },
         });
 
         if (!existing) {
           await prisma.notification.create({
             data: {
               user_id: user.id,
-              type: NotificationType.low_stock,
-              priority: NotificationPriority.high,
+              type: 'low_stock',
               title: `Peringatan Stok: ${item.product.name} Menipis`,
               body: `Sisa stok di ${item.outlet.name} tersisa ${item.quantity} ${item.product.unit} (batas aman minimum: ${item.reorder_level}). Segera lakukan pengadaan.`,
-              dedup_key: dedupKey,
-              payload: {
-                product_id: item.product_id,
-                outlet_id: item.outlet_id,
-                quantity: item.quantity,
-                reorder_level: item.reorder_level,
-              },
             },
           });
           triggeredCount++;

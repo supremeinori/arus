@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ReportsService } from './reports.service';
-import { generateReportSchema } from './reports.schema';
-import { ReportType } from '@prisma/client';
+import { generateReportSchema, ReportType } from './reports.schema';
 
 const reportsService = new ReportsService();
 

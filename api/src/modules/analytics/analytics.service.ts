@@ -1,4 +1,4 @@
-import { PrismaClient, Role, TransactionStatus, PaymentMethod } from '@prisma/client';
+import { PrismaClient, Role, TxnStatus, PaymentMethod } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
@@ -17,7 +17,7 @@ export class AnalyticsService {
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
     const where: any = {
-      status: TransactionStatus.completed,
+      status: TxnStatus.completed,
     };
 
     // Filter Outlet Scope
@@ -146,7 +146,7 @@ export class AnalyticsService {
     startDate.setHours(0, 0, 0, 0);
 
     const where: any = {
-      status: TransactionStatus.completed,
+      status: TxnStatus.completed,
       created_at: { gte: startDate },
     };
 
@@ -225,7 +225,7 @@ export class AnalyticsService {
     query: { outlet_id?: string },
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
-    const where: any = { status: TransactionStatus.completed };
+    const where: any = { status: TxnStatus.completed };
     if (userScope.role === Role.staff) {
       where.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
     } else if (query.outlet_id) {
@@ -287,7 +287,7 @@ export class AnalyticsService {
 
     const where: any = {
       cashier_id: cashierId,
-      status: TransactionStatus.completed,
+      status: TxnStatus.completed,
       created_at: { gte: todayStart },
     };
     if (outletId) where.outlet_id = outletId;

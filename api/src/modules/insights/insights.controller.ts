@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { insightsService } from './insights.service';
-import { InsightSeverity, InsightStatus } from '@prisma/client';
+import { insightsService, InsightSeverity, InsightStatus } from './insights.service';
 
 export class InsightsController {
   async generate(req: Request, res: Response, next: NextFunction): Promise<void> {

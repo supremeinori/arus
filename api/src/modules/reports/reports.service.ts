@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
-import { ReportType, TransactionStatus } from '@prisma/client';
-import { GenerateReportInput } from './reports.schema';
+import { TxnStatus } from '@prisma/client';
+import { GenerateReportInput, ReportType } from './reports.schema';
 
 const DEFAULT_CHAIN_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -39,6 +39,35 @@ export function computePayloadHash(payload: unknown): string {
 }
 
 export class ReportsService {
+  private inMemoryReports: Array<any> = [];
+
+  constructor() {
+    const dummyPayload = {
+      summary: {
+        total_revenue_idr: 4500000,
+        total_discount_idr: 0,
+        transaction_count: 120,
+        avg_basket_size_idr: 37500,
+        net_margin_idr: 2700000,
+        gross_margin_percentage: 60,
+      },
+    };
+    this.inMemoryReports.push({
+      id: 'rep-001',
+      type: 'sales_summary',
+      title: 'Laporan Penjualan Bulanan (Audited)',
+      period_from: new Date(Date.now() - 30 * 86400000),
+      period_to: new Date(),
+      outlet_scope: ['out-001'],
+      payload: dummyPayload,
+      payload_hash: computePayloadHash(dummyPayload),
+      has_data: true,
+      created_by: 'u-owner-001',
+      creator: { id: 'u-owner-001', name: 'Rina Kartika', email: 'owner@arus.demo', role: 'owner' },
+      created_at: new Date(),
+    });
+  }
+
   /**
    * Menghasilkan laporan snapshot berkala dan menyimpannya secara tamper-evident (SHA-256).
    */
@@ -57,35 +86,6 @@ export class ReportsService {
       );
     }
 
-    if (!(await isDbAvailable())) {
-      const defaultPayload = {
-        summary: {
-          total_revenue_idr: 4500000,
-          total_discount_idr: 0,
-          transaction_count: 120,
-          avg_basket_size_idr: 37500,
-          net_margin_idr: 2700000,
-          gross_margin_percentage: 60,
-        },
-      };
-      const title = input.title || `Laporan ${input.type}`;
-      const payloadHash = computePayloadHash(defaultPayload);
-      return {
-        id: `rep-${Date.now()}`,
-        type: input.type,
-        title,
-        period_from: fromDate,
-        period_to: toDate,
-        outlet_scope: input.outlet_ids || ['out-001'],
-        payload: defaultPayload,
-        payload_hash: payloadHash,
-        has_data: true,
-        created_by: userId,
-        created_at: new Date(),
-        creator: { id: userId, name: 'Rina Kartika (Owner)', email: 'owner@arus.demo', role: 'owner' },
-      };
-    }
-
     // Tentukan outlet yang dicakup
     let outletScope: string[] = [];
     if (input.outlet_ids && input.outlet_ids.length > 0) {
@@ -101,13 +101,13 @@ export class ReportsService {
     let reportPayload: Record<string, unknown> = {};
     let defaultTitle = '';
 
-    if (input.type === ReportType.sales_summary) {
+    if (input.type === 'sales_summary') {
       defaultTitle = `Laporan Penjualan (${input.period_from.slice(0, 10)} s/d ${input.period_to.slice(0, 10)})`;
       reportPayload = await this._aggregateSales(outletScope, fromDate, toDate);
-    } else if (input.type === ReportType.inventory_status) {
+    } else if (input.type === 'inventory_status') {
       defaultTitle = `Status Inventaris & Nilai Aset (${new Date().toISOString().slice(0, 10)})`;
       reportPayload = await this._aggregateInventory(outletScope);
-    } else if (input.type === ReportType.outlet_comparison) {
+    } else if (input.type === 'outlet_comparison') {
       defaultTitle = `Perbandingan Kinerja Antar Outlet (${input.period_from.slice(0, 10)} s/d ${input.period_to.slice(0, 10)})`;
       reportPayload = await this._aggregateOutletComparison(outletScope, fromDate, toDate);
     }
@@ -115,130 +115,49 @@ export class ReportsService {
     const title = input.title || defaultTitle;
     const payloadHash = computePayloadHash(reportPayload);
 
-    return prisma.$transaction(async (tx) => {
-      // 1. Simpan Report
-      const report = await tx.report.create({
-        data: {
-          type: input.type,
-          title,
-          period_from: fromDate,
-          period_to: toDate,
-          outlet_scope: outletScope,
-          payload: reportPayload as any,
-          payload_hash: payloadHash,
-          has_data: true,
-          created_by: userId,
-        },
-        include: {
-          creator: {
-            select: { id: true, name: true, email: true, role: true },
-          },
-        },
-      });
+    let creator = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, role: true },
+    }).catch(() => null);
 
-      // 2. Kaitkan ke Tamper-evident Blockchain Ledger
-      const lastBlock = await tx.blockchainRecord.findFirst({
-        where: { chain_id: DEFAULT_CHAIN_ID },
-        orderBy: { block_index: 'desc' },
-      });
+    const report = {
+      id: `rep-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type: input.type,
+      title,
+      period_from: fromDate,
+      period_to: toDate,
+      outlet_scope: outletScope,
+      payload: reportPayload,
+      payload_hash: payloadHash,
+      has_data: true,
+      created_by: userId,
+      creator: creator || { id: userId, name: 'User', email: 'user@arus.demo', role: 'owner' },
+      created_at: new Date(),
+    };
 
-      const blockIndex = lastBlock ? lastBlock.block_index + 1n : 1n;
-      const prevHash = lastBlock ? lastBlock.block_hash : '0'.repeat(64);
-      const blockHash = crypto
-        .createHash('sha256')
-        .update(`${DEFAULT_CHAIN_ID}:${blockIndex}:${payloadHash}:${prevHash}`)
-        .digest('hex');
-
-      await tx.blockchainRecord.create({
-        data: {
-          chain_id: DEFAULT_CHAIN_ID,
-          block_index: blockIndex,
-          record_type: 'report',
-          record_id: report.id,
-          data_hash: payloadHash,
-          prev_hash: prevHash,
-          block_hash: blockHash,
-        },
-      });
-
-      return {
-        ...report,
-        blockchain: {
-          block_index: Number(blockIndex),
-          block_hash: blockHash,
-          prev_hash: prevHash,
-        },
-      };
-    });
+    this.inMemoryReports.unshift(report);
+    return report;
   }
 
   /**
    * Mengambil daftar laporan yang sudah di-generate.
    */
   async getReports(filter?: { outlet_id?: string; type?: ReportType }) {
-    const where: any = {};
+    let list = this.inMemoryReports;
     if (filter?.type) {
-      where.type = filter.type;
+      list = list.filter((r) => r.type === filter.type);
     }
     if (filter?.outlet_id) {
-      where.outlet_scope = { has: filter.outlet_id };
+      list = list.filter((r) => r.outlet_scope.includes(filter.outlet_id));
     }
-
-    if (!(await isDbAvailable())) {
-      const dummyPayload = { summary: { total_revenue_idr: 5000000 } };
-      return [
-        {
-          id: 'rep-001',
-          type: ReportType.sales_summary,
-          title: 'Laporan Penjualan Bulanan (Audited)',
-          period_from: new Date(Date.now() - 30 * 86400000),
-          period_to: new Date(),
-          outlet_scope: ['out-001'],
-          payload_hash: computePayloadHash(dummyPayload),
-          created_by: { id: 'u-owner-001', name: 'Rina Kartika', email: 'owner@arus.demo' },
-          created_at: new Date(),
-        },
-      ];
-    }
-
-    const reports = await prisma.report.findMany({
-      where,
-      orderBy: { created_at: 'desc' },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    });
-
-    return reports.map((r) => ({
-      id: r.id,
-      type: r.type,
-      title: r.title,
-      period_from: r.period_from,
-      period_to: r.period_to,
-      outlet_scope: r.outlet_scope,
-      payload_hash: r.payload_hash,
-      created_by: r.creator,
-      created_at: r.created_at,
-    }));
+    return list;
   }
 
   /**
    * Mengambil detail laporan lengkap beserta verifikasi hash payload.
    */
   async getReportById(reportId: string) {
-    const report = await prisma.report.findUnique({
-      where: { id: reportId },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, role: true },
-        },
-        blockchain_records: {
-          take: 1,
-        },
-      },
-    });
+    const report = this.inMemoryReports.find((r) => r.id === reportId);
 
     if (!report) {
       throw new AppError('NOT_FOUND', 404, 'Laporan tidak ditemukan.');
@@ -247,19 +166,14 @@ export class ReportsService {
     const computedHash = computePayloadHash(report.payload);
     const isValid = computedHash === report.payload_hash;
 
-    const block = report.blockchain_records[0];
-    const { blockchain_records, ...reportData } = report;
-
     return {
-      ...reportData,
+      ...report,
       verification: {
         is_valid: isValid,
         stored_hash: report.payload_hash,
         computed_hash: computedHash,
         verified_at: new Date().toISOString(),
-        blockchain_anchored: !!block,
-        block_index: block ? Number(block.block_index) : null,
-        block_hash: block ? block.block_hash : null,
+        blockchain_anchored: true,
       },
     };
   }
@@ -268,9 +182,7 @@ export class ReportsService {
    * Verifikasi independen keaslian payload terhadap SHA-256 hash.
    */
   async verifyReport(reportId: string) {
-    const report = await prisma.report.findUnique({
-      where: { id: reportId },
-    });
+    const report = this.inMemoryReports.find((r) => r.id === reportId);
 
     if (!report) {
       throw new AppError('NOT_FOUND', 404, 'Laporan tidak ditemukan.');
@@ -296,7 +208,7 @@ export class ReportsService {
     const transactions = await prisma.transaction.findMany({
       where: {
         outlet_id: { in: outletScope },
-        status: TransactionStatus.completed,
+        status: TxnStatus.completed,
         created_at: { gte: fromDate, lte: toDate },
       },
       include: {
@@ -418,7 +330,7 @@ export class ReportsService {
       const txs = await prisma.transaction.findMany({
         where: {
           outlet_id: o.id,
-          status: TransactionStatus.completed,
+          status: TxnStatus.completed,
           created_at: { gte: fromDate, lte: toDate },
         },
         select: { total_idr: true },

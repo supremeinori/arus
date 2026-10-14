@@ -1,61 +1,27 @@
-import { Role, Currency } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 import { hashPassword } from '../../shared/tokens';
+import { Currency } from './users.schema';
 
 export class UsersService {
   private inMemorySettings: Record<string, any> = {};
 
   async getUserSettings(userId: string) {
-    if (!(await isDbAvailable())) {
-      if (!this.inMemorySettings[userId]) {
-        this.inMemorySettings[userId] = {
-          user_id: userId,
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-          biometric_enabled: false,
-          shake_refresh_enabled: true,
-          tilt_enabled: true,
-          daily_revenue_target_idr: 5000000,
-          updated_at: new Date(),
-        };
-      }
-      return this.inMemorySettings[userId];
+    if (!this.inMemorySettings[userId]) {
+      this.inMemorySettings[userId] = {
+        user_id: userId,
+        display_currency: 'IDR',
+        display_timezone: 'Asia/Jakarta',
+        biometric_enabled: false,
+        shake_refresh_enabled: true,
+        tilt_enabled: true,
+        daily_revenue_target_idr: 5000000,
+        updated_at: new Date(),
+      };
     }
-
-    try {
-      let settings = await prisma.userSettings.findUnique({
-        where: { user_id: userId },
-      });
-      if (!settings) {
-        settings = await prisma.userSettings.create({
-          data: {
-            user_id: userId,
-            display_currency: 'IDR',
-            display_timezone: 'Asia/Jakarta',
-            biometric_enabled: false,
-            shake_refresh_enabled: true,
-            tilt_enabled: true,
-          },
-        });
-      }
-      return settings;
-    } catch (_) {
-      if (!this.inMemorySettings[userId]) {
-        this.inMemorySettings[userId] = {
-          user_id: userId,
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-          biometric_enabled: false,
-          shake_refresh_enabled: true,
-          tilt_enabled: true,
-          daily_revenue_target_idr: 5000000,
-          updated_at: new Date(),
-        };
-      }
-      return this.inMemorySettings[userId];
-    }
+    return this.inMemorySettings[userId];
   }
 
   async updateUserSettings(
@@ -69,42 +35,13 @@ export class UsersService {
       daily_revenue_target_idr?: number | null;
     }
   ) {
-    if (!(await isDbAvailable())) {
-      const current = await this.getUserSettings(userId);
-      this.inMemorySettings[userId] = {
-        ...current,
-        ...data,
-        updated_at: new Date(),
-      };
-      return this.inMemorySettings[userId];
-    }
-
-    try {
-      const settings = await prisma.userSettings.upsert({
-        where: { user_id: userId },
-        update: {
-          ...data,
-        },
-        create: {
-          user_id: userId,
-          display_currency: data.display_currency ?? 'IDR',
-          display_timezone: data.display_timezone ?? 'Asia/Jakarta',
-          biometric_enabled: data.biometric_enabled ?? false,
-          shake_refresh_enabled: data.shake_refresh_enabled ?? true,
-          tilt_enabled: data.tilt_enabled ?? true,
-          daily_revenue_target_idr: data.daily_revenue_target_idr ?? null,
-        },
-      });
-      return settings;
-    } catch (_) {
-      const current = await this.getUserSettings(userId);
-      this.inMemorySettings[userId] = {
-        ...current,
-        ...data,
-        updated_at: new Date(),
-      };
-      return this.inMemorySettings[userId];
-    }
+    const current = await this.getUserSettings(userId);
+    this.inMemorySettings[userId] = {
+      ...current,
+      ...data,
+      updated_at: new Date(),
+    };
+    return this.inMemorySettings[userId];
   }
 
   async listUsers(query: { role?: Role; is_active?: boolean; q?: string; page?: number; page_size?: number }) {
@@ -136,7 +73,7 @@ export class UsersService {
           role: true,
           is_active: true,
           created_at: true,
-          user_outlets: {
+          outlets: {
             include: { outlet: { select: { id: true, name: true } } },
           },
         },
@@ -146,7 +83,7 @@ export class UsersService {
     return {
       users: users.map((u) => ({
         ...u,
-        outlets: u.user_outlets.map((uo) => uo.outlet),
+        outlets: u.outlets.map((uo) => uo.outlet),
       })),
       meta: {
         page,
@@ -179,12 +116,6 @@ export class UsersService {
           email: data.email.toLowerCase(),
           password_hash,
           role: data.role,
-          settings: {
-            create: {
-              display_currency: 'IDR',
-              display_timezone: 'Asia/Jakarta',
-            },
-          },
         },
       });
 
@@ -250,14 +181,6 @@ export class UsersService {
             })),
           });
         }
-      }
-
-      // Jika user dinonaktifkan, cabut semua token aktif (BR-AUTH-04)
-      if (data.is_active === false) {
-        await tx.refreshToken.updateMany({
-          where: { user_id: id, revoked_at: null },
-          data: { revoked_at: new Date() },
-        });
       }
 
       return user;

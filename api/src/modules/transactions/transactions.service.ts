@@ -1,4 +1,4 @@
-import { PaymentMethod, PrismaClient, Role, TransactionStatus } from '@prisma/client';
+import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
@@ -76,7 +76,7 @@ export class TransactionsService {
         payment_method: data.payment_method,
         paid_idr: paid,
         change_idr: change,
-        status: TransactionStatus.completed,
+        status: TxnStatus.completed,
         created_at: new Date(),
         items: preparedItems,
         outlet: { id: data.outlet_id, name: 'Kopi Arus - Sudirman (HQ)' },
@@ -198,7 +198,7 @@ export class TransactionsService {
           payment_method: data.payment_method,
           paid_idr: paid,
           change_idr: change,
-          status: TransactionStatus.completed,
+          status: TxnStatus.completed,
           items: {
             create: preparedItems,
           },
@@ -266,7 +266,7 @@ export class TransactionsService {
         throw new AppError('NOT_FOUND', 404, 'Transaksi tidak ditemukan.');
       }
 
-      if (transaction.status === TransactionStatus.voided) {
+      if (transaction.status === TxnStatus.voided) {
         throw new AppError('TRANSACTION_ALREADY_VOIDED', 400, 'Transaksi ini sudah pernah dibatalkan.');
       }
 
@@ -274,10 +274,7 @@ export class TransactionsService {
       const updated = await tx.transaction.update({
         where: { id: transactionId },
         data: {
-          status: TransactionStatus.voided,
-          voided_at: new Date(),
-          voided_by: voidedByUserId,
-          void_reason: reason.trim(),
+          status: TxnStatus.voided,
         },
         include: {
           items: true,
@@ -336,7 +333,7 @@ export class TransactionsService {
   async listTransactions(
     query: {
       outlet_id?: string;
-      status?: TransactionStatus;
+      status?: TxnStatus;
       receipt_no?: string;
       page?: number;
       page_size?: number;
