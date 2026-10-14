@@ -21,6 +21,7 @@ import fxRoute from './modules/fx/fx.route';
 import integrityRoute from './modules/integrity/integrity.route';
 import gameRoute from './modules/game/game.route';
 import searchRoute from './modules/search/search.route';
+import feedbackRoute from './modules/feedback/feedback.route';
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api', fxRoute);
 app.use('/api', integrityRoute);
 app.use('/api', gameRoute);
 app.use('/api', searchRoute);
+app.use('/api', feedbackRoute);
 app.use('/', healthRoute); // Direct /health fallback
 
 // 404 Handler

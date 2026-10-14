@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/network/api_client.dart';
 
-class FeedbackScreen extends StatefulWidget {
+class FeedbackScreen extends ConsumerStatefulWidget {
   const FeedbackScreen({super.key});
 
   @override
-  State<FeedbackScreen> createState() => _FeedbackScreenState();
+  ConsumerState<FeedbackScreen> createState() => _FeedbackScreenState();
 }
 
-class _FeedbackScreenState extends State<FeedbackScreen> {
+class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   final _kesanController = TextEditingController();
   final _saranController = TextEditingController();
   bool _isSending = false;
@@ -23,6 +25,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> _loadSavedFeedback() async {
+    // 1. Baca cache lokal dulu
     final prefs = await SharedPreferences.getInstance();
     final savedKesan = prefs.getString('pam_feedback_kesan');
     final savedSaran = prefs.getString('pam_feedback_saran');
@@ -36,6 +39,25 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _savedAt = savedDate;
         });
       }
+    }
+
+    // 2. Coba sinkronisasi riwayat feedback dari backend database
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final res = await apiClient.get('/feedback');
+      final list = res.data['data'] as List<dynamic>?;
+      if (list != null && list.isNotEmpty) {
+        final latest = list.first as Map<String, dynamic>;
+        if (mounted && _kesanController.text.isEmpty) {
+          setState(() {
+            _kesanController.text = latest['kesan'] as String? ?? '';
+            _saranController.text = latest['saran'] as String? ?? '';
+            _savedAt = latest['created_at'] != null ? 'Database Online' : null;
+          });
+        }
+      }
+    } catch (_) {
+      // Abaikan jika sedang offline / backend disconnect
     }
   }
 
@@ -65,26 +87,46 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
     setState(() => _isSending = true);
 
-    // Simpan ke SharedPreferences agar data tersimpan di perangkat
-    final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
-    final dateStr = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+    // 1. Simpan ke database online via REST API backend (Phase 1)
+    bool sentToBackend = false;
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.post(
+        '/feedback',
+        data: {
+          'kesan': kesan,
+          'saran': saran,
+          'rating': 5,
+        },
+      );
+      sentToBackend = true;
+    } catch (_) {
+      // Jika offline, simpan lokal sebagai fallback
+      sentToBackend = false;
+    }
+
+    // 2. Simpan ke SharedPreferences lokal
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pam_feedback_kesan', kesan);
     await prefs.setString('pam_feedback_saran', saran);
     await prefs.setString('pam_feedback_date', dateStr);
 
-    await Future.delayed(const Duration(milliseconds: 500));
-
     if (mounted) {
       setState(() {
         _isSending = false;
-        _savedAt = dateStr;
+        _savedAt = '$dateStr ${sentToBackend ? "(Tersimpan di Cloud)" : "(Tersimpan Offline)"}';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Terima kasih! Saran & kesan untuk mata kuliah Pemrograman Aplikasi Mobile berhasil disimpan.',
+            sentToBackend
+                ? 'Terima kasih! Kesan & saran PAM berhasil tersimpan di database online & lokal.'
+                : 'Tersimpan di penyimpanan lokal perangkat (akan disinkronkan saat online).',
             style: GoogleFonts.lexend(fontSize: 13),
           ),
           backgroundColor: const Color(0xFF16A34A),
@@ -113,7 +155,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+              border: Border.all(color: AppTheme.borderOutline),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,8 +165,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
                   ),
-                  child: const Icon(Icons.school_outlined, color: AppTheme.primaryBlue, size: 24),
+                  child: const Icon(Icons.school_outlined, color: AppTheme.primaryBlue, size: 28),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -132,37 +175,27 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Pemrograman Aplikasi Mobile',
-                        style: GoogleFonts.lexend(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14.5,
-                          color: AppTheme.accentBlack,
-                        ),
+                        'Praktikum Aplikasi Mobile (PAM)',
+                        style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
-                        'Tuliskan kesan Anda selama mengikuti perkuliahan serta saran konstruktif untuk pengembangan mata kuliah ke depannya.',
-                        style: GoogleFonts.lexend(
-                          fontSize: 12,
-                          color: const Color(0xFF64748B),
-                          height: 1.4,
-                        ),
+                        'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir (Phase 1)',
+                        style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
                       ),
                       if (_savedAt != null) ...[
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF16A34A)),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Terakhir disimpan: $_savedAt',
-                              style: GoogleFonts.lexend(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF16A34A),
-                              ),
-                            ),
-                          ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: Text(
+                            'Status: $_savedAt',
+                            style: GoogleFonts.lexend(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF16A34A)),
+                          ),
                         ),
                       ],
                     ],
@@ -172,7 +205,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
           // Form Field 1: Kesan
           Text(
@@ -185,7 +218,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ),
           const SizedBox(height: 3),
           Text(
-            'Bagaimana pengalaman dan kesan Anda selama belajar materi Flutter & PAM?',
+            'Bagaimana pengalaman Anda selama mengikuti perkuliahan dan praktikum PAM semester ini?',
             style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
           ),
           const SizedBox(height: 8),
@@ -194,7 +227,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             maxLines: 5,
             style: GoogleFonts.lexend(fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'Tuliskan kesan Anda di sini (misal: materi sangat terstruktur, tantangan proyek nyata membuat pemahaman arsitektur mobile semakin mendalam)...',
+              hintText: 'Tuliskan kesan Anda di sini (misal: materi sangat terstruktur, praktikum hands-on sangat membantu memahami arsitektur Flutter & Express)...',
               hintStyle: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF94A3B8)),
               filled: true,
               fillColor: Colors.white,

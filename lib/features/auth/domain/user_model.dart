@@ -78,6 +78,24 @@ class UserSettingsSummary {
       dailyRevenueTargetIdr: json['daily_revenue_target_idr'] as int?,
     );
   }
+
+  UserSettingsSummary copyWith({
+    String? displayCurrency,
+    String? displayTimezone,
+    bool? biometricEnabled,
+    bool? shakeRefreshEnabled,
+    bool? tiltEnabled,
+    int? dailyRevenueTargetIdr,
+  }) {
+    return UserSettingsSummary(
+      displayCurrency: displayCurrency ?? this.displayCurrency,
+      displayTimezone: displayTimezone ?? this.displayTimezone,
+      biometricEnabled: biometricEnabled ?? this.biometricEnabled,
+      shakeRefreshEnabled: shakeRefreshEnabled ?? this.shakeRefreshEnabled,
+      tiltEnabled: tiltEnabled ?? this.tiltEnabled,
+      dailyRevenueTargetIdr: dailyRevenueTargetIdr ?? this.dailyRevenueTargetIdr,
+    );
+  }
 }
 
 class UserModel {
@@ -85,6 +103,7 @@ class UserModel {
   final String name;
   final String email;
   final UserRole role;
+  final String? avatarUrl;
   final List<OutletSummary> outlets;
   final UserSettingsSummary settings;
 
@@ -93,9 +112,30 @@ class UserModel {
     required this.name,
     required this.email,
     required this.role,
+    this.avatarUrl,
     this.outlets = const [],
     this.settings = const UserSettingsSummary(),
   });
+
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    UserRole? role,
+    String? avatarUrl,
+    List<OutletSummary>? outlets,
+    UserSettingsSummary? settings,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      outlets: outlets ?? this.outlets,
+      settings: settings ?? this.settings,
+    );
+  }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final rawOutlets = json['outlets'] as List<dynamic>? ?? [];
@@ -104,6 +144,7 @@ class UserModel {
       name: json['name'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: UserRole.fromString(json['role'] as String? ?? 'staff'),
+      avatarUrl: json['avatar_url'] as String?,
       outlets: rawOutlets
           .map((o) => OutletSummary.fromJson(o as Map<String, dynamic>))
           .toList(),
@@ -111,3 +152,4 @@ class UserModel {
     );
   }
 }
+

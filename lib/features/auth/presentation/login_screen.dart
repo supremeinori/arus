@@ -223,7 +223,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: isLoading
+                        ? null
+                        : () => ref.read(authProvider.notifier).authenticateWithBiometric(),
+                    icon: const Icon(Icons.fingerprint, color: AppTheme.primaryBlue, size: 20),
+                    label: Text(
+                      'Masuk dengan Biometrik (Sidik Jari)',
+                      style: GoogleFonts.lexend(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFFBFDBFE), width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
 
                   // Quick Demo Accounts Fill Chips
                   const Divider(color: AppTheme.borderOutline, thickness: 1.5),

@@ -112,6 +112,7 @@ model User {
   email              String    @unique @db.VarChar(255)
   password_hash      String
   role               Role
+  avatar_url         String?   @map("avatar_url") @db.Text
   is_active          Boolean   @default(true) @map("is_active")
   failed_login_count Int       @default(0) @map("failed_login_count")
   locked_until       DateTime? @map("locked_until") @db.Timestamptz
@@ -475,8 +476,9 @@ model GameSession {
 model Feedback {
   id         String   @id @default(uuid()) @db.Uuid
   user_id    String   @map("user_id") @db.Uuid
-  rating     Int      @db.SmallInt
-  message    String
+  kesan      String   @db.Text
+  saran      String   @db.Text
+  rating     Int?     @default(5) @db.SmallInt
   created_at DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)

@@ -82,6 +82,7 @@ export class AuthService {
         name: target.name,
         email,
         role: target.role,
+        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
         outlets: target.role === 'staff' ? [demoOutlets[0]] : demoOutlets,
         settings: {
           display_currency: 'IDR',
@@ -228,6 +229,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar_url: user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
         outlets: accessibleOutlets,
         settings: user.settings,
       },

@@ -3,10 +3,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../auth/domain/user_model.dart';
 import '../../../core/theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  Widget _buildLetterAvatar(UserModel? user) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+      ),
+      child: Center(
+        child: Text(
+          (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : 'U',
+          style: GoogleFonts.lexend(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.primaryBlue,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,7 +47,7 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // User Card
+          // User Card with Avatar (Photo / Letter)
           Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
@@ -34,27 +57,19 @@ class ProfileScreen extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
-                  ),
-                  child: Center(
-                    child: Text(
-                      (user != null && user.name.isNotEmpty)
-                          ? user.name[0].toUpperCase()
-                          : 'U',
-                      style: GoogleFonts.lexend(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primaryBlue,
-                      ),
+                    child: Image.network(
+                      user.avatarUrl!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _buildLetterAvatar(user),
                     ),
-                  ),
-                ),
+                  )
+                else
+                  _buildLetterAvatar(user),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -100,6 +115,32 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
+
+          // Keamanan & Sesi Biometrik
+          Text(
+            'Keamanan & Preferensi Sesi',
+            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 0,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+            ),
+            child: SwitchListTile(
+              secondary: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue),
+              title: Text('Login Sidik Jari (Biometrik)', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+              subtitle: Text('Buka kunci sesi otomatis dengan sensor biometrik HP', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+              activeThumbColor: AppTheme.primaryBlue,
+              value: user?.settings.biometricEnabled ?? false,
+              onChanged: (val) {
+                ref.read(authProvider.notifier).toggleBiometric(val);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Outlet Scopes List
           if (user != null && user.outlets.isNotEmpty) ...[
@@ -156,7 +197,7 @@ class ProfileScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.rate_review_outlined, color: AppTheme.primaryBlue),
                   title: Text('Saran & Kesan Kuliah PAM', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                  subtitle: Text('Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+                  subtitle: Text('Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
                   onTap: () => context.push('/feedback'),
                 ),
