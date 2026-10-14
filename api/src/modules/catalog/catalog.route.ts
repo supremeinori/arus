@@ -8,24 +8,20 @@ import {
   createProduct,
   updateProduct,
 } from './catalog.controller';
-import { requireAuth, requireRole } from '../../middleware/auth';
+import { requireAuth, requireRole, optionalAuth } from '../../middleware/auth';
 import { Role } from '@prisma/client';
 
 const router = Router();
 
-// Terapkan requireAuth spesifik pada path kategori dan produk
-router.use('/categories', requireAuth);
-router.use('/products', requireAuth);
+// Categories (Public read, Owner/Manager write)
+router.get('/categories', optionalAuth, listCategories);
+router.post('/categories', requireAuth, requireRole([Role.owner, Role.manager]), createCategory);
+router.patch('/categories/:id', requireAuth, requireRole([Role.owner, Role.manager]), updateCategory);
 
-// Categories
-router.get('/categories', listCategories);
-router.post('/categories', requireRole([Role.owner, Role.manager]), createCategory);
-router.patch('/categories/:id', requireRole([Role.owner, Role.manager]), updateCategory);
-
-// Products
-router.get('/products', listProducts);
-router.get('/products/:id', getProductById);
-router.post('/products', requireRole([Role.owner, Role.manager]), createProduct);
-router.patch('/products/:id', requireRole([Role.owner, Role.manager]), updateProduct);
+// Products (Public read with optional auth for cost info, Owner/Manager write)
+router.get('/products', optionalAuth, listProducts);
+router.get('/products/:id', optionalAuth, getProductById);
+router.post('/products', requireAuth, requireRole([Role.owner, Role.manager]), createProduct);
+router.patch('/products/:id', requireAuth, requireRole([Role.owner, Role.manager]), updateProduct);
 
 export default router;

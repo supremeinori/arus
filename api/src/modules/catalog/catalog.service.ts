@@ -152,7 +152,7 @@ export class CatalogService {
   // PRODUCTS
   // ----------------------------------------------------
   async listProducts(
-    userRole: Role,
+    userRole: Role | undefined,
     query: {
       category_id?: string;
       is_active?: string;
@@ -175,7 +175,7 @@ export class CatalogService {
 
       if (query.is_active !== undefined) {
         filtered = filtered.filter((p) => String(p.is_active) === query.is_active);
-      } else if (userRole === Role.staff) {
+      } else if (userRole === Role.staff || !userRole) {
         filtered = filtered.filter((p) => p.is_active);
       }
 
@@ -203,7 +203,7 @@ export class CatalogService {
           const { cost_idr, ...rest } = p;
           return {
             ...rest,
-            ...(userRole !== Role.staff ? { cost_idr } : {}),
+            ...(userRole && userRole !== Role.staff ? { cost_idr } : {}),
           };
         }),
         meta: { page, page_size: pageSize, total: filtered.length },
@@ -218,7 +218,7 @@ export class CatalogService {
 
     if (query.is_active !== undefined) {
       where.is_active = query.is_active === 'true';
-    } else if (userRole === Role.staff) {
+    } else if (userRole === Role.staff || !userRole) {
       where.is_active = true;
     }
 
@@ -256,7 +256,7 @@ export class CatalogService {
           const { cost_idr, ...rest } = p;
           return {
             ...rest,
-            ...(userRole !== Role.staff ? { cost_idr } : {}),
+            ...(userRole && userRole !== Role.staff ? { cost_idr } : {}),
           };
         }),
         meta: {
@@ -271,7 +271,7 @@ export class CatalogService {
           const { cost_idr, ...rest } = p;
           return {
             ...rest,
-            ...(userRole !== Role.staff ? { cost_idr } : {}),
+            ...(userRole && userRole !== Role.staff ? { cost_idr } : {}),
           };
         }),
         meta: { page: 1, page_size: 20, total: inMemoryProducts.length },
@@ -279,7 +279,7 @@ export class CatalogService {
     }
   }
 
-  async getProductById(id: string, userRole: Role) {
+  async getProductById(id: string, userRole?: Role) {
     if (!(await isDbAvailable())) {
       const product = inMemoryProducts.find((p) => p.id === id);
       if (!product) {
@@ -289,7 +289,7 @@ export class CatalogService {
       return {
         ...rest,
         inventory: [],
-        ...(userRole !== Role.staff ? { cost_idr } : {}),
+        ...(userRole && userRole !== Role.staff ? { cost_idr } : {}),
       };
     }
 
@@ -312,7 +312,7 @@ export class CatalogService {
     const { cost_idr, ...rest } = product;
     return {
       ...rest,
-      ...(userRole !== Role.staff ? { cost_idr } : {}),
+      ...(userRole && userRole !== Role.staff ? { cost_idr } : {}),
     };
   }
 
