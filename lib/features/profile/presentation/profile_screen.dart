@@ -154,9 +154,9 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),
                 ListTile(
-                  leading: const Icon(Icons.feedback_outlined, color: AppTheme.primaryBlue),
-                  title: Text('Kirim Masukan & Feedback', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                  subtitle: Text('Saran pengembangan fitur dan laporan bug sistem', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+                  leading: const Icon(Icons.rate_review_outlined, color: AppTheme.primaryBlue),
+                  title: Text('Saran & Kesan Kuliah PAM', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  subtitle: Text('Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
                   onTap: () => context.push('/feedback'),
                 ),
