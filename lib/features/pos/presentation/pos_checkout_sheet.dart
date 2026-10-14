@@ -354,7 +354,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+            color: isSelected ? const Color(0xFFF0FDFA) : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? AppTheme.primaryBlue : AppTheme.borderOutline,

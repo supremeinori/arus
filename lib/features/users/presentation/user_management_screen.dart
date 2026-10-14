@@ -62,7 +62,7 @@ class UserManagementScreen extends StatelessWidget {
             final isOwner = u['role'].toString().contains('Owner');
             final isManager = u['role'].toString().contains('Manager');
             final badgeColor = isOwner
-                ? const Color(0xFF1D4ED8)
+                ? const Color(0xFF115E59)
                 : isManager
                     ? const Color(0xFFD97706)
                     : const Color(0xFF16A34A);

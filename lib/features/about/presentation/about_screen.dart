@@ -26,7 +26,7 @@ class AboutScreen extends StatelessWidget {
                   height: 72,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                      colors: [Color(0xFF0D9488), Color(0xFF115E59)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),

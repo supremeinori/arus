@@ -12,6 +12,7 @@ class AppTheme {
   static const primaryBlue = primaryToska;
   static const primaryBlueHover = primaryToskaHover;
   static const lightBlueBg = lightToskaBg;
+  static const toskaBorder = Color(0xFF99F6E4);
   static const darkBlue = darkToska;
 
   static const pureWhite = Color(0xFFFFFFFF);

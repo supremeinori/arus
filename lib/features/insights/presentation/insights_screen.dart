@@ -248,7 +248,7 @@ class InsightsScreen extends ConsumerWidget {
                   color: isCritical ? const Color(0xFFFEE2E2) : AppTheme.lightBlueBg,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isCritical ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                    color: isCritical ? const Color(0xFFFCA5A5) : const Color(0xFF99F6E4),
                     width: 1.0,
                   ),
                 ),
@@ -274,7 +274,7 @@ class InsightsScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: const Color(0xFFF0FDFA),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(color: AppTheme.primaryBlue, width: 1),
             ),

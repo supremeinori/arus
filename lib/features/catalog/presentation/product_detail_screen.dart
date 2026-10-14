@@ -63,7 +63,7 @@ class ProductDetailScreen extends ConsumerWidget {
                             color: prod.isActive ? AppTheme.lightBlueBg : const Color(0xFFFEF2F2),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: prod.isActive ? const Color(0xFFBFDBFE) : const Color(0xFFFCA5A5),
+                              color: prod.isActive ? const Color(0xFF99F6E4) : const Color(0xFFFCA5A5),
                               width: 1.0,
                             ),
                           ),
@@ -192,7 +192,7 @@ class ProductDetailScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: stock.quantity <= stock.reorderLevel
                               ? const Color(0xFFFEF2F2)
-                              : const Color(0xFFEFF6FF),
+                              : const Color(0xFFF0FDFA),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: stock.quantity <= stock.reorderLevel

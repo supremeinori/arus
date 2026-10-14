@@ -9,28 +9,6 @@ import '../../../core/theme/app_theme.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  Widget _buildLetterAvatar(UserModel? user) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
-      ),
-      child: Center(
-        child: Text(
-          (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : 'U',
-          style: GoogleFonts.lexend(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.primaryBlue,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
@@ -45,226 +23,356 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          // User Card with Avatar (Photo / Letter)
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+          _buildUserCard(user),
+
+          // Keamanan & sesi biometrik
+          _buildSectionTitle('Keamanan & Preferensi Sesi'),
+          _buildBiometricTile(ref, user),
+
+          // Cakupan outlet
+          if (user != null && user.outlets.isNotEmpty) ...[
+            _buildSectionTitle('Akses Outlet Cabang (${user.outlets.length})'),
+            ...user.outlets.map(
+              (o) => _buildOutletTile(
+                name: o.name,
+                detail: '${o.timezone} • ${o.address ?? "-"}',
+              ),
             ),
+          ],
+
+          // Menu administrasi
+          _buildSectionTitle('Administrasi & Aplikasi'),
+          _buildMenuItem(
+            icon: Icons.people_outline_rounded,
+            title: 'Kelola Staf & Akun',
+            subtitle: 'Atur hak akses kasir, manager, dan role pengguna',
+            onTap: () => context.push('/users'),
+          ),
+          const SizedBox(height: 10),
+          _buildMenuItem(
+            icon: Icons.rate_review_outlined,
+            title: 'Saran & Kesan Kuliah PAM',
+            subtitle: 'Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)',
+            onTap: () => context.push('/feedback'),
+          ),
+          const SizedBox(height: 10),
+          _buildMenuItem(
+            icon: Icons.info_outline_rounded,
+            title: 'Tentang ARUS Decision Hub',
+            subtitle: 'Versi rilis v2.4.0, lisensi, & arsitektur sistem',
+            onTap: () => context.push('/about'),
+          ),
+
+          const SizedBox(height: 24),
+          _buildLogoutButton(context, ref),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Komponen ----------
+
+  Widget _buildSectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+      child: Text(
+        text.toUpperCase(),
+        style: GoogleFonts.lexend(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.textMuted,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  /// Avatar: foto dari server jika ada, selain itu huruf awal nama.
+  Widget _buildAvatar(UserModel? user) {
+    final avatarUrl = user?.avatarUrl;
+    final hasPhoto = avatarUrl != null && avatarUrl.isNotEmpty;
+    final initial = (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : 'U';
+
+    Widget letter() => Center(
+          child: Text(
+            initial,
+            style: GoogleFonts.lexend(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+          ),
+        );
+
+    return Container(
+      width: 56,
+      height: 56,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: hasPhoto
+          ? Image.network(
+              avatarUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => letter(),
+            )
+          : letter(),
+    );
+  }
+
+  /// Kartu profil dengan gradien toska.
+  Widget _buildUserCard(UserModel? user) {
+    final role = user?.role.toDisplayString() ?? '';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.primaryToska, AppTheme.darkToska],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.darkToska.withValues(alpha: 0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildAvatar(user),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user?.name ?? 'Pengguna',
+                  style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  user?.email ?? '',
+                  style: GoogleFonts.lexend(fontSize: 12.5, color: Colors.white.withValues(alpha: 0.9)),
+                ),
+                if (role.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      role,
+                      style: GoogleFonts.lexend(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Toggle login sidik jari. Tetap memanggil toggleBiometric dari provider.
+  Widget _buildBiometricTile(WidgetRef ref, UserModel? user) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.borderOutline),
+      ),
+      child: SwitchListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        secondary: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryToska,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(Icons.fingerprint_rounded, color: Colors.white, size: 22),
+        ),
+        title: Text(
+          'Login Sidik Jari (Biometrik)',
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.accentBlack),
+        ),
+        subtitle: Text(
+          'Buka kunci sesi otomatis dengan sensor biometrik HP',
+          style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMuted, height: 1.3),
+        ),
+        activeThumbColor: AppTheme.primaryToska,
+        value: user?.settings.biometricEnabled ?? false,
+        onChanged: (val) => ref.read(authProvider.notifier).toggleBiometric(val),
+      ),
+    );
+  }
+
+  Widget _buildOutletTile({required String name, required String detail}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.borderOutline),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.lightToskaBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primaryToska.withValues(alpha: 0.25)),
+            ),
+            child: const Icon(Icons.storefront_outlined, color: AppTheme.primaryToska, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+                ),
+                Text(
+                  detail,
+                  style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tombol menu berbentuk kartu dengan ikon kotak toska.
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.borderOutline),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      user.avatarUrl!,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildLetterAvatar(user),
-                    ),
-                  )
-                else
-                  _buildLetterAvatar(user),
-                const SizedBox(width: 16),
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryToska,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user?.name ?? 'Pengguna',
-                        style: GoogleFonts.lexend(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.accentBlack,
-                        ),
+                        title,
+                        style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.accentBlack),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        user?.email ?? '',
-                        style: GoogleFonts.lexend(
-                          fontSize: 13,
-                          color: AppTheme.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppTheme.lightBlueBg,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
-                        ),
-                        child: Text(
-                          user?.role.toDisplayString() ?? '',
-                          style: GoogleFonts.lexend(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryBlue,
-                          ),
-                        ),
+                        subtitle,
+                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMuted, height: 1.3),
                       ),
                     ],
                   ),
                 ),
+                const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 20),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+        ),
+      ),
+    );
+  }
 
-          // Keamanan & Sesi Biometrik
-          Text(
-            'Keamanan & Preferensi Sesi',
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-            ),
-            child: SwitchListTile(
-              secondary: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue),
-              title: Text('Login Sidik Jari (Biometrik)', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-              subtitle: Text('Buka kunci sesi otomatis dengan sensor biometrik HP', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
-              activeThumbColor: AppTheme.primaryBlue,
-              value: user?.settings.biometricEnabled ?? false,
-              onChanged: (val) {
-                ref.read(authProvider.notifier).toggleBiometric(val);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Outlet Scopes List
-          if (user != null && user.outlets.isNotEmpty) ...[
-            Text(
-              'Akses Outlet Cabang (${user.outlets.length}):',
-              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
-            ),
-            const SizedBox(height: 8),
-            ...user.outlets.map(
-              (o) => Card(
-                elevation: 0,
-                color: Colors.white,
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                ),
-                child: ListTile(
-                  leading: const Icon(Icons.storefront_outlined, color: AppTheme.primaryBlue),
-                  title: Text(o.name, style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14)),
-                  subtitle: Text(
-                    '${o.timezone} • ${o.address ?? "-"}',
-                    style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
-                  ),
-                  dense: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          Text(
-            'Administrasi & Aplikasi',
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-            ),
-            child: Column(
+  Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: AppTheme.dangerRed.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppTheme.dangerRed.withValues(alpha: 0.5), width: 1.5),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => _confirmLogout(context, ref),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ListTile(
-                  leading: const Icon(Icons.people_outline_rounded, color: AppTheme.primaryBlue),
-                  title: Text('Kelola Staf & Akun', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                  subtitle: Text('Atur hak akses kasir, manager, dan role pengguna', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
-                  onTap: () => context.push('/users'),
-                ),
-                const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),
-                ListTile(
-                  leading: const Icon(Icons.rate_review_outlined, color: AppTheme.primaryBlue),
-                  title: Text('Saran & Kesan Kuliah PAM', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                  subtitle: Text('Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
-                  onTap: () => context.push('/feedback'),
-                ),
-                const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),
-                ListTile(
-                  leading: const Icon(Icons.info_outline_rounded, color: AppTheme.primaryBlue),
-                  title: Text('Tentang ARUS Decision Hub', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                  subtitle: Text('Versi rilis v2.4.0, lisensi, & arsitektur sistem', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
-                  onTap: () => context.push('/about'),
+                const Icon(Icons.logout_rounded, color: AppTheme.dangerRed, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Keluar Akun',
+                  style: GoogleFonts.lexend(color: AppTheme.dangerRed, fontWeight: FontWeight.w700, fontSize: 14),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
+        ),
+      ),
+    );
+  }
 
-          // Logout Button
-          OutlinedButton.icon(
+  void _confirmLogout(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Keluar dari Akun?',
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin keluar dari sesi saat ini?',
+          style: GoogleFonts.lexend(fontSize: 13.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.dangerRed,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                  ),
-                  title: Text(
-                    'Keluar dari Akun?',
-                    style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                  content: Text(
-                    'Apakah Anda yakin ingin keluar dari sesi saat ini?',
-                    style: GoogleFonts.lexend(fontSize: 13.5),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text('Batal', style: GoogleFonts.lexend(color: const Color(0xFF64748B))),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.dangerRed,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                          side: const BorderSide(color: AppTheme.borderOutline, width: 1),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        ref.read(authProvider.notifier).logout();
-                      },
-                      child: Text('Keluar', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              );
+              Navigator.pop(ctx);
+              ref.read(authProvider.notifier).logout();
             },
-            icon: const Icon(Icons.logout, color: AppTheme.dangerRed, size: 18),
-            label: Text(
-              'Keluar Akun',
-              style: GoogleFonts.lexend(color: AppTheme.dangerRed, fontWeight: FontWeight.w700, fontSize: 14),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppTheme.dangerRed, width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
+            child: Text('Keluar', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700)),
           ),
         ],
       ),

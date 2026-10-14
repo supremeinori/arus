@@ -151,9 +151,9 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFF0FDFA),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+                border: Border.all(color: const Color(0xFF99F6E4), width: 1.0),
               ),
               child: Text(
                 scenario['difficulty'],
@@ -216,7 +216,7 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+                  color: isSelected ? const Color(0xFFF0FDFA) : Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected ? AppTheme.primaryBlue : AppTheme.borderOutline,
@@ -272,7 +272,7 @@ class _GameHomeScreenState extends State<GameHomeScreen> {
     final maxScore = _scenarios.length * 100;
     final percentage = _mathRound(_totalScore, maxScore);
     String rankBadge = 'Barista Pemula';
-    Color rankColor = const Color(0xFF2563EB);
+    Color rankColor = const Color(0xFF0D9488);
 
     if (percentage >= 90) {
       rankBadge = 'Master Store Manager ⭐⭐⭐';

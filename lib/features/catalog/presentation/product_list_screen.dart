@@ -179,7 +179,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEFF6FF),
+                                    color: const Color(0xFFF0FDFA),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: AppTheme.borderOutline, width: 1.0),
                                   ),

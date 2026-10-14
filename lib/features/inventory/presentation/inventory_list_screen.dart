@@ -277,7 +277,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   color: isLow ? const Color(0xFFFEE2E2) : AppTheme.lightBlueBg,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isLow ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                    color: isLow ? const Color(0xFFFCA5A5) : const Color(0xFF99F6E4),
                     width: 1.0,
                   ),
                 ),

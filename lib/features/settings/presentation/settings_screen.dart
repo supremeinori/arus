@@ -182,7 +182,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFF0FDFA),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
               ),
@@ -227,9 +227,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: const Color(0xFFF0FDFA),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+                    border: Border.all(color: const Color(0xFF99F6E4), width: 1.0),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -354,7 +354,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onPressed: _swapCurrencies,
                           tooltip: 'Tukar Posisi',
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xFFEFF6FF),
+                            backgroundColor: const Color(0xFFF0FDFA),
                             foregroundColor: AppTheme.primaryBlue,
                           ),
                           icon: const Icon(Icons.swap_horiz_rounded, size: 22),
@@ -399,9 +399,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: const Color(0xFFF0FDFA),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+                      border: Border.all(color: const Color(0xFF99F6E4), width: 1.0),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,7 +499,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFF0FDFA),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
               ),

@@ -193,7 +193,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: const BoxDecoration(
-                              color: Color(0xFFEFF6FF),
+                              color: Color(0xFFF0FDFA),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.inventory_2_outlined, size: 36, color: AppTheme.primaryBlue),
@@ -265,7 +265,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: inCart ? const Color(0xFFEFF6FF) : Colors.white,
+                          color: inCart ? const Color(0xFFF0FDFA) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: inCart ? AppTheme.primaryBlue : AppTheme.borderOutline,
@@ -308,7 +308,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color: inCart ? AppTheme.primaryBlue : const Color(0xFFEFF6FF),
+                                    color: inCart ? AppTheme.primaryBlue : const Color(0xFFF0FDFA),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(

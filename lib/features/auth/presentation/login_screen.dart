@@ -69,12 +69,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          colors: [Color(0xFF0D9488), Color(0xFF115E59)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(0x331D4ED8),
+                            color: Color(0x330D9488),
                             blurRadius: 16,
                             offset: Offset(0, 6),
                           ),
