@@ -18,6 +18,8 @@ class PrefsStore {
   static const _keyBiometricEnabled = 'biometric_enabled';
   static const _keyDisplayCurrency = 'display_currency';
   static const _keyDisplayTimezone = 'display_timezone';
+  static const _keyShakeRefreshEnabled = 'shake_refresh_enabled';
+  static const _keyShakeThreshold = 'shake_threshold';
 
   bool get isBiometricEnabled => _prefs.getBool(_keyBiometricEnabled) ?? false;
   Future<void> setBiometricEnabled(bool val) => _prefs.setBool(_keyBiometricEnabled, val);
@@ -27,4 +29,10 @@ class PrefsStore {
 
   String get displayTimezone => _prefs.getString(_keyDisplayTimezone) ?? 'Asia/Jakarta';
   Future<void> setDisplayTimezone(String val) => _prefs.setString(_keyDisplayTimezone, val);
+
+  bool get isShakeRefreshEnabled => _prefs.getBool(_keyShakeRefreshEnabled) ?? true;
+  Future<void> setShakeRefreshEnabled(bool val) => _prefs.setBool(_keyShakeRefreshEnabled, val);
+
+  double get shakeThreshold => _prefs.getDouble(_keyShakeThreshold) ?? 6.0;
+  Future<void> setShakeThreshold(double val) => _prefs.setDouble(_keyShakeThreshold, val);
 }

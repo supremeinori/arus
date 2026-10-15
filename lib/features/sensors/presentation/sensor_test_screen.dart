@@ -422,11 +422,38 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
                 Text('${threshold.toStringAsFixed(1)} m/s²', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
               ],
             ),
+            const SizedBox(height: 6),
+            Row(
+              children: ShakeSensitivityLevel.values.map((preset) {
+                final isSelected = (threshold - preset.threshold).abs() < 0.3;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                        backgroundColor: isSelected ? Colors.deepPurple : Colors.transparent,
+                        foregroundColor: isSelected ? Colors.white : Colors.deepPurple,
+                        side: BorderSide(color: isSelected ? Colors.deepPurple : Colors.deepPurple.shade200),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        ref.read(shakeThresholdProvider.notifier).setPreset(preset);
+                      },
+                      child: Text(
+                        preset.label,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
             Slider(
-              value: threshold.clamp(3.0, 15.0),
+              value: threshold.clamp(3.0, 16.0),
               min: 3.0,
-              max: 15.0,
-              divisions: 24,
+              max: 16.0,
+              divisions: 26,
               label: '${threshold.toStringAsFixed(1)} m/s²',
               onChanged: (val) {
                 ref.read(shakeThresholdProvider.notifier).state = val;

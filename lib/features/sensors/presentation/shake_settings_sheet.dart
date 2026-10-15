@@ -1,0 +1,342 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/app_theme.dart';
+import 'sensor_provider.dart';
+
+class ShakeSettingsSheet extends ConsumerWidget {
+  const ShakeSettingsSheet({super.key});
+
+  static Future<void> show(BuildContext context) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ShakeSettingsSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final threshold = ref.watch(shakeThresholdProvider);
+    final settingsAsync = ref.watch(sensorSettingsProvider);
+    final isEnabled = settingsAsync.value?.shakeRefreshEnabled ?? true;
+    final liveForce = ref.watch(lastShakeForceProvider);
+
+    return Container(
+      padding: EdgeInsets.only(
+        top: 20,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Handle
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header Title
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.vibration_rounded, color: AppTheme.primaryBlue, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sensitivitas Guncangan',
+                        style: GoogleFonts.lexend(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.accentBlack,
+                        ),
+                      ),
+                      Text(
+                        'Atur ambang batas kekuatan Shake-to-Refresh',
+                        style: GoogleFonts.lexend(
+                          fontSize: 12,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: AppTheme.textMuted),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+
+            // Toggle Aktif / Nonaktif
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Fitur Shake-to-Refresh Aktif',
+                style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5),
+              ),
+              subtitle: Text(
+                'Segarkan data otomatis saat ponsel diguncangkan',
+                style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+              ),
+              activeThumbColor: AppTheme.primaryBlue,
+              value: isEnabled,
+              onChanged: (val) {
+                ref.read(sensorSettingsProvider.notifier).toggleShakeRefresh(val);
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Pilihan Cepat (Presets)
+            Text(
+              'Pilihan Kekuatan Guncangan:',
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: ShakeSensitivityLevel.values.map((preset) {
+                final isSelected = (threshold - preset.threshold).abs() < 0.3;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: InkWell(
+                      onTap: () {
+                        ref.read(shakeThresholdProvider.notifier).setPreset(preset);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primaryBlue : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.primaryBlue : Colors.grey.shade300,
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              preset.label,
+                              style: GoogleFonts.lexend(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isSelected ? Colors.white : AppTheme.accentBlack,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              preset.threshold.toStringAsFixed(1),
+                              style: GoogleFonts.lexend(
+                                fontSize: 11,
+                                color: isSelected ? Colors.white70 : AppTheme.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+
+            // Slider Penyesuaian Halus
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Ambang Batas Custom:',
+                  style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue.withAlpha(20),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${threshold.toStringAsFixed(1)} m/s²',
+                    style: GoogleFonts.lexend(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primaryBlue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Slider(
+              value: threshold.clamp(3.0, 16.0),
+              min: 3.0,
+              max: 16.0,
+              divisions: 26,
+              activeColor: AppTheme.primaryBlue,
+              label: '${threshold.toStringAsFixed(1)} m/s²',
+              onChanged: (val) {
+                ref.read(shakeThresholdProvider.notifier).setThreshold(val);
+              },
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Kecil / Sangat Peka (3.0)',
+                  style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                ),
+                Text(
+                  'Besar / Kuat (16.0)',
+                  style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Live Shake Diagnostic Gauge Box
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.speed_rounded, size: 18, color: AppTheme.accentBlack),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Uji Guncangan Langsung (Realtime)',
+                        style: GoogleFonts.lexend(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Goyangkan HP Anda sekarang untuk menguji apakah kekuatan guncangan melampaui target ${threshold.toStringAsFixed(1)} m/s².',
+                    style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Gauge bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: (liveForce / 16.0).clamp(0.0, 1.0),
+                      minHeight: 10,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        liveForce >= threshold ? Colors.green.shade600 : Colors.amber.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Kekuatan Terakhir: ${liveForce.toStringAsFixed(1)} m/s²',
+                        style: GoogleFonts.lexend(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: liveForce >= threshold ? Colors.green.shade700 : AppTheme.accentBlack,
+                        ),
+                      ),
+                      if (liveForce > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: liveForce >= threshold ? Colors.green.shade50 : Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: liveForce >= threshold ? Colors.green.shade300 : Colors.amber.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            liveForce >= threshold ? '✅ Lolos Threshold' : '⚠️ Kurang Kuat',
+                            style: GoogleFonts.lexend(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: liveForce >= threshold ? Colors.green.shade700 : Colors.amber.shade800,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Tombol Simulasi Manual & Simpan
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.touch_app_rounded, size: 16),
+                    label: Text('Tes Getar', style: GoogleFonts.lexend(fontSize: 12.5)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: AppTheme.borderOutline),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      ref.read(shakeEventProvider.notifier).triggerShake();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Simpan & Tutup', style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

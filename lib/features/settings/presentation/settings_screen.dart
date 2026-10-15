@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/timezone_converter.dart';
+import '../../sensors/presentation/sensor_provider.dart';
+import '../../sensors/presentation/shake_settings_sheet.dart';
 import 'currency_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -528,6 +530,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Section 3: Gerakan & Sensor (Shake to Refresh)
+            Text(
+              'Gerakan & Sensor (Shake to Refresh)',
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.accentBlack),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Atur sensitivitas guncangan ponsel untuk menyegarkan data secara otomatis.',
+              style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.vibration_rounded, color: AppTheme.primaryBlue),
+                title: Text('Sensitivitas Guncangan (Shake)', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                subtitle: Text(
+                  'Ambang batas: ${ref.watch(shakeThresholdProvider).toStringAsFixed(1)} m/s²',
+                  style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.lightBlueBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+                      ),
+                      child: Text(
+                        ref.watch(shakeThresholdProvider) <= 4.5
+                            ? 'Ringan'
+                            : ref.watch(shakeThresholdProvider) <= 7.5
+                                ? 'Sedang'
+                                : ref.watch(shakeThresholdProvider) <= 11.0
+                                    ? 'Kuat'
+                                    : 'Sangat Kuat',
+                        style: GoogleFonts.lexend(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
+                  ],
+                ),
+                onTap: () => ShakeSettingsSheet.show(context),
               ),
             ),
           ],

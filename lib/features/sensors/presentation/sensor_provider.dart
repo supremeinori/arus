@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import '../../../core/storage/prefs_store.dart';
 import '../domain/sensor_models.dart';
 import '../data/sensor_repository.dart';
 
@@ -150,8 +151,87 @@ final gyroscopeProvider = StateNotifierProvider<GyroscopeNotifier, GyroscopeRead
   return GyroscopeNotifier();
 });
 
-// Shake threshold setting (default 6.0 m/s^2 delta from gravity or linear motion)
-final shakeThresholdProvider = StateProvider<double>((ref) => 6.0);
+// Tingkat sensitivitas guncangan (Presets)
+enum ShakeSensitivityLevel {
+  light, // 4.0 m/s² (Sangat sensitif / guncangan ringan)
+  normal, // 6.5 m/s² (Sedang / rekomendasi seimbang)
+  strong, // 10.0 m/s² (Guncangan kuat / bertenaga)
+  heavy, // 14.0 m/s² (Sangat kuat / guncangan keras)
+}
+
+extension ShakeSensitivityLevelX on ShakeSensitivityLevel {
+  double get threshold {
+    switch (this) {
+      case ShakeSensitivityLevel.light:
+        return 4.0;
+      case ShakeSensitivityLevel.normal:
+        return 6.5;
+      case ShakeSensitivityLevel.strong:
+        return 10.0;
+      case ShakeSensitivityLevel.heavy:
+        return 14.0;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ShakeSensitivityLevel.light:
+        return 'Ringan';
+      case ShakeSensitivityLevel.normal:
+        return 'Sedang';
+      case ShakeSensitivityLevel.strong:
+        return 'Kuat';
+      case ShakeSensitivityLevel.heavy:
+        return 'Sangat Kuat';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case ShakeSensitivityLevel.light:
+        return 'Cukup goyangan kecil pergelangan tangan (4.0 m/s²)';
+      case ShakeSensitivityLevel.normal:
+        return 'Guncangan wajar & nyaman (6.5 m/s² - Standar Disarankan)';
+      case ShakeSensitivityLevel.strong:
+        return 'Guncangan bertenaga & mantap (10.0 m/s²)';
+      case ShakeSensitivityLevel.heavy:
+        return 'Hanya guncangan keras / ayunan penuh (14.0 m/s²)';
+    }
+  }
+}
+
+// Notifier ambang batas sensitivitas guncangan dengan persistensi lokal
+class ShakeThresholdNotifier extends StateNotifier<double> {
+  final PrefsStore? _prefs;
+
+  ShakeThresholdNotifier([this._prefs]) : super(_prefs?.shakeThreshold ?? 6.0);
+
+  void setThreshold(double val) {
+    state = val;
+    _prefs?.setShakeThreshold(val);
+  }
+
+  void setPreset(ShakeSensitivityLevel level) {
+    setThreshold(level.threshold);
+  }
+
+  @override
+  set state(double value) {
+    super.state = value;
+    _prefs?.setShakeThreshold(value);
+  }
+}
+
+final shakeThresholdProvider = StateNotifierProvider<ShakeThresholdNotifier, double>((ref) {
+  PrefsStore? prefs;
+  try {
+    prefs = ref.watch(prefsStoreProvider);
+  } catch (_) {}
+  return ShakeThresholdNotifier(prefs);
+});
+
+// Telemetri realtime kekuatan guncangan terakhir yang terbaca (m/s²)
+final lastShakeForceProvider = StateProvider<double>((ref) => 0.0);
 
 // Shake event notification stream (emits timestamp on shake)
 class ShakeEventNotifier extends StateNotifier<DateTime?> {
@@ -176,6 +256,11 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
           final delta = (totalG - 9.80665).abs();
           final threshold = _ref.read(shakeThresholdProvider);
 
+          // Update live force telemetry saat ada gerakan dinamis
+          if (delta > 1.5) {
+            _ref.read(lastShakeForceProvider.notifier).state = delta;
+          }
+
           // Terdeteksi guncangan jika deviasi gravitasi melebihi threshold
           // atau terjadi guncangan kuat (totalG >= 15.5 m/s² atau drop mendadak <= 3.8 m/s²)
           if (delta >= threshold || totalG >= 15.5 || (totalG <= 3.8 && threshold <= 8.0)) {
@@ -192,6 +277,10 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
           if (!mounted) return;
           final magnitude = math.sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
           final threshold = _ref.read(shakeThresholdProvider);
+
+          if (magnitude > 1.5) {
+            _ref.read(lastShakeForceProvider.notifier).state = magnitude;
+          }
 
           if (magnitude >= threshold) {
             triggerShake();

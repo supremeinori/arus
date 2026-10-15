@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../sensors/presentation/sensor_provider.dart';
+import '../../sensors/presentation/shake_settings_sheet.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -35,6 +37,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final currentThreshold = ref.watch(shakeThresholdProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
@@ -129,15 +132,58 @@ class ProfileScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
             ),
-            child: SwitchListTile(
-              secondary: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue),
-              title: Text('Login Sidik Jari (Biometrik)', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
-              subtitle: Text('Buka kunci sesi otomatis dengan sensor biometrik HP', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
-              activeThumbColor: AppTheme.primaryBlue,
-              value: user?.settings.biometricEnabled ?? false,
-              onChanged: (val) {
-                ref.read(authProvider.notifier).toggleBiometric(val);
-              },
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue),
+                  title: Text('Login Sidik Jari (Biometrik)', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  subtitle: Text('Buka kunci sesi otomatis dengan sensor biometrik HP', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
+                  activeThumbColor: AppTheme.primaryBlue,
+                  value: user?.settings.biometricEnabled ?? false,
+                  onChanged: (val) {
+                    ref.read(authProvider.notifier).toggleBiometric(val);
+                  },
+                ),
+                const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),
+                ListTile(
+                  leading: const Icon(Icons.vibration_rounded, color: AppTheme.primaryBlue),
+                  title: Text('Sensitivitas Guncangan (Shake)', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                  subtitle: Text(
+                    'Atur ambang batas getaran refresh (${currentThreshold.toStringAsFixed(1)} m/s²)',
+                    style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.lightBlueBg,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+                        ),
+                        child: Text(
+                          currentThreshold <= 4.5
+                              ? 'Ringan'
+                              : currentThreshold <= 7.5
+                                  ? 'Sedang'
+                                  : currentThreshold <= 11.0
+                                      ? 'Kuat'
+                                      : 'Sangat Kuat',
+                          style: GoogleFonts.lexend(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
+                    ],
+                  ),
+                  onTap: () => ShakeSettingsSheet.show(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
