@@ -1,10 +1,9 @@
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 
 class AppEnv {
   static String? _customBaseUrl;
 
-  /// Memungkinkan pengubahan URL server secara dinamis dari UI (misal saat ganti Wi-Fi laptop)
+  /// Memungkinkan pengubahan URL server secara dinamis dari UI jika diinginkan
   static void setCustomBaseUrl(String url) {
     var clean = url.trim();
     if (clean.isNotEmpty && !clean.endsWith('/api') && !clean.endsWith('/api/')) {
@@ -22,10 +21,10 @@ class AppEnv {
 
   static const String appEnv = String.fromEnvironment(
     'APP_ENV',
-    defaultValue: 'dev',
+    defaultValue: 'production',
   );
 
-  /// Menentukan Base URL API secara otomatis jika tidak diset via --dart-define
+  /// Menentukan Base URL API secara default mengarah ke Cloud Web Service Vercel
   static String get apiBaseUrl {
     if (_customBaseUrl != null && _customBaseUrl!.isNotEmpty) {
       return _customBaseUrl!;
@@ -35,15 +34,7 @@ class AppEnv {
       return _definedBaseUrl;
     }
 
-    if (kIsWeb) {
-      return 'http://localhost:5000/api';
-    }
-
-    // Android: default ke IP Wi-Fi laptop agar HP fisik & emulator langsung terhubung ke web service
-    if (Platform.isAndroid) {
-      return 'http://10.3.25.69:5000/api';
-    }
-
-    return 'http://localhost:5000/api';
+    // Default ke Cloud Web Service Vercel resmi (online 24/7 HTTPS)
+    return 'https://arus-lime.vercel.app/api';
   }
 }
