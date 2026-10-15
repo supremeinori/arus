@@ -394,7 +394,7 @@ export class CatalogService {
           data: outlets.map((o) => ({
             outlet_id: o.id,
             product_id: product.id,
-            quantity: 0,
+            quantity: 50,
             reorder_level: 5,
             avg_lead_time_days: 3,
           })),

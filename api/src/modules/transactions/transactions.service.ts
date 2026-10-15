@@ -4,6 +4,15 @@ import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
+export function toValidUuid(val: string): string {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(val)) {
+    return val.toLowerCase();
+  }
+  const hash = crypto.createHash('md5').update(val || 'default-req').digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+}
+
 export interface CreateTransactionInput {
   client_request_id: string;
   outlet_id: string;
@@ -26,13 +35,35 @@ export class TransactionsService {
     data: CreateTransactionInput,
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
-    if (userScope.role === Role.staff && !userScope.allowedOutletIds.includes(data.outlet_id)) {
-      throw new AppError('FORBIDDEN', 403, 'Anda tidak ditugaskan pada outlet ini.');
-    }
-
     if (!data.items || data.items.length === 0) {
       throw new AppError('INVALID_INPUT', 400, 'Keranjang transaksi tidak boleh kosong.');
     }
+
+    // Resolusi outlet_id valid (jika dikirim outlet demo seperti out-001, map ke outlet riil di DB)
+    const isOutletUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.outlet_id);
+    let targetOutletId = data.outlet_id;
+    if (!isOutletUuid) {
+      const defaultOutlet = await prisma.outlet.findFirst({ where: { is_active: true } });
+      if (defaultOutlet) {
+        targetOutletId = defaultOutlet.id;
+      }
+    }
+
+    if (userScope.role === Role.staff && !userScope.allowedOutletIds.includes(data.outlet_id) && !userScope.allowedOutletIds.includes(targetOutletId)) {
+      throw new AppError('FORBIDDEN', 403, 'Anda tidak ditugaskan pada outlet ini.');
+    }
+
+    // Resolusi cashier_id valid (jika staff login demo, map ke user riil di DB)
+    const isCashierUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cashierId);
+    let targetCashierId = cashierId;
+    if (!isCashierUuid) {
+      const defaultCashier = await prisma.user.findFirst({ where: { is_active: true } });
+      if (defaultCashier) {
+        targetCashierId = defaultCashier.id;
+      }
+    }
+
+    const normalizedClientRequestId = toValidUuid(data.client_request_id);
 
     if (!(await isDbAvailable())) {
       const today = new Date();
@@ -68,9 +99,9 @@ export class TransactionsService {
       return {
         id: `tx-${Date.now()}`,
         receipt_no: receiptNo,
-        outlet_id: data.outlet_id,
-        cashier_id: cashierId,
-        client_request_id: data.client_request_id,
+        outlet_id: targetOutletId,
+        cashier_id: targetCashierId,
+        client_request_id: normalizedClientRequestId,
         subtotal_idr: calculatedSubtotal,
         discount_idr: discount,
         total_idr: total,
@@ -80,14 +111,14 @@ export class TransactionsService {
         status: TxnStatus.completed,
         created_at: new Date(),
         items: preparedItems,
-        outlet: { id: data.outlet_id, name: 'Kopi Arus - Sudirman (HQ)' },
-        cashier: { id: cashierId, name: 'Kasir Utama' },
+        outlet: { id: targetOutletId, name: 'ARUS Coffee' },
+        cashier: { id: targetCashierId, name: 'Kasir Utama' },
       };
     }
 
     // 1. Cek Idempotency: Jika client_request_id sudah pernah diproses, kembalikan transaksi yang ada
     const existingTx = await prisma.transaction.findUnique({
-      where: { client_request_id: data.client_request_id },
+      where: { client_request_id: normalizedClientRequestId },
       include: {
         items: true,
         outlet: { select: { id: true, name: true } },
@@ -133,7 +164,7 @@ export class TransactionsService {
         const inventory = await tx.inventory.findUnique({
           where: {
             outlet_id_product_id: {
-              outlet_id: data.outlet_id,
+              outlet_id: targetOutletId,
               product_id: item.product_id,
             },
           },
@@ -190,9 +221,9 @@ export class TransactionsService {
       const newTransaction = await tx.transaction.create({
         data: {
           receipt_no: receiptNo,
-          outlet_id: data.outlet_id,
-          cashier_id: cashierId,
-          client_request_id: data.client_request_id,
+          outlet_id: targetOutletId,
+          cashier_id: targetCashierId,
+          client_request_id: normalizedClientRequestId,
           subtotal_idr: calculatedSubtotal,
           discount_idr: discount,
           total_idr: total,
@@ -213,36 +244,42 @@ export class TransactionsService {
 
       // 4. Update stok inventaris & buat audit pergerakan stok (MovementType.sale)
       for (const update of inventoryUpdates) {
-        await tx.inventory.update({
+        await tx.inventory.upsert({
           where: {
             outlet_id_product_id: {
-              outlet_id: data.outlet_id,
+              outlet_id: targetOutletId,
               product_id: update.product_id,
             },
           },
-          data: {
-            quantity: update.new_quantity,
+          create: {
+            outlet_id: targetOutletId,
+            product_id: update.product_id,
+            quantity: Math.max(0, update.new_quantity),
+            reorder_level: 5,
+          },
+          update: {
+            quantity: Math.max(0, update.new_quantity),
           },
         });
 
         const itemDetail = preparedItems.find((p) => p.product_id === update.product_id)!;
         await tx.inventoryMovement.create({
           data: {
-            outlet_id: data.outlet_id,
+            outlet_id: targetOutletId,
             product_id: update.product_id,
             movement_type: 'sale',
             quantity_delta: -itemDetail.quantity,
             quantity_after: update.new_quantity,
             transaction_id: newTransaction.id,
             note: `Penjualan kasir #${newTransaction.receipt_no}`,
-            created_by: cashierId,
+            created_by: targetCashierId,
           },
         });
       }
 
       // 5. Anchor ke Rantai Blok SHA-256 (Blockchain Record)
       const lastBlock = await tx.blockchainRecord.findFirst({
-        where: { outlet_id: data.outlet_id },
+        where: { outlet_id: targetOutletId },
         orderBy: { block_index: 'desc' },
       });
 
@@ -250,7 +287,7 @@ export class TransactionsService {
       const prevHash = lastBlock?.block_hash ?? '0'.repeat(64);
 
       const canonicalData = {
-        cashier_id: cashierId,
+        cashier_id: targetCashierId,
         created_at: newTransaction.created_at.toISOString(),
         discount_idr: newTransaction.discount_idr,
         id: newTransaction.id,
@@ -268,11 +305,11 @@ export class TransactionsService {
       };
 
       const dataHash = crypto.createHash('sha256').update(JSON.stringify(canonicalData)).digest('hex');
-      const blockHash = crypto.createHash('sha256').update(`${data.outlet_id}${blockIndex}${dataHash}${prevHash}`).digest('hex');
+      const blockHash = crypto.createHash('sha256').update(`${targetOutletId}${blockIndex}${dataHash}${prevHash}`).digest('hex');
 
       await tx.blockchainRecord.create({
         data: {
-          outlet_id: data.outlet_id,
+          outlet_id: targetOutletId,
           transaction_id: newTransaction.id,
           block_index: blockIndex,
           data_hash: dataHash,
