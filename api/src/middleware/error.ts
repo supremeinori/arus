@@ -65,7 +65,8 @@ export function errorHandler(
   res.status(500).json({
     error: {
       code: ErrorCodes.INTERNAL,
-      message: 'Terjadi kesalahan pada server. Tim kami akan memeriksa.',
+      message: err?.message || 'Terjadi kesalahan pada server. Tim kami akan memeriksa.',
+      details: err?.message || String(err),
       request_id: requestId,
     },
   });
