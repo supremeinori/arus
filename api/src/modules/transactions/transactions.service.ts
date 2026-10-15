@@ -319,6 +319,9 @@ export class TransactionsService {
       });
 
       return newTransaction;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 
@@ -413,6 +416,9 @@ export class TransactionsService {
       }
 
       return updated;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 
