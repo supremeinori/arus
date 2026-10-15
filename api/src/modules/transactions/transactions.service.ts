@@ -197,19 +197,22 @@ export class TransactionsService {
         });
       }
 
-      const discount = Math.max(0, data.discount_idr ?? 0);
+      const discount = Math.max(0, Number(data.discount_idr ?? 0));
       const total = Math.max(0, calculatedSubtotal - discount);
 
-      if (data.payment_method === PaymentMethod.cash && data.paid_idr < total) {
+      const rawPaid = (data as any).paid_idr ?? (data as any).cash_tendered_idr ?? (data as any).paid ?? (data.payment_method === PaymentMethod.cash ? total : total);
+      const paid = Math.max(0, Number(rawPaid) || 0);
+
+      if (data.payment_method === PaymentMethod.cash && paid < total) {
         throw new AppError(
           'PAYMENT_INSUFFICIENT',
           400,
-          `Jumlah uang tunai kurang (total: Rp ${total}, dibayar: Rp ${data.paid_idr}).`
+          `Jumlah uang tunai kurang (total: Rp ${total}, dibayar: Rp ${paid}).`
         );
       }
 
-      const paid = data.payment_method === PaymentMethod.cash ? data.paid_idr : total;
-      const change = Math.max(0, paid - total);
+      const finalPaid = data.payment_method === PaymentMethod.cash ? paid : total;
+      const change = Math.max(0, finalPaid - total);
 
       // Generate Receipt No: misal ARUS-YYYYMMDD-XXXXX
       const today = new Date();
