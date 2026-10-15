@@ -348,10 +348,10 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
               const Text('Pitch', style: TextStyle(fontSize: 11)),
               Expanded(
                 child: Slider(
-                  value: gyro.pitch,
-                  min: -45.0,
-                  max: 45.0,
-                  divisions: 18,
+                  value: gyro.pitch.clamp(-90.0, 90.0),
+                  min: -90.0,
+                  max: 90.0,
+                  divisions: 36,
                   label: '${gyro.pitch.round()}°',
                   onChanged: (val) {
                     ref.read(gyroscopeProvider.notifier).setTilt(pitch: val);
@@ -365,10 +365,10 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
               const Text('Roll ', style: TextStyle(fontSize: 11)),
               Expanded(
                 child: Slider(
-                  value: gyro.roll,
-                  min: -45.0,
-                  max: 45.0,
-                  divisions: 18,
+                  value: gyro.roll.clamp(-90.0, 90.0),
+                  min: -90.0,
+                  max: 90.0,
+                  divisions: 36,
                   label: '${gyro.roll.round()}°',
                   onChanged: (val) {
                     ref.read(gyroscopeProvider.notifier).setTilt(roll: val);
@@ -423,7 +423,7 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
               ],
             ),
             Slider(
-              value: threshold,
+              value: threshold.clamp(8.0, 20.0),
               min: 8.0,
               max: 20.0,
               divisions: 12,
