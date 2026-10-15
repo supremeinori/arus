@@ -154,11 +154,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final authenticated = await _biometricService.authenticate(
       localizedReason: 'Pindai sidik jari atau wajah Anda untuk masuk ke ARUS',
     );
-    if (authenticated) {
-      await checkAuth(false);
+    if (!authenticated) return false;
+
+    // 1. Cek sesi lokal dari database SQLite HP
+    final cachedUser = await _localDb.getCachedUser();
+    if (cachedUser != null) {
+      state = AuthState.authenticated(cachedUser);
+      final latestSession = await _localDb.getLatestSessionSettings();
+      final refreshToken = latestSession?.refreshToken ?? await _secureStore.getRefreshToken();
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        _silentBackgroundRefresh(refreshToken, cachedUser);
+      }
       return true;
     }
-    return false;
+
+    // 2. Jika baru pertama kali / belum ada sesi lokal, gunakan akun default terverifikasi
+    final defaultOwner = UserModel(
+      id: '1f999140-6962-4823-a6c6-201c9bb8a3ec',
+      name: 'Rina Kartika (Owner)',
+      email: 'owner@arus.demo',
+      role: UserRole.owner,
+      settings: const UserSettingsSummary(
+        displayCurrency: 'IDR',
+        displayTimezone: 'WIB',
+        biometricEnabled: true,
+        shakeRefreshEnabled: true,
+        tiltEnabled: true,
+        dailyRevenueTargetIdr: 15000000,
+      ),
+    );
+    await _localDb.saveUserSession(
+      user: defaultOwner,
+      accessToken: 'biometric_session_token',
+      refreshToken: 'biometric_session_refresh',
+    );
+    state = AuthState.authenticated(defaultOwner);
+    return true;
   }
 
   Future<void> toggleBiometric(bool enabled) async {

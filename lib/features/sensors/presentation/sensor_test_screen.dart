@@ -15,7 +15,7 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
   String? _lastAuthResultText;
   Color _lastAuthResultColor = Colors.grey;
 
-  void _showBiometricModal(BuildContext context, BiometricAuthType type) {
+  void _showBiometricModal(BiometricAuthType type) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -506,7 +506,7 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue),
                     label: const Text('Uji Sidik Jari', style: TextStyle(fontSize: 12)),
-                    onPressed: () => _showBiometricModal(context, BiometricAuthType.fingerprint),
+                    onPressed: () => _showBiometricModal(BiometricAuthType.fingerprint),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -514,7 +514,7 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.face_rounded, color: Colors.indigo),
                     label: const Text('Uji Face ID', style: TextStyle(fontSize: 12)),
-                    onPressed: () => _showBiometricModal(context, BiometricAuthType.face),
+                    onPressed: () => _showBiometricModal(BiometricAuthType.face),
                   ),
                 ),
               ],

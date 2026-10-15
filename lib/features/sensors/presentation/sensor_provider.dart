@@ -1,10 +1,38 @@
+import 'dart:async';
+import 'dart:io' show Platform;
+import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../domain/sensor_models.dart';
 import '../data/sensor_repository.dart';
 
-// Accelerometer state & simulation
+// Accelerometer state & hardware listener
 class AccelerometerNotifier extends StateNotifier<AccelerometerReading> {
-  AccelerometerNotifier() : super(AccelerometerReading.zero());
+  StreamSubscription<AccelerometerEvent>? _sub;
+
+  AccelerometerNotifier() : super(AccelerometerReading.zero()) {
+    _startListening();
+  }
+
+  void _startListening() {
+    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) return;
+    try {
+      _sub = accelerometerEventStream().listen(
+        (event) {
+          if (!mounted) return;
+          state = AccelerometerReading(
+            x: event.x,
+            y: event.y,
+            z: event.z,
+            timestamp: DateTime.now(),
+          );
+        },
+        onError: (_) {},
+        cancelOnError: false,
+      );
+    } catch (_) {}
+  }
 
   void update(double x, double y, double z) {
     state = AccelerometerReading(
@@ -22,7 +50,6 @@ class AccelerometerNotifier extends StateNotifier<AccelerometerReading> {
       z: surge * 0.4,
       timestamp: DateTime.now(),
     );
-    // Settle back to earth gravity after short delay
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         state = AccelerometerReading.zero();
@@ -33,15 +60,66 @@ class AccelerometerNotifier extends StateNotifier<AccelerometerReading> {
   void reset() {
     state = AccelerometerReading.zero();
   }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
 }
 
 final accelerometerProvider = StateNotifierProvider<AccelerometerNotifier, AccelerometerReading>((ref) {
   return AccelerometerNotifier();
 });
 
-// Gyroscope state & simulation
+// Gyroscope & Tilt state & hardware listener
 class GyroscopeNotifier extends StateNotifier<GyroscopeReading> {
-  GyroscopeNotifier() : super(GyroscopeReading.zero());
+  StreamSubscription<GyroscopeEvent>? _gyroSub;
+  StreamSubscription<AccelerometerEvent>? _accelSub;
+  double _pitch = 0.0;
+  double _roll = 0.0;
+  double _yaw = 0.0;
+
+  GyroscopeNotifier() : super(GyroscopeReading.zero()) {
+    _startListening();
+  }
+
+  void _startListening() {
+    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) return;
+    try {
+      // 1. Hitung pitch dan roll fisik dari gravitasi akselerometer secara presisi
+      _accelSub = accelerometerEventStream().listen(
+        (event) {
+          if (!mounted) return;
+          final pitchRad = math.atan2(event.y, math.sqrt(event.x * event.x + event.z * event.z));
+          final rollRad = math.atan2(-event.x, event.z);
+
+          _pitch = (pitchRad * 180 / math.pi).clamp(-90.0, 90.0);
+          _roll = (rollRad * 180 / math.pi).clamp(-90.0, 90.0);
+
+          state = GyroscopeReading(
+            pitch: _pitch,
+            roll: _roll,
+            yaw: _yaw,
+            timestamp: DateTime.now(),
+          );
+        },
+        onError: (_) {},
+        cancelOnError: false,
+      );
+
+      // 2. Baca rotasi dinamis Giroskop
+      _gyroSub = gyroscopeEventStream().listen(
+        (event) {
+          if (!mounted) return;
+          _yaw = (_yaw + (event.z * 180 / math.pi * 0.02)) % 360.0;
+          if (_yaw < 0) _yaw += 360.0;
+        },
+        onError: (_) {},
+        cancelOnError: false,
+      );
+    } catch (_) {}
+  }
 
   void setTilt({double? pitch, double? roll, double? yaw}) {
     state = state.copyWith(
@@ -53,7 +131,17 @@ class GyroscopeNotifier extends StateNotifier<GyroscopeReading> {
   }
 
   void reset() {
+    _pitch = 0.0;
+    _roll = 0.0;
+    _yaw = 0.0;
     state = GyroscopeReading.zero();
+  }
+
+  @override
+  void dispose() {
+    _gyroSub?.cancel();
+    _accelSub?.cancel();
+    super.dispose();
   }
 }
 
@@ -68,13 +156,36 @@ final shakeThresholdProvider = StateProvider<double>((ref) => 12.0);
 class ShakeEventNotifier extends StateNotifier<DateTime?> {
   final Ref _ref;
   DateTime? _lastShakeTime;
+  StreamSubscription<UserAccelerometerEvent>? _shakeSub;
 
-  ShakeEventNotifier(this._ref) : super(null);
+  ShakeEventNotifier(this._ref) : super(null) {
+    _startListening();
+  }
+
+  void _startListening() {
+    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) return;
+    try {
+      // User accelerometer mengabaikan gravitasi statis (murni gaya guncangan gerakan)
+      _shakeSub = userAccelerometerEventStream().listen(
+        (event) {
+          if (!mounted) return;
+          final magnitude = math.sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+          final threshold = _ref.read(shakeThresholdProvider);
+
+          if (magnitude >= threshold) {
+            triggerShake();
+          }
+        },
+        onError: (_) {},
+        cancelOnError: false,
+      );
+    } catch (_) {}
+  }
 
   void triggerShake() {
     final now = DateTime.now();
-    // Debounce 1 detik agar tidak trigger beruntun
-    if (_lastShakeTime != null && now.difference(_lastShakeTime!).inMilliseconds < 1000) {
+    // Debounce 1.2 detik agar guncangan fisik tidak memicu banjir refresh
+    if (_lastShakeTime != null && now.difference(_lastShakeTime!).inMilliseconds < 1200) {
       return;
     }
 
@@ -84,13 +195,19 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
     if (isEnabled) {
       _lastShakeTime = now;
       state = now;
-      // Berikan efek akselerometer
+      // Simulasi efek akselerometer
       _ref.read(accelerometerProvider.notifier).simulateShake();
     }
   }
 
   void reset() {
     state = null;
+  }
+
+  @override
+  void dispose() {
+    _shakeSub?.cancel();
+    super.dispose();
   }
 }
 

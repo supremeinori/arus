@@ -109,7 +109,7 @@ class LocalDatabase {
 
     return await sql.openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         // 1. Sesi User & Pengaturan Utilitas
         await db.execute('''
@@ -255,6 +255,33 @@ class LocalDatabase {
             )
           ''');
         }
+
+        if (oldVersion < 3) {
+          try {
+            await db.execute("ALTER TABLE backup_transactions ADD COLUMN status TEXT DEFAULT 'completed'");
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE backup_transactions ADD COLUMN raw_json TEXT');
+          } catch (_) {}
+        }
+      },
+      onOpen: (db) async {
+        // Defensive self-healing check: pastikan kolom status & raw_json selalu ada
+        try {
+          await db.execute("ALTER TABLE backup_transactions ADD COLUMN status TEXT DEFAULT 'completed'");
+        } catch (_) {}
+        try {
+          await db.execute('ALTER TABLE backup_transactions ADD COLUMN raw_json TEXT');
+        } catch (_) {}
+        try {
+          await db.execute('ALTER TABLE local_session_settings ADD COLUMN user_json TEXT');
+        } catch (_) {}
+        try {
+          await db.execute('ALTER TABLE local_session_settings ADD COLUMN access_token TEXT');
+        } catch (_) {}
+        try {
+          await db.execute('ALTER TABLE local_session_settings ADD COLUMN refresh_token TEXT');
+        } catch (_) {}
       },
     );
   }
@@ -365,12 +392,20 @@ class LocalDatabase {
   Future<void> clearSession(String userId) async {
     final db = await database;
     if (db == null) {
-      _webSessionStore.remove(userId);
+      if (_webSessionStore.containsKey(userId)) {
+        _webSessionStore[userId]!['access_token'] = null;
+        _webSessionStore[userId]!['refresh_token'] = null;
+      }
       return;
     }
 
-    await db.delete(
+    // Cabut token autentikasi, namun pertahankan profil user di lokal agar biometrik tetap bisa login
+    await db.update(
       'local_session_settings',
+      {
+        'access_token': null,
+        'refresh_token': null,
+      },
       where: 'user_id = ?',
       whereArgs: [userId],
     );

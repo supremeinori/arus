@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/config/env.dart';
 import '../../../core/network/api_client.dart';
@@ -39,10 +40,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     FocusScope.of(context).unfocus();
-    await ref.read(authProvider.notifier).login(
+    final success = await ref.read(authProvider.notifier).login(
           _emailController.text.trim(),
           _passwordController.text,
         );
+    if (success && mounted) {
+      context.go('/shell');
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    final success = await ref.read(authProvider.notifier).authenticateWithBiometric();
+    if (success && mounted) {
+      context.go('/shell');
+    }
   }
 
   @override
@@ -227,9 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () => ref.read(authProvider.notifier).authenticateWithBiometric(),
+                    onPressed: isLoading ? null : _handleBiometricLogin,
                     icon: const Icon(Icons.fingerprint, color: AppTheme.primaryBlue, size: 20),
                     label: Text(
                       'Masuk dengan Biometrik (Sidik Jari)',
