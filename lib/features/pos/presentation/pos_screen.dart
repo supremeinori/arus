@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../core/sync/sync_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../catalog/presentation/catalog_provider.dart';
 import 'pos_provider.dart';
@@ -18,6 +19,28 @@ class PosScreen extends ConsumerStatefulWidget {
 class _PosScreenState extends ConsumerState<PosScreen> {
   final _searchController = TextEditingController();
   String? _selectedCategoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncOfflineData();
+    });
+  }
+
+  Future<void> _syncOfflineData() async {
+    final syncService = ref.read(syncServiceProvider);
+    final result = await syncService.syncPendingTransactions();
+    if (mounted && result.totalPending > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Sinkronisasi selesai.'),
+          backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
+        ),
+      );
+      ref.invalidate(productListProvider);
+    }
+  }
 
   @override
   void dispose() {
@@ -56,6 +79,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync_rounded, color: AppTheme.primaryBlue),
+            tooltip: 'Sinkronisasi Transaksi Offline',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final result = await ref.read(syncServiceProvider).syncPendingTransactions();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(result.message ?? 'Sinkronisasi selesai.'),
+                  backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
+                ),
+              );
+              ref.invalidate(productListProvider);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add_business_outlined, color: AppTheme.primaryBlue),
             tooltip: 'Tambah Produk Baru',

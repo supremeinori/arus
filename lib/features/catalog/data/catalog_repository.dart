@@ -1,17 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_db.dart';
+import '../../../core/utils/uuid_generator.dart';
 import '../domain/category_model.dart';
 import '../domain/product_model.dart';
 
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  return CatalogRepository(apiClient);
+  final localDb = ref.watch(localDbProvider);
+  return CatalogRepository(apiClient, localDb);
 });
 
 class CatalogRepository {
   final ApiClient _apiClient;
+  final LocalDatabase _localDb;
 
-  CatalogRepository(this._apiClient);
+  CatalogRepository(this._apiClient, this._localDb);
 
   static final List<CategoryModel> _demoCategories = [
     const CategoryModel(id: 'cat-001', name: 'Coffee', productCount: 2),
@@ -30,6 +34,7 @@ class CatalogRepository {
       categoryId: 'cat-001',
       categoryName: 'Coffee',
       isActive: true,
+      outletStock: [ProductOutletStock(outletId: 'out-001', outletName: 'ARUS Coffee Sudirman HQ', quantity: 30)],
     ),
     const ProductModel(
       id: 'prod-002',
@@ -41,6 +46,7 @@ class CatalogRepository {
       categoryId: 'cat-001',
       categoryName: 'Coffee',
       isActive: true,
+      outletStock: [ProductOutletStock(outletId: 'out-001', outletName: 'ARUS Coffee Sudirman HQ', quantity: 30)],
     ),
     const ProductModel(
       id: 'prod-003',
@@ -52,6 +58,7 @@ class CatalogRepository {
       categoryId: 'cat-002',
       categoryName: 'Non-Coffee',
       isActive: true,
+      outletStock: [ProductOutletStock(outletId: 'out-001', outletName: 'ARUS Coffee Sudirman HQ', quantity: 30)],
     ),
     const ProductModel(
       id: 'prod-004',
@@ -63,15 +70,26 @@ class CatalogRepository {
       categoryId: 'cat-003',
       categoryName: 'Pastry & Food',
       isActive: true,
+      outletStock: [ProductOutletStock(outletId: 'out-001', outletName: 'ARUS Coffee Sudirman HQ', quantity: 30)],
     ),
   ];
 
+  /// Mengambil daftar kategori produk (Offline-first / Cache-first)
   Future<List<CategoryModel>> getCategories() async {
     try {
       final res = await _apiClient.get<Map<String, dynamic>>('/categories');
       final data = res.data?['data'] as List<dynamic>? ?? [];
-      return data.map((c) => CategoryModel.fromJson(c as Map<String, dynamic>)).toList();
+      final categories = data.map((c) => CategoryModel.fromJson(c as Map<String, dynamic>)).toList();
+
+      // Simpan ke database SQLite lokal
+      await _localDb.cacheCategories(categories);
+      return categories;
     } catch (_) {
+      // Kondisi Offline: Baca dari SQLite lokal
+      final cached = await _localDb.getCachedCategories();
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       return _demoCategories;
     }
   }
@@ -83,18 +101,24 @@ class CatalogRepository {
         data: {'name': name},
       );
       final data = res.data?['data'] as Map<String, dynamic>;
-      return CategoryModel.fromJson(data);
+      final cat = CategoryModel.fromJson(data);
+
+      final current = await _localDb.getCachedCategories();
+      await _localDb.cacheCategories([...current, cat]);
+      return cat;
     } catch (_) {
       final newCat = CategoryModel(
-        id: 'cat-${DateTime.now().millisecondsSinceEpoch}',
+        id: UuidGenerator.v4(),
         name: name,
         productCount: 0,
       );
-      _demoCategories.add(newCat);
+      final current = await _localDb.getCachedCategories();
+      await _localDb.cacheCategories([...current, newCat]);
       return newCat;
     }
   }
 
+  /// Mengambil daftar produk (Offline-first / Cache-first)
   Future<List<ProductModel>> getProducts({
     String? categoryId,
     String? q,
@@ -128,8 +152,18 @@ class CatalogRepository {
       );
 
       final data = res.data?['data'] as List<dynamic>? ?? [];
-      return data.map((p) => ProductModel.fromJson(p as Map<String, dynamic>)).toList();
+      final products = data.map((p) => ProductModel.fromJson(p as Map<String, dynamic>)).toList();
+
+      // Simpan seluruh produk ke SQLite lokal
+      await _localDb.cacheProducts(products);
+      return products;
     } catch (_) {
+      // Kondisi Offline: Ambil dari cache SQLite lokal HP
+      final cached = await _localDb.getCachedProducts(categoryId: categoryId, search: q);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+
       var filtered = List<ProductModel>.from(_demoProducts);
       if (categoryId != null && categoryId.isNotEmpty) {
         filtered = filtered.where((p) => p.categoryId == categoryId).toList();
@@ -149,8 +183,14 @@ class CatalogRepository {
     try {
       final res = await _apiClient.get<Map<String, dynamic>>('/products/$id');
       final data = res.data?['data'] as Map<String, dynamic>;
-      return ProductModel.fromJson(data);
+      final prod = ProductModel.fromJson(data);
+      await _localDb.cacheSingleProduct(prod);
+      return prod;
     } catch (_) {
+      final cached = await _localDb.getCachedProducts();
+      final found = cached.where((p) => p.id == id).toList();
+      if (found.isNotEmpty) return found.first;
+
       return _demoProducts.firstWhere(
         (p) => p.id == id,
         orElse: () => _demoProducts.first,
@@ -183,25 +223,37 @@ class CatalogRepository {
         data: payload,
       );
       final data = res.data?['data'] as Map<String, dynamic>;
-      return ProductModel.fromJson(data);
+      final prod = ProductModel.fromJson(data);
+
+      // Simpan cadangan ke SQLite lokal
+      await _localDb.cacheSingleProduct(prod);
+      return prod;
     } catch (_) {
-      final cat = _demoCategories.firstWhere(
-        (c) => c.id == categoryId,
-        orElse: () => const CategoryModel(id: 'cat-001', name: 'Umum'),
-      );
+      // Offline fallback: simpan langsung ke SQLite lokal
+      final categories = await _localDb.getCachedCategories();
+      final cat = categories.where((c) => c.id == categoryId).toList();
+      final categoryName = cat.isNotEmpty ? cat.first.name : 'Umum';
+
       final newProd = ProductModel(
-        id: 'prod-${DateTime.now().millisecondsSinceEpoch}',
+        id: UuidGenerator.v4(),
         name: name,
         sku: sku,
         unit: unit,
         priceIdr: priceIdr,
         costIdr: costIdr,
         categoryId: categoryId,
-        categoryName: cat.name,
+        categoryName: categoryName,
         imageUrl: imageUrl,
         isActive: true,
+        outletStock: const [
+          ProductOutletStock(
+            outletId: 'local',
+            outletName: 'Lokal',
+            quantity: 50,
+          )
+        ],
       );
-      _demoProducts.insert(0, newProd);
+      await _localDb.cacheSingleProduct(newProd);
       return newProd;
     }
   }
@@ -233,23 +285,25 @@ class CatalogRepository {
         data: payload,
       );
       final data = res.data?['data'] as Map<String, dynamic>;
-      return ProductModel.fromJson(data);
+      final prod = ProductModel.fromJson(data);
+      await _localDb.cacheSingleProduct(prod);
+      return prod;
     } catch (_) {
-      final idx = _demoProducts.indexWhere((p) => p.id == id);
+      final cached = await _localDb.getCachedProducts();
+      final idx = cached.indexWhere((p) => p.id == id);
       if (idx >= 0) {
-        final cur = _demoProducts[idx];
-        final updated = ProductModel(
-          id: cur.id,
-          name: name ?? cur.name,
-          sku: sku ?? cur.sku,
-          unit: unit ?? cur.unit,
-          priceIdr: priceIdr ?? cur.priceIdr,
-          costIdr: costIdr ?? cur.costIdr,
-          categoryId: categoryId ?? cur.categoryId,
-          categoryName: cur.categoryName,
-          isActive: isActive ?? cur.isActive,
+        final cur = cached[idx];
+        final updated = cur.copyWith(
+          name: name,
+          sku: sku,
+          unit: unit,
+          priceIdr: priceIdr,
+          costIdr: costIdr,
+          categoryId: categoryId,
+          imageUrl: imageUrl,
+          isActive: isActive,
         );
-        _demoProducts[idx] = updated;
+        await _localDb.cacheSingleProduct(updated);
         return updated;
       }
       return _demoProducts.first;

@@ -1,74 +1,21 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_db.dart';
+import '../../../core/utils/uuid_generator.dart';
 import '../domain/pos_models.dart';
 
 final posRepositoryProvider = Provider<PosRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  return PosRepository(apiClient);
+  final localDb = ref.watch(localDbProvider);
+  return PosRepository(apiClient, localDb);
 });
 
 class PosRepository {
   final ApiClient _client;
+  final LocalDatabase _localDb;
 
-  PosRepository(this._client);
-
-  static final List<PosTransactionModel> _demoTransactions = [
-    PosTransactionModel(
-      id: 'trx-demo-01',
-      receiptNo: 'RCP-892101',
-      outletId: 'out-001',
-      outletName: 'ARUS Coffee Sudirman HQ',
-      cashierName: 'Siti Rahma (Kasir)',
-      subtotalIdr: 44000,
-      discountIdr: 0,
-      totalIdr: 44000,
-      paymentMethod: 'qris',
-      paidIdr: 44000,
-      changeIdr: 0,
-      status: 'completed',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-      items: const [
-        PosCartItem(
-          productId: 'p-01',
-          productName: 'Kopi Susu Gula Aren',
-          sku: 'KOP-01',
-          unitPriceIdr: 22000,
-          quantity: 2,
-        ),
-      ],
-    ),
-    PosTransactionModel(
-      id: 'trx-demo-02',
-      receiptNo: 'RCP-892102',
-      outletId: 'out-001',
-      outletName: 'ARUS Coffee Sudirman HQ',
-      cashierName: 'Siti Rahma (Kasir)',
-      subtotalIdr: 53000,
-      discountIdr: 5000,
-      totalIdr: 48000,
-      paymentMethod: 'cash',
-      paidIdr: 50000,
-      changeIdr: 2000,
-      status: 'completed',
-      createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 20)),
-      items: const [
-        PosCartItem(
-          productId: 'p-03',
-          productName: 'Matcha Latte Oatmilk',
-          sku: 'NON-01',
-          unitPriceIdr: 28000,
-          quantity: 1,
-        ),
-        PosCartItem(
-          productId: 'p-05',
-          productName: 'Butter Croissant Premium',
-          sku: 'PAS-01',
-          unitPriceIdr: 25000,
-          quantity: 1,
-        ),
-      ],
-    ),
-  ];
+  PosRepository(this._client, this._localDb);
 
   Future<PosTransactionModel> createTransaction({
     required String clientRequestId,
@@ -77,6 +24,8 @@ class PosRepository {
     required int paidIdr,
     int discountIdr = 0,
     required List<PosCartItem> items,
+    String? cashierName,
+    String? outletName,
   }) async {
     try {
       final response = await _client.post<Map<String, dynamic>>(
@@ -97,33 +46,102 @@ class PosRepository {
       );
 
       final data = response.data?['data'] as Map<String, dynamic>;
-      return PosTransactionModel.fromJson(data);
-    } catch (_) {
-      final subtotal = items.fold<int>(0, (sum, i) => sum + i.lineTotalIdr);
-      final total = (subtotal - discountIdr).clamp(0, 999999999).toInt();
-      final change = (paidIdr - total).clamp(0, 999999999).toInt();
-      final now = DateTime.now();
-      final receiptSuffix = now.millisecondsSinceEpoch.toString().substring(7);
+      final transaction = PosTransactionModel.fromJson(data);
 
-      final demoTrx = PosTransactionModel(
-        id: 'trx-$receiptSuffix',
-        receiptNo: 'RCP-$receiptSuffix',
+      // Simpan receipt ke cadangan SQLite lokal (status synced = true)
+      await _localDb.saveOfflineTransaction(
+        transaction: transaction,
+        clientRequestId: clientRequestId,
+        isSynced: true,
+      );
+
+      return transaction;
+    } on DioException catch (dioErr) {
+      // Jika respons 4xx dari server (misal validasi input atau stok tidak cukup),
+      // lemparkan pesan kesalahan langsung ke kasir.
+      if (dioErr.response?.statusCode != null &&
+          dioErr.response!.statusCode! >= 400 &&
+          dioErr.response!.statusCode! < 500) {
+        final errData = dioErr.response?.data;
+        String msg = 'Transaksi gagal.';
+        if (errData is Map && errData['error'] is Map) {
+          msg = errData['error']['message'] ?? msg;
+        }
+        throw Exception(msg);
+      }
+
+      // KONDISI OFFLINE: Simpan ke database offline lokal SQLite
+      return await _saveLocalOfflineTransaction(
+        clientRequestId: clientRequestId,
         outletId: outletId,
-        outletName: 'ARUS Coffee Sudirman HQ',
-        cashierName: 'Kasir Utama',
-        subtotalIdr: subtotal,
-        discountIdr: discountIdr,
-        totalIdr: total,
         paymentMethod: paymentMethod,
         paidIdr: paidIdr,
-        changeIdr: change,
-        status: 'completed',
-        createdAt: now,
-        items: List.from(items),
+        discountIdr: discountIdr,
+        items: items,
+        cashierName: cashierName,
+        outletName: outletName,
       );
-      _demoTransactions.insert(0, demoTrx);
-      return demoTrx;
+    } catch (e) {
+      if (e.toString().contains('Exception:')) rethrow;
+      // Simpan ke antrean offline lokal
+      return await _saveLocalOfflineTransaction(
+        clientRequestId: clientRequestId,
+        outletId: outletId,
+        paymentMethod: paymentMethod,
+        paidIdr: paidIdr,
+        discountIdr: discountIdr,
+        items: items,
+        cashierName: cashierName,
+        outletName: outletName,
+      );
     }
+  }
+
+  Future<PosTransactionModel> _saveLocalOfflineTransaction({
+    required String clientRequestId,
+    required String outletId,
+    required String paymentMethod,
+    required int paidIdr,
+    required int discountIdr,
+    required List<PosCartItem> items,
+    String? cashierName,
+    String? outletName,
+  }) async {
+    final subtotal = items.fold<int>(0, (sum, i) => sum + i.lineTotalIdr);
+    final total = (subtotal - discountIdr).clamp(0, 999999999).toInt();
+    final change = (paidIdr - total).clamp(0, 999999999).toInt();
+    final now = DateTime.now();
+    final datePart = now.toIso8601String().slice(0, 10).replaceAll('-', '');
+    final receiptSuffix = now.millisecondsSinceEpoch.toString().substring(8);
+    final receiptNo = 'OFF-$datePart-$receiptSuffix';
+
+    final offlineTx = PosTransactionModel(
+      id: UuidGenerator.v4(),
+      receiptNo: receiptNo,
+      outletId: outletId,
+      outletName: outletName ?? 'Outlet ARUS',
+      cashierName: cashierName ?? 'Kasir Utama',
+      subtotalIdr: subtotal,
+      discountIdr: discountIdr,
+      totalIdr: total,
+      paymentMethod: paymentMethod,
+      paidIdr: paidIdr,
+      changeIdr: change,
+      status: 'offline_pending',
+      createdAt: now,
+      items: List.from(items),
+      isOfflinePending: true,
+      clientRequestId: clientRequestId,
+    );
+
+    // Simpan ke tabel SQLite offline_transactions & backup_transactions (is_synced = 0)
+    await _localDb.saveOfflineTransaction(
+      transaction: offlineTx,
+      clientRequestId: clientRequestId,
+      isSynced: false,
+    );
+
+    return offlineTx;
   }
 
   Future<List<PosTransactionModel>> getTransactions({
@@ -141,9 +159,14 @@ class PosRepository {
       );
 
       final list = response.data?['data'] as List<dynamic>? ?? [];
-      return list.map((item) => PosTransactionModel.fromJson(item as Map<String, dynamic>)).toList();
+      final serverTxList = list
+          .map((item) => PosTransactionModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      return serverTxList;
     } catch (_) {
-      return List.unmodifiable(_demoTransactions);
+      // OFFLINE: Ambil dari riwayat cache SQLite lokal
+      return await _localDb.getBackupTransactions();
     }
   }
 
@@ -151,39 +174,24 @@ class PosRepository {
     required String transactionId,
     required String reason,
   }) async {
-    try {
-      final response = await _client.post<Map<String, dynamic>>(
-        '/transactions/$transactionId/void',
-        data: {'reason': reason},
-      );
+    final response = await _client.post<Map<String, dynamic>>(
+      '/transactions/$transactionId/void',
+      data: {'reason': reason},
+    );
 
-      final data = response.data?['data'] as Map<String, dynamic>;
-      return PosTransactionModel.fromJson(data);
-    } catch (_) {
-      final index = _demoTransactions.indexWhere((t) => t.id == transactionId);
-      if (index != -1) {
-        final existing = _demoTransactions[index];
-        final voided = PosTransactionModel(
-          id: existing.id,
-          receiptNo: existing.receiptNo,
-          outletId: existing.outletId,
-          outletName: existing.outletName,
-          cashierName: existing.cashierName,
-          subtotalIdr: existing.subtotalIdr,
-          discountIdr: existing.discountIdr,
-          totalIdr: existing.totalIdr,
-          paymentMethod: existing.paymentMethod,
-          paidIdr: existing.paidIdr,
-          changeIdr: existing.changeIdr,
-          status: 'voided',
-          voidReason: reason,
-          createdAt: existing.createdAt,
-          items: existing.items,
-        );
-        _demoTransactions[index] = voided;
-        return voided;
-      }
-      return _demoTransactions.first;
-    }
+    final data = response.data?['data'] as Map<String, dynamic>;
+    return PosTransactionModel.fromJson(data);
+  }
+}
+
+extension on String {
+  String slice(int start, [int? end]) {
+    final s = start < 0 ? length + start : start;
+    final e = end == null
+        ? length
+        : end < 0
+            ? length + end
+            : end;
+    return substring(s.clamp(0, length), e.clamp(0, length));
   }
 }

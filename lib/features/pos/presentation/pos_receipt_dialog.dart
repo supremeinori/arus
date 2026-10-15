@@ -55,6 +55,47 @@ class PosReceiptDialog extends StatelessWidget {
                     dateFormatter.format(transaction.createdAt),
                     style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
                   ),
+                  const SizedBox(height: 6),
+                  if (transaction.isOfflinePending)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.amber.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.cloud_off_rounded, size: 14, color: Colors.amber.shade800),
+                          const SizedBox(width: 4),
+                          Text(
+                            'OFFLINE (Tersimpan di SQLite Lokal)',
+                            style: GoogleFonts.lexend(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.amber.shade900),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.cloud_done_rounded, size: 14, color: Colors.green.shade700),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ONLINE (Tersinkronkan ke Supabase)',
+                            style: GoogleFonts.lexend(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade800),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

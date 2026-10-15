@@ -32,6 +32,35 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> checkAuth([bool requireBiometricIfEnabled = true]) async {
     try {
+      // 1. Cek sesi lokal dari database SQLite HP terlebih dahulu (Instant Local Restore)
+      final cachedUser = await _localDb.getCachedUser();
+      final latestSession = await _localDb.getLatestSessionSettings();
+
+      if (cachedUser != null && latestSession != null) {
+        final isBiometricActive = latestSession.biometricEnabled;
+
+        if (requireBiometricIfEnabled && isBiometricActive) {
+          final authenticated = await _biometricService.authenticate(
+            localizedReason: 'Konfirmasi sidik jari untuk melanjutkan sesi ARUS',
+          );
+          if (!authenticated) {
+            state = AuthState.unauthenticated('Verifikasi biometrik diperlukan.');
+            return;
+          }
+        }
+
+        // Pengguna langsung masuk ke aplikasi tanpa perlu menunggu internet/Supabase!
+        state = AuthState.authenticated(cachedUser);
+
+        // Jika terhubung, segarkan token secara senyap di latar belakang
+        final refreshToken = latestSession.refreshToken ?? await _secureStore.getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          _silentBackgroundRefresh(refreshToken, cachedUser);
+        }
+        return;
+      }
+
+      // Jika belum ada cache SQLite, cek secure store
       final refreshToken = await _secureStore.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
         state = AuthState.unauthenticated();
@@ -43,51 +72,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _secureStore.setAccessToken(response.accessToken);
       await _secureStore.setRefreshToken(response.refreshToken);
 
-      // Cek preferensi biometrik dari SQLite lokal
-      final localSettings = await _localDb.getSessionSettings(response.user.id);
-      final isBiometricActive = localSettings?.biometricEnabled ?? response.user.settings.biometricEnabled;
-
-      if (requireBiometricIfEnabled && isBiometricActive) {
-        final authenticated = await _biometricService.authenticate(
-          localizedReason: 'Konfirmasi sidik jari untuk melanjutkan sesi ARUS',
-        );
-        if (!authenticated) {
-          state = AuthState.unauthenticated('Verifikasi biometrik diperlukan.');
-          return;
-        }
-      }
-
-      // Sinkronkan ke local_session_settings SQLite
-      await _localDb.saveSessionSettings(
-        LocalSessionSettings(
-          userId: response.user.id,
-          name: response.user.name,
-          email: response.user.email,
-          role: response.user.role.name,
-          avatarUrl: response.user.avatarUrl,
-          biometricEnabled: isBiometricActive,
-          displayCurrency: response.user.settings.displayCurrency,
-          displayTimezone: response.user.settings.displayTimezone,
-          shakeSensorEnabled: response.user.settings.shakeRefreshEnabled,
-          tiltSensorEnabled: response.user.settings.tiltEnabled,
-        ),
+      await _localDb.saveUserSession(
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
       );
 
-      final userWithLocalBio = response.user.copyWith(
-        settings: UserSettingsSummary(
-          displayCurrency: response.user.settings.displayCurrency,
-          displayTimezone: response.user.settings.displayTimezone,
-          biometricEnabled: isBiometricActive,
-          shakeRefreshEnabled: response.user.settings.shakeRefreshEnabled,
-          tiltEnabled: response.user.settings.tiltEnabled,
-          dailyRevenueTargetIdr: response.user.settings.dailyRevenueTargetIdr,
-        ),
-      );
-
-      state = AuthState.authenticated(userWithLocalBio);
+      state = AuthState.authenticated(response.user);
     } catch (_) {
-      await _secureStore.clearTokens();
-      state = AuthState.unauthenticated();
+      // Jika gagal verifikasi token ke remote tapi ada user di state, pertahankan
+      if (state.status != AuthStatus.authenticated) {
+        state = AuthState.unauthenticated();
+      }
+    }
+  }
+
+  void _silentBackgroundRefresh(String refreshToken, UserModel currentUser) async {
+    try {
+      final response = await _authRepo.refresh(refreshToken);
+      await _secureStore.setAccessToken(response.accessToken);
+      await _secureStore.setRefreshToken(response.refreshToken);
+
+      await _localDb.saveUserSession(
+        user: response.user,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+      );
+      if (mounted) {
+        state = AuthState.authenticated(response.user);
+      }
+    } catch (_) {
+      // Jika offline, abaikan kegagalan refresh senyap, user tetap authenticated dari SQLite
     }
   }
 
@@ -102,31 +117,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final localSettings = await _localDb.getSessionSettings(response.user.id);
       final isBiometricActive = localSettings?.biometricEnabled ?? response.user.settings.biometricEnabled;
 
-      // Simpan sesi ke tabel SQLite local_session_settings (Section 5)
-      await _localDb.saveSessionSettings(
-        LocalSessionSettings(
-          userId: response.user.id,
-          name: response.user.name,
-          email: response.user.email,
-          role: response.user.role.name,
-          avatarUrl: response.user.avatarUrl,
+      final userWithSettings = response.user.copyWith(
+        settings: response.user.settings.copyWith(
           biometricEnabled: isBiometricActive,
-          displayCurrency: response.user.settings.displayCurrency,
-          displayTimezone: response.user.settings.displayTimezone,
-          shakeSensorEnabled: response.user.settings.shakeRefreshEnabled,
-          tiltSensorEnabled: response.user.settings.tiltEnabled,
         ),
       );
 
-      final userWithSettings = response.user.copyWith(
-        settings: UserSettingsSummary(
-          displayCurrency: response.user.settings.displayCurrency,
-          displayTimezone: response.user.settings.displayTimezone,
-          biometricEnabled: isBiometricActive,
-          shakeRefreshEnabled: response.user.settings.shakeRefreshEnabled,
-          tiltEnabled: response.user.settings.tiltEnabled,
-          dailyRevenueTargetIdr: response.user.settings.dailyRevenueTargetIdr,
-        ),
+      // Simpan sesi ke tabel SQLite local_session_settings untuk caching instan
+      await _localDb.saveUserSession(
+        user: userWithSettings,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
       );
 
       state = AuthState.authenticated(userWithSettings);
@@ -135,6 +136,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthState.unauthenticated(e.message);
       return false;
     } catch (e) {
+      // Jika jaringan gagal, periksa apakah pengguna pernah login sebelumnya di SQLite
+      final latestSession = await _localDb.getLatestSessionSettings();
+      if (latestSession != null && latestSession.email.toLowerCase() == email.toLowerCase().trim()) {
+        final cachedUser = await _localDb.getCachedUser();
+        if (cachedUser != null) {
+          state = AuthState.authenticated(cachedUser);
+          return true;
+        }
+      }
       state = AuthState.unauthenticated('Gagal masuk. Periksa koneksi internet Anda.');
       return false;
     }

@@ -13,7 +13,16 @@ class CategoryModel {
     return CategoryModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      productCount: (json['_count'] as Map<String, dynamic>?)?['products'] as int? ?? 0,
+      productCount: (json['_count'] as Map<String, dynamic>?)?['products'] as int? ?? (json['product_count'] as int? ?? 0),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'product_count': productCount,
+      '_count': {'products': productCount},
+    };
   }
 }

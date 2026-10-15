@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart' as sql;
 import 'package:path/path.dart' as p;
+import '../../features/auth/domain/user_model.dart';
+import '../../features/catalog/domain/category_model.dart';
+import '../../features/catalog/domain/product_model.dart';
+import '../../features/pos/domain/pos_models.dart';
 
 final localDbProvider = Provider<LocalDatabase>((ref) {
   return LocalDatabase.instance;
@@ -18,6 +23,9 @@ class LocalSessionSettings {
   final String displayTimezone;
   final bool shakeSensorEnabled;
   final bool tiltSensorEnabled;
+  final String? userJson;
+  final String? accessToken;
+  final String? refreshToken;
 
   const LocalSessionSettings({
     required this.userId,
@@ -30,6 +38,9 @@ class LocalSessionSettings {
     this.displayTimezone = 'WIB',
     this.shakeSensorEnabled = true,
     this.tiltSensorEnabled = true,
+    this.userJson,
+    this.accessToken,
+    this.refreshToken,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +55,9 @@ class LocalSessionSettings {
       'display_timezone': displayTimezone,
       'shake_sensor_enabled': shakeSensorEnabled ? 1 : 0,
       'tilt_sensor_enabled': tiltSensorEnabled ? 1 : 0,
+      'user_json': userJson,
+      'access_token': accessToken,
+      'refresh_token': refreshToken,
     };
   }
 
@@ -59,6 +73,9 @@ class LocalSessionSettings {
       displayTimezone: map['display_timezone'] as String? ?? 'WIB',
       shakeSensorEnabled: (map['shake_sensor_enabled'] as int? ?? 1) == 1,
       tiltSensorEnabled: (map['tilt_sensor_enabled'] as int? ?? 1) == 1,
+      userJson: map['user_json'] as String?,
+      accessToken: map['access_token'] as String?,
+      refreshToken: map['refresh_token'] as String?,
     );
   }
 }
@@ -69,14 +86,21 @@ class LocalDatabase {
 
   sql.Database? _db;
   final Map<String, Map<String, dynamic>> _webSessionStore = {};
+  final List<Map<String, dynamic>> _webCategoriesStore = [];
   final List<Map<String, dynamic>> _webProductsStore = [];
   final List<Map<String, dynamic>> _webTransactionsStore = [];
+  final List<Map<String, dynamic>> _webOfflineTxQueue = [];
 
   Future<sql.Database?> get database async {
     if (kIsWeb) return null;
     if (_db != null) return _db!;
-    _db = await _initDatabase();
-    return _db;
+    try {
+      _db = await _initDatabase();
+      return _db;
+    } catch (_) {
+      // Fallback in-memory jika di lingkungan headless flutter test
+      return null;
+    }
   }
 
   Future<sql.Database> _initDatabase() async {
@@ -85,7 +109,7 @@ class LocalDatabase {
 
     return await sql.openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         // 1. Sesi User & Pengaturan Utilitas
         await db.execute('''
@@ -99,27 +123,64 @@ class LocalDatabase {
             display_currency TEXT DEFAULT 'IDR',
             display_timezone TEXT DEFAULT 'WIB',
             shake_sensor_enabled INTEGER DEFAULT 1,
-            tilt_sensor_enabled INTEGER DEFAULT 1
+            tilt_sensor_enabled INTEGER DEFAULT 1,
+            user_json TEXT,
+            access_token TEXT,
+            refresh_token TEXT
           )
         ''');
 
-        // 2. Backup Produk & Stok Offline
+        // 2. Kategori Produk Cache
         await db.execute('''
-          CREATE TABLE backup_products (
-            product_id TEXT,
-            outlet_id TEXT,
+          CREATE TABLE cached_categories (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            product_count INTEGER DEFAULT 0,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+
+        // 3. Produk & Stok Offline Cache
+        await db.execute('''
+          CREATE TABLE cached_products (
+            id TEXT PRIMARY KEY,
+            category_id TEXT,
+            category_name TEXT,
             sku TEXT NOT NULL,
             name TEXT NOT NULL,
-            category_name TEXT,
+            unit TEXT DEFAULT 'pcs',
             price_idr INTEGER NOT NULL,
-            stock_quantity INTEGER NOT NULL,
-            reorder_level INTEGER NOT NULL,
-            last_sync_at TEXT NOT NULL,
-            PRIMARY KEY (product_id, outlet_id)
+            cost_idr INTEGER,
+            image_url TEXT,
+            is_active INTEGER DEFAULT 1,
+            stock_quantity INTEGER DEFAULT 0,
+            raw_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL
           )
         ''');
 
-        // 3. Backup 50 Struk Terakhir & Blockchain
+        // 4. Antrean Transaksi Offline (Pending Sync Queue)
+        await db.execute('''
+          CREATE TABLE offline_transactions (
+            id TEXT PRIMARY KEY,
+            client_request_id TEXT NOT NULL UNIQUE,
+            outlet_id TEXT NOT NULL,
+            cashier_name TEXT,
+            payment_method TEXT NOT NULL,
+            paid_idr INTEGER NOT NULL,
+            discount_idr INTEGER DEFAULT 0,
+            subtotal_idr INTEGER NOT NULL,
+            total_idr INTEGER NOT NULL,
+            change_idr INTEGER DEFAULT 0,
+            items_json TEXT NOT NULL,
+            receipt_no TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            is_synced INTEGER DEFAULT 0,
+            sync_error TEXT
+          )
+        ''');
+
+        // 5. Riwayat Struk Terakhir (Backup & Cache 50 transaksi)
         await db.execute('''
           CREATE TABLE backup_transactions (
             transaction_id TEXT PRIMARY KEY,
@@ -129,22 +190,84 @@ class LocalDatabase {
             payment_method TEXT NOT NULL,
             data_hash TEXT,
             block_hash TEXT,
+            status TEXT DEFAULT 'completed',
+            raw_json TEXT,
             created_at TEXT NOT NULL
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          try {
+            await db.execute('ALTER TABLE local_session_settings ADD COLUMN user_json TEXT');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE local_session_settings ADD COLUMN access_token TEXT');
+          } catch (_) {}
+          try {
+            await db.execute('ALTER TABLE local_session_settings ADD COLUMN refresh_token TEXT');
+          } catch (_) {}
+
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS cached_categories (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              product_count INTEGER DEFAULT 0,
+              updated_at TEXT NOT NULL
+            )
+          ''');
+
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS cached_products (
+              id TEXT PRIMARY KEY,
+              category_id TEXT,
+              category_name TEXT,
+              sku TEXT NOT NULL,
+              name TEXT NOT NULL,
+              unit TEXT DEFAULT 'pcs',
+              price_idr INTEGER NOT NULL,
+              cost_idr INTEGER,
+              image_url TEXT,
+              is_active INTEGER DEFAULT 1,
+              stock_quantity INTEGER DEFAULT 0,
+              raw_json TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            )
+          ''');
+
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS offline_transactions (
+              id TEXT PRIMARY KEY,
+              client_request_id TEXT NOT NULL UNIQUE,
+              outlet_id TEXT NOT NULL,
+              cashier_name TEXT,
+              payment_method TEXT NOT NULL,
+              paid_idr INTEGER NOT NULL,
+              discount_idr INTEGER DEFAULT 0,
+              subtotal_idr INTEGER NOT NULL,
+              total_idr INTEGER NOT NULL,
+              change_idr INTEGER DEFAULT 0,
+              items_json TEXT NOT NULL,
+              receipt_no TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              is_synced INTEGER DEFAULT 0,
+              sync_error TEXT
+            )
+          ''');
+        }
+      },
     );
   }
 
-  // --- Session & Settings Operations ---
+  // ========================================================
+  // 1. SESSION & USER OPERATIONS (OFFLINE LOGIN & RESTORE)
+  // ========================================================
   Future<void> saveSessionSettings(LocalSessionSettings settings) async {
-    if (kIsWeb) {
+    final db = await database;
+    if (db == null) {
       _webSessionStore[settings.userId] = settings.toMap();
       return;
     }
-
-    final db = await database;
-    if (db == null) return;
 
     await db.insert(
       'local_session_settings',
@@ -153,14 +276,36 @@ class LocalDatabase {
     );
   }
 
+  Future<void> saveUserSession({
+    required UserModel user,
+    required String accessToken,
+    String? refreshToken,
+  }) async {
+    final userJson = jsonEncode(user.toJson());
+    final settings = LocalSessionSettings(
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role.name,
+      avatarUrl: user.avatarUrl,
+      biometricEnabled: user.settings.biometricEnabled,
+      displayCurrency: user.settings.displayCurrency,
+      displayTimezone: user.settings.displayTimezone,
+      shakeSensorEnabled: user.settings.shakeRefreshEnabled,
+      tiltSensorEnabled: user.settings.tiltEnabled,
+      userJson: userJson,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+    await saveSessionSettings(settings);
+  }
+
   Future<LocalSessionSettings?> getSessionSettings(String userId) async {
-    if (kIsWeb) {
+    final db = await database;
+    if (db == null) {
       final map = _webSessionStore[userId];
       return map != null ? LocalSessionSettings.fromMap(map) : null;
     }
-
-    final db = await database;
-    if (db == null) return null;
 
     final maps = await db.query(
       'local_session_settings',
@@ -174,13 +319,11 @@ class LocalDatabase {
   }
 
   Future<LocalSessionSettings?> getLatestSessionSettings() async {
-    if (kIsWeb) {
+    final db = await database;
+    if (db == null) {
       if (_webSessionStore.isEmpty) return null;
       return LocalSessionSettings.fromMap(_webSessionStore.values.last);
     }
-
-    final db = await database;
-    if (db == null) return null;
 
     final maps = await db.query(
       'local_session_settings',
@@ -191,16 +334,25 @@ class LocalDatabase {
     return LocalSessionSettings.fromMap(maps.first);
   }
 
+  Future<UserModel?> getCachedUser() async {
+    final session = await getLatestSessionSettings();
+    if (session?.userJson != null && session!.userJson!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(session.userJson!) as Map<String, dynamic>;
+        return UserModel.fromJson(decoded);
+      } catch (_) {}
+    }
+    return null;
+  }
+
   Future<void> updateBiometricSetting(String userId, bool enabled) async {
-    if (kIsWeb) {
+    final db = await database;
+    if (db == null) {
       if (_webSessionStore.containsKey(userId)) {
         _webSessionStore[userId]!['biometric_enabled'] = enabled ? 1 : 0;
       }
       return;
     }
-
-    final db = await database;
-    if (db == null) return;
 
     await db.update(
       'local_session_settings',
@@ -211,13 +363,11 @@ class LocalDatabase {
   }
 
   Future<void> clearSession(String userId) async {
-    if (kIsWeb) {
+    final db = await database;
+    if (db == null) {
       _webSessionStore.remove(userId);
       return;
     }
-
-    final db = await database;
-    if (db == null) return;
 
     await db.delete(
       'local_session_settings',
@@ -226,47 +376,353 @@ class LocalDatabase {
     );
   }
 
-  // --- Backup Products Operations ---
-  Future<void> backupProducts(List<Map<String, dynamic>> products) async {
-    if (kIsWeb) {
-      _webProductsStore.clear();
-      _webProductsStore.addAll(products);
+  // ========================================================
+  // 2. CATEGORIES CACHE OPERATIONS
+  // ========================================================
+  Future<void> cacheCategories(List<CategoryModel> categories) async {
+    final db = await database;
+    if (db == null) {
+      _webCategoriesStore.clear();
+      for (final c in categories) {
+        _webCategoriesStore.add(c.toJson());
+      }
       return;
     }
 
-    final db = await database;
-    if (db == null) return;
-
     final batch = db.batch();
-    for (final prod in products) {
+    final now = DateTime.now().toIso8601String();
+    for (final c in categories) {
       batch.insert(
-        'backup_products',
-        prod,
+        'cached_categories',
+        {
+          'id': c.id,
+          'name': c.name,
+          'product_count': c.productCount,
+          'updated_at': now,
+        },
         conflictAlgorithm: sql.ConflictAlgorithm.replace,
       );
     }
     await batch.commit(noResult: true);
   }
 
-  Future<List<Map<String, dynamic>>> getBackupProducts({String? outletId}) async {
-    if (kIsWeb) {
-      if (outletId == null) return _webProductsStore;
-      return _webProductsStore.where((p) => p['outlet_id'] == outletId).toList();
+  Future<List<CategoryModel>> getCachedCategories() async {
+    final db = await database;
+    if (db == null) {
+      return _webCategoriesStore.map((c) => CategoryModel.fromJson(c)).toList();
     }
 
-    final db = await database;
-    if (db == null) return [];
+    final rows = await db.query('cached_categories', orderBy: 'name ASC');
+    return rows.map((r) => CategoryModel(
+      id: r['id'] as String,
+      name: r['name'] as String,
+      productCount: r['product_count'] as int? ?? 0,
+    )).toList();
+  }
 
-    return await db.query(
-      'backup_products',
-      where: outletId != null ? 'outlet_id = ?' : null,
-      whereArgs: outletId != null ? [outletId] : null,
+  // ========================================================
+  // 3. PRODUCTS CACHE OPERATIONS
+  // ========================================================
+  Future<void> cacheProducts(List<ProductModel> products) async {
+    final db = await database;
+    if (db == null) {
+      _webProductsStore.clear();
+      for (final p in products) {
+        _webProductsStore.add(p.toJson());
+      }
+      return;
+    }
+
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
+    for (final p in products) {
+      final totalStock = p.outletStock.fold<int>(0, (sum, s) => sum + s.quantity);
+      batch.insert(
+        'cached_products',
+        {
+          'id': p.id,
+          'category_id': p.categoryId,
+          'category_name': p.categoryName,
+          'sku': p.sku,
+          'name': p.name,
+          'unit': p.unit,
+          'price_idr': p.priceIdr,
+          'cost_idr': p.costIdr,
+          'image_url': p.imageUrl,
+          'is_active': p.isActive ? 1 : 0,
+          'stock_quantity': totalStock,
+          'raw_json': jsonEncode(p.toJson()),
+          'updated_at': now,
+        },
+        conflictAlgorithm: sql.ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> cacheSingleProduct(ProductModel product) async {
+    final db = await database;
+    if (db == null) {
+      final idx = _webProductsStore.indexWhere((p) => p['id'] == product.id);
+      if (idx >= 0) {
+        _webProductsStore[idx] = product.toJson();
+      } else {
+        _webProductsStore.insert(0, product.toJson());
+      }
+      return;
+    }
+
+    final totalStock = product.outletStock.fold<int>(0, (sum, s) => sum + s.quantity);
+    await db.insert(
+      'cached_products',
+      {
+        'id': product.id,
+        'category_id': product.categoryId,
+        'category_name': product.categoryName,
+        'sku': product.sku,
+        'name': product.name,
+        'unit': product.unit,
+        'price_idr': product.priceIdr,
+        'cost_idr': product.costIdr,
+        'image_url': product.imageUrl,
+        'is_active': product.isActive ? 1 : 0,
+        'stock_quantity': totalStock,
+        'raw_json': jsonEncode(product.toJson()),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: sql.ConflictAlgorithm.replace,
     );
   }
 
-  // --- Backup Transactions Operations ---
+  Future<List<ProductModel>> getCachedProducts({String? categoryId, String? search}) async {
+    final db = await database;
+    if (db == null) {
+      var list = _webProductsStore.map((p) => ProductModel.fromJson(p)).toList();
+      if (categoryId != null && categoryId.isNotEmpty) {
+        list = list.where((p) => p.categoryId == categoryId).toList();
+      }
+      if (search != null && search.trim().isNotEmpty) {
+        final q = search.trim().toLowerCase();
+        list = list.where((p) => p.name.toLowerCase().contains(q) || p.sku.toLowerCase().contains(q)).toList();
+      }
+      return list;
+    }
+
+    String? where;
+    List<dynamic>? whereArgs;
+
+    if (categoryId != null && categoryId.isNotEmpty && search != null && search.trim().isNotEmpty) {
+      where = 'category_id = ? AND (name LIKE ? OR sku LIKE ?)';
+      whereArgs = [categoryId, '%${search.trim()}%', '%${search.trim()}%'];
+    } else if (categoryId != null && categoryId.isNotEmpty) {
+      where = 'category_id = ?';
+      whereArgs = [categoryId];
+    } else if (search != null && search.trim().isNotEmpty) {
+      where = 'name LIKE ? OR sku LIKE ?';
+      whereArgs = ['%${search.trim()}%', '%${search.trim()}%'];
+    }
+
+    final rows = await db.query('cached_products', where: where, whereArgs: whereArgs, orderBy: 'name ASC');
+    final products = <ProductModel>[];
+    for (final r in rows) {
+      try {
+        final rawJson = r['raw_json'] as String?;
+        if (rawJson != null && rawJson.isNotEmpty) {
+          products.add(ProductModel.fromJson(jsonDecode(rawJson) as Map<String, dynamic>));
+        } else {
+          products.add(ProductModel(
+            id: r['id'] as String,
+            sku: r['sku'] as String,
+            name: r['name'] as String,
+            unit: r['unit'] as String? ?? 'pcs',
+            priceIdr: r['price_idr'] as int? ?? 0,
+            costIdr: r['cost_idr'] as int?,
+            categoryId: r['category_id'] as String?,
+            categoryName: r['category_name'] as String?,
+            imageUrl: r['image_url'] as String?,
+            isActive: (r['is_active'] as int? ?? 1) == 1,
+            outletStock: [
+              ProductOutletStock(
+                outletId: 'local',
+                outletName: 'Lokal',
+                quantity: r['stock_quantity'] as int? ?? 0,
+              )
+            ],
+          ));
+        }
+      } catch (_) {}
+    }
+    return products;
+  }
+
+  Future<void> decrementLocalStock(String productId, int quantity) async {
+    if (kIsWeb) return;
+    final db = await database;
+    if (db == null) return;
+
+    await db.rawUpdate('''
+      UPDATE cached_products 
+      SET stock_quantity = MAX(0, stock_quantity - ?) 
+      WHERE id = ?
+    ''', [quantity, productId]);
+  }
+
+  // ========================================================
+  // 4. OFFLINE TRANSACTIONS & SYNC QUEUE OPERATIONS
+  // ========================================================
+  Future<void> saveOfflineTransaction({
+    required PosTransactionModel transaction,
+    required String clientRequestId,
+    bool isSynced = false,
+  }) async {
+    final itemsJson = jsonEncode(transaction.items.map((i) => i.toJson()).toList());
+    final db = await database;
+
+    if (db == null) {
+      _webOfflineTxQueue.add({
+        'id': transaction.id,
+        'client_request_id': clientRequestId,
+        'outlet_id': transaction.outletId,
+        'cashier_name': transaction.cashierName,
+        'payment_method': transaction.paymentMethod,
+        'paid_idr': transaction.paidIdr,
+        'discount_idr': transaction.discountIdr,
+        'subtotal_idr': transaction.subtotalIdr,
+        'total_idr': transaction.totalIdr,
+        'change_idr': transaction.changeIdr,
+        'items_json': itemsJson,
+        'receipt_no': transaction.receiptNo,
+        'created_at': transaction.createdAt.toIso8601String(),
+        'is_synced': isSynced ? 1 : 0,
+      });
+      await backupTransaction({
+        'transaction_id': transaction.id,
+        'receipt_no': transaction.receiptNo,
+        'outlet_name': transaction.outletName,
+        'total_idr': transaction.totalIdr,
+        'payment_method': transaction.paymentMethod,
+        'status': isSynced ? 'completed' : 'offline_pending',
+        'raw_json': jsonEncode(transaction.toJson()),
+        'created_at': transaction.createdAt.toIso8601String(),
+      });
+      return;
+    }
+
+    await db.insert(
+      'offline_transactions',
+      {
+        'id': transaction.id,
+        'client_request_id': clientRequestId,
+        'outlet_id': transaction.outletId,
+        'cashier_name': transaction.cashierName,
+        'payment_method': transaction.paymentMethod,
+        'paid_idr': transaction.paidIdr,
+        'discount_idr': transaction.discountIdr,
+        'subtotal_idr': transaction.subtotalIdr,
+        'total_idr': transaction.totalIdr,
+        'change_idr': transaction.changeIdr,
+        'items_json': itemsJson,
+        'receipt_no': transaction.receiptNo,
+        'created_at': transaction.createdAt.toIso8601String(),
+        'is_synced': isSynced ? 1 : 0,
+      },
+      conflictAlgorithm: sql.ConflictAlgorithm.replace,
+    );
+
+    // Also decrement local stock for each purchased item
+    for (final item in transaction.items) {
+      await decrementLocalStock(item.productId, item.quantity);
+    }
+
+    // Mirror to backup_transactions cache
+    await backupTransaction({
+      'transaction_id': transaction.id,
+      'receipt_no': transaction.receiptNo,
+      'outlet_name': transaction.outletName,
+      'total_idr': transaction.totalIdr,
+      'payment_method': transaction.paymentMethod,
+      'status': isSynced ? 'completed' : 'offline_pending',
+      'raw_json': jsonEncode(transaction.toJson()),
+      'created_at': transaction.createdAt.toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingOfflineTransactions() async {
+    final db = await database;
+    if (db == null) {
+      return _webOfflineTxQueue.where((tx) => tx['is_synced'] == 0).toList();
+    }
+
+    return await db.query(
+      'offline_transactions',
+      where: 'is_synced = ?',
+      whereArgs: [0],
+      orderBy: 'created_at ASC',
+    );
+  }
+
+  Future<void> markTransactionSynced({
+    required String clientRequestId,
+    required String serverReceiptNo,
+    String? dataHash,
+    String? blockHash,
+  }) async {
+    final db = await database;
+    if (db == null) {
+      final item = _webOfflineTxQueue.firstWhere(
+        (tx) => tx['client_request_id'] == clientRequestId,
+        orElse: () => {},
+      );
+      if (item.isNotEmpty) {
+        item['is_synced'] = 1;
+        item['receipt_no'] = serverReceiptNo;
+      }
+      return;
+    }
+
+    await db.update(
+      'offline_transactions',
+      {
+        'is_synced': 1,
+        'receipt_no': serverReceiptNo,
+        'sync_error': null,
+      },
+      where: 'client_request_id = ?',
+      whereArgs: [clientRequestId],
+    );
+
+    // Update backup_transactions
+    await db.update(
+      'backup_transactions',
+      {
+        'receipt_no': serverReceiptNo,
+        'data_hash': dataHash,
+        'block_hash': blockHash,
+        'status': 'completed',
+      },
+      where: 'transaction_id = ? OR receipt_no = ?',
+      whereArgs: [clientRequestId, serverReceiptNo],
+    );
+  }
+
+  Future<void> markTransactionSyncError(String clientRequestId, String error) async {
+    final db = await database;
+    if (db == null) return;
+
+    await db.update(
+      'offline_transactions',
+      {'sync_error': error},
+      where: 'client_request_id = ?',
+      whereArgs: [clientRequestId],
+    );
+  }
+
+  // ========================================================
+  // 5. BACKUP TRANSACTIONS (RECEIPT CACHE - LATEST 50)
+  // ========================================================
   Future<void> backupTransaction(Map<String, dynamic> tx) async {
-    if (kIsWeb) {
+    final db = await database;
+    if (db == null) {
       _webTransactionsStore.insert(0, tx);
       if (_webTransactionsStore.length > 50) {
         _webTransactionsStore.removeLast();
@@ -274,16 +730,12 @@ class LocalDatabase {
       return;
     }
 
-    final db = await database;
-    if (db == null) return;
-
     await db.insert(
       'backup_transactions',
       tx,
       conflictAlgorithm: sql.ConflictAlgorithm.replace,
     );
 
-    // Keep only latest 50 records per specification
     await db.execute('''
       DELETE FROM backup_transactions WHERE transaction_id NOT IN (
         SELECT transaction_id FROM backup_transactions ORDER BY created_at DESC LIMIT 50
@@ -291,16 +743,63 @@ class LocalDatabase {
     ''');
   }
 
-  Future<List<Map<String, dynamic>>> getBackupTransactions() async {
-    if (kIsWeb) return _webTransactionsStore;
-
+  Future<List<PosTransactionModel>> getBackupTransactions() async {
     final db = await database;
-    if (db == null) return [];
+    if (db == null) {
+      return _webTransactionsStore.map((m) {
+        if (m['raw_json'] != null) {
+          return PosTransactionModel.fromJson(jsonDecode(m['raw_json'] as String));
+        }
+        return PosTransactionModel(
+          id: m['transaction_id'] as String? ?? '',
+          receiptNo: m['receipt_no'] as String? ?? '',
+          outletId: '',
+          outletName: m['outlet_name'] as String? ?? 'Outlet',
+          cashierName: 'Kasir',
+          subtotalIdr: m['total_idr'] as int? ?? 0,
+          discountIdr: 0,
+          totalIdr: m['total_idr'] as int? ?? 0,
+          paymentMethod: m['payment_method'] as String? ?? 'cash',
+          paidIdr: m['total_idr'] as int? ?? 0,
+          changeIdr: 0,
+          status: m['status'] as String? ?? 'completed',
+          createdAt: DateTime.tryParse(m['created_at'] as String? ?? '') ?? DateTime.now(),
+        );
+      }).toList();
+    }
 
-    return await db.query(
+    final rows = await db.query(
       'backup_transactions',
       orderBy: 'created_at DESC',
       limit: 50,
     );
+
+    final result = <PosTransactionModel>[];
+    for (final r in rows) {
+      try {
+        final raw = r['raw_json'] as String?;
+        if (raw != null && raw.isNotEmpty) {
+          final model = PosTransactionModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+          result.add(model);
+        } else {
+          result.add(PosTransactionModel(
+            id: r['transaction_id'] as String? ?? '',
+            receiptNo: r['receipt_no'] as String? ?? '',
+            outletId: '',
+            outletName: r['outlet_name'] as String? ?? 'Outlet',
+            cashierName: 'Kasir',
+            subtotalIdr: r['total_idr'] as int? ?? 0,
+            discountIdr: 0,
+            totalIdr: r['total_idr'] as int? ?? 0,
+            paymentMethod: r['payment_method'] as String? ?? 'cash',
+            paidIdr: r['total_idr'] as int? ?? 0,
+            changeIdr: 0,
+            status: r['status'] as String? ?? 'completed',
+            createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+          ));
+        }
+      } catch (_) {}
+    }
+    return result;
   }
 }

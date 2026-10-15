@@ -21,6 +21,15 @@ class ProductOutletStock {
       reorderLevel: json['reorder_level'] as int? ?? 5,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'outlet_id': outletId,
+      'quantity': quantity,
+      'reorder_level': reorderLevel,
+      'outlet': {'name': outletName},
+    };
+  }
 }
 
 class ProductModel {
@@ -69,6 +78,50 @@ class ProductModel {
           .map((i) => ProductOutletStock.fromJson(i as Map<String, dynamic>))
           .toList(),
     );
+  }
+
+  ProductModel copyWith({
+    String? id,
+    String? sku,
+    String? name,
+    String? unit,
+    int? priceIdr,
+    int? costIdr,
+    String? categoryId,
+    String? categoryName,
+    String? imageUrl,
+    bool? isActive,
+    List<ProductOutletStock>? outletStock,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      sku: sku ?? this.sku,
+      name: name ?? this.name,
+      unit: unit ?? this.unit,
+      priceIdr: priceIdr ?? this.priceIdr,
+      costIdr: costIdr ?? this.costIdr,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      imageUrl: imageUrl ?? this.imageUrl,
+      isActive: isActive ?? this.isActive,
+      outletStock: outletStock ?? this.outletStock,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'sku': sku,
+      'name': name,
+      'unit': unit,
+      'price_idr': priceIdr,
+      'cost_idr': costIdr,
+      'category_id': categoryId,
+      'category': categoryName != null ? {'name': categoryName} : null,
+      'image_url': imageUrl,
+      'is_active': isActive,
+      'inventory': outletStock.map((s) => s.toJson()).toList(),
+    };
   }
 
   String get formattedPrice {

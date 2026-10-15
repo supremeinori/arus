@@ -48,6 +48,15 @@ class OutletSummary {
       address: json['address'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'timezone': timezone,
+      'address': address,
+    };
+  }
 }
 
 class UserSettingsSummary {
@@ -77,6 +86,17 @@ class UserSettingsSummary {
       tiltEnabled: json['tilt_enabled'] as bool? ?? true,
       dailyRevenueTargetIdr: json['daily_revenue_target_idr'] as int?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'display_currency': displayCurrency,
+      'display_timezone': displayTimezone,
+      'biometric_enabled': biometricEnabled,
+      'shake_refresh_enabled': shakeRefreshEnabled,
+      'tilt_enabled': tiltEnabled,
+      'daily_revenue_target_idr': dailyRevenueTargetIdr,
+    };
   }
 
   UserSettingsSummary copyWith({
@@ -150,6 +170,18 @@ class UserModel {
           .toList(),
       settings: UserSettingsSummary.fromJson(json['settings'] as Map<String, dynamic>?),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'role': role.name,
+      'avatar_url': avatarUrl,
+      'outlets': outlets.map((o) => o.toJson()).toList(),
+      'settings': settings.toJson(),
+    };
   }
 }
 

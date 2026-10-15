@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/uuid_generator.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/pos_repository.dart';
 import 'pos_provider.dart';
@@ -45,7 +46,9 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
 
     if (cartState.items.isEmpty) return;
 
-    final outletId = user?.outlets.isNotEmpty == true ? user!.outlets.first.id : 'out-001';
+    final outletId = user?.outlets.isNotEmpty == true ? user!.outlets.first.id : '7f9bef3c-5231-4854-922a-abc0fbc55ab4';
+    final outletName = user?.outlets.isNotEmpty == true ? user!.outlets.first.name : 'ARUS Coffee';
+    final cashierName = user?.name ?? 'Kasir Utama';
 
     final total = cartState.totalIdr;
     final isCash = cartState.paymentMethod == 'cash';
@@ -62,10 +65,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
     });
 
     try {
-      final userSuffix = (user != null && user.id.length >= 4)
-          ? user.id.substring(0, 4)
-          : 'demo';
-      final clientRequestId = 'req-${DateTime.now().millisecondsSinceEpoch}-$userSuffix';
+      final clientRequestId = UuidGenerator.v4();
       final repo = ref.read(posRepositoryProvider);
 
       final transaction = await repo.createTransaction(
@@ -75,6 +75,8 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         paidIdr: paidAmount,
         discountIdr: cartState.discountIdr,
         items: cartState.items,
+        cashierName: cashierName,
+        outletName: outletName,
       );
 
       // Reset Keranjang
