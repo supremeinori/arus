@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../domain/sensor_models.dart';
@@ -149,14 +150,15 @@ final gyroscopeProvider = StateNotifierProvider<GyroscopeNotifier, GyroscopeRead
   return GyroscopeNotifier();
 });
 
-// Shake threshold setting (default 12.0 m/s^2 delta)
-final shakeThresholdProvider = StateProvider<double>((ref) => 12.0);
+// Shake threshold setting (default 6.0 m/s^2 delta from gravity or linear motion)
+final shakeThresholdProvider = StateProvider<double>((ref) => 6.0);
 
 // Shake event notification stream (emits timestamp on shake)
 class ShakeEventNotifier extends StateNotifier<DateTime?> {
   final Ref _ref;
   DateTime? _lastShakeTime;
   StreamSubscription<UserAccelerometerEvent>? _shakeSub;
+  StreamSubscription<AccelerometerEvent>? _accelSub;
 
   ShakeEventNotifier(this._ref) : super(null) {
     _startListening();
@@ -165,7 +167,26 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
   void _startListening() {
     if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) return;
     try {
-      // User accelerometer mengabaikan gravitasi statis (murni gaya guncangan gerakan)
+      // 1. Raw accelerometer (guncangan fisik terhadap gravitasi ~9.8 m/s²)
+      // Sangat andal di semua jenis hardware Android (termasuk Xiaomi MIUI / HyperOS)
+      _accelSub = accelerometerEventStream().listen(
+        (event) {
+          if (!mounted) return;
+          final totalG = math.sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+          final delta = (totalG - 9.80665).abs();
+          final threshold = _ref.read(shakeThresholdProvider);
+
+          // Terdeteksi guncangan jika deviasi gravitasi melebihi threshold
+          // atau terjadi guncangan kuat (totalG >= 15.5 m/s² atau drop mendadak <= 3.8 m/s²)
+          if (delta >= threshold || totalG >= 15.5 || (totalG <= 3.8 && threshold <= 8.0)) {
+            triggerShake();
+          }
+        },
+        onError: (_) {},
+        cancelOnError: false,
+      );
+
+      // 2. Linear user accelerometer (kompensasi gravitasi oleh OS jika didukung)
       _shakeSub = userAccelerometerEventStream().listen(
         (event) {
           if (!mounted) return;
@@ -184,8 +205,8 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
 
   void triggerShake() {
     final now = DateTime.now();
-    // Debounce 1.2 detik agar guncangan fisik tidak memicu banjir refresh
-    if (_lastShakeTime != null && now.difference(_lastShakeTime!).inMilliseconds < 1200) {
+    // Debounce 1.0 detik agar guncangan fisik tidak memicu banjir refresh
+    if (_lastShakeTime != null && now.difference(_lastShakeTime!).inMilliseconds < 1000) {
       return;
     }
 
@@ -195,6 +216,10 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
     if (isEnabled) {
       _lastShakeTime = now;
       state = now;
+      // Berikan getaran haptik fisik sebagai umpan balik instan ke tangan pengguna
+      try {
+        HapticFeedback.mediumImpact();
+      } catch (_) {}
       // Simulasi efek akselerometer
       _ref.read(accelerometerProvider.notifier).simulateShake();
     }
@@ -207,6 +232,7 @@ class ShakeEventNotifier extends StateNotifier<DateTime?> {
   @override
   void dispose() {
     _shakeSub?.cancel();
+    _accelSub?.cancel();
     super.dispose();
   }
 }

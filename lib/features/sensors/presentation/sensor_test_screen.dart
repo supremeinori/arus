@@ -423,10 +423,10 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
               ],
             ),
             Slider(
-              value: threshold.clamp(8.0, 20.0),
-              min: 8.0,
-              max: 20.0,
-              divisions: 12,
+              value: threshold.clamp(3.0, 15.0),
+              min: 3.0,
+              max: 15.0,
+              divisions: 24,
               label: '${threshold.toStringAsFixed(1)} m/s²',
               onChanged: (val) {
                 ref.read(shakeThresholdProvider.notifier).state = val;

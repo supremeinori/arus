@@ -8,6 +8,7 @@ import '../domain/inventory_models.dart';
 import 'inventory_provider.dart';
 import 'stock_adjustment_dialog.dart';
 import 'stock_movement_screen.dart';
+import '../../sensors/presentation/sensor_provider.dart';
 
 class InventoryListScreen extends ConsumerStatefulWidget {
   const InventoryListScreen({super.key});
@@ -37,6 +38,30 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<DateTime?>(shakeEventProvider, (prev, next) {
+      if (next != null) {
+        ref.invalidate(inventoryListProvider);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.accentBlack,
+            content: Row(
+              children: [
+                const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Guncangan terdeteksi! Memperbarui data inventaris...',
+                  style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
     final authState = ref.watch(authProvider);
     final isStaff = authState.user?.role == UserRole.staff;
     final filterState = ref.watch(inventoryFilterProvider);

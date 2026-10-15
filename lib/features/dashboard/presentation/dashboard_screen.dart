@@ -18,12 +18,19 @@ class DashboardScreen extends ConsumerWidget {
       if (next != null) {
         ref.invalidate(analyticsOverviewProvider);
         ref.invalidate(salesTrendProvider);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.accentBlack,
-            content: Text(
-              'Guncangan terdeteksi! Memperbarui data KPI...',
-              style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+            content: Row(
+              children: [
+                const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Guncangan terdeteksi! Memperbarui data KPI...',
+                  style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                ),
+              ],
             ),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
