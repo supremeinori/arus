@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/config/env.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
 import 'auth_provider.dart';
@@ -282,12 +284,118 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+
+                  // Tombol Konfigurasi Server IP (Memudahkan testing di HP fisik)
+                  Center(
+                    child: InkWell(
+                      onTap: () => _showServerConfigDialog(context),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.dns_outlined, size: 14, color: Color(0xFF64748B)),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'Server: ${AppEnv.apiBaseUrl}',
+                                style: GoogleFonts.lexend(
+                                  fontSize: 11.5,
+                                  color: const Color(0xFF64748B),
+                                  decoration: TextDecoration.underline,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  void _showServerConfigDialog(BuildContext context) {
+    final serverController = TextEditingController(text: AppEnv.apiBaseUrl);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.settings_ethernet_rounded, color: AppTheme.primaryBlue, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                'Alamat Web Service',
+                style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
+                style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: serverController,
+                decoration: InputDecoration(
+                  labelText: 'URL Server Backend',
+                  hintText: 'http://10.3.25.69:5000/api',
+                  prefixIcon: const Icon(Icons.link, size: 18),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                style: GoogleFonts.lexend(fontSize: 13),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: Text('Batal', style: GoogleFonts.lexend(color: Colors.grey.shade600)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                final newUrl = serverController.text.trim();
+                if (newUrl.isNotEmpty) {
+                  AppEnv.setCustomBaseUrl(newUrl);
+                  ref.read(apiClientProvider).updateBaseUrl(AppEnv.apiBaseUrl);
+                  setState(() {});
+                  Navigator.pop(dialogCtx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: AppTheme.accentBlack,
+                      content: Text(
+                        'URL Server diubah ke: ${AppEnv.apiBaseUrl}',
+                        style: GoogleFonts.lexend(fontSize: 12.5, color: Colors.white),
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Text('Simpan & Hubungkan', style: GoogleFonts.lexend(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

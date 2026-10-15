@@ -97,6 +97,10 @@ class ApiClient {
 
   Dio get rawDio => _dio;
 
+  void updateBaseUrl(String newUrl) {
+    _dio.options.baseUrl = newUrl;
+  }
+
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
