@@ -9,6 +9,8 @@
     "postinstall": "prisma generate",
     "start": "node dist/server.js",
     "test": "vitest run",
+    "test:blockchain": "vitest run tests/dual_blockchain.test.ts tests/integrity_service.test.ts",
+    "demo:blockchain": "ts-node-dev --transpile-only src/modules/integrity/demo_blockchain.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

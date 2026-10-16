@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -71,18 +72,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/shell',
-        builder: (context, state) => const MainShell(),
-      ),
-      GoRoute(
-        path: '/pos',
-        builder: (context, state) => const PosScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/shell', builder: (context, state) => const MainShell()),
+      GoRoute(path: '/pos', builder: (context, state) => const PosScreen()),
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
@@ -105,15 +97,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: ':id',
-            builder: (context, state) => OutletDetailScreen(
-              outletId: state.pathParameters['id']!,
-            ),
+            builder: (context, state) =>
+                OutletDetailScreen(outletId: state.pathParameters['id']!),
             routes: [
               GoRoute(
                 path: 'edit',
-                builder: (context, state) => OutletFormScreen(
-                  outletId: state.pathParameters['id'],
-                ),
+                builder: (context, state) =>
+                    OutletFormScreen(outletId: state.pathParameters['id']),
               ),
             ],
           ),
@@ -125,9 +115,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: ':id',
-            builder: (context, state) => ReportDetailScreen(
-              reportId: state.pathParameters['id']!,
-            ),
+            builder: (context, state) =>
+                ReportDetailScreen(reportId: state.pathParameters['id']!),
           ),
         ],
       ),
@@ -157,15 +146,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: ':id',
-            builder: (context, state) => ProductDetailScreen(
-              productId: state.pathParameters['id']!,
-            ),
+            builder: (context, state) =>
+                ProductDetailScreen(productId: state.pathParameters['id']!),
             routes: [
               GoRoute(
                 path: 'edit',
-                builder: (context, state) => ProductFormScreen(
-                  productId: state.pathParameters['id'],
-                ),
+                builder: (context, state) =>
+                    ProductFormScreen(productId: state.pathParameters['id']),
               ),
             ],
           ),
@@ -183,10 +170,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/search',
         builder: (context, state) => const GlobalSearchScreen(),
       ),
-      GoRoute(
-        path: '/about',
-        builder: (context, state) => const AboutScreen(),
-      ),
+      GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
       GoRoute(
         path: '/feedback',
         builder: (context, state) => const FeedbackScreen(),

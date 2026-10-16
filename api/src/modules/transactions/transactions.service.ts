@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
+import { integrityService } from '../integrity/integrity.service';
 
 export function toValidUuid(val: string): string {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -80,7 +81,7 @@ export class TransactionsService {
     }
 
     // Jalankan seluruh proses pembuatan transaksi dalam Prisma $transaction
-    return prisma.$transaction(async (tx) => {
+    const committedTransaction = await prisma.$transaction(async (tx) => {
       let calculatedSubtotal = 0;
       const preparedItems: Array<{
         product_id: string;
@@ -327,6 +328,27 @@ export class TransactionsService {
       maxWait: 10000,
       timeout: 25000,
     });
+
+    // Tambahkan ke rantai lokal hanya setelah transaksi database berhasil commit.
+    integrityService.recordTransaction(
+      committedTransaction.outlet_id,
+      {
+        transactionId: committedTransaction.id,
+        receiptNo: committedTransaction.receipt_no,
+        cashierId: committedTransaction.cashier_id,
+        totalAmount: committedTransaction.total_idr,
+        eventType: 'sale',
+        sourceId: committedTransaction.id,
+        items: committedTransaction.items.map((item) => ({
+          name: item.product_name_snapshot,
+          qty: item.quantity,
+          price: item.unit_price_idr,
+        })),
+      },
+      committedTransaction.created_at.toISOString()
+    );
+
+    return committedTransaction;
   }
 
   /**
@@ -344,7 +366,7 @@ export class TransactionsService {
       throw new AppError('INVALID_INPUT', 400, 'Alasan pembatalan (void reason) wajib diisi.');
     }
 
-    return prisma.$transaction(async (tx) => {
+    const voidedTransaction = await prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.findUnique({
         where: { id: transactionId },
         include: { items: true },
@@ -441,6 +463,29 @@ export class TransactionsService {
       maxWait: 10000,
       timeout: 25000,
     });
+
+    if (voidedTransaction.outlet_id) {
+      integrityService.recordTransaction(
+        voidedTransaction.outlet_id,
+        {
+          transactionId: `void:${voidedTransaction.id}`,
+          sourceId: voidedTransaction.id,
+          receiptNo: `VOID-${voidedTransaction.receipt_no ?? voidedTransaction.id}`,
+          cashierId: voidedByUserId,
+          totalAmount: voidedTransaction.total_idr ?? 0,
+          eventType: 'void_return',
+          reason: reason.trim(),
+          items: (voidedTransaction.items ?? []).map((item) => ({
+            name: item.product_name_snapshot,
+            qty: item.quantity,
+            price: item.unit_price_idr,
+          })),
+        },
+        new Date().toISOString()
+      );
+    }
+
+    return voidedTransaction;
   }
 
   /**

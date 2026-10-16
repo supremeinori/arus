@@ -1,4 +1,5 @@
-import crypto from 'crypto';
+import { AppError } from '../../shared/errors';
+import { DualLocalBlockchain, TransactionData, ValidationResult } from './dual_blockchain';
 
 export interface IntegrityBlock {
   block_index: number;
@@ -12,64 +13,142 @@ export interface IntegrityBlock {
 }
 
 export class IntegrityService {
-  private calculateHash(data: string): string {
-    return crypto.createHash('sha256').update(data).digest('hex');
+  private outletChains: Map<string, DualLocalBlockchain> = new Map();
+
+  /**
+   * Mendapatkan atau membuat instance DualLocalBlockchain untuk outlet tertentu
+   */
+  public getOrCreateChain(outletId: string): DualLocalBlockchain {
+    let chain = this.outletChains.get(outletId);
+    if (!chain) {
+      chain = new DualLocalBlockchain(outletId);
+      this.outletChains.set(outletId, chain);
+    }
+    return chain;
   }
 
+  /** Finalisasi blok harian aktif untuk penutupan operasional. */
+  public closeCurrentDay(outletId: string) {
+    const chain = this.getOrCreateChain(outletId);
+    const firstTransaction = chain.currentDayTransactions[0];
+    if (!firstTransaction) {
+      throw new AppError('INVALID_INPUT', 400, 'Tidak ada transaksi aktif untuk ditutup.');
+    }
+    return chain.closeDay(firstTransaction.timestamp.slice(0, 10));
+  }
+
+  /**
+   * Mendapatkan struktur pohon visualisasi blockchain ganda (Block dalam Block)
+   */
+  public getVisualizationData(outletId: string) {
+    const chain = this.getOrCreateChain(outletId);
+    return chain.getVisualizationTree();
+  }
+
+  /**
+   * Validasi integritas kriptografis rantai blockchain
+   */
+  public validateChain(outletId: string): ValidationResult {
+    const chain = this.getOrCreateChain(outletId);
+    return chain.isChainValid();
+  }
+
+  /**
+   * Simulasi manipulasi data transaksi
+   */
+  public simulateTampering(outletId: string, dayIndex: number, txIndex: number, fakeAmount: number) {
+    const chain = this.getOrCreateChain(outletId);
+    return chain.simulateTampering(dayIndex, txIndex, fakeAmount);
+  }
+
+  /**
+   * Pemulihan (recovery) dari cadangan valid
+   */
+  public recoverChain(outletId: string, dayIndex: number) {
+    const chain = this.getOrCreateChain(outletId);
+    return chain.recoverAndResync(dayIndex);
+  }
+
+  /**
+   * Menambahkan transaksi baru ke dalam rantai aktif
+   */
+  public recordTransaction(outletId: string, tx: TransactionData, timestamp = new Date().toISOString()) {
+    const eventTime = new Date(timestamp);
+    if (Number.isNaN(eventTime.getTime())) {
+      throw new Error('Timestamp transaksi blockchain tidak valid.');
+    }
+
+    const chain = this.getOrCreateChain(outletId);
+    const eventDate = eventTime.toISOString().slice(0, 10);
+    const activeDate = chain.currentDayTransactions[0]?.timestamp.slice(0, 10);
+
+    if (activeDate && eventDate < activeDate) {
+      throw new Error('Transaksi tidak dapat ditambahkan ke rantai setelah hari yang lebih baru.');
+    }
+    if (activeDate && eventDate > activeDate) {
+      chain.closeDay(activeDate);
+    }
+
+    return chain.addTransaction(tx, eventTime.toISOString());
+  }
+
+  /**
+   * Legacy endpoint compatibility
+   */
   getChainForOutlet(outletId: string): IntegrityBlock[] {
-    const blocks: IntegrityBlock[] = [];
-    let prevHash = '0000000000000000000000000000000000000000000000000000000000000000';
-
-    const mockRecords = [
-      { id: 'blk-001', time: '2026-10-01T08:00:00Z', count: 12 },
-      { id: 'blk-002', time: '2026-10-02T08:00:00Z', count: 18 },
-      { id: 'blk-003', time: '2026-10-03T08:00:00Z', count: 24 },
-      { id: 'blk-004', time: '2026-10-04T08:00:00Z', count: 30 },
-      { id: 'blk-005', time: '2026-10-05T08:00:00Z', count: 28 },
-    ];
-
-    mockRecords.forEach((rec, idx) => {
-      const payloadHash = this.calculateHash(`${outletId}:${rec.id}:${rec.time}:${rec.count}`);
-      const merkleRoot = this.calculateHash(`${prevHash}:${payloadHash}`);
-      blocks.push({
-        block_index: idx + 1,
-        outlet_id: outletId,
-        previous_hash: prevHash,
-        payload_hash: payloadHash,
-        merkle_root: merkleRoot,
-        record_count: rec.count,
-        timestamp: rec.time,
-        is_valid: true,
-      });
-      prevHash = merkleRoot;
-    });
-
-    return blocks;
+    const chain = this.getOrCreateChain(outletId);
+    return chain.dailyChain.map((parent) => ({
+      block_index: parent.dayIndex + 1,
+      outlet_id: parent.outletId,
+      previous_hash: parent.previousHash,
+      payload_hash: parent.hash,
+      merkle_root: parent.merkleRoot,
+      record_count: parent.transactionBlocks.length,
+      timestamp: parent.timestamp,
+      is_valid: true,
+    }));
   }
 
   verifyTransaction(transactionId: string) {
-    const computedHash = this.calculateHash(`tx:${transactionId}:verified`);
+    for (const chain of this.outletChains.values()) {
+      const committedBlocks = chain.dailyChain.flatMap((day) => day.transactionBlocks);
+      const allBlocks = [...committedBlocks, ...chain.currentDayTransactions];
+      const block = allBlocks.find((candidate) => candidate.data.transactionId === transactionId);
+      if (block) {
+        const computedHash = block.calculateHash();
+        const isValid = computedHash === block.hash;
+        return {
+          transaction_id: transactionId,
+          is_valid: isValid,
+          stored_hash: block.hash,
+          computed_hash: computedHash,
+          ledger_status: isValid ? 'VALID' : 'TAMPERED',
+          block_index: block.index,
+          timestamp: block.timestamp,
+        };
+      }
+    }
+
     return {
       transaction_id: transactionId,
-      is_valid: true,
-      stored_hash: computedHash,
-      computed_hash: computedHash,
-      ledger_status: 'ANCHORED_IN_BLOCKCHAIN',
-      block_index: 42,
-      timestamp: new Date().toISOString(),
+      is_valid: false,
+      stored_hash: null,
+      computed_hash: null,
+      ledger_status: 'NOT_FOUND',
+      block_index: null,
+      timestamp: null,
     };
   }
 
   verifyReport(reportId: string) {
-    const computedHash = this.calculateHash(`report:${reportId}:verified`);
     return {
       report_id: reportId,
-      is_valid: true,
-      stored_hash: computedHash,
-      computed_hash: computedHash,
-      ledger_status: 'TAMPER_PROOF_VERIFIED',
-      block_index: 18,
-      timestamp: new Date().toISOString(),
+      is_valid: false,
+      stored_hash: null,
+      computed_hash: null,
+      ledger_status: 'NOT_FOUND',
+      block_index: null,
+      timestamp: null,
     };
   }
 }

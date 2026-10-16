@@ -1,6 +1,7 @@
 import { MovementType, Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
+import { integrityService } from '../integrity/integrity.service';
 
 export interface IngredientItem {
   id: string;
@@ -336,7 +337,7 @@ export class InventoryService {
     }
 
     try {
-      return await prisma.$transaction(async (tx) => {
+      const adjustment = await prisma.$transaction(async (tx) => {
         // Ambil stok bahan baku terkini
         const ingredient = await tx.ingredient.findUnique({
           where: { id: targetIngredientId },
@@ -391,6 +392,27 @@ export class InventoryService {
           movement,
         };
       });
+
+      integrityService.recordTransaction(
+        data.outlet_id,
+        {
+          transactionId: `inventory:${adjustment.movement.id}`,
+          sourceId: adjustment.movement.id,
+          receiptNo: `STOCK-${adjustment.movement.id}`,
+          cashierId: userId,
+          totalAmount: 0,
+          eventType: data.movement_type,
+          ingredientId: adjustment.ingredient.id,
+          ingredientName: adjustment.ingredient.name,
+          quantityDelta: adjustment.movement.quantity_delta,
+          quantityAfter: adjustment.movement.quantity_after,
+          note: adjustment.movement.note,
+          items: [],
+        },
+        adjustment.movement.created_at?.toISOString?.() ?? new Date().toISOString()
+      );
+
+      return adjustment;
     } catch (err: any) {
       if (err instanceof AppError) throw err;
       throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal melakukan penyesuaian stok.');
