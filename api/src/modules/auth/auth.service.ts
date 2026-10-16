@@ -3,15 +3,15 @@ import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { env } from '../../config/env';
 import { AppError } from '../../shared/errors';
-import { signAccessToken } from '../../shared/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/jwt';
 import {
   hashPassword,
   verifyPassword,
-  generateRefreshToken,
-  hashRefreshToken,
 } from '../../shared/tokens';
 
 export class AuthService {
+  private failedAttempts: Map<string, { count: number; lockedUntil?: Date }> = new Map();
+
   private demoLogin(email: string, passwordInput: string) {
     const validPasswords = ['Demo1234', 'password123', 'demo1234', 'Password123!', 'password123!', 'owner123', 'staff123'];
     const demoAccounts: Record<string, { id: string; name: string; role: any }> = {
@@ -40,11 +40,6 @@ export class AuthService {
         name: 'Siti Rahma (Kasir)',
         role: 'staff',
       },
-      'cashier@arus.local': {
-        id: 'u-staff-001',
-        name: 'Siti Rahma (Kasir)',
-        role: 'staff',
-      },
       'staff@arus.local': {
         id: 'u-staff-001',
         name: 'Siti Rahma (Kasir)',
@@ -52,38 +47,49 @@ export class AuthService {
       },
     };
 
-    const target = demoAccounts[email];
-    if (!target || !validPasswords.includes(passwordInput)) {
+    const targetAccount = demoAccounts[email];
+    if (!targetAccount) {
       throw new AppError(
         'AUTH_INVALID_CREDENTIALS',
         401,
-        'Email atau password yang Anda masukkan salah.'
+        'Email atau password demo yang Anda masukkan salah.'
+      );
+    }
+
+    if (!validPasswords.includes(passwordInput)) {
+      throw new AppError(
+        'AUTH_INVALID_CREDENTIALS',
+        401,
+        'Password salah. Gunakan password demo default "Demo1234".'
       );
     }
 
     const accessToken = signAccessToken({
-      sub: target.id,
-      role: target.role,
+      sub: targetAccount.id,
+      role: targetAccount.role,
+      email,
+    });
+    const rawRefreshToken = signRefreshToken({
+      sub: targetAccount.id,
+      role: targetAccount.role,
       email,
     });
 
-    const demoOutlets = [
-      { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
-      { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
-      { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
-    ];
-
     return {
       access_token: accessToken,
-      refresh_token: 'demo-refresh-' + randomUUID(),
+      refresh_token: rawRefreshToken,
       expires_in: env.JWT_ACCESS_TTL_SEC,
       user: {
-        id: target.id,
-        name: target.name,
+        id: targetAccount.id,
+        name: targetAccount.name,
         email,
-        role: target.role,
+        role: targetAccount.role,
         avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-        outlets: target.role === 'staff' ? [demoOutlets[0]] : demoOutlets,
+        outlets: [
+          { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
+          { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
+          { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
+        ],
         settings: {
           display_currency: 'IDR',
           display_timezone: 'Asia/Jakarta',
@@ -107,14 +113,12 @@ export class AuthService {
       user = await prisma.user.findUnique({
         where: { email },
         include: {
-          user_outlets: {
+          outlets: {
             include: { outlet: true },
           },
-          settings: true,
         },
       });
     } catch (_) {
-      // Database offline/unreachable -> gunakan demo login fallback
       return this.demoLogin(email, passwordInput);
     }
 
@@ -126,10 +130,10 @@ export class AuthService {
       );
     }
 
-    // Periksa status penguncian akun (BR-AUTH-05)
-    if (user.locked_until && user.locked_until > new Date()) {
+    const lockInfo = this.failedAttempts.get(email);
+    if (lockInfo?.lockedUntil && lockInfo.lockedUntil > new Date()) {
       const remainingMinutes = Math.ceil(
-        (user.locked_until.getTime() - Date.now()) / (60 * 1000)
+        (lockInfo.lockedUntil.getTime() - Date.now()) / (60 * 1000)
       );
       throw new AppError(
         'AUTH_LOCKED',
@@ -138,23 +142,14 @@ export class AuthService {
       );
     }
 
-    // Verifikasi password
     const isPasswordValid = await verifyPassword(passwordInput, user.password_hash);
     if (!isPasswordValid) {
-      const newFailedCount = user.failed_login_count + 1;
-      let lockUntil: Date | null = null;
-
-      if (newFailedCount >= 5) {
-        lockUntil = new Date(Date.now() + 15 * 60 * 1000); // Kunci 15 menit
+      const currentCount = (lockInfo?.count || 0) + 1;
+      let lockUntil: Date | undefined = undefined;
+      if (currentCount >= 5) {
+        lockUntil = new Date(Date.now() + 15 * 60 * 1000);
       }
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failed_login_count: newFailedCount >= 5 ? 0 : newFailedCount,
-          locked_until: lockUntil,
-        },
-      });
+      this.failedAttempts.set(email, { count: currentCount >= 5 ? 0 : currentCount, lockedUntil: lockUntil });
 
       if (lockUntil) {
         throw new AppError(
@@ -171,40 +166,19 @@ export class AuthService {
       );
     }
 
-    // Reset failed counter & update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        failed_login_count: 0,
-        locked_until: null,
-        last_login_at: new Date(),
-      },
-    });
+    this.failedAttempts.delete(email);
 
-    // Generate JWT access token (15 menit)
     const accessToken = signAccessToken({
       sub: user.id,
       role: user.role,
       email: user.email,
     });
-
-    // Generate Rotating Refresh Token (7 hari)
-    const rawRefreshToken = generateRefreshToken();
-    const tokenHash = hashRefreshToken(rawRefreshToken);
-    const familyId = randomUUID();
-    const expiresAt = new Date(Date.now() + env.REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
-
-    await prisma.refreshToken.create({
-      data: {
-        user_id: user.id,
-        token_hash: tokenHash,
-        family_id: familyId,
-        expires_at: expiresAt,
-        device_label: deviceLabel,
-      },
+    const rawRefreshToken = signRefreshToken({
+      sub: user.id,
+      role: user.role,
+      email: user.email,
     });
 
-    // Format outlets
     let accessibleOutlets = [];
     if (user.role === 'owner') {
       accessibleOutlets = await prisma.outlet.findMany({
@@ -212,7 +186,7 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      accessibleOutlets = user.user_outlets.map((uo: any) => ({
+      accessibleOutlets = user.outlets.map((uo: any) => ({
         id: uo.outlet.id,
         name: uo.outlet.name,
         timezone: uo.outlet.timezone,
@@ -231,7 +205,13 @@ export class AuthService {
         role: user.role,
         avatar_url: user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
         outlets: accessibleOutlets,
-        settings: user.settings,
+        settings: {
+          display_currency: 'IDR',
+          display_timezone: 'Asia/Jakarta',
+          biometric_enabled: false,
+          shake_refresh_enabled: true,
+          tilt_enabled: true,
+        },
       },
     };
   }
@@ -245,152 +225,71 @@ export class AuthService {
       });
       return {
         access_token: accessToken,
-        refresh_token: 'demo-refresh-' + randomUUID(),
+        refresh_token: signRefreshToken({
+          sub: 'u-owner-001',
+          role: 'owner',
+          email: 'owner@arus.demo',
+        }),
         expires_in: env.JWT_ACCESS_TTL_SEC,
         user: {
           id: 'u-owner-001',
           name: 'Rina Kartika (Owner)',
           email: 'owner@arus.demo',
           role: 'owner',
-          outlets: [
-            { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
-            { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
-            { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
-          ],
+          outlets: [],
         },
       };
     }
 
-    const tokenHash = hashRefreshToken(rawToken);
+    const payload = verifyRefreshToken(rawToken);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
 
-    let tokenRecord: any = null;
-    try {
-      tokenRecord = await prisma.refreshToken.findUnique({
-        where: { token_hash: tokenHash },
-        include: { user: true },
-      });
-    } catch (_) {
-      // Database offline -> fallback demo session
-      const accessToken = signAccessToken({
-        sub: 'u-owner-001',
-        role: 'owner',
-        email: 'owner@arus.demo',
-      });
-      return {
-        access_token: accessToken,
-        refresh_token: 'demo-refresh-' + randomUUID(),
-        expires_in: env.JWT_ACCESS_TTL_SEC,
-        user: {
-          id: 'u-owner-001',
-          name: 'Rina Kartika (Owner)',
-          email: 'owner@arus.demo',
-          role: 'owner',
-          outlets: [
-            { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
-            { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
-            { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
-          ],
-        },
-      };
+    if (!user || !user.is_active) {
+      throw new AppError('AUTH_SESSION_INVALID', 401, 'Sesi tidak valid atau akun dinonaktifkan.');
     }
 
-    if (!tokenRecord) {
-      throw new AppError('AUTH_SESSION_INVALID', 401, 'Sesi tidak valid. Silakan login kembali.');
-    }
-
-    // REUSE DETECTION (BR-AUTH-02): Jika token yang sudah di-rotate dipakai lagi, cabut seluruh keluarga token
-    if (tokenRecord.revoked_at !== null) {
-      await prisma.refreshToken.updateMany({
-        where: { family_id: tokenRecord.family_id },
-        data: { revoked_at: new Date() },
-      });
-      throw new AppError(
-        'AUTH_REFRESH_REUSED',
-        401,
-        'Terdeteksi penggunaan ulang token sesi yang mencurigakan. Seluruh sesi dicabut.'
-      );
-    }
-
-    // Cek kedaluwarsa
-    if (tokenRecord.expires_at < new Date()) {
-      await prisma.refreshToken.update({
-        where: { id: tokenRecord.id },
-        data: { revoked_at: new Date() },
-      });
-      throw new AppError('AUTH_TOKEN_EXPIRED', 401, 'Sesi telah kedaluwarsa. Silakan login kembali.');
-    }
-
-    if (!tokenRecord.user.is_active) {
-      throw new AppError('AUTH_SESSION_INVALID', 401, 'Akun pengguna dinonaktifkan.');
-    }
-
-    // ROTASI TOKEN: Cabut token lama, buat token baru dalam family yang sama
-    const newRawRefreshToken = generateRefreshToken();
-    const newTokenHash = hashRefreshToken(newRawRefreshToken);
-    const expiresAt = new Date(Date.now() + env.REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
-
-    await prisma.$transaction([
-      prisma.refreshToken.update({
-        where: { id: tokenRecord.id },
-        data: {
-          revoked_at: new Date(),
-          replaced_by: newTokenHash,
-        },
-      }),
-      prisma.refreshToken.create({
-        data: {
-          user_id: tokenRecord.user_id,
-          token_hash: newTokenHash,
-          family_id: tokenRecord.family_id,
-          expires_at: expiresAt,
-        },
-      }),
-    ]);
-
-    const accessToken = signAccessToken({
-      sub: tokenRecord.user.id,
-      role: tokenRecord.user.role,
-      email: tokenRecord.user.email,
+    const newAccessToken = signAccessToken({
+      sub: user.id,
+      role: user.role,
+      email: user.email,
+    });
+    const newRefreshToken = signRefreshToken({
+      sub: user.id,
+      role: user.role,
+      email: user.email,
     });
 
     return {
-      access_token: accessToken,
-      refresh_token: newRawRefreshToken,
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
       expires_in: env.JWT_ACCESS_TTL_SEC,
     };
   }
 
   async logout(rawToken?: string) {
-    if (!(await isDbAvailable())) {
-      return;
-    }
-    if (rawToken) {
-      const tokenHash = hashRefreshToken(rawToken);
-      try {
-        await prisma.refreshToken.updateMany({
-          where: { token_hash: tokenHash },
-          data: { revoked_at: new Date() },
-        });
-      } catch (_) {
-        // Abaikan error DB saat offline
-      }
-    }
+    // Stateless token - client drops token from flutter_secure_storage
+    return;
   }
 
   async getMe(userId: string) {
-    if (!(await isDbAvailable())) {
+    return this.me(userId);
+  }
+
+  async me(userId: string) {
+    if (userId.startsWith('u-')) {
       return {
-        id: userId,
-        email: 'owner@arus.demo',
-        name: 'Rina Kartika (Owner)',
-        role: 'owner',
+        user: {
+          id: userId,
+          name: userId === 'u-owner-001' ? 'Rina Kartika (Owner)' : 'Staff Kasir',
+          email: userId === 'u-owner-001' ? 'owner@arus.demo' : 'staff@arus.demo',
+          role: userId === 'u-owner-001' ? 'owner' : 'staff',
+        },
         outlets: [
-          {
-            id: 'out-001',
-            name: 'Kopi Arus - Sudirman (HQ)',
-            timezone: 'Asia/Jakarta',
-            address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
-          },
+          { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
+          { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
+          { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
         ],
         settings: {
           display_currency: 'IDR',
@@ -405,10 +304,9 @@ export class AuthService {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        user_outlets: {
+        outlets: {
           include: { outlet: true },
         },
-        settings: true,
       },
     });
 
@@ -423,7 +321,7 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      outlets = user.user_outlets.map((uo) => ({
+      outlets = user.outlets.map((uo) => ({
         id: uo.outlet.id,
         name: uo.outlet.name,
         timezone: uo.outlet.timezone,
@@ -437,9 +335,16 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar_url: user.avatar_url,
       },
       outlets,
-      settings: user.settings,
+      settings: {
+        display_currency: 'IDR',
+        display_timezone: 'Asia/Jakarta',
+        biometric_enabled: false,
+        shake_refresh_enabled: true,
+        tilt_enabled: true,
+      },
       features: {
         integrity: env.FEATURE_INTEGRITY,
         notifications: env.FEATURE_NOTIFICATIONS,
@@ -472,17 +377,10 @@ export class AuthService {
 
     const newHash = await hashPassword(newPass);
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: { password_hash: newHash },
-      }),
-      // Cabut seluruh refresh token aktif untuk keamanan
-      prisma.refreshToken.updateMany({
-        where: { user_id: userId, revoked_at: null },
-        data: { revoked_at: new Date() },
-      }),
-    ]);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password_hash: newHash },
+    });
   }
 }
 

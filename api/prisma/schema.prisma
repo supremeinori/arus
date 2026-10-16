@@ -1,15 +1,11 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// ----------------------------------------------------
-// ENUMS (SRS Section 5.1 & 5.3)
-// ----------------------------------------------------
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 enum Role {
   owner
@@ -31,457 +27,259 @@ enum PaymentMethod {
   card_simulated
 }
 
-enum TransactionStatus {
+enum TxnStatus {
   completed
   voided
 }
 
-enum InsightSeverity {
-  info
-  warning
-  critical
+enum GameMode {
+  guess_name
+  guess_price
 }
 
-enum InsightStatus {
-  new
-  acknowledged
-  dismissed
-}
-
-enum NotificationType {
-  low_stock
-  sales_change
-  target_achieved
-  periodic_summary
-  system
-}
-
-enum NotificationPriority {
-  low
-  normal
-  high
-}
-
-enum Currency {
-  IDR
-  USD
-  EUR
-}
-
-enum ReportType {
-  sales_summary
-  inventory_status
-  outlet_comparison
-}
-
-enum RecordType {
-  transaction
-  transaction_void
-  report
-}
-
-enum AiRole {
-  user
-  assistant
-}
-
-enum AiMessageStatus {
-  ok
-  failed
-  fallback
-}
-
-enum ExchangeRateSource {
-  api
-  seed
-}
-
-enum GameDifficulty {
-  easy
-  medium
-  hard
-}
-
-// ----------------------------------------------------
-// MODELS (21 TABLES - SRS Section 5.3)
-// ----------------------------------------------------
+// ==========================================
+// MODUL 1: AUTENTIKASI, PENGGUNA & CABANG
+// ==========================================
 
 model User {
-  id                 String    @id @default(uuid()) @db.Uuid
-  name               String    @db.VarChar(100)
-  email              String    @unique @db.VarChar(255)
-  password_hash      String
-  role               Role
-  avatar_url         String?   @map("avatar_url") @db.Text
-  is_active          Boolean   @default(true) @map("is_active")
-  failed_login_count Int       @default(0) @map("failed_login_count")
-  locked_until       DateTime? @map("locked_until") @db.Timestamptz
-  last_login_at      DateTime? @map("last_login_at") @db.Timestamptz
-  created_at         DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updated_at         DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  id            String       @id @default(uuid()) @db.Uuid
+  name          String       @db.VarChar(100)
+  email         String       @unique @db.VarChar(255)
+  password_hash String       @db.Text
+  role          Role         @default(staff)
+  avatar_url    String?      @db.Text
+  is_active     Boolean      @default(true)
+  created_at    DateTime     @default(now()) @db.Timestamptz()
+  updated_at    DateTime     @updatedAt @db.Timestamptz()
 
-  // Relations
-  user_outlets      UserOutlet[]
-  refresh_tokens    RefreshToken[]
-  products_created  Product[]           @relation("CreatedProducts")
-  movements_created InventoryMovement[] @relation("CreatedMovements")
-  transactions      Transaction[]       @relation("CashierTransactions")
-  reports           Report[]
-  notifications     Notification[]
-  ai_conversations  AiConversation[]
-  settings          UserSettings?
-  game_sessions     GameSession[]
-  feedback          Feedback[]
+  outlets       UserOutlet[]
+  feedbacks     Feedback[]
+  transactions  Transaction[]
+  movements     InventoryMovement[]
+  notifications Notification[]
+  ai_logs       AiChatLog[]
+  game_sessions GameSession[]
 
   @@map("users")
 }
 
-model UserOutlet {
-  user_id   String @map("user_id") @db.Uuid
-  outlet_id String @map("outlet_id") @db.Uuid
-
-  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  outlet Outlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-
-  @@id([user_id, outlet_id])
-  @@index([outlet_id])
-  @@map("user_outlets")
-}
-
 model Outlet {
-  id         String   @id @default(uuid()) @db.Uuid
-  name       String   @unique @db.VarChar(100)
-  address    String
-  latitude   Decimal  @db.Decimal(9, 6)
-  longitude  Decimal  @db.Decimal(9, 6)
-  timezone   String   @db.VarChar(40) // Asia/Jakarta, Asia/Makassar, Asia/Jayapura, Europe/London
-  is_active  Boolean  @default(true) @map("is_active")
-  created_at DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id         String       @id @default(uuid()) @db.Uuid
+  name       String       @unique @db.VarChar(100)
+  address    String       @db.Text
+  latitude   Decimal      @db.Decimal(9, 6)
+  longitude  Decimal      @db.Decimal(9, 6)
+  timezone   String       @default("Asia/Jakarta") @db.VarChar(40)
+  is_active  Boolean      @default(true)
+  created_at DateTime     @default(now()) @db.Timestamptz()
+  updated_at DateTime     @updatedAt @db.Timestamptz()
 
-  // Relations
-  user_outlets UserOutlet[]
+  users        UserOutlet[]
   inventory    Inventory[]
-  movements    InventoryMovement[]
   transactions Transaction[]
-  insights     BusinessInsight[]
+  blocks       BlockchainRecord[]
 
   @@map("outlets")
 }
 
-model RefreshToken {
-  id           String    @id @default(uuid()) @db.Uuid
-  user_id      String    @map("user_id") @db.Uuid
-  token_hash   String    @unique @map("token_hash")
-  family_id    String    @map("family_id") @db.Uuid
-  expires_at   DateTime  @map("expires_at") @db.Timestamptz
-  revoked_at   DateTime? @map("revoked_at") @db.Timestamptz
-  replaced_by  String?   @map("replaced_by")
-  device_label String?   @map("device_label")
-  created_at   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+model UserOutlet {
+  user_id   String @db.Uuid
+  outlet_id String @db.Uuid
 
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  outlet    Outlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
 
-  @@index([family_id])
-  @@map("refresh_tokens")
+  @@id([user_id, outlet_id])
+  @@map("user_outlets")
 }
 
-model ProductCategory {
+model Feedback {
   id         String   @id @default(uuid()) @db.Uuid
-  name       String   @unique @db.VarChar(100)
-  created_at DateTime @default(now()) @map("created_at") @db.Timestamptz
+  user_id    String   @db.Uuid
+  kesan      String   @db.Text
+  saran      String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz()
 
-  products Product[]
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("feedback")
+}
+
+// ==========================================
+// MODUL 2: KATALOG & INVENTARIS (DENGAN MUTASI)
+// ==========================================
+
+model ProductCategory {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String    @unique @db.VarChar(80)
+  created_at DateTime  @default(now()) @db.Timestamptz()
+
+  products   Product[]
 
   @@map("product_categories")
 }
 
 model Product {
-  id          String   @id @default(uuid()) @db.Uuid
-  category_id String?  @map("category_id") @db.Uuid
-  sku         String   @unique @db.VarChar(40)
-  name        String   @db.VarChar(120)
-  unit        String   @db.VarChar(20)
-  price_idr   Int      @map("price_idr")
-  cost_idr    Int?     @map("cost_idr") // Owner/Manager only
-  is_active   Boolean  @default(true) @map("is_active")
-  created_by  String   @map("created_by") @db.Uuid
-  created_at  DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updated_at  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id          String           @id @default(uuid()) @db.Uuid
+  category_id String?          @db.Uuid
+  sku         String           @unique @db.VarChar(40)
+  name        String           @db.VarChar(120)
+  image_url   String?          @db.Text // Digunakan untuk Katalog POS & Mini-Game "Guess the Menu"
+  unit        String           @default("pcs") @db.VarChar(20)
+  price_idr   Int
+  cost_idr    Int?
+  is_active   Boolean          @default(true)
+  created_at  DateTime         @default(now()) @db.Timestamptz()
+  updated_at  DateTime         @updatedAt @db.Timestamptz()
 
-  category          ProductCategory?    @relation(fields: [category_id], references: [id], onDelete: SetNull)
-  creator           User                @relation("CreatedProducts", fields: [created_by], references: [id])
-  inventory         Inventory[]
-  movements         InventoryMovement[]
-  transaction_items TransactionItem[]
-  insights          BusinessInsight[]
+  category    ProductCategory?  @relation(fields: [category_id], references: [id])
+  inventory   Inventory[]
+  txn_items   TransactionItem[]
 
   @@map("products")
 }
 
 model Inventory {
-  outlet_id          String   @map("outlet_id") @db.Uuid
-  product_id         String   @map("product_id") @db.Uuid
-  quantity           Int
-  reorder_level      Int      @default(5) @map("reorder_level")
-  avg_lead_time_days Int      @default(3) @map("avg_lead_time_days")
-  updated_at         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  outlet_id          String   @db.Uuid
+  product_id         String   @db.Uuid
+  quantity           Int      @default(0)
+  reorder_level      Int      @default(5)
+  avg_lead_time_days Int      @default(3)
+  updated_at         DateTime @updatedAt @db.Timestamptz()
 
-  outlet  Outlet  @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  outlet             Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  product            Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  movements          InventoryMovement[]
 
   @@id([outlet_id, product_id])
-  @@index([outlet_id, quantity])
   @@map("inventory")
 }
 
 model InventoryMovement {
   id             String       @id @default(uuid()) @db.Uuid
-  outlet_id      String       @map("outlet_id") @db.Uuid
-  product_id     String       @map("product_id") @db.Uuid
-  movement_type  MovementType @map("movement_type")
-  quantity_delta Int          @map("quantity_delta")
-  quantity_after Int          @map("quantity_after")
-  transaction_id String?      @map("transaction_id") @db.Uuid
+  outlet_id      String       @db.Uuid
+  product_id     String       @db.Uuid
+  movement_type  MovementType
+  quantity_delta Int
+  quantity_after Int
+  transaction_id String?      @db.Uuid
   note           String?      @db.VarChar(255)
-  created_by     String       @map("created_by") @db.Uuid
-  created_at     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  created_by     String       @db.Uuid
+  created_at     DateTime     @default(now()) @db.Timestamptz()
 
-  outlet      Outlet       @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  product     Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  creator     User         @relation("CreatedMovements", fields: [created_by], references: [id])
-  transaction Transaction? @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
+  inventory      Inventory    @relation(fields: [outlet_id, product_id], references: [outlet_id, product_id], onDelete: Cascade)
+  transaction    Transaction? @relation(fields: [transaction_id], references: [id])
+  creator        User         @relation(fields: [created_by], references: [id])
 
   @@index([outlet_id, product_id, created_at])
   @@map("inventory_movements")
 }
 
+// ==========================================
+// MODUL 2 & 3: TRANSAKSI POS, BLOCKCHAIN & NOTIF
+// ==========================================
+
 model Transaction {
   id                String            @id @default(uuid()) @db.Uuid
-  receipt_no        String            @unique @map("receipt_no") @db.VarChar(30)
-  outlet_id         String            @map("outlet_id") @db.Uuid
-  cashier_id        String            @map("cashier_id") @db.Uuid
-  client_request_id String            @unique @map("client_request_id") @db.Uuid
-  subtotal_idr      Int               @map("subtotal_idr")
-  discount_idr      Int               @default(0) @map("discount_idr")
-  total_idr         Int               @map("total_idr")
-  payment_method    PaymentMethod     @map("payment_method")
-  paid_idr          Int               @map("paid_idr")
-  change_idr        Int               @map("change_idr")
-  status            TransactionStatus @default(completed)
-  voided_at         DateTime?         @map("voided_at") @db.Timestamptz
-  voided_by         String?           @map("voided_by") @db.Uuid
-  void_reason       String?           @map("void_reason")
-  created_at        DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  receipt_no        String            @unique @db.VarChar(30)
+  outlet_id         String            @db.Uuid
+  cashier_id        String            @db.Uuid
+  client_request_id String            @unique @db.Uuid
+  subtotal_idr      Int
+  discount_idr      Int               @default(0)
+  total_idr         Int
+  payment_method    PaymentMethod
+  paid_idr          Int
+  change_idr        Int               @default(0)
+  status            TxnStatus         @default(completed)
+  created_at        DateTime          @default(now()) @db.Timestamptz()
 
-  outlet             Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  cashier            User                @relation("CashierTransactions", fields: [cashier_id], references: [id])
-  items              TransactionItem[]
-  movements          InventoryMovement[]
-  blockchain_records BlockchainRecord[]
+  outlet            Outlet              @relation(fields: [outlet_id], references: [id])
+  cashier           User                @relation(fields: [cashier_id], references: [id])
+  items             TransactionItem[]
+  movements         InventoryMovement[]
+  blockchain_record BlockchainRecord?
 
   @@index([outlet_id, created_at])
-  @@index([created_at])
   @@map("transactions")
 }
 
 model TransactionItem {
-  id                    String @id @default(uuid()) @db.Uuid
-  transaction_id        String @map("transaction_id") @db.Uuid
-  product_id            String @map("product_id") @db.Uuid
-  product_name_snapshot String @map("product_name_snapshot")
-  unit_price_idr        Int    @map("unit_price_idr")
-  unit_cost_idr         Int?   @map("unit_cost_idr")
+  id                    String      @id @default(uuid()) @db.Uuid
+  transaction_id        String      @db.Uuid
+  product_id            String      @db.Uuid
+  product_name_snapshot String      @db.VarChar(120)
+  unit_price_idr        Int
+  unit_cost_idr         Int?
   quantity              Int
-  line_total_idr        Int    @map("line_total_idr")
+  line_total_idr        Int
 
-  transaction Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
-  product     Product     @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  transaction           Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  product               Product     @relation(fields: [product_id], references: [id])
 
-  @@index([transaction_id])
-  @@index([product_id])
   @@map("transaction_items")
 }
 
-model BusinessInsight {
-  id             String          @id @default(uuid()) @db.Uuid
-  rule_code      String          @map("rule_code") @db.VarChar(40)
-  severity       InsightSeverity
-  outlet_id      String?         @map("outlet_id") @db.Uuid
-  product_id     String?         @map("product_id") @db.Uuid
-  title          String
-  message        String
-  evidence       Json
-  recommendation String
-  status         InsightStatus   @default(new)
-  insight_date   DateTime        @map("insight_date") @db.Date
-  created_at     DateTime        @default(now()) @map("created_at") @db.Timestamptz
-
-  outlet  Outlet?  @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [product_id], references: [id], onDelete: Cascade)
-
-  @@index([outlet_id, insight_date])
-  @@map("business_insights")
-}
-
-model Notification {
-  id         String               @id @default(uuid()) @db.Uuid
-  user_id    String               @map("user_id") @db.Uuid
-  type       NotificationType
-  priority   NotificationPriority
-  title      String
-  body       String
-  payload    Json?
-  dedup_key  String?              @map("dedup_key")
-  read_at    DateTime?            @map("read_at") @db.Timestamptz
-  created_at DateTime             @default(now()) @map("created_at") @db.Timestamptz
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([user_id, read_at, created_at])
-  @@map("notifications")
-}
-
-model UserSettings {
-  user_id                  String   @id @map("user_id") @db.Uuid
-  display_currency         Currency @default(IDR) @map("display_currency")
-  display_timezone         String   @default("Asia/Jakarta") @map("display_timezone")
-  biometric_enabled        Boolean  @default(false) @map("biometric_enabled")
-  shake_refresh_enabled    Boolean  @default(true) @map("shake_refresh_enabled")
-  tilt_enabled             Boolean  @default(true) @map("tilt_enabled")
-  notif_prefs              Json?    @map("notif_prefs")
-  daily_revenue_target_idr Int?     @map("daily_revenue_target_idr")
-  updated_at               DateTime @updatedAt @map("updated_at") @db.Timestamptz
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@map("user_settings")
-}
-
-model Report {
-  id           String     @id @default(uuid()) @db.Uuid
-  type         ReportType
-  title        String
-  period_from  DateTime   @map("period_from") @db.Date
-  period_to    DateTime   @map("period_to") @db.Date
-  outlet_scope String[]   @map("outlet_scope")
-  payload      Json
-  payload_hash String     @map("payload_hash") @db.Char(64)
-  has_data     Boolean    @default(true) @map("has_data")
-  created_by   String     @map("created_by") @db.Uuid
-  created_at   DateTime   @default(now()) @map("created_at") @db.Timestamptz
-
-  creator            User               @relation(fields: [created_by], references: [id])
-  blockchain_records BlockchainRecord[]
-
-  @@index([type, created_at])
-  @@map("reports")
-}
-
 model BlockchainRecord {
-  chain_id    String     @map("chain_id") @db.Uuid
-  block_index BigInt     @map("block_index")
-  record_type RecordType @map("record_type")
-  record_id   String     @map("record_id") @db.Uuid
-  data_hash   String     @map("data_hash") @db.Char(64)
-  prev_hash   String     @map("prev_hash") @db.Char(64)
-  block_hash  String     @map("block_hash") @db.Char(64)
-  created_at  DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  id             String      @id @default(uuid()) @db.Uuid
+  outlet_id      String      @db.Uuid
+  block_index    Int
+  transaction_id String      @unique @db.Uuid
+  data_hash      String      @db.Char(64)
+  prev_hash      String      @db.Char(64)
+  block_hash     String      @db.Char(64)
+  created_at     DateTime    @default(now()) @db.Timestamptz()
 
-  transaction Transaction? @relation(fields: [record_id], references: [id], map: "fk_chain_transaction")
-  report      Report?      @relation(fields: [record_id], references: [id], map: "fk_chain_report")
+  outlet         Outlet      @relation(fields: [outlet_id], references: [id])
+  transaction    Transaction @relation(fields: [transaction_id], references: [id])
 
-  @@id([chain_id, block_index])
-  @@index([record_id])
+  @@unique([outlet_id, block_index])
   @@map("blockchain_records")
 }
 
-model AiConversation {
+model Notification {
   id         String   @id @default(uuid()) @db.Uuid
-  user_id    String   @map("user_id") @db.Uuid
-  title      String
-  created_at DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  user_id    String   @db.Uuid
+  type       String   @db.VarChar(40)
+  title      String   @db.VarChar(150)
+  body       String   @db.Text
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz()
 
-  user     User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  messages AiMessage[]
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([user_id])
-  @@map("ai_conversations")
+  @@map("notifications")
 }
 
-model AiMessage {
-  id                String          @id @default(uuid()) @db.Uuid
-  conversation_id   String          @map("conversation_id") @db.Uuid
-  role              AiRole
-  content           String
-  structured        Json?
-  facts_used        Json?
-  model             String?
-  prompt_tokens     Int?            @map("prompt_tokens")
-  completion_tokens Int?            @map("completion_tokens")
-  status            AiMessageStatus @default(ok)
-  created_at        DateTime        @default(now()) @map("created_at") @db.Timestamptz
+// ==========================================
+// MODUL 5: AI ASSISTANT & MINI GAME "GUESS THE MENU"
+// ==========================================
 
-  conversation AiConversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+model AiChatLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  user_id     String   @db.Uuid
+  question    String   @db.Text
+  answer_json Json
+  facts_used  Json
+  created_at  DateTime @default(now()) @db.Timestamptz()
 
-  @@index([conversation_id])
-  @@map("ai_messages")
-}
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-model ExchangeRate {
-  base   String             @default("IDR") @db.Char(3)
-  quote  String             @db.Char(3)
-  rate   Decimal            @db.Decimal(18, 8)
-  as_of  DateTime           @map("as_of") @db.Date
-  source ExchangeRateSource @default(seed)
-
-  @@id([base, quote, as_of])
-  @@map("exchange_rates")
-}
-
-model GameScenario {
-  id          String         @id @default(uuid()) @db.Uuid
-  code        String         @unique @db.VarChar(50)
-  difficulty  GameDifficulty
-  title       String
-  situation   Json
-  choices     Json
-  scoring     Json
-  explanation String
-  is_active   Boolean        @default(true) @map("is_active")
-
-  sessions GameSession[]
-
-  @@map("game_scenarios")
+  @@map("ai_chat_logs")
 }
 
 model GameSession {
-  id          String   @id @default(uuid()) @db.Uuid
-  user_id     String   @map("user_id") @db.Uuid
-  scenario_id String   @map("scenario_id") @db.Uuid
-  choice_key  String   @map("choice_key")
-  score       Int
-  max_score   Int      @map("max_score")
-  feedback    String
-  played_at   DateTime @default(now()) @map("played_at") @db.Timestamptz
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  mode            GameMode // 'guess_name' atau 'guess_price'
+  score           Int
+  correct_count   Int
+  total_questions Int      @default(5)
+  duration_sec    Int
+  played_at       DateTime @default(now()) @db.Timestamptz()
 
-  user     User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  scenario GameScenario @relation(fields: [scenario_id], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@index([user_id, played_at])
+  @@index([user_id, score(sort: Desc)])
   @@map("game_sessions")
-}
-
-model Feedback {
-  id         String   @id @default(uuid()) @db.Uuid
-  user_id    String   @map("user_id") @db.Uuid
-  kesan      String   @db.Text
-  saran      String   @db.Text
-  rating     Int?     @default(5) @db.SmallInt
-  created_at DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@map("feedback")
 }

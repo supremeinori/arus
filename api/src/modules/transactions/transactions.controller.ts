@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { transactionsService, CreateTransactionInput } from './transactions.service';
-import { TransactionStatus } from '@prisma/client';
+import { TxnStatus } from '@prisma/client';
 
 export class TransactionsController {
   async createTransaction(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -27,7 +27,7 @@ export class TransactionsController {
       const { id } = req.params;
       const { reason } = req.body;
 
-      const updated = await transactionsService.voidTransaction(id, user.id, reason);
+      const updated = await transactionsService.voidTransaction(id, user.id, reason, user.role);
 
       res.status(200).json({ data: updated });
     } catch (err) {
@@ -44,7 +44,7 @@ export class TransactionsController {
       const result = await transactionsService.listTransactions(
         {
           outlet_id: outlet_id as string,
-          status: status as TransactionStatus,
+          status: status as TxnStatus,
           receipt_no: receipt_no as string,
           page: page ? parseInt(page as string, 10) : undefined,
           page_size: page_size ? parseInt(page_size as string, 10) : undefined,

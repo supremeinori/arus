@@ -24,6 +24,7 @@ class ApiClient {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
+              'Bypass-Tunnel-Reminder': 'true',
             },
           ),
         );
@@ -96,6 +97,10 @@ class ApiClient {
   }
 
   Dio get rawDio => _dio;
+
+  void updateBaseUrl(String newUrl) {
+    _dio.options.baseUrl = newUrl;
+  }
 
   Future<Response<T>> get<T>(
     String path, {

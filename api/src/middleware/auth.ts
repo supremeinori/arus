@@ -111,3 +111,59 @@ export function verifyOutletScope(req: Request, outletId: string): void {
     throw new AppError('NOT_FOUND', 404, 'Data outlet tidak ditemukan atau di luar wewenang Anda.');
   }
 }
+
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyAccessToken(token);
+
+    const dbUp = await isDbAvailable();
+    let user = null;
+
+    if (!dbUp) {
+      user = {
+        id: decoded.sub,
+        email: decoded.email,
+        name: decoded.email.includes('owner')
+          ? 'Rina Kartika (Owner)'
+          : decoded.email.includes('manager')
+            ? 'Budi Santoso (Manager)'
+            : 'Siti Rahma (Kasir)',
+        role: decoded.role as Role,
+        is_active: true,
+      };
+    } else {
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: decoded.sub },
+          select: { id: true, email: true, name: true, role: true, is_active: true },
+        });
+      } catch (_) {
+        user = {
+          id: decoded.sub,
+          email: decoded.email,
+          name: decoded.email.includes('owner')
+            ? 'Rina Kartika (Owner)'
+            : decoded.email.includes('manager')
+              ? 'Budi Santoso (Manager)'
+              : 'Siti Rahma (Kasir)',
+          role: decoded.role as Role,
+          is_active: true,
+        };
+      }
+    }
+
+    if (user && user.is_active) {
+      req.user = user;
+    }
+    return next();
+  } catch (_) {
+    return next();
+  }
+}
+

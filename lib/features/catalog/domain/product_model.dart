@@ -32,6 +32,7 @@ class ProductModel {
   final int? costIdr; // Null jika role adalah Staff (HPP hidden)
   final String? categoryId;
   final String? categoryName;
+  final String? imageUrl;
   final bool isActive;
   final List<ProductOutletStock> outletStock;
 
@@ -44,6 +45,7 @@ class ProductModel {
     this.costIdr,
     this.categoryId,
     this.categoryName,
+    this.imageUrl,
     this.isActive = true,
     this.outletStock = const [],
   });
@@ -61,6 +63,7 @@ class ProductModel {
       costIdr: json['cost_idr'] as int?,
       categoryId: json['category_id'] as String?,
       categoryName: catObj?['name'] as String?,
+      imageUrl: json['image_url'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       outletStock: invList
           .map((i) => ProductOutletStock.fromJson(i as Map<String, dynamic>))

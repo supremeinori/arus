@@ -14,6 +14,9 @@ class AppTheme {
   static const lightBlueBg = lightToskaBg;
   static const toskaBorder = Color(0xFF99F6E4);
   static const darkBlue = darkToska;
+  static const primary = primaryToska;
+  static const background = backgroundWhite;
+  static const error = dangerRed;
 
   static const pureWhite = Color(0xFFFFFFFF);
   static const backgroundWhite = Color(0xFFF8FAFC); // Clean Canvas (Slate-50)

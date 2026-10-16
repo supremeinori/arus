@@ -1,7 +1,7 @@
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
-import { Role, TransactionStatus } from '@prisma/client';
+import { Role, TxnStatus } from '@prisma/client';
 import { CreateOutletInput, UpdateOutletInput } from './outlets.schema';
 
 export function calculateHaversineDistanceKm(
@@ -81,7 +81,7 @@ export class OutletsService {
           _count: {
             select: {
               inventory: true,
-              user_outlets: true,
+              users: true,
             },
           },
         },
@@ -96,7 +96,7 @@ export class OutletsService {
         timezone: o.timezone,
         is_active: o.is_active,
         inventory_count: o._count.inventory,
-        assigned_users_count: o._count.user_outlets,
+        assigned_users_count: o._count.users,
         created_at: o.created_at,
       }));
     } catch (_) {
@@ -145,7 +145,7 @@ export class OutletsService {
     const outlet = await prisma.outlet.findUnique({
       where: { id },
       include: {
-        user_outlets: {
+        users: {
           include: {
             user: { select: { id: true, name: true, email: true, role: true } },
           },
@@ -171,7 +171,7 @@ export class OutletsService {
       longitude: Number(outlet.longitude),
       timezone: outlet.timezone,
       is_active: outlet.is_active,
-      assigned_staff: outlet.user_outlets.map((uo) => uo.user),
+      assigned_staff: outlet.users.map((uo) => uo.user),
       inventory_count: outlet._count.inventory,
       transaction_count: outlet._count.transactions,
       created_at: outlet.created_at,
@@ -293,7 +293,7 @@ export class OutletsService {
       const txAgg = await prisma.transaction.aggregate({
         where: {
           outlet_id: o.id,
-          status: TransactionStatus.completed,
+          status: TxnStatus.completed,
           created_at: { gte: thirtyDaysAgo },
         },
         _sum: { total_idr: true },

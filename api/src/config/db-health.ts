@@ -1,11 +1,9 @@
-import net from 'net';
+import { prisma } from './db';
 
 let dbOnline: boolean | null = null;
 let lastCheck = 0;
 
 export async function isDbAvailable(): Promise<boolean> {
-
-
   if (
     process.env.NODE_ENV === 'test' ||
     Boolean(process.env.VITEST) ||
@@ -16,33 +14,21 @@ export async function isDbAvailable(): Promise<boolean> {
   }
 
   const now = Date.now();
-  if (dbOnline !== null && now - lastCheck < 5000) {
+  if (dbOnline !== null && now - lastCheck < 8000) {
     return dbOnline;
   }
   lastCheck = now;
 
-  return new Promise<boolean>((resolve) => {
-    const socket = new net.Socket();
-    let resolved = false;
-
-    const finish = (status: boolean) => {
-      if (!resolved) {
-        resolved = true;
-        dbOnline = status;
-        socket.destroy();
-        resolve(status);
-      }
-    };
-
-    socket.setTimeout(120);
-    socket.once('connect', () => finish(true));
-    socket.once('timeout', () => finish(false));
-    socket.once('error', () => finish(false));
-
-    try {
-      socket.connect(5432, '127.0.0.1');
-    } catch (_) {
-      finish(false);
-    }
-  });
+  try {
+    const checkPromise = prisma.$queryRaw`SELECT 1`;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('DB Timeout')), 4000)
+    );
+    await Promise.race([checkPromise, timeoutPromise]);
+    dbOnline = true;
+    return true;
+  } catch (err) {
+    dbOnline = false;
+    return false;
+  }
 }

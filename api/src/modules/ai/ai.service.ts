@@ -1,4 +1,4 @@
-import { AiMessageStatus, AiRole, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { isDbAvailable } from '../../config/db-health';
 import { analyticsService } from '../analytics/analytics.service';
@@ -147,28 +147,8 @@ ${JSON.stringify(facts, null, 2)}`;
           userName = dbUser.name;
           userRoleTitle = dbUser.role === Role.owner ? 'Owner' : dbUser.role === Role.manager ? 'Manager' : 'Staff Kasir';
         }
-
-        if (!query.conversation_id) {
-          const conv = await prisma.aiConversation.create({
-            data: {
-              user_id: userId,
-              title: userMessage.length > 40 ? `${userMessage.substring(0, 37)}...` : userMessage,
-            },
-          });
-          conversationId = conv.id;
-        }
-
-        // Simpan pesan user ke database
-        await prisma.aiMessage.create({
-          data: {
-            conversation_id: conversationId,
-            role: AiRole.user,
-            content: userMessage,
-            status: AiMessageStatus.ok,
-          },
-        });
       } catch (_) {
-        conversationId = query.conversation_id || 'demo-conv-001';
+        // Fallback
       }
     }
 
@@ -704,23 +684,22 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
       created_at: new Date(),
     };
 
-    if (dbUp) {
+    if (dbUp && userId && !userId.startsWith('u-')) {
       try {
-        savedAiMessage = await prisma.aiMessage.create({
+        await prisma.aiChatLog.create({
           data: {
-            conversation_id: conversationId,
-            role: AiRole.assistant,
-            content: aiResponseText,
-            structured: {
+            user_id: userId,
+            question: userMessage,
+            answer_json: {
+              content: aiResponseText,
               suggestion: suggestionText,
+              model: liveGeminiText ? env.LLM_MODEL : 'gemini-2.0-flash-grounded',
             },
             facts_used: facts,
-            model: liveGeminiText ? env.LLM_MODEL : 'gemini-2.0-flash-grounded',
-            status: AiMessageStatus.ok,
           },
         });
       } catch (_) {
-        // Fallback ke objek lokal
+        // Fallback ke memori lokal
       }
     }
 
@@ -737,35 +716,48 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
    */
   async listConversations(userId: string) {
     try {
-      return await prisma.aiConversation.findMany({
+      const logs = await prisma.aiChatLog.findMany({
         where: { user_id: userId },
-        orderBy: { updated_at: 'desc' },
-        include: {
-          messages: {
-            take: 1,
-            orderBy: { created_at: 'desc' },
-          },
-        },
+        orderBy: { created_at: 'desc' },
+        take: 20,
       });
-    } catch (_) {
-      return [
-        {
-          id: 'demo-conv-001',
-          user_id: userId,
-          title: 'Konsultasi Performa & Keputusan Bisnis',
-          created_at: new Date(),
-          updated_at: new Date(),
+
+      if (logs.length > 0) {
+        return logs.map((log) => ({
+          id: log.id,
+          user_id: log.user_id,
+          title: log.question.length > 40 ? `${log.question.substring(0, 37)}...` : log.question,
+          created_at: log.created_at,
+          updated_at: log.created_at,
           messages: [
             {
-              id: 'msg-001',
+              id: log.id,
               role: 'assistant',
-              content: 'Halo! Saya ARUS Business Copilot siap mendampingi evaluasi operasional bisnis Anda.',
-              created_at: new Date(),
+              content: (log.answer_json as any)?.content || '',
+              created_at: log.created_at,
             },
           ],
-        },
-      ];
-    }
+        }));
+      }
+    } catch (_) {}
+
+    return [
+      {
+        id: 'demo-conv-001',
+        user_id: userId,
+        title: 'Konsultasi Performa & Keputusan Bisnis',
+        created_at: new Date(),
+        updated_at: new Date(),
+        messages: [
+          {
+            id: 'msg-001',
+            role: 'assistant',
+            content: 'Halo! Saya ARUS Business Copilot siap mendampingi evaluasi operasional bisnis Anda.',
+            created_at: new Date(),
+          },
+        ],
+      },
+    ];
   }
 
   /**
@@ -773,62 +765,70 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
    */
   async getConversationMessages(conversationId: string, userId: string) {
     try {
-      const conv = await prisma.aiConversation.findFirst({
-        where: { id: conversationId, user_id: userId },
-        include: {
-          messages: {
-            orderBy: { created_at: 'asc' },
-          },
-        },
+      const log = await prisma.aiChatLog.findUnique({
+        where: { id: conversationId },
       });
-
-      if (!conv) {
-        throw new AppError('NOT_FOUND', 404, 'Percakapan tidak ditemukan.');
-      }
-
-      return conv.messages;
-    } catch (_) {
-      const memory = AiAssistantService.conversationMemory.get(conversationId);
-      if (memory && memory.length > 0) {
-        return memory.map((m, idx) => ({
-          id: `msg-${idx + 1}`,
-          conversation_id: conversationId,
-          role: m.role,
-          content: m.content,
-          facts_used: m.factsUsed || null,
-          created_at: m.timestamp,
-        }));
-      }
-
-      return [
-        {
-          id: 'msg-001',
-          conversation_id: conversationId,
-          role: 'user',
-          content: 'Bagaimana ringkasan penjualan hari ini?',
-          created_at: new Date(Date.now() - 60000),
-        },
-        {
-          id: 'msg-002',
-          conversation_id: conversationId,
-          role: 'assistant',
-          content: 'Berdasarkan data operasional terkini:\n• Total omset saat ini sebesar Rp 14.500.000 dari 342 transaksi.\n• Estimasi margin keuntungan kotor berada di kisaran 68%.',
-          structured: {
-            suggestion: 'Pastikan ketersediaan bahan baku dipersiapkan sebelum jam ramai.',
+      if (log) {
+        return [
+          {
+            id: `q-${log.id}`,
+            conversation_id: conversationId,
+            role: 'user',
+            content: log.question,
+            created_at: log.created_at,
           },
-          facts_used: [
-            {
-              type: 'analytics_overview',
-              title: 'Ringkasan Omset Terkini',
-              value: { revenue_idr: 14500000, transaction_count: 342, avg_basket_idr: 42397, gross_margin_pct: 68 },
-            },
-          ],
-          model: 'gemini-2.0-flash-grounded',
-          status: 'ok',
-          created_at: new Date(),
-        },
-      ];
+          {
+            id: `a-${log.id}`,
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: (log.answer_json as any)?.content || '',
+            facts_used: log.facts_used,
+            created_at: log.created_at,
+          },
+        ];
+      }
+    } catch (_) {}
+
+    const memory = AiAssistantService.conversationMemory.get(conversationId);
+    if (memory && memory.length > 0) {
+      return memory.map((m, idx) => ({
+        id: `msg-${idx + 1}`,
+        conversation_id: conversationId,
+        role: m.role,
+        content: m.content,
+        facts_used: m.factsUsed || null,
+        created_at: m.timestamp,
+      }));
     }
+
+    return [
+      {
+        id: 'msg-001',
+        conversation_id: conversationId,
+        role: 'user',
+        content: 'Bagaimana ringkasan penjualan hari ini?',
+        created_at: new Date(Date.now() - 60000),
+      },
+      {
+        id: 'msg-002',
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: 'Berdasarkan data operasional terkini:\n• Total omset saat ini sebesar Rp 14.500.000 dari 342 transaksi.\n• Estimasi margin keuntungan kotor berada di kisaran 68%.',
+        structured: {
+          suggestion: 'Pastikan ketersediaan bahan baku dipersiapkan sebelum jam ramai.',
+        },
+        facts_used: [
+          {
+            type: 'analytics_overview',
+            title: 'Ringkasan Omset Terkini',
+            value: { revenue_idr: 14500000, transaction_count: 342, avg_basket_idr: 42397, gross_margin_pct: 68 },
+          },
+        ],
+        model: 'gemini-2.0-flash-grounded',
+        status: 'ok',
+        created_at: new Date(),
+      },
+    ];
   }
 }
 

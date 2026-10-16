@@ -8,30 +8,19 @@ const FALLBACK_RATES: Record<string, number> = {
 };
 
 export class FxService {
-  async getRates() {
-    let ratesInDb: any[] = [];
-    try {
-      ratesInDb = await prisma.exchangeRate.findMany({
-        where: { base: 'IDR' },
-        orderBy: { as_of: 'desc' },
-        take: 2,
-      });
-    } catch (_) {
-      ratesInDb = [];
-    }
+  private inMemoryRates = {
+    USD: 0.000062,
+    EUR: 0.000058,
+  };
 
+  async getRates() {
     const rates: Record<string, number> = {
       IDR: 1.0,
-      USD: FALLBACK_RATES.USD,
-      EUR: FALLBACK_RATES.EUR,
+      USD: this.inMemoryRates.USD,
+      EUR: this.inMemoryRates.EUR,
     };
 
-    let asOf = new Date().toISOString().slice(0, 10);
-
-    for (const r of ratesInDb) {
-      rates[r.quote] = Number(r.rate);
-      asOf = r.as_of.toISOString().slice(0, 10);
-    }
+    const asOf = new Date().toISOString().slice(0, 10);
 
     return {
       base: 'IDR',

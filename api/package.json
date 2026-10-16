@@ -5,13 +5,15 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
     "start": "node dist/server.js",
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "ts-node-dev --transpile-only prisma/seed/seed.ts"
+    "db:seed": "ts-node-dev --transpile-only prisma/seed/seed.ts",
+    "db:fresh": "prisma db push --force-reset && prisma db seed"
   },
   "prisma": {
     "seed": "ts-node-dev --transpile-only prisma/seed/seed.ts"

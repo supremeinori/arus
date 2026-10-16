@@ -174,7 +174,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Icon Box
+                                // Icon / Image Box
                                 Container(
                                   width: 44,
                                   height: 44,
@@ -183,13 +183,26 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: AppTheme.borderOutline, width: 1.0),
                                   ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.coffee_rounded,
-                                      color: AppTheme.primaryBlue,
-                                      size: 24,
-                                    ),
-                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: (prod.imageUrl != null && prod.imageUrl!.isNotEmpty)
+                                      ? Image.network(
+                                          prod.imageUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => const Center(
+                                            child: Icon(
+                                              Icons.coffee_rounded,
+                                              color: AppTheme.primaryBlue,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Icon(
+                                            Icons.coffee_rounded,
+                                            color: AppTheme.primaryBlue,
+                                            size: 24,
+                                          ),
+                                        ),
                                 ),
                                 const SizedBox(width: 14),
 

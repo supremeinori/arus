@@ -165,6 +165,7 @@ class CatalogRepository {
     required int priceIdr,
     int? costIdr,
     String? categoryId,
+    String? imageUrl,
   }) async {
     final payload = <String, dynamic>{
       'name': name,
@@ -174,6 +175,7 @@ class CatalogRepository {
     };
     if (costIdr != null) payload['cost_idr'] = costIdr;
     if (categoryId != null) payload['category_id'] = categoryId;
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) payload['image_url'] = imageUrl.trim();
 
     try {
       final res = await _apiClient.post<Map<String, dynamic>>(
@@ -196,6 +198,7 @@ class CatalogRepository {
         costIdr: costIdr,
         categoryId: categoryId,
         categoryName: cat.name,
+        imageUrl: imageUrl,
         isActive: true,
       );
       _demoProducts.insert(0, newProd);
@@ -211,6 +214,7 @@ class CatalogRepository {
     int? priceIdr,
     int? costIdr,
     String? categoryId,
+    String? imageUrl,
     bool? isActive,
   }) async {
     final payload = <String, dynamic>{};
@@ -220,6 +224,7 @@ class CatalogRepository {
     if (priceIdr != null) payload['price_idr'] = priceIdr;
     if (costIdr != null) payload['cost_idr'] = costIdr;
     if (categoryId != null) payload['category_id'] = categoryId;
+    if (imageUrl != null) payload['image_url'] = imageUrl.trim();
     if (isActive != null) payload['is_active'] = isActive;
 
     try {

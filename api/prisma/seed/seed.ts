@@ -1,8 +1,6 @@
-import { PrismaClient, Role, PaymentMethod, TransactionStatus, MovementType, RecordType } from '@prisma/client';
+import { PrismaClient, Role, PaymentMethod, TxnStatus, MovementType, GameMode } from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -20,45 +18,26 @@ function sha256(data: string): string {
 }
 
 export async function main() {
-  console.log('🌱 Memulai proses seeding database ARUS...');
+  console.log('🌱 Memulai proses seeding database ARUS (Fast & Lightweight)...');
 
   // 1. CLEANUP (Idempotency)
-  console.log('🧹 Membersihkan data lama untuk memastikan idempotency...');
+  console.log('🧹 Membersihkan database Supabase...');
   await prisma.gameSession.deleteMany();
-  await prisma.gameScenario.deleteMany();
+  await prisma.aiChatLog.deleteMany();
   await prisma.feedback.deleteMany();
-  await prisma.aiMessage.deleteMany();
-  await prisma.aiConversation.deleteMany();
-  await prisma.blockchainRecord.deleteMany();
-  await prisma.report.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.businessInsight.deleteMany();
+  await prisma.blockchainRecord.deleteMany();
   await prisma.transactionItem.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.inventoryMovement.deleteMany();
   await prisma.inventory.deleteMany();
   await prisma.product.deleteMany();
   await prisma.productCategory.deleteMany();
-  await prisma.userSettings.deleteMany();
-  await prisma.refreshToken.deleteMany();
   await prisma.userOutlet.deleteMany();
   await prisma.outlet.deleteMany();
   await prisma.user.deleteMany();
-  await prisma.exchangeRate.deleteMany();
 
-  // 2. EXCHANGE RATES
-  console.log('💱 Mengisi data kurs (Exchange Rates)...');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  await prisma.exchangeRate.createMany({
-    data: [
-      { base: 'IDR', quote: 'USD', rate: 0.000062, as_of: today, source: 'seed' },
-      { base: 'IDR', quote: 'EUR', rate: 0.000058, as_of: today, source: 'seed' },
-    ],
-  });
-
-  // 3. USERS & SETTINGS
+  // 2. USERS
   console.log('👥 Mengisi data pengguna (Owner, Manager, Staff)...');
   const passwordHash = await hashPassword('Demo1234');
 
@@ -68,13 +47,7 @@ export async function main() {
       email: 'owner@arus.demo',
       password_hash: passwordHash,
       role: Role.owner,
-      settings: {
-        create: {
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-          daily_revenue_target_idr: 5000000,
-        },
-      },
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
     },
   });
 
@@ -84,13 +57,7 @@ export async function main() {
       email: 'manager@arus.demo',
       password_hash: passwordHash,
       role: Role.manager,
-      settings: {
-        create: {
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-          daily_revenue_target_idr: 2500000,
-        },
-      },
+      avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     },
   });
 
@@ -100,16 +67,11 @@ export async function main() {
       email: 'staff@arus.demo',
       password_hash: passwordHash,
       role: Role.staff,
-      settings: {
-        create: {
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-        },
-      },
+      avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
     },
   });
 
-  // 4. OUTLETS
+  // 3. OUTLETS (3 Domestik + 1 London)
   console.log('🏢 Mengisi data Outlet (3 Domestik + 1 London)...');
   const outletJogja = await prisma.outlet.create({
     data: {
@@ -153,19 +115,16 @@ export async function main() {
 
   const outlets = [outletJogja, outletSolo, outletBali, outletLondon];
 
-  // User Outlet Assignments
   await prisma.userOutlet.createMany({
     data: [
-      // Manager assigned to Jogja and Solo
       { user_id: manager.id, outlet_id: outletJogja.id },
       { user_id: manager.id, outlet_id: outletSolo.id },
-      // Staff assigned to Jogja
       { user_id: staff.id, outlet_id: outletJogja.id },
     ],
   });
 
-  // 5. PRODUCT CATEGORIES & PRODUCTS (>= 40 Produk)
-  console.log('☕ Mengisi data Kategori & 40 Produk...');
+  // 4. 10 PRODUK UTAMA LENGKAP DENGAN GAMBAR (2 per kategori)
+  console.log('☕ Mengisi 10 Produk Pilihan (lengkap foto menu)...');
   const catCoffee = await prisma.productCategory.create({ data: { name: 'Kopi & Minuman Espresso' } });
   const catTea = await prisma.productCategory.create({ data: { name: 'Teh & Segaran' } });
   const catBakery = await prisma.productCategory.create({ data: { name: 'Pastry & Roti' } });
@@ -173,57 +132,25 @@ export async function main() {
   const catSnacks = await prisma.productCategory.create({ data: { name: 'Camilan & Kudapan' } });
 
   const rawProducts = [
-    // Kopi (10 produk)
-    { sku: 'KOP-01', name: 'Es Kopi Susu Gula Aren', unit: 'cup', price: 22000, cost: 9000, catId: catCoffee.id },
-    { sku: 'KOP-02', name: 'Americano Dingin', unit: 'cup', price: 18000, cost: 6000, catId: catCoffee.id },
-    { sku: 'KOP-03', name: 'Caramel Macchiato', unit: 'cup', price: 28000, cost: 12000, catId: catCoffee.id },
-    { sku: 'KOP-04', name: 'Vanilla Latte', unit: 'cup', price: 26000, cost: 11000, catId: catCoffee.id },
-    { sku: 'KOP-05', name: 'Cafe Mocha Panas', unit: 'cup', price: 27000, cost: 12000, catId: catCoffee.id },
-    { sku: 'KOP-06', name: 'Cappuccino Hangat', unit: 'cup', price: 24000, cost: 10000, catId: catCoffee.id },
-    { sku: 'KOP-07', name: 'Kopi Tubruk Nusantara', unit: 'cup', price: 14000, cost: 5000, catId: catCoffee.id },
-    { sku: 'KOP-08', name: 'Espresso Double Shot', unit: 'shot', price: 16000, cost: 5500, catId: catCoffee.id },
-    { sku: 'KOP-09', name: 'Cold Brew Signature', unit: 'botol', price: 30000, cost: 13000, catId: catCoffee.id },
-    { sku: 'KOP-10', name: 'Affogato Es Krim Vanilla', unit: 'cup', price: 25000, cost: 10000, catId: catCoffee.id },
+    // Kopi (2 produk)
+    { sku: 'KOP-01', name: 'Es Kopi Susu Gula Aren', unit: 'cup', price: 22000, cost: 9000, catId: catCoffee.id, img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'KOP-02', name: 'Americano Dingin', unit: 'cup', price: 18000, cost: 6000, catId: catCoffee.id, img: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80' },
 
-    // Teh & Non Kopi (8 produk)
-    { sku: 'TEH-01', name: 'Matcha Green Tea Latte', unit: 'cup', price: 26000, cost: 11000, catId: catTea.id },
-    { sku: 'TEH-02', name: 'Earl Grey Milk Tea', unit: 'cup', price: 23000, cost: 9500, catId: catTea.id },
-    { sku: 'TEH-03', name: 'Lemon Jasmine Tea Segar', unit: 'cup', price: 18000, cost: 6000, catId: catTea.id },
-    { sku: 'TEH-04', name: 'Lychee Iced Tea', unit: 'cup', price: 22000, cost: 8000, catId: catTea.id },
-    { sku: 'TEH-05', name: 'Teh Tarik Klasik', unit: 'cup', price: 19000, cost: 7000, catId: catTea.id },
-    { sku: 'TEH-06', name: 'Cokelat Panas Belgia', unit: 'cup', price: 25000, cost: 11500, catId: catTea.id },
-    { sku: 'TEH-07', name: 'Teh Chamomile Madu', unit: 'cup', price: 21000, cost: 7500, catId: catTea.id },
-    { sku: 'TEH-08', name: 'Es Teh Manis Jumbo', unit: 'cup', price: 10000, cost: 3000, catId: catTea.id },
+    // Teh (2 produk)
+    { sku: 'TEH-01', name: 'Matcha Green Tea Latte', unit: 'cup', price: 26000, cost: 11000, catId: catTea.id, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'TEH-02', name: 'Lemon Jasmine Tea Segar', unit: 'cup', price: 18000, cost: 6000, catId: catTea.id, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80' },
 
-    // Pastry (8 produk)
-    { sku: 'PAS-01', name: 'Butter Croissant Premium', unit: 'pcs', price: 24000, cost: 11000, catId: catBakery.id },
-    { sku: 'PAS-02', name: 'Pain Au Chocolat', unit: 'pcs', price: 27000, cost: 12500, catId: catBakery.id },
-    { sku: 'PAS-03', name: 'Almond Croissant', unit: 'pcs', price: 29000, cost: 13500, catId: catBakery.id },
-    { sku: 'PAS-04', name: 'Cinnamon Roll Glaze', unit: 'pcs', price: 22000, cost: 9500, catId: catBakery.id },
-    { sku: 'PAS-05', name: 'Donat Gula Klasik', unit: 'pcs', price: 12000, cost: 5000, catId: catBakery.id },
-    { sku: 'PAS-06', name: 'Fudgy Brownies Cokelat', unit: 'slice', price: 20000, cost: 8500, catId: catBakery.id },
-    { sku: 'PAS-07', name: 'Banana Bread Panggang', unit: 'slice', price: 18000, cost: 7500, catId: catBakery.id },
-    { sku: 'PAS-08', name: 'Cheese Danish Gurih', unit: 'pcs', price: 25000, cost: 11000, catId: catBakery.id },
+    // Pastry (2 produk)
+    { sku: 'PAS-01', name: 'Butter Croissant Premium', unit: 'pcs', price: 24000, cost: 11000, catId: catBakery.id, img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'PAS-02', name: 'Pain Au Chocolat', unit: 'pcs', price: 27000, cost: 12500, catId: catBakery.id, img: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?auto=format&fit=crop&w=500&q=80' },
 
-    // Makanan Utama (8 produk)
-    { sku: 'MAK-01', name: 'Nasi Ayam Geprek Sambal Bawang', unit: 'porsi', price: 28000, cost: 14000, catId: catMeals.id },
-    { sku: 'MAK-02', name: 'Nasi Goreng Spesial ARUS', unit: 'porsi', price: 32000, cost: 15000, catId: catMeals.id },
-    { sku: 'MAK-03', name: 'Spaghetti Aglio Olio Tuna', unit: 'porsi', price: 35000, cost: 16500, catId: catMeals.id },
-    { sku: 'MAK-04', name: 'Spaghetti Carbonara Creamy', unit: 'porsi', price: 38000, cost: 18000, catId: catMeals.id },
-    { sku: 'MAK-05', name: 'Rice Bowl Beef Teriyaki', unit: 'porsi', price: 42000, cost: 21000, catId: catMeals.id },
-    { sku: 'MAK-06', name: 'Mie Goreng Dok-dok Jawa', unit: 'porsi', price: 26000, cost: 12000, catId: catMeals.id },
-    { sku: 'MAK-07', name: 'Chicken Katsu Curry Bowl', unit: 'porsi', price: 36000, cost: 17500, catId: catMeals.id },
-    { sku: 'MAK-08', name: 'Sandwich Smoked Beef & Cheese', unit: 'porsi', price: 30000, cost: 14500, catId: catMeals.id },
+    // Makanan (2 produk)
+    { sku: 'MAK-01', name: 'Nasi Ayam Geprek Sambal Bawang', unit: 'porsi', price: 28000, cost: 14000, catId: catMeals.id, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'MAK-02', name: 'Spaghetti Carbonara Creamy', unit: 'porsi', price: 38000, cost: 18000, catId: catMeals.id, img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=500&q=80' },
 
-    // Camilan (8 produk)
-    { sku: 'CAM-01', name: 'Kentang Goreng Truffle', unit: 'porsi', price: 24000, cost: 10000, catId: catSnacks.id },
-    { sku: 'CAM-02', name: 'Pisang Goreng Keju Aren', unit: 'porsi', price: 20000, cost: 8000, catId: catSnacks.id },
-    { sku: 'CAM-03', name: 'Tahu Cabe Garam Renyah', unit: 'porsi', price: 18000, cost: 7000, catId: catSnacks.id },
-    { sku: 'CAM-04', name: 'Cireng Krispi Bumbu Rujak', unit: 'porsi', price: 16000, cost: 6000, catId: catSnacks.id },
-    { sku: 'CAM-05', name: 'Platter Sosis & Nugget', unit: 'porsi', price: 28000, cost: 12500, catId: catSnacks.id },
-    { sku: 'CAM-06', name: 'Singkong Keju Merekah', unit: 'porsi', price: 17000, cost: 6500, catId: catSnacks.id },
-    { sku: 'CAM-07', name: 'Nachos Saus Keju Daging', unit: 'porsi', price: 32000, cost: 14000, catId: catSnacks.id },
-    { sku: 'CAM-08', name: 'Churros Gula Kayu Manis', unit: 'porsi', price: 22000, cost: 9000, catId: catSnacks.id },
+    // Camilan (2 produk)
+    { sku: 'CAM-01', name: 'Kentang Goreng Truffle', unit: 'porsi', price: 24000, cost: 10000, catId: catSnacks.id, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'CAM-02', name: 'Pisang Goreng Keju Aren', unit: 'porsi', price: 20000, cost: 8000, catId: catSnacks.id, img: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=500&q=80' },
   ];
 
   const createdProducts = [];
@@ -235,24 +162,21 @@ export async function main() {
         unit: p.unit,
         price_idr: p.price,
         cost_idr: p.cost,
+        image_url: p.img,
         category_id: p.catId,
-        created_by: owner.id,
       },
     });
     createdProducts.push(prod);
   }
 
-  // 6. INVENTORY PER OUTLET
-  console.log('📦 Mengisi data inventaris per outlet...');
+  // 5. INVENTARIS PER OUTLET (10 produk x 4 outlet = 40 baris)
+  console.log('📦 Mengisi stok inventaris per outlet...');
   for (const outlet of outlets) {
     for (let i = 0; i < createdProducts.length; i++) {
       const prod = createdProducts[i];
-      // Tentukan stok variatif (beberapa low stock di outlet Jogja untuk trigger demo low-stock alert)
-      let initialQty = 45;
-      if (outlet.id === outletJogja.id && i === 0) initialQty = 12; // Es Kopi Susu (Low stock trigger!)
-      if (outlet.id === outletJogja.id && i === 3) initialQty = 3;  // Vanilla Latte (Critical!)
-      if (outlet.id === outletJogja.id && i === 6) initialQty = 0;  // Out of stock
-      if (outlet.id === outletSolo.id && i === 15) initialQty = 50; // Cokelat Panas slow-moving
+      let initialQty = 30;
+      if (outlet.id === outletJogja.id && i === 0) initialQty = 4; // Low stock trigger untuk demo!
+      if (outlet.id === outletJogja.id && i === 3) initialQty = 0; // Out of stock
 
       await prisma.inventory.create({
         data: {
@@ -271,42 +195,21 @@ export async function main() {
           movement_type: MovementType.restock,
           quantity_delta: initialQty,
           quantity_after: initialQty,
-          note: 'Stok awal seeding sistem',
+          note: 'Stok awal sistem',
           created_by: owner.id,
         },
       });
     }
   }
 
-  // 7. GAME SCENARIOS
-  console.log('🎮 Mengisi 12 Skenario Mini Game...');
-  const scenariosPath = path.join(__dirname, 'game_scenarios.json');
-  if (fs.existsSync(scenariosPath)) {
-    const scenariosData = JSON.parse(fs.readFileSync(scenariosPath, 'utf-8'));
-    for (const sc of scenariosData) {
-      await prisma.gameScenario.create({
-        data: {
-          code: sc.code,
-          difficulty: sc.difficulty,
-          title: sc.title,
-          situation: sc.situation,
-          choices: sc.choices,
-          scoring: sc.scoring,
-          explanation: sc.explanation,
-        },
-      });
-    }
-  }
-
-  // 8. GENERATE 90 DAYS OF TRANSACTIONS & INTEGRITY CHAIN
-  console.log('📊 Menghasilkan 90 hari data transaksi historis untuk analitik...');
+  // 6. 10 HARI TRANSAKSI HISTORIS (~120 TRANSAKSI DENGAN BLOCKCHAIN)
+  console.log('📊 Menghasilkan 10 hari transaksi (~120 transaksi)...');
   const paymentMethods = [PaymentMethod.cash, PaymentMethod.qris_simulated, PaymentMethod.card_simulated];
 
-  // Simpan tracking chain hash per outlet
-  const outletChainState: Record<string, { blockIndex: bigint; prevHash: string }> = {};
+  const outletChainState: Record<string, { blockIndex: number; prevHash: string }> = {};
   for (const outlet of outlets) {
     outletChainState[outlet.id] = {
-      blockIndex: BigInt(0),
+      blockIndex: 0,
       prevHash: '0'.repeat(64),
     };
   }
@@ -314,54 +217,32 @@ export async function main() {
   let txnSeq = 1;
   const now = new Date();
 
-  // Loop 90 hari ke belakang
-  for (let dayOffset = 90; dayOffset >= 0; dayOffset--) {
+  // 10 hari ke belakang (10 x 4 outlet x 3 transaksi = 120 transaksi)
+  for (let dayOffset = 9; dayOffset >= 0; dayOffset--) {
     const txnDate = new Date(now.getTime() - dayOffset * 24 * 60 * 60 * 1000);
     const dateStr = txnDate.toISOString().slice(0, 10).replace(/-/g, '');
 
     for (const outlet of outlets) {
-      // Outlet Jogja dan Bali lebih ramai dibanding Solo dan London
-      const txnCount = outlet.id === outletJogja.id ? 8 : (outlet.id === outletBali.id ? 7 : 4);
-
-      for (let t = 0; t < txnCount; t++) {
-        // Atur jam transaksi antara 09:00 - 21:00
-        const hour = 9 + Math.floor(Math.random() * 12);
-        const minute = Math.floor(Math.random() * 60);
+      // 3 transaksi per outlet per hari = 12 transaksi per hari = 120 total
+      for (let t = 0; t < 3; t++) {
+        const hour = 10 + t * 4; // 10:00, 14:00, 18:00
         const currentTxnTime = new Date(txnDate);
-        currentTxnTime.setHours(hour, minute, 0, 0);
+        currentTxnTime.setHours(hour, 15, 0, 0);
 
         const outletCode = outlet.name.substring(5, 8).toUpperCase();
-        const receiptNo = `TRX-${outletCode}-${dateStr}-${String(txnSeq++).padStart(4, '0')}`;
+        const receiptNo = `TXN-${outletCode}-${dateStr}-${String(txnSeq++).padStart(4, '0')}`;
         const clientReqId = crypto.randomUUID();
 
-        // Pilih 1 - 3 produk
-        const itemCount = 1 + Math.floor(Math.random() * 3);
-        const itemsToBuy = [];
-        let subtotal = 0;
-
-        for (let i = 0; i < itemCount; i++) {
-          const product = createdProducts[(t + i * 7) % createdProducts.length];
-          const qty = 1 + (t % 3);
-          const lineTotal = product.price_idr * qty;
-          subtotal += lineTotal;
-
-          itemsToBuy.push({
-            product_id: product.id,
-            product_name_snapshot: product.name,
-            unit_price_idr: product.price_idr,
-            unit_cost_idr: product.cost_idr,
-            quantity: qty,
-            line_total_idr: lineTotal,
-          });
-        }
-
-        const discount = subtotal > 50000 && t % 4 === 0 ? 5000 : 0;
-        const total = subtotal - discount;
+        // 1-2 item per transaksi
+        const product = createdProducts[(dayOffset * 3 + t) % createdProducts.length];
+        const qty = 1 + (t % 2);
+        const subtotal = product.price_idr * qty;
+        const discount = 0;
+        const total = subtotal;
         const method = paymentMethods[t % paymentMethods.length];
-        const paid = method === PaymentMethod.cash ? Math.ceil(total / 10000) * 10000 + (t % 2 === 0 ? 10000 : 0) : total;
+        const paid = method === PaymentMethod.cash ? Math.ceil(total / 10000) * 10000 : total;
         const change = paid - total;
 
-        // Simpan Transaksi
         const transaction = await prisma.transaction.create({
           data: {
             receipt_no: receiptNo,
@@ -374,30 +255,38 @@ export async function main() {
             payment_method: method,
             paid_idr: paid,
             change_idr: change,
-            status: TransactionStatus.completed,
+            status: TxnStatus.completed,
             created_at: currentTxnTime,
             items: {
-              create: itemsToBuy,
+              create: [
+                {
+                  product_id: product.id,
+                  product_name_snapshot: product.name,
+                  unit_price_idr: product.price_idr,
+                  unit_cost_idr: product.cost_idr,
+                  quantity: qty,
+                  line_total_idr: subtotal,
+                },
+              ],
             },
           },
         });
 
-        // Simpan Blockchain Record (Integrity Chain per Outlet - SRS Section 11)
+        // Blockchain SHA-256
         const chainState = outletChainState[outlet.id];
-        chainState.blockIndex += BigInt(1);
+        chainState.blockIndex += 1;
 
-        // Canonical JSON Hash (SRS 11.2)
         const canonicalData = {
           cashier_id: staff.id,
           created_at: currentTxnTime.toISOString(),
           discount_idr: discount,
           id: transaction.id,
-          items: itemsToBuy.map(it => ({
-            line_total_idr: it.line_total_idr,
-            product_id: it.product_id,
-            quantity: it.quantity,
-            unit_price_idr: it.unit_price_idr,
-          })).sort((a, b) => a.product_id.localeCompare(b.product_id)),
+          items: [{
+            line_total_idr: subtotal,
+            product_id: product.id,
+            quantity: qty,
+            unit_price_idr: product.price_idr,
+          }],
           outlet_id: outlet.id,
           payment_method: method,
           receipt_no: receiptNo,
@@ -407,14 +296,13 @@ export async function main() {
 
         const canonicalJsonStr = JSON.stringify(canonicalData);
         const dataHash = sha256(canonicalJsonStr);
-        const blockHash = sha256(`${chainState.blockIndex}${chainState.prevHash}${dataHash}${currentTxnTime.toISOString()}`);
+        const blockHash = sha256(`${outlet.id}${chainState.blockIndex}${dataHash}${chainState.prevHash}`);
 
         await prisma.blockchainRecord.create({
           data: {
-            chain_id: outlet.id,
+            outlet_id: outlet.id,
             block_index: chainState.blockIndex,
-            record_type: RecordType.transaction,
-            record_id: transaction.id,
+            transaction_id: transaction.id,
             data_hash: dataHash,
             prev_hash: chainState.prevHash,
             block_hash: blockHash,
@@ -427,15 +315,45 @@ export async function main() {
     }
   }
 
-  console.log('✅ Seeding database ARUS selesai dengan sukses!');
-  console.log(`- Users: ${await prisma.user.count()} (owner, manager, staff)`);
-  console.log(`- Outlets: ${await prisma.outlet.count()} (Jogja, Solo, Bali, London)`);
+  // 7. FEEDBACK PAM & SAMPLE GAME SESSIONS
+  console.log('💬 Mengisi feedback PAM & sample game session...');
+  await prisma.feedback.create({
+    data: {
+      user_id: staff.id,
+      kesan: 'Mata kuliah PAM sangat bermanfaat, materi Flutter dan arsitektur REST API-nya aplikatif untuk dunia kerja.',
+      saran: 'Semoga praktikum ke depannya tetap fokus pada arsitektur bersih dan teknologi modern seperti Riverpod & Prisma.',
+    },
+  });
+
+  await prisma.gameSession.createMany({
+    data: [
+      {
+        user_id: staff.id,
+        mode: GameMode.guess_name,
+        score: 850,
+        correct_count: 5,
+        total_questions: 5,
+        duration_sec: 25,
+      },
+      {
+        user_id: manager.id,
+        mode: GameMode.guess_price,
+        score: 720,
+        correct_count: 4,
+        total_questions: 5,
+        duration_sec: 32,
+      },
+    ],
+  });
+
+  console.log('✨ SEEDING SUPER CEPAT SELESAI!');
+  console.log(`- Users: ${await prisma.user.count()}`);
+  console.log(`- Outlets: ${await prisma.outlet.count()}`);
   console.log(`- Kategori: ${await prisma.productCategory.count()}`);
   console.log(`- Produk: ${await prisma.product.count()} item`);
   console.log(`- Inventaris: ${await prisma.inventory.count()} baris`);
-  console.log(`- Transaksi Historis: ${await prisma.transaction.count()} transaksi`);
-  console.log(`- Blockchain Blocks: ${await prisma.blockchainRecord.count()} blocks terverifikasi`);
-  console.log(`- Game Skenario: ${await prisma.gameScenario.count()} skenario`);
+  console.log(`- Transaksi: ${await prisma.transaction.count()} transaksi (10 hari)`);
+  console.log(`- Blockchain: ${await prisma.blockchainRecord.count()} blocks`);
 }
 
 main()

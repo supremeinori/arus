@@ -39,12 +39,25 @@ class DashboardScreen extends ConsumerWidget {
     });
 
     final user = ref.watch(authProvider).user;
-    final isOwnerOrManager = user?.role == UserRole.owner || user?.role == UserRole.manager;
+    final isOwner = user?.role == UserRole.owner;
+    final isManager = user?.role == UserRole.manager;
+    final outlets = user?.outlets ?? const <OutletSummary>[];
+
+    // Manager terkunci pada cabangnya sendiri. Owner bebas memilih,
+    // termasuk "Semua Cabang" yang diwakili nilai null.
+    _lockOutletForNonOwner(ref, isOwner, outlets);
+
+    final selectedOutletId = ref.watch(selectedOutletFilterProvider);
     final overviewAsync = ref.watch(analyticsOverviewProvider);
     final trendAsync = ref.watch(salesTrendProvider);
     final shiftAsync = ref.watch(shiftSummaryProvider);
     final stockAsync = ref.watch(inventoryListProvider);
     final unreadCount = ref.watch(unreadNotificationCountProvider);
+
+    // Judul KPI: owner mengikuti chip, manager selalu cabangnya.
+    final selectedOutletName = isOwner
+        ? (selectedOutletId == null ? 'Semua Cabang' : _outletName(outlets, selectedOutletId))
+        : (outlets.isNotEmpty ? outlets.first.name : 'Cabang Anda');
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
@@ -82,10 +95,25 @@ class DashboardScreen extends ConsumerWidget {
             shiftAsync.when(
               loading: _loadingBox,
               error: (e, _) => _buildErrorBox('Gagal memuat ringkasan hari ini: $e'),
-              data: (shift) => _buildTodayCard(shift, isOwnerOrManager),
+              data: (shift) => _buildTodayCard(shift, isOwner || isManager),
             ),
 
-            // 2. Perlu tindakan
+            // 2. Pemilih cabang: hanya owner
+            if (isOwner) ...[
+              _buildSectionTitle('Pilih Cabang'),
+              _buildOutletSelector(ref, outlets, selectedOutletId),
+            ],
+
+            // 3. Ringkasan KPI
+            _buildSectionTitle('KPI · $selectedOutletName'),
+            if (isManager) _buildManagedOutletBadge(outlets),
+            overviewAsync.when(
+              loading: _loadingBox,
+              error: (e, _) => _buildErrorBox('Gagal memuat KPI: $e'),
+              data: (kpi) => _buildKpiGrid(kpi, showMargin: isOwner || isManager),
+            ),
+
+            // 4. Perlu tindakan
             _buildSectionTitle('Perlu Perhatian'),
             stockAsync.when(
               loading: _loadingBox,
@@ -93,15 +121,7 @@ class DashboardScreen extends ConsumerWidget {
               data: (items) => _buildAttentionList(items),
             ),
 
-            // 3. KPI periode
-            _buildSectionTitle('Ringkasan KPI'),
-            overviewAsync.when(
-              loading: _loadingBox,
-              error: (e, _) => _buildErrorBox('Gagal memuat KPI: $e'),
-              data: (kpi) => _buildKpiGrid(kpi, isOwnerOrManager),
-            ),
-
-            // 4. Tren
+            // 5. Tren
             _buildSectionTitle('Tren Omset 7 Hari'),
             trendAsync.when(
               loading: () => const SizedBox(height: 180, child: Center(child: CircularProgressIndicator(color: AppTheme.primaryToska))),
@@ -112,6 +132,28 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Cari nama cabang berdasarkan id, tanpa bergantung pada package tambahan.
+  String _outletName(List<OutletSummary> outlets, String? id) {
+    for (final o in outlets) {
+      if (o.id == id) return o.name;
+    }
+    return 'Cabang Terpilih';
+  }
+
+  /// Manager dan staff tidak boleh memilih cabang. Filter diarahkan ke
+  /// outlet pertama. Dijalankan setelah frame agar tidak mengubah state
+  /// saat widget sedang dibangun.
+  void _lockOutletForNonOwner(WidgetRef ref, bool isOwner, List<OutletSummary> outlets) {
+    if (isOwner || outlets.isEmpty) return;
+
+    final expected = outlets.first.id;
+    if (ref.read(selectedOutletFilterProvider) == expected) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(selectedOutletFilterProvider.notifier).state = expected;
+    });
   }
 
   void _refreshAll(WidgetRef ref) {
@@ -145,8 +187,147 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  /// Kartu pemilih cabang untuk owner.
+  /// Mengubah selectedOutletFilterProvider, sehingga KPI, tren, dan
+  /// ringkasan hari ini ikut menyesuaikan tanpa provider baru.
+  Widget _buildOutletSelector(WidgetRef ref, List<OutletSummary> outlets, String? selectedId) {
+    if (outlets.isEmpty) {
+      return _buildCardBox(
+        child: Text(
+          'Belum ada cabang yang terhubung ke akun ini.',
+          style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMuted),
+        ),
+      );
+    }
+
+    return _buildCardBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppTheme.lightToskaBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.primaryToska.withValues(alpha: 0.25)),
+                ),
+                child: const Icon(Icons.storefront_outlined, color: AppTheme.primaryToska, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Lihat data ${outlets.length} cabang',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.accentBlack),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildOutletChip(
+                label: 'Semua Cabang',
+                selected: selectedId == null,
+                onTap: () => ref.read(selectedOutletFilterProvider.notifier).state = null,
+              ),
+              for (final o in outlets)
+                _buildOutletChip(
+                  label: o.name,
+                  selected: selectedId == o.id,
+                  onTap: () => ref.read(selectedOutletFilterProvider.notifier).state = o.id,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOutletChip({required String label, required bool selected, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.primaryToska : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: selected ? AppTheme.primaryToska : AppTheme.borderOutline),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[
+                  const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: GoogleFonts.lexend(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Penanda cabang untuk manager. Tanpa tombol, karena cabangnya sudah tetap.
+  Widget _buildManagedOutletBadge(List<OutletSummary> outlets) {
+    final name = outlets.isNotEmpty ? outlets.first.name : 'Cabang belum terhubung';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.lightToskaBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.primaryToska.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryToska,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.store_mall_directory_outlined, color: Colors.white, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Cabang yang Anda urus', style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMuted)),
+                Text(
+                  name,
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.darkToska),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Omzet hari ini dengan pembagian tunai dan QRIS.
-  Widget _buildTodayCard(ShiftSummaryModel shift, bool isOwnerOrManager) {
+  Widget _buildTodayCard(ShiftSummaryModel shift, bool showBreakdown) {
     final total = shift.todayRevenueIdr;
     final cashShare = total > 0 ? (shift.cashRevenueIdr / total).clamp(0.0, 1.0).toDouble() : 0.0;
 
@@ -177,7 +358,7 @@ class DashboardScreen extends ConsumerWidget {
               _pill('${shift.transactionCount} transaksi'),
             ],
           ),
-          if (isOwnerOrManager) ...[
+          if (showBreakdown) ...[
             const SizedBox(height: 14),
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
@@ -217,7 +398,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Daftar stok yang menipis, maksimal tiga baris. Ketuk untuk membuka inventaris.
+  /// Daftar stok yang menipis, maksimal tiga baris.
   Widget _buildAttentionList(List<InventoryStockItem> items) {
     final low = items.where((i) => i.isLowStock).toList()
       ..sort((a, b) => a.quantity.compareTo(b.quantity));
@@ -239,71 +420,71 @@ class DashboardScreen extends ConsumerWidget {
       );
     }
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.borderOutline),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.warning_amber_rounded, color: AppTheme.dangerRed, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${low.length} produk stok menipis',
-                        style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
-                  ],
+    return _buildCardBox(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                for (final item in low.take(3)) ...[
-                  const Divider(height: 20, color: AppTheme.borderOutline),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.productName,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Text(
-                        '${item.quantity} / min ${item.reorderLevel} ${item.unit}',
-                        style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.dangerRed, fontWeight: FontWeight.w700),
-                      ),
-                    ],
+                child: const Icon(Icons.warning_amber_rounded, color: AppTheme.dangerRed, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '${low.length} produk stok menipis',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+            ],
+          ),
+          for (final item in low.take(3)) ...[
+            const Divider(height: 20, color: AppTheme.borderOutline),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.productName,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600),
                   ),
-                ],
+                ),
+                Text(
+                  '${item.quantity} / min ${item.reorderLevel} ${item.unit}',
+                  style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.dangerRed, fontWeight: FontWeight.w700),
+                ),
               ],
             ),
-          ),
-        ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildKpiGrid(AnalyticsOverviewModel kpi, bool isOwnerOrManager) {
-    final showMargin = isOwnerOrManager && kpi.grossProfitIdr != null;
+  /// Empat kartu KPI. Kartu keempat adalah Laba Kotor untuk owner dan
+  /// manager (bila datanya tersedia), dan Diskon untuk peran lain.
+  Widget _buildKpiGrid(AnalyticsOverviewModel kpi, {required bool showMargin}) {
+    final hasMargin = showMargin && kpi.grossProfitIdr != null;
+
+    final Widget fourthCard = hasMargin
+        ? _buildMetricCard(
+            title: 'Laba Kotor (${kpi.grossMarginPct ?? 0}%)',
+            value: kpi.formattedGrossProfit,
+            icon: Icons.trending_up_rounded,
+            accent: true,
+          )
+        : _buildMetricCard(
+            title: 'Diskon',
+            value: _rupiah.format(kpi.discountIdr),
+            icon: Icons.sell_outlined,
+          );
+
     return Column(
       children: [
         Row(
@@ -337,20 +518,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Expanded(
-              child: showMargin
-                  ? _buildMetricCard(
-                      title: 'Laba Kotor (${kpi.grossMarginPct ?? 0}%)',
-                      value: kpi.formattedGrossProfit,
-                      icon: Icons.trending_up_rounded,
-                      accent: true,
-                    )
-                  : _buildMetricCard(
-                      title: 'Diskon',
-                      value: _rupiah.format(kpi.discountIdr),
-                      icon: Icons.sell_outlined,
-                    ),
-            ),
+            Expanded(child: fourthCard),
           ],
         ),
       ],

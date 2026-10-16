@@ -284,15 +284,23 @@ export class InventoryService {
             created_by: userId,
           },
           include: {
-            product: { select: { sku: true, name: true, unit: true } },
-            outlet: { select: { id: true, name: true } },
+            inventory: {
+              include: {
+                product: { select: { sku: true, name: true, unit: true } },
+                outlet: { select: { id: true, name: true } },
+              },
+            },
             creator: { select: { id: true, name: true, role: true } },
           },
         });
 
         return {
           inventory: updatedInventory,
-          movement,
+          movement: {
+            ...movement,
+            product: movement.inventory.product,
+            outlet: movement.inventory.outlet,
+          },
         };
       });
     } catch (err: any) {
@@ -363,8 +371,12 @@ export class InventoryService {
         take: pageSize,
         orderBy: { created_at: 'desc' },
         include: {
-          product: { select: { id: true, sku: true, name: true, unit: true } },
-          outlet: { select: { id: true, name: true } },
+          inventory: {
+            include: {
+              product: { select: { id: true, sku: true, name: true, unit: true } },
+              outlet: { select: { id: true, name: true } },
+            },
+          },
           creator: { select: { id: true, name: true, role: true } },
           transaction: { select: { id: true, receipt_no: true } },
         },
@@ -372,7 +384,11 @@ export class InventoryService {
     ]);
 
     return {
-      movements,
+      movements: movements.map((m) => ({
+        ...m,
+        product: m.inventory.product,
+        outlet: m.inventory.outlet,
+      })),
       meta: {
         page,
         page_size: pageSize,
