@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
-import { integrityService } from '../integrity/integrity.service';
+import { integrityService } from '../integrity/blockchain.service';
 
 export function toValidUuid(val: string): string {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -282,71 +282,35 @@ export class TransactionsService {
         }
       }
 
-      // 5. Anchor ke Rantai Blok SHA-256 (Blockchain Record)
-      const lastBlock = await tx.blockchainRecord.findFirst({
-        where: { outlet_id: targetOutletId },
-        orderBy: { block_index: 'desc' },
-      });
-
-      const blockIndex = (lastBlock?.block_index ?? 0) + 1;
-      const prevHash = lastBlock?.block_hash ?? '0'.repeat(64);
-
-      const canonicalData = {
-        cashier_id: targetCashierId,
-        created_at: newTransaction.created_at.toISOString(),
-        discount_idr: newTransaction.discount_idr,
-        id: newTransaction.id,
-        items: preparedItems.map((it) => ({
-          line_total_idr: it.line_total_idr,
-          product_id: it.product_id,
-          quantity: it.quantity,
-          unit_price_idr: it.unit_price_idr,
-        })),
-        outlet_id: newTransaction.outlet_id,
-        payment_method: newTransaction.payment_method,
-        receipt_no: newTransaction.receipt_no,
-        subtotal_idr: newTransaction.subtotal_idr,
-        total_idr: newTransaction.total_idr,
-      };
-
-      const dataHash = crypto.createHash('sha256').update(JSON.stringify(canonicalData)).digest('hex');
-      const blockHash = crypto.createHash('sha256').update(`${targetOutletId}${blockIndex}${dataHash}${prevHash}`).digest('hex');
-
-      await tx.blockchainRecord.create({
-        data: {
-          outlet_id: targetOutletId,
+      await integrityService.appendEvent(tx, targetOutletId, {
+        eventId: `sale:${newTransaction.id}`,
+        eventType: 'sale',
+        transactionId: newTransaction.id,
+        eventData: {
           transaction_id: newTransaction.id,
-          block_index: blockIndex,
-          data_hash: dataHash,
-          prev_hash: prevHash,
-          block_hash: blockHash,
+          receipt_no: newTransaction.receipt_no,
+          outlet_id: newTransaction.outlet_id,
+          cashier_id: targetCashierId,
+          subtotal_idr: newTransaction.subtotal_idr,
+          discount_idr: newTransaction.discount_idr,
+          total_idr: newTransaction.total_idr,
+          payment_method: newTransaction.payment_method,
+          status: newTransaction.status,
+          items: preparedItems.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name_snapshot,
+            quantity: item.quantity,
+            unit_price_idr: item.unit_price_idr,
+            line_total_idr: item.line_total_idr,
+          })),
         },
-      });
+      }, newTransaction.created_at);
 
       return newTransaction;
     }, {
       maxWait: 10000,
       timeout: 25000,
     });
-
-    // Tambahkan ke rantai lokal hanya setelah transaksi database berhasil commit.
-    integrityService.recordTransaction(
-      committedTransaction.outlet_id,
-      {
-        transactionId: committedTransaction.id,
-        receiptNo: committedTransaction.receipt_no,
-        cashierId: committedTransaction.cashier_id,
-        totalAmount: committedTransaction.total_idr,
-        eventType: 'sale',
-        sourceId: committedTransaction.id,
-        items: committedTransaction.items.map((item) => ({
-          name: item.product_name_snapshot,
-          qty: item.quantity,
-          price: item.unit_price_idr,
-        })),
-      },
-      committedTransaction.created_at.toISOString()
-    );
 
     return committedTransaction;
   }
@@ -458,32 +422,35 @@ export class TransactionsService {
         });
       }
 
+      await integrityService.appendEvent(tx, transaction.outlet_id, {
+        eventId: `void:${transaction.id}`,
+        eventType: 'void_return',
+        transactionId: transaction.id,
+        eventData: {
+          transaction_id: transaction.id,
+          receipt_no: transaction.receipt_no,
+          outlet_id: transaction.outlet_id,
+          voided_by: voidedByUserId,
+          reason: reason.trim(),
+          total_idr: transaction.total_idr,
+          items: transaction.items.map((item) => ({
+            product_id: item.product_id,
+            product_name: item.product_name_snapshot,
+            quantity: item.quantity,
+            unit_price_idr: item.unit_price_idr,
+          })),
+          returned_ingredients: [...ingredientReturns.entries()].map(([ingredientId, quantity]) => ({
+            ingredient_id: ingredientId,
+            quantity,
+          })),
+        },
+      });
+
       return updated;
     }, {
       maxWait: 10000,
       timeout: 25000,
     });
-
-    if (voidedTransaction.outlet_id) {
-      integrityService.recordTransaction(
-        voidedTransaction.outlet_id,
-        {
-          transactionId: `void:${voidedTransaction.id}`,
-          sourceId: voidedTransaction.id,
-          receiptNo: `VOID-${voidedTransaction.receipt_no ?? voidedTransaction.id}`,
-          cashierId: voidedByUserId,
-          totalAmount: voidedTransaction.total_idr ?? 0,
-          eventType: 'void_return',
-          reason: reason.trim(),
-          items: (voidedTransaction.items ?? []).map((item) => ({
-            name: item.product_name_snapshot,
-            qty: item.quantity,
-            price: item.unit_price_idr,
-          })),
-        },
-        new Date().toISOString()
-      );
-    }
 
     return voidedTransaction;
   }

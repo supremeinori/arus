@@ -1,7 +1,7 @@
 import { MovementType, Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
-import { integrityService } from '../integrity/integrity.service';
+import { integrityService } from '../integrity/blockchain.service';
 
 export interface IngredientItem {
   id: string;
@@ -380,6 +380,22 @@ export class InventoryService {
           },
         });
 
+        await integrityService.appendEvent(tx, data.outlet_id, {
+          eventId: `inventory:${movement.id}`,
+          eventType: data.movement_type,
+          eventData: {
+            movement_id: movement.id,
+            ingredient_id: ingredient.id,
+            ingredient_name: ingredient.name,
+            outlet_id: data.outlet_id,
+            movement_type: data.movement_type,
+            quantity_delta: movement.quantity_delta,
+            quantity_after: movement.quantity_after,
+            created_by: userId,
+            note: movement.note,
+          },
+        }, movement.created_at);
+
         return {
           inventory: {
             ...updatedIngredient,
@@ -392,25 +408,6 @@ export class InventoryService {
           movement,
         };
       });
-
-      integrityService.recordTransaction(
-        data.outlet_id,
-        {
-          transactionId: `inventory:${adjustment.movement.id}`,
-          sourceId: adjustment.movement.id,
-          receiptNo: `STOCK-${adjustment.movement.id}`,
-          cashierId: userId,
-          totalAmount: 0,
-          eventType: data.movement_type,
-          ingredientId: adjustment.ingredient.id,
-          ingredientName: adjustment.ingredient.name,
-          quantityDelta: adjustment.movement.quantity_delta,
-          quantityAfter: adjustment.movement.quantity_after,
-          note: adjustment.movement.note,
-          items: [],
-        },
-        adjustment.movement.created_at?.toISOString?.() ?? new Date().toISOString()
-      );
 
       return adjustment;
     } catch (err: any) {

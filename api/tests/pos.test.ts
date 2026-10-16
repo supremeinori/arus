@@ -29,9 +29,11 @@ vi.mock('../src/config/db', () => {
         create: vi.fn(),
       },
       blockchainRecord: {
-        findFirst: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
         create: vi.fn(),
       },
+      $queryRaw: vi.fn().mockResolvedValue([]),
       notification: {
         create: vi.fn(),
       },

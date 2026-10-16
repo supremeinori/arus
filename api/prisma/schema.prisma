@@ -42,37 +42,38 @@ enum GameMode {
 // ==========================================
 
 model User {
-  id            String       @id @default(uuid()) @db.Uuid
-  name          String       @db.VarChar(100)
-  email         String       @unique @db.VarChar(255)
-  password_hash String       @db.Text
-  role          Role         @default(staff)
-  avatar_url    String?      @db.Text
-  is_active     Boolean      @default(true)
-  created_at    DateTime     @default(now()) @db.Timestamptz()
-  updated_at    DateTime     @updatedAt @db.Timestamptz()
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @db.VarChar(100)
+  email         String   @unique @db.VarChar(255)
+  password_hash String   @db.Text
+  role          Role     @default(staff)
+  avatar_url    String?  @db.Text
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz()
+  updated_at    DateTime @updatedAt @db.Timestamptz()
 
-  outlets       UserOutlet[]
-  feedbacks     Feedback[]
-  transactions  Transaction[]
-  movements     InventoryMovement[]
-  notifications Notification[]
-  ai_logs       AiChatLog[]
-  game_sessions GameSession[]
+  outlets        UserOutlet[]
+  feedbacks      Feedback[]
+  transactions   Transaction[]
+  movements      InventoryMovement[]
+  notifications  Notification[]
+  ai_logs        AiChatLog[]
+  game_sessions  GameSession[]
+  refresh_tokens RefreshToken[]
 
   @@map("users")
 }
 
 model Outlet {
-  id         String       @id @default(uuid()) @db.Uuid
-  name       String       @unique @db.VarChar(100)
-  address    String       @db.Text
-  latitude   Decimal      @db.Decimal(9, 6)
-  longitude  Decimal      @db.Decimal(9, 6)
-  timezone   String       @default("Asia/Jakarta") @db.VarChar(40)
-  is_active  Boolean      @default(true)
-  created_at DateTime     @default(now()) @db.Timestamptz()
-  updated_at DateTime     @updatedAt @db.Timestamptz()
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @unique @db.VarChar(100)
+  address    String   @db.Text
+  latitude   Decimal  @db.Decimal(9, 6)
+  longitude  Decimal  @db.Decimal(9, 6)
+  timezone   String   @default("Asia/Jakarta") @db.VarChar(40)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @updatedAt @db.Timestamptz()
 
   users        UserOutlet[]
   ingredients  Ingredient[]
@@ -86,8 +87,8 @@ model UserOutlet {
   user_id   String @db.Uuid
   outlet_id String @db.Uuid
 
-  user      User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  outlet    Outlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  outlet Outlet @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
 
   @@id([user_id, outlet_id])
   @@map("user_outlets")
@@ -100,7 +101,7 @@ model Feedback {
   saran      String   @db.Text
   created_at DateTime @default(now()) @db.Timestamptz()
 
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("feedback")
 }
@@ -110,48 +111,48 @@ model Feedback {
 // ==========================================
 
 model ProductCategory {
-  id         String    @id @default(uuid()) @db.Uuid
-  name       String    @unique @db.VarChar(80)
-  created_at DateTime  @default(now()) @db.Timestamptz()
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @unique @db.VarChar(80)
+  created_at DateTime @default(now()) @db.Timestamptz()
 
-  products   Product[]
+  products Product[]
 
   @@map("product_categories")
 }
 
 // 1. DATABASE MENU / PRODUK JUALAN
 model Product {
-  id          String            @id @default(uuid()) @db.Uuid
-  category_id String?           @db.Uuid
-  sku         String            @unique @db.VarChar(40)
-  name        String            @db.VarChar(120) // Contoh: "Cappuccino", "Americano"
-  image_url   String?           @db.Text         // Foto untuk POS & Mini-Game "Guess the Menu"
+  id          String   @id @default(uuid()) @db.Uuid
+  category_id String?  @db.Uuid
+  sku         String   @unique @db.VarChar(40)
+  name        String   @db.VarChar(120) // Contoh: "Cappuccino", "Americano"
+  image_url   String?  @db.Text // Foto untuk POS & Mini-Game "Guess the Menu"
   price_idr   Int
-  is_active   Boolean           @default(true)
-  created_at  DateTime          @default(now()) @db.Timestamptz()
-  updated_at  DateTime          @updatedAt @db.Timestamptz()
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz()
+  updated_at  DateTime @updatedAt @db.Timestamptz()
 
-  category    ProductCategory?  @relation(fields: [category_id], references: [id])
-  recipes     ProductRecipe[]   // Terhubung erat ke bahan baku lewat resep
-  txn_items   TransactionItem[]
+  category  ProductCategory?  @relation(fields: [category_id], references: [id])
+  recipes   ProductRecipe[] // Terhubung erat ke bahan baku lewat resep
+  txn_items TransactionItem[]
 
   @@map("products")
 }
 
 // 2. DATABASE BAHAN BAKU & STOK PER CABANG
 model Ingredient {
-  id            String              @id @default(uuid()) @db.Uuid
-  outlet_id     String              @db.Uuid
-  name          String              @db.VarChar(100) // Contoh: "Biji Kopi Espresso", "Air Mineral", "Susu UHT"
-  unit          String              @db.VarChar(20)  // Contoh: "gram", "ml", "pcs"
-  stock_qty     Int                 @default(0)      // Tidak boleh minus (>= 0)
-  reorder_level Int                 @default(100)    // Batas peringatan notifikasi stok tipis
-  cost_per_unit Int                 @default(0)      // Harga modal per unit (gram/ml/pcs) dalam IDR
-  updated_at    DateTime            @updatedAt @db.Timestamptz()
+  id            String   @id @default(uuid()) @db.Uuid
+  outlet_id     String   @db.Uuid
+  name          String   @db.VarChar(100) // Contoh: "Biji Kopi Espresso", "Air Mineral", "Susu UHT"
+  unit          String   @db.VarChar(20) // Contoh: "gram", "ml", "pcs"
+  stock_qty     Int      @default(0) // Tidak boleh minus (>= 0)
+  reorder_level Int      @default(100) // Batas peringatan notifikasi stok tipis
+  cost_per_unit Int      @default(0) // Harga modal per unit (gram/ml/pcs) dalam IDR
+  updated_at    DateTime @updatedAt @db.Timestamptz()
 
-  outlet        Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  recipes       ProductRecipe[]
-  movements     InventoryMovement[]
+  outlet    Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  recipes   ProductRecipe[]
+  movements InventoryMovement[]
 
   @@unique([outlet_id, name])
   @@map("ingredients")
@@ -159,13 +160,13 @@ model Ingredient {
 
 // 3. TABEL PENGHUBUNG RESEP (Menu <-> Bahan Baku)
 model ProductRecipe {
-  id            String     @id @default(uuid()) @db.Uuid
-  product_id    String     @db.Uuid
-  ingredient_id String     @db.Uuid
-  amount_needed Int        // Takaran bahan baku untuk membuat 1 porsi menu
+  id            String @id @default(uuid()) @db.Uuid
+  product_id    String @db.Uuid
+  ingredient_id String @db.Uuid
+  amount_needed Int // Takaran bahan baku untuk membuat 1 porsi menu
 
-  product       Product    @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  ingredient    Ingredient @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
 
   @@unique([product_id, ingredient_id])
   @@map("product_recipes")
@@ -177,16 +178,16 @@ model InventoryMovement {
   outlet_id      String       @db.Uuid
   ingredient_id  String       @db.Uuid
   movement_type  MovementType // 'sale', 'void_return', 'restock', 'correction', 'waste'
-  quantity_delta Int          // Bertanda: negatif (-) saat terpakai, positif (+) saat restock
-  quantity_after Int          // Snapshot sisa stok bahan baku setelah perubahan
+  quantity_delta Int // Bertanda: negatif (-) saat terpakai, positif (+) saat restock
+  quantity_after Int // Snapshot sisa stok bahan baku setelah perubahan
   transaction_id String?      @db.Uuid
   note           String?      @db.VarChar(255)
   created_by     String       @db.Uuid
   created_at     DateTime     @default(now()) @db.Timestamptz()
 
-  ingredient     Ingredient   @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
-  transaction    Transaction? @relation(fields: [transaction_id], references: [id])
-  creator        User         @relation(fields: [created_by], references: [id])
+  ingredient  Ingredient   @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transaction_id], references: [id])
+  creator     User         @relation(fields: [created_by], references: [id])
 
   @@index([outlet_id, ingredient_id, created_at])
   @@map("inventory_movements")
@@ -197,60 +198,68 @@ model InventoryMovement {
 // ==========================================
 
 model Transaction {
-  id                String            @id @default(uuid()) @db.Uuid
-  receipt_no        String            @unique @db.VarChar(30)
-  outlet_id         String            @db.Uuid
-  cashier_id        String            @db.Uuid
-  client_request_id String            @unique @db.Uuid
+  id                String        @id @default(uuid()) @db.Uuid
+  receipt_no        String        @unique @db.VarChar(30)
+  outlet_id         String        @db.Uuid
+  cashier_id        String        @db.Uuid
+  client_request_id String        @unique @db.Uuid
   subtotal_idr      Int
-  discount_idr      Int               @default(0)
+  discount_idr      Int           @default(0)
   total_idr         Int
   payment_method    PaymentMethod
   paid_idr          Int
-  change_idr        Int               @default(0)
-  status            TxnStatus         @default(completed)
-  created_at        DateTime          @default(now()) @db.Timestamptz()
+  change_idr        Int           @default(0)
+  status            TxnStatus     @default(completed)
+  created_at        DateTime      @default(now()) @db.Timestamptz()
 
-  outlet            Outlet              @relation(fields: [outlet_id], references: [id])
-  cashier           User                @relation(fields: [cashier_id], references: [id])
-  items             TransactionItem[]
-  movements         InventoryMovement[]
-  blockchain_record BlockchainRecord?
+  outlet             Outlet              @relation(fields: [outlet_id], references: [id])
+  cashier            User                @relation(fields: [cashier_id], references: [id])
+  items              TransactionItem[]
+  movements          InventoryMovement[]
+  blockchain_records BlockchainRecord[]
 
   @@index([outlet_id, created_at])
   @@map("transactions")
 }
 
 model TransactionItem {
-  id                    String      @id @default(uuid()) @db.Uuid
-  transaction_id        String      @db.Uuid
-  product_id            String      @db.Uuid
-  product_name_snapshot String      @db.VarChar(120)
+  id                    String @id @default(uuid()) @db.Uuid
+  transaction_id        String @db.Uuid
+  product_id            String @db.Uuid
+  product_name_snapshot String @db.VarChar(120)
   unit_price_idr        Int
   unit_cost_idr         Int?
   quantity              Int
   line_total_idr        Int
 
-  transaction           Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
-  product               Product     @relation(fields: [product_id], references: [id])
+  transaction Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [product_id], references: [id])
 
   @@map("transaction_items")
 }
 
 model BlockchainRecord {
-  id             String      @id @default(uuid()) @db.Uuid
-  outlet_id      String      @db.Uuid
-  block_index    Int
-  transaction_id String      @unique @db.Uuid
-  data_hash      String      @db.Char(64)
-  prev_hash      String      @db.Char(64)
-  block_hash     String      @db.Char(64)
-  created_at     DateTime    @default(now()) @db.Timestamptz()
+  id                String   @id @default(uuid()) @db.Uuid
+  outlet_id         String   @db.Uuid
+  block_index       Int
+  event_id          String   @unique @default(uuid()) @db.VarChar(120)
+  event_type        String   @default("sale") @db.VarChar(40)
+  transaction_id    String?  @db.Uuid
+  event_data        Json?
+  data_hash         String   @db.Char(64)
+  prev_hash         String   @db.Char(64)
+  block_hash        String   @db.Char(64)
+  backup_event_data Json?
+  backup_data_hash  String?  @db.Char(64)
+  backup_prev_hash  String?  @db.Char(64)
+  backup_block_hash String?  @db.Char(64)
+  created_at        DateTime @default(now()) @db.Timestamptz()
 
-  outlet         Outlet      @relation(fields: [outlet_id], references: [id])
-  transaction    Transaction @relation(fields: [transaction_id], references: [id])
+  outlet      Outlet       @relation(fields: [outlet_id], references: [id])
+  transaction Transaction? @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
 
   @@unique([outlet_id, block_index])
+  @@index([outlet_id, created_at])
   @@map("blockchain_records")
 }
 
@@ -263,7 +272,7 @@ model Notification {
   is_read    Boolean  @default(false)
   created_at DateTime @default(now()) @db.Timestamptz()
 
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -280,7 +289,7 @@ model AiChatLog {
   facts_used  Json
   created_at  DateTime @default(now()) @db.Timestamptz()
 
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("ai_chat_logs")
 }
@@ -295,8 +304,24 @@ model GameSession {
   duration_sec    Int
   played_at       DateTime @default(now()) @db.Timestamptz()
 
-  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, score(sort: Desc)])
   @@map("game_sessions")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  user_id     String    @db.Uuid
+  token_hash  String    @unique @db.VarChar(64)
+  family_id   String    @db.Uuid
+  expires_at  DateTime  @db.Timestamptz()
+  revoked_at  DateTime? @db.Timestamptz()
+  replaced_by String?   @db.VarChar(64)
+  created_at  DateTime  @default(now()) @db.Timestamptz()
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([family_id])
+  @@map("refresh_tokens")
 }

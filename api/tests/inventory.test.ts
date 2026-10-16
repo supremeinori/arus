@@ -30,6 +30,12 @@ vi.mock('../src/config/db', () => {
         findMany: vi.fn(),
         create: vi.fn(),
       },
+      blockchainRecord: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn(),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([]),
       $transaction: vi.fn((callback) => {
         if (typeof callback === 'function') {
           return callback(prisma);
