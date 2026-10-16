@@ -153,9 +153,26 @@ class LocalDatabase {
             cost_idr INTEGER,
             image_url TEXT,
             is_active INTEGER DEFAULT 1,
+            estimated_portions INTEGER DEFAULT 0,
             stock_quantity INTEGER DEFAULT 0,
             raw_json TEXT NOT NULL,
             updated_at TEXT NOT NULL
+          )
+        ''');
+
+        // 3b. Tabel Backup Produk & Estimasi Porsi (SRS Modul 2)
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS backup_products (
+            product_id TEXT,
+            outlet_id TEXT,
+            sku TEXT NOT NULL,
+            name TEXT NOT NULL,
+            image_url TEXT,
+            category_name TEXT,
+            price_idr INTEGER NOT NULL,
+            estimated_portions INTEGER NOT NULL,
+            last_sync_at TEXT NOT NULL,
+            PRIMARY KEY (product_id, outlet_id)
           )
         ''');
 
@@ -278,6 +295,28 @@ class LocalDatabase {
         } catch (_) {}
         try {
           await db.execute('ALTER TABLE local_session_settings ADD COLUMN access_token TEXT');
+        } catch (_) {}
+        try {
+          await db.execute("ALTER TABLE cached_products ADD COLUMN estimated_portions INTEGER DEFAULT 0");
+        } catch (_) {}
+        try {
+          await db.execute('ALTER TABLE cached_products ADD COLUMN image_url TEXT');
+        } catch (_) {}
+        try {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS backup_products (
+              product_id TEXT,
+              outlet_id TEXT,
+              sku TEXT NOT NULL,
+              name TEXT NOT NULL,
+              image_url TEXT,
+              category_name TEXT,
+              price_idr INTEGER NOT NULL,
+              estimated_portions INTEGER NOT NULL,
+              last_sync_at TEXT NOT NULL,
+              PRIMARY KEY (product_id, outlet_id)
+            )
+          ''');
         } catch (_) {}
         try {
           await db.execute('ALTER TABLE local_session_settings ADD COLUMN refresh_token TEXT');
@@ -471,7 +510,10 @@ class LocalDatabase {
     final batch = db.batch();
     final now = DateTime.now().toIso8601String();
     for (final p in products) {
-      final totalStock = p.outletStock.fold<int>(0, (sum, s) => sum + s.quantity);
+      final totalStock = p.estimatedPortions > 0 
+          ? p.estimatedPortions 
+          : p.outletStock.fold<int>(0, (sum, s) => sum + s.quantity);
+
       batch.insert(
         'cached_products',
         {
@@ -485,9 +527,26 @@ class LocalDatabase {
           'cost_idr': p.costIdr,
           'image_url': p.imageUrl,
           'is_active': p.isActive ? 1 : 0,
+          'estimated_portions': p.estimatedPortions,
           'stock_quantity': totalStock,
           'raw_json': jsonEncode(p.toJson()),
           'updated_at': now,
+        },
+        conflictAlgorithm: sql.ConflictAlgorithm.replace,
+      );
+
+      batch.insert(
+        'backup_products',
+        {
+          'product_id': p.id,
+          'outlet_id': 'default',
+          'sku': p.sku,
+          'name': p.name,
+          'image_url': p.imageUrl,
+          'category_name': p.categoryName,
+          'price_idr': p.priceIdr,
+          'estimated_portions': p.estimatedPortions,
+          'last_sync_at': now,
         },
         conflictAlgorithm: sql.ConflictAlgorithm.replace,
       );
@@ -507,7 +566,10 @@ class LocalDatabase {
       return;
     }
 
-    final totalStock = product.outletStock.fold<int>(0, (sum, s) => sum + s.quantity);
+    final totalStock = product.estimatedPortions > 0
+        ? product.estimatedPortions
+        : product.outletStock.fold<int>(0, (sum, s) => sum + s.quantity);
+
     await db.insert(
       'cached_products',
       {
@@ -521,12 +583,31 @@ class LocalDatabase {
         'cost_idr': product.costIdr,
         'image_url': product.imageUrl,
         'is_active': product.isActive ? 1 : 0,
+        'estimated_portions': product.estimatedPortions,
         'stock_quantity': totalStock,
         'raw_json': jsonEncode(product.toJson()),
         'updated_at': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: sql.ConflictAlgorithm.replace,
     );
+
+    try {
+      await db.insert(
+        'backup_products',
+        {
+          'product_id': product.id,
+          'outlet_id': 'default',
+          'sku': product.sku,
+          'name': product.name,
+          'image_url': product.imageUrl,
+          'category_name': product.categoryName,
+          'price_idr': product.priceIdr,
+          'estimated_portions': product.estimatedPortions,
+          'last_sync_at': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: sql.ConflictAlgorithm.replace,
+      );
+    } catch (_) {}
   }
 
   Future<List<ProductModel>> getCachedProducts({String? categoryId, String? search}) async {
@@ -597,9 +678,18 @@ class LocalDatabase {
 
     await db.rawUpdate('''
       UPDATE cached_products 
-      SET stock_quantity = MAX(0, stock_quantity - ?) 
+      SET estimated_portions = MAX(0, estimated_portions - ?),
+          stock_quantity = MAX(0, stock_quantity - ?) 
       WHERE id = ?
-    ''', [quantity, productId]);
+    ''', [quantity, quantity, productId]);
+
+    try {
+      await db.rawUpdate('''
+        UPDATE backup_products
+        SET estimated_portions = MAX(0, estimated_portions - ?)
+        WHERE product_id = ?
+      ''', [quantity, productId]);
+    } catch (_) {}
   }
 
   // ========================================================

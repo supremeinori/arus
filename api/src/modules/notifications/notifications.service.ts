@@ -123,14 +123,39 @@ export class NotificationsService {
     const todayStr = new Date().toISOString().slice(0, 10);
     let triggeredCount = 0;
 
-    // 1. Ambil seluruh stok yang di bawah atau sama dengan reorder_level
-    const lowStocks = await prisma.inventory.findMany({
-      include: {
-        product: { select: { name: true, sku: true, unit: true } },
-        outlet: { select: { name: true } },
-      },
-      take: 10,
-    });
+    // 1. Ambil seluruh stok bahan baku yang di bawah atau sama dengan reorder_level
+    let lowStocks: any[] = [];
+    try {
+      if (prisma.ingredient) {
+        lowStocks = await prisma.ingredient.findMany({
+          include: {
+            outlet: { select: { name: true } },
+          },
+          take: 10,
+        });
+      }
+    } catch (_) {}
+
+    if ((!lowStocks || lowStocks.length === 0) && (prisma as any).inventory) {
+      try {
+        const invStocks = await (prisma as any).inventory.findMany({
+          include: {
+            product: { select: { name: true, sku: true, unit: true } },
+            outlet: { select: { name: true } },
+          },
+          take: 10,
+        });
+        if (invStocks && invStocks.length > 0) {
+          lowStocks = invStocks.map((i: any) => ({
+            name: i.product?.name || i.name,
+            stock_qty: i.quantity ?? i.stock_qty,
+            reorder_level: i.reorder_level,
+            unit: i.product?.unit || i.unit || 'pcs',
+            outlet: i.outlet,
+          }));
+        }
+      } catch (_) {}
+    }
 
     // 2. Ambil seluruh user Owner dan Manager untuk diberi peringatan stok kritis
     const recipients = await prisma.user.findMany({
@@ -142,11 +167,11 @@ export class NotificationsService {
     });
 
     for (const item of lowStocks) {
-      if (item.quantity > item.reorder_level) continue;
+      if (item.stock_qty > item.reorder_level) continue;
 
       for (const user of recipients) {
         const existing = await prisma.notification.findFirst({
-          where: { user_id: user.id, title: { contains: item.product.name } },
+          where: { user_id: user.id, title: { contains: item.name } },
         });
 
         if (!existing) {
@@ -154,8 +179,8 @@ export class NotificationsService {
             data: {
               user_id: user.id,
               type: 'low_stock',
-              title: `Peringatan Stok: ${item.product.name} Menipis`,
-              body: `Sisa stok di ${item.outlet.name} tersisa ${item.quantity} ${item.product.unit} (batas aman minimum: ${item.reorder_level}). Segera lakukan pengadaan.`,
+              title: `Peringatan Stok: ${item.name} Menipis`,
+              body: `Sisa stok di ${item.outlet.name} tersisa ${item.stock_qty} ${item.unit} (batas aman minimum: ${item.reorder_level}). Segera lakukan pengadaan.`,
             },
           });
           triggeredCount++;

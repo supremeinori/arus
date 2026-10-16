@@ -27,8 +27,9 @@ export interface CreateTransactionInput {
 
 export class TransactionsService {
   /**
-   * Membuat transaksi penjualan POS baru.
-   * Dilengkapi proteksi Idempotency (client_request_id), pengurangan stok atomik, dan audit kartu stok.
+   * Membuat transaksi penjualan POS baru berbasis resep dan bahan baku atomik.
+   * Dilengkapi proteksi Idempotency (client_request_id), akumulasi kebutuhan bahan baku gabungan di keranjang,
+   * pemotongan stok bahan baku atomik, dan pencatatan audit kartu stok (inventory_movements).
    */
   async createTransaction(
     cashierId: string,
@@ -132,7 +133,6 @@ export class TransactionsService {
 
     // Jalankan seluruh proses pembuatan transaksi dalam Prisma $transaction
     return prisma.$transaction(async (tx) => {
-      // 2. Validasi produk & stok outlet
       let calculatedSubtotal = 0;
       const preparedItems: Array<{
         product_id: string;
@@ -143,10 +143,9 @@ export class TransactionsService {
         line_total_idr: number;
       }> = [];
 
-      const inventoryUpdates: Array<{
-        product_id: string;
-        new_quantity: number;
-      }> = [];
+      // Map akumulasi kebutuhan bahan baku untuk seluruh keranjang:
+      // ingredientId -> total amount needed
+      const aggregatedIngredientNeeds = new Map<string, number>();
 
       for (const item of data.items) {
         if (item.quantity <= 0) {
@@ -155,28 +154,34 @@ export class TransactionsService {
 
         const product = await tx.product.findUnique({
           where: { id: item.product_id },
+          include: {
+            recipes: {
+              include: {
+                ingredient: true,
+              },
+            },
+          },
         });
 
         if (!product || !product.is_active) {
           throw new AppError('NOT_FOUND', 404, `Produk dengan ID ${item.product_id} tidak aktif atau tidak ditemukan.`);
         }
 
-        const inventory = await tx.inventory.findUnique({
-          where: {
-            outlet_id_product_id: {
-              outlet_id: targetOutletId,
-              product_id: item.product_id,
-            },
-          },
-        });
+        // Filter resep yang berlaku di cabang ini
+        const relevantRecipes = product.recipes.filter(
+          (r) => r.ingredient && r.ingredient.outlet_id === targetOutletId
+        );
 
-        const currentQty = inventory?.quantity ?? 0;
-        if (currentQty < item.quantity) {
-          throw new AppError(
-            'INSUFFICIENT_STOCK',
-            400,
-            `Stok untuk “${product.name}” tidak mencukupi (tersedia: ${currentQty}, diminta: ${item.quantity}).`
-          );
+        // Hitung modal HPP menu dari total modal bahan baku resep
+        const unitCostIdr = relevantRecipes.reduce((sum, r) => {
+          return sum + r.amount_needed * (r.ingredient?.cost_per_unit ?? 0);
+        }, 0);
+
+        // Akumulasikan kebutuhan bahan baku di keranjang
+        for (const recipe of relevantRecipes) {
+          const needed = recipe.amount_needed * item.quantity;
+          const currentTotal = aggregatedIngredientNeeds.get(recipe.ingredient_id) || 0;
+          aggregatedIngredientNeeds.set(recipe.ingredient_id, currentTotal + needed);
         }
 
         const lineTotal = product.price_idr * item.quantity;
@@ -186,14 +191,52 @@ export class TransactionsService {
           product_id: product.id,
           product_name_snapshot: product.name,
           unit_price_idr: product.price_idr,
-          unit_cost_idr: product.cost_idr,
+          unit_cost_idr: unitCostIdr,
           quantity: item.quantity,
           line_total_idr: lineTotal,
         });
+      }
 
-        inventoryUpdates.push({
-          product_id: product.id,
-          new_quantity: currentQty - item.quantity,
+      // Validasi ketersediaan stok bahan baku gabungan (Atomic Check)
+      const ingredientUpdates: Array<{
+        ingredient_id: string;
+        ingredient_name: string;
+        unit: string;
+        old_quantity: number;
+        amount_needed: number;
+        new_quantity: number;
+        reorder_level: number;
+      }> = [];
+
+      for (const [ingredientId, totalAmountNeeded] of aggregatedIngredientNeeds.entries()) {
+        const ingredient = await tx.ingredient.findUnique({
+          where: { id: ingredientId },
+        });
+
+        if (!ingredient || ingredient.outlet_id !== targetOutletId) {
+          throw new AppError(
+            'NOT_FOUND',
+            404,
+            `Bahan baku dengan ID ${ingredientId} tidak ditemukan di cabang ini.`
+          );
+        }
+
+        if (ingredient.stock_qty < totalAmountNeeded) {
+          throw new AppError(
+            'INVENTORY_INSUFFICIENT',
+            409,
+            `Stok bahan baku “${ingredient.name}” tidak mencukupi (tersedia: ${ingredient.stock_qty} ${ingredient.unit}, dibutuhkan total: ${totalAmountNeeded} ${ingredient.unit}). Transaksi dibatalkan.`
+          );
+        }
+
+        ingredientUpdates.push({
+          ingredient_id: ingredient.id,
+          ingredient_name: ingredient.name,
+          unit: ingredient.unit,
+          old_quantity: ingredient.stock_qty,
+          amount_needed: totalAmountNeeded,
+          new_quantity: ingredient.stock_qty - totalAmountNeeded,
+          reorder_level: ingredient.reorder_level,
         });
       }
 
@@ -214,13 +257,13 @@ export class TransactionsService {
       const finalPaid = data.payment_method === PaymentMethod.cash ? paid : total;
       const change = Math.max(0, finalPaid - total);
 
-      // Generate Receipt No: misal ARUS-YYYYMMDD-XXXXX
+      // Generate Receipt No: INV-YYYYMMDD-XXXX
       const today = new Date();
       const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const receiptNo = `INV-${datePart}-${randomSuffix}`;
 
-      // 3. Simpan record Transaction
+      // 3. Simpan record Transaction & Transaction Items
       const newTransaction = await tx.transaction.create({
         data: {
           receipt_no: receiptNo,
@@ -231,7 +274,7 @@ export class TransactionsService {
           discount_idr: discount,
           total_idr: total,
           payment_method: data.payment_method,
-          paid_idr: paid,
+          paid_idr: finalPaid,
           change_idr: change,
           status: TxnStatus.completed,
           items: {
@@ -245,39 +288,49 @@ export class TransactionsService {
         },
       });
 
-      // 4. Update stok inventaris & buat audit pergerakan stok (MovementType.sale)
-      for (const update of inventoryUpdates) {
-        await tx.inventory.upsert({
-          where: {
-            outlet_id_product_id: {
-              outlet_id: targetOutletId,
-              product_id: update.product_id,
-            },
-          },
-          create: {
-            outlet_id: targetOutletId,
-            product_id: update.product_id,
-            quantity: Math.max(0, update.new_quantity),
-            reorder_level: 5,
-          },
-          update: {
-            quantity: Math.max(0, update.new_quantity),
+      // 4. Potong stok bahan baku & catat riwayat mutasi (MovementType.sale)
+      for (const update of ingredientUpdates) {
+        await tx.ingredient.update({
+          where: { id: update.ingredient_id },
+          data: {
+            stock_qty: update.new_quantity,
           },
         });
 
-        const itemDetail = preparedItems.find((p) => p.product_id === update.product_id)!;
         await tx.inventoryMovement.create({
           data: {
             outlet_id: targetOutletId,
-            product_id: update.product_id,
+            ingredient_id: update.ingredient_id,
             movement_type: 'sale',
-            quantity_delta: -itemDetail.quantity,
+            quantity_delta: -update.amount_needed,
             quantity_after: update.new_quantity,
             transaction_id: newTransaction.id,
             note: `Penjualan kasir #${newTransaction.receipt_no}`,
             created_by: targetCashierId,
           },
         });
+
+        // 4b. Jika stok bahan baku turun <= reorder_level, picu notifikasi
+        if (update.new_quantity <= update.reorder_level) {
+          const stakeholders = await tx.user.findMany({
+            where: {
+              is_active: true,
+              role: { in: [Role.owner, Role.manager] },
+            },
+            select: { id: true },
+          });
+
+          for (const u of stakeholders) {
+            await tx.notification.create({
+              data: {
+                user_id: u.id,
+                type: 'low_stock',
+                title: `Peringatan: Stok ${update.ingredient_name} Menipis`,
+                body: `Sisa bahan baku ${update.ingredient_name} di cabang kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`,
+              },
+            });
+          }
+        }
       }
 
       // 5. Anchor ke Rantai Blok SHA-256 (Blockchain Record)
@@ -331,6 +384,7 @@ export class TransactionsService {
   /**
    * Pembatalan Transaksi (Void / Refund).
    * Hanya Owner dan Manager yang memiliki wewenang Void (SRS Section 7 & 17).
+   * Mengembalikan stok bahan baku ke tabel ingredients sesuai takaran resep.
    */
   async voidTransaction(
     transactionId: string,
@@ -361,11 +415,15 @@ export class TransactionsService {
         const diffMs = Date.now() - transaction.created_at.getTime();
         const diffHours = diffMs / (1000 * 60 * 60);
         if (diffHours > 24) {
-          throw new AppError('FORBIDDEN', 403, 'Manager hanya diizinkan membatalkan transaksi maksimal dalam waktu 24 jam.');
+          throw new AppError(
+            'FORBIDDEN',
+            403,
+            'Manager hanya diizinkan membatalkan transaksi maksimal 24 jam setelah transaksi terbit. Silakan hubungi Owner.'
+          );
         }
       }
 
-      // 1. Ubah status transaksi menjadi voided
+      // 1. Update status transaksi menjadi voided
       const updated = await tx.transaction.update({
         where: { id: transactionId },
         data: {
@@ -378,38 +436,50 @@ export class TransactionsService {
         },
       });
 
-      // 2. Kembalikan stok yang sebelumnya terpotong (void_return)
+      // 2. Akumulasikan bahan baku yang harus dikembalikan sesuai resep
+      const ingredientReturns = new Map<string, number>();
+
       for (const item of transaction.items) {
-        const inv = await tx.inventory.findUnique({
-          where: {
-            outlet_id_product_id: {
-              outlet_id: transaction.outlet_id,
-              product_id: item.product_id,
+        const product = await tx.product.findUnique({
+          where: { id: item.product_id },
+          include: {
+            recipes: {
+              where: {
+                ingredient: { outlet_id: transaction.outlet_id },
+              },
             },
           },
         });
 
-        const currentQty = inv?.quantity ?? 0;
-        const newQty = currentQty + item.quantity;
+        for (const recipe of product?.recipes || []) {
+          const returnQty = recipe.amount_needed * item.quantity;
+          const currentTotal = ingredientReturns.get(recipe.ingredient_id) || 0;
+          ingredientReturns.set(recipe.ingredient_id, currentTotal + returnQty);
+        }
+      }
 
-        await tx.inventory.update({
-          where: {
-            outlet_id_product_id: {
-              outlet_id: transaction.outlet_id,
-              product_id: item.product_id,
-            },
-          },
+      // 3. Kembalikan stok ke tabel ingredients dan catat void_return di inventory_movements
+      for (const [ingredientId, returnAmount] of ingredientReturns.entries()) {
+        const ing = await tx.ingredient.findUnique({
+          where: { id: ingredientId },
+        });
+
+        const currentQty = ing?.stock_qty ?? 0;
+        const newQty = currentQty + returnAmount;
+
+        await tx.ingredient.update({
+          where: { id: ingredientId },
           data: {
-            quantity: newQty,
+            stock_qty: newQty,
           },
         });
 
         await tx.inventoryMovement.create({
           data: {
             outlet_id: transaction.outlet_id,
-            product_id: item.product_id,
+            ingredient_id: ingredientId,
             movement_type: 'void_return',
-            quantity_delta: item.quantity,
+            quantity_delta: returnAmount,
             quantity_after: newQty,
             transaction_id: transaction.id,
             note: `Pengembalian Void #${transaction.receipt_no}: ${reason.trim()}`,

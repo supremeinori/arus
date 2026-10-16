@@ -80,7 +80,7 @@ export class OutletsService {
         include: {
           _count: {
             select: {
-              inventory: true,
+              ingredients: true,
               users: true,
             },
           },
@@ -95,7 +95,7 @@ export class OutletsService {
         longitude: Number(o.longitude),
         timezone: o.timezone,
         is_active: o.is_active,
-        inventory_count: o._count.inventory,
+        inventory_count: o._count.ingredients,
         assigned_users_count: o._count.users,
         created_at: o.created_at,
       }));
@@ -152,7 +152,7 @@ export class OutletsService {
         },
         _count: {
           select: {
-            inventory: true,
+            ingredients: true,
             transactions: true,
           },
         },
@@ -172,7 +172,7 @@ export class OutletsService {
       timezone: outlet.timezone,
       is_active: outlet.is_active,
       assigned_staff: outlet.users.map((uo) => uo.user),
-      inventory_count: outlet._count.inventory,
+      inventory_count: outlet._count.ingredients,
       transaction_count: outlet._count.transactions,
       created_at: outlet.created_at,
     };
@@ -278,8 +278,8 @@ export class OutletsService {
     const outlets = await prisma.outlet.findMany({
       where: { is_active: true },
       include: {
-        inventory: {
-          select: { quantity: true, reorder_level: true },
+        ingredients: {
+          select: { stock_qty: true, reorder_level: true },
         },
       },
     });
@@ -304,7 +304,7 @@ export class OutletsService {
       const txCount = txAgg._count.id || 0;
 
       // Hitung stok menipis
-      const lowStockCount = o.inventory.filter((inv) => inv.quantity <= inv.reorder_level).length;
+      const lowStockCount = (o.ingredients || []).filter((inv) => inv.stock_qty <= inv.reorder_level).length;
 
       // Pewarnaan status performa (Optimal: green, Warning: amber, Critical: red)
       let performanceStatus: 'optimal' | 'warning' | 'critical' = 'optimal';

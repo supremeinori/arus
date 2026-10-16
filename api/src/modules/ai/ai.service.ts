@@ -352,13 +352,13 @@ ${JSON.stringify(facts, null, 2)}`;
       );
       facts.push({
         type: 'low_stock_items',
-        title: 'Daftar Produk Stok Menipis',
-        value: stockRes.stocks.map((s) => ({
-          product_name: s.product_name,
-          quantity: s.quantity,
+        title: 'Daftar Bahan Baku Stok Menipis',
+        value: (stockRes.ingredients || stockRes.stocks || []).map((s: any) => ({
+          product_name: s.name || s.product_name,
+          quantity: s.stock_qty ?? s.quantity,
           unit: s.unit,
           reorder_level: s.reorder_level,
-          outlet_name: s.outlet_name,
+          outlet_name: s.outlet?.name || s.outlet_name,
         })),
       });
     }

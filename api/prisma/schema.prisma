@@ -75,7 +75,7 @@ model Outlet {
   updated_at DateTime     @updatedAt @db.Timestamptz()
 
   users        UserOutlet[]
-  inventory    Inventory[]
+  ingredients  Ingredient[]
   transactions Transaction[]
   blocks       BlockchainRecord[]
 
@@ -119,59 +119,76 @@ model ProductCategory {
   @@map("product_categories")
 }
 
+// 1. DATABASE MENU / PRODUK JUALAN
 model Product {
-  id          String           @id @default(uuid()) @db.Uuid
-  category_id String?          @db.Uuid
-  sku         String           @unique @db.VarChar(40)
-  name        String           @db.VarChar(120)
-  image_url   String?          @db.Text // Digunakan untuk Katalog POS & Mini-Game "Guess the Menu"
-  unit        String           @default("pcs") @db.VarChar(20)
+  id          String            @id @default(uuid()) @db.Uuid
+  category_id String?           @db.Uuid
+  sku         String            @unique @db.VarChar(40)
+  name        String            @db.VarChar(120) // Contoh: "Cappuccino", "Americano"
+  image_url   String?           @db.Text         // Foto untuk POS & Mini-Game "Guess the Menu"
   price_idr   Int
-  cost_idr    Int?
-  is_active   Boolean          @default(true)
-  created_at  DateTime         @default(now()) @db.Timestamptz()
-  updated_at  DateTime         @updatedAt @db.Timestamptz()
+  is_active   Boolean           @default(true)
+  created_at  DateTime          @default(now()) @db.Timestamptz()
+  updated_at  DateTime          @updatedAt @db.Timestamptz()
 
   category    ProductCategory?  @relation(fields: [category_id], references: [id])
-  inventory   Inventory[]
+  recipes     ProductRecipe[]   // Terhubung erat ke bahan baku lewat resep
   txn_items   TransactionItem[]
 
   @@map("products")
 }
 
-model Inventory {
-  outlet_id          String   @db.Uuid
-  product_id         String   @db.Uuid
-  quantity           Int      @default(0)
-  reorder_level      Int      @default(5)
-  avg_lead_time_days Int      @default(3)
-  updated_at         DateTime @updatedAt @db.Timestamptz()
+// 2. DATABASE BAHAN BAKU & STOK PER CABANG
+model Ingredient {
+  id            String              @id @default(uuid()) @db.Uuid
+  outlet_id     String              @db.Uuid
+  name          String              @db.VarChar(100) // Contoh: "Biji Kopi Espresso", "Air Mineral", "Susu UHT"
+  unit          String              @db.VarChar(20)  // Contoh: "gram", "ml", "pcs"
+  stock_qty     Int                 @default(0)      // Tidak boleh minus (>= 0)
+  reorder_level Int                 @default(100)    // Batas peringatan notifikasi stok tipis
+  cost_per_unit Int                 @default(0)      // Harga modal per unit (gram/ml/pcs) dalam IDR
+  updated_at    DateTime            @updatedAt @db.Timestamptz()
 
-  outlet             Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  product            Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  movements          InventoryMovement[]
+  outlet        Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  recipes       ProductRecipe[]
+  movements     InventoryMovement[]
 
-  @@id([outlet_id, product_id])
-  @@map("inventory")
+  @@unique([outlet_id, name])
+  @@map("ingredients")
 }
 
+// 3. TABEL PENGHUBUNG RESEP (Menu <-> Bahan Baku)
+model ProductRecipe {
+  id            String     @id @default(uuid()) @db.Uuid
+  product_id    String     @db.Uuid
+  ingredient_id String     @db.Uuid
+  amount_needed Int        // Takaran bahan baku untuk membuat 1 porsi menu
+
+  product       Product    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  ingredient    Ingredient @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, ingredient_id])
+  @@map("product_recipes")
+}
+
+// 4. TABEL RIWAYAT MUTASI BAHAN BAKU (Untuk Analisis Bisnis & Audit)
 model InventoryMovement {
   id             String       @id @default(uuid()) @db.Uuid
   outlet_id      String       @db.Uuid
-  product_id     String       @db.Uuid
-  movement_type  MovementType
-  quantity_delta Int
-  quantity_after Int
+  ingredient_id  String       @db.Uuid
+  movement_type  MovementType // 'sale', 'void_return', 'restock', 'correction', 'waste'
+  quantity_delta Int          // Bertanda: negatif (-) saat terpakai, positif (+) saat restock
+  quantity_after Int          // Snapshot sisa stok bahan baku setelah perubahan
   transaction_id String?      @db.Uuid
   note           String?      @db.VarChar(255)
   created_by     String       @db.Uuid
   created_at     DateTime     @default(now()) @db.Timestamptz()
 
-  inventory      Inventory    @relation(fields: [outlet_id, product_id], references: [outlet_id, product_id], onDelete: Cascade)
+  ingredient     Ingredient   @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
   transaction    Transaction? @relation(fields: [transaction_id], references: [id])
   creator        User         @relation(fields: [created_by], references: [id])
 
-  @@index([outlet_id, product_id, created_at])
+  @@index([outlet_id, ingredient_id, created_at])
   @@map("inventory_movements")
 }
 

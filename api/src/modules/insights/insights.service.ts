@@ -52,20 +52,16 @@ export class InsightsService {
     const generatedInsights: BusinessInsightItem[] = [];
 
     // 1. Evaluasi R1 (LOW_STOCK) & R2 (RESTOCK_URGENT)
-    const inventories = await prisma.inventory.findMany({
-      where: {
-        product: { is_active: true },
-      },
+    const ingredients = await prisma.ingredient.findMany({
       include: {
-        product: { select: { id: true, sku: true, name: true, unit: true, price_idr: true } },
         outlet: { select: { id: true, name: true } },
       },
     });
 
-    for (const inv of inventories) {
-      if (inv.quantity <= inv.reorder_level) {
-        const isUrgent = inv.quantity === 0;
-        const id = `ins-stock-${inv.outlet_id}-${inv.product_id}`;
+    for (const inv of ingredients) {
+      if (inv.stock_qty <= inv.reorder_level) {
+        const isUrgent = inv.stock_qty === 0;
+        const id = `ins-stock-${inv.outlet_id}-${inv.id}`;
         const currentStatus = this.statusMap.get(id) || 'new';
 
         generatedInsights.push({
@@ -73,20 +69,20 @@ export class InsightsService {
           rule_code: isUrgent ? 'RESTOCK_URGENT' : 'LOW_STOCK',
           severity: isUrgent ? 'critical' : 'warning',
           outlet_id: inv.outlet_id,
-          product_id: inv.product_id,
+          product_id: inv.id,
           title: isUrgent
-            ? `Stok Habis: ${inv.product.name} di ${inv.outlet.name}`
-            : `Stok Menipis: ${inv.product.name} di ${inv.outlet.name}`,
-          message: `Sisa stok ${inv.quantity} ${inv.product.unit} (batas aman minimum: ${inv.reorder_level} ${inv.product.unit}).`,
+            ? `Bahan Baku Habis: ${inv.name} di ${inv.outlet.name}`
+            : `Bahan Baku Menipis: ${inv.name} di ${inv.outlet.name}`,
+          message: `Sisa stok ${inv.stock_qty} ${inv.unit} (batas aman minimum: ${inv.reorder_level} ${inv.unit}).`,
           evidence: {
-            current_quantity: inv.quantity,
+            current_quantity: inv.stock_qty,
             reorder_level: inv.reorder_level,
-            avg_lead_time_days: inv.avg_lead_time_days,
+            avg_lead_time_days: 3,
           },
-          recommendation: `Segera lakukan pengadaan atau transfer stok dari cabang lain sebelum kehabisan penjualan.`,
+          recommendation: `Segera lakukan pengadaan atau transfer bahan baku dari cabang lain sebelum kehabisan menu jualan.`,
           status: currentStatus,
           outlet: { id: inv.outlet.id, name: inv.outlet.name },
-          product: { id: inv.product.id, name: inv.product.name, sku: inv.product.sku },
+          product: { id: inv.id, name: inv.name, sku: inv.unit },
           created_at: new Date(),
         });
       }
@@ -96,38 +92,53 @@ export class InsightsService {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-    for (const inv of inventories) {
-      if (inv.quantity >= 15) {
+    const activeProducts = await prisma.product.findMany({
+      where: { is_active: true },
+      include: {
+        recipes: {
+          include: { ingredient: { include: { outlet: true } } },
+        },
+      },
+    });
+
+    const evaluatedPairs = new Set<string>();
+    for (const prod of activeProducts) {
+      for (const recipe of prod.recipes) {
+        if (!recipe.ingredient?.outlet) continue;
+        const outlet = recipe.ingredient.outlet;
+        const pairKey = `${outlet.id}-${prod.id}`;
+        if (evaluatedPairs.has(pairKey)) continue;
+        evaluatedPairs.add(pairKey);
+
         const recentSales = await prisma.transactionItem.count({
           where: {
-            product_id: inv.product_id,
+            product_id: prod.id,
             transaction: {
-              outlet_id: inv.outlet_id,
+              outlet_id: outlet.id,
               created_at: { gte: fourteenDaysAgo },
             },
           },
         });
 
         if (recentSales === 0) {
-          const id = `ins-slow-${inv.outlet_id}-${inv.product_id}`;
+          const id = `ins-slow-${outlet.id}-${prod.id}`;
           const currentStatus = this.statusMap.get(id) || 'new';
 
           generatedInsights.push({
             id,
             rule_code: 'SLOW_MOVING',
             severity: 'info',
-            outlet_id: inv.outlet_id,
-            product_id: inv.product_id,
-            title: `Produk Slow Moving: ${inv.product.name}`,
-            message: `Stok menumpuk sebanyak ${inv.quantity} ${inv.product.unit} tanpa ada penjualan selama 14 hari terakhir di ${inv.outlet.name}.`,
+            outlet_id: outlet.id,
+            product_id: prod.id,
+            title: `Menu Slow Moving: ${prod.name}`,
+            message: `Menu ${prod.name} belum memiliki penjualan selama 14 hari terakhir di ${outlet.name}.`,
             evidence: {
-              stock_quantity: inv.quantity,
               sales_last_14_days: 0,
             },
-            recommendation: `Pertimbangkan bundling promosi atau potongan harga khusus untuk mempercepat perputaran arus kas.`,
+            recommendation: `Pertimbangkan bundling promosi atau potongan harga khusus untuk mempercepat perputaran menu.`,
             status: currentStatus,
-            outlet: { id: inv.outlet.id, name: inv.outlet.name },
-            product: { id: inv.product.id, name: inv.product.name, sku: inv.product.sku },
+            outlet: { id: outlet.id, name: outlet.name },
+            product: { id: prod.id, name: prod.name, sku: prod.sku },
             created_at: new Date(),
           });
         }

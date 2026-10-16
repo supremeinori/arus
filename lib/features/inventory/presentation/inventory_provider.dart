@@ -1,26 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/presentation/auth_provider.dart';
+import '../../auth/domain/user_model.dart';
 import '../data/inventory_repository.dart';
 import '../domain/inventory_models.dart';
 
+final selectedInventoryOutletProvider = StateProvider<String?>((ref) {
+  final user = ref.watch(authProvider).user;
+  if (user != null && user.role != UserRole.owner && user.outlets.isNotEmpty) {
+    return user.outlets.first.id;
+  }
+  return null;
+});
+
 class InventoryFilterState {
-  final String? outletId;
-  final bool lowStockOnly;
+  final String status; // 'all' | 'ok' | 'low' | 'out'
   final String searchQuery;
 
   const InventoryFilterState({
-    this.outletId,
-    this.lowStockOnly = false,
+    this.status = 'all',
     this.searchQuery = '',
   });
 
+  bool get lowStockOnly => status == 'low';
+
   InventoryFilterState copyWith({
-    String? outletId,
-    bool? lowStockOnly,
+    String? status,
     String? searchQuery,
+    bool? lowStockOnly,
   }) {
     return InventoryFilterState(
-      outletId: outletId ?? this.outletId,
-      lowStockOnly: lowStockOnly ?? this.lowStockOnly,
+      status: status ?? (lowStockOnly == true ? 'low' : (lowStockOnly == false ? 'all' : this.status)),
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
@@ -30,13 +39,27 @@ final inventoryFilterProvider = StateProvider<InventoryFilterState>((ref) {
   return const InventoryFilterState();
 });
 
+final ingredientsListProvider = FutureProvider.autoDispose<List<IngredientModel>>((ref) async {
+  final repo = ref.watch(inventoryRepositoryProvider);
+  final outletId = ref.watch(selectedInventoryOutletProvider);
+  final filter = ref.watch(inventoryFilterProvider);
+
+  return repo.getIngredients(
+    outletId: outletId,
+    status: filter.status == 'all' ? null : filter.status,
+    search: filter.searchQuery.isEmpty ? null : filter.searchQuery,
+  );
+});
+
+// Backward-compatible provider for existing widgets
 final inventoryListProvider = FutureProvider.autoDispose<List<InventoryStockItem>>((ref) async {
   final repo = ref.watch(inventoryRepositoryProvider);
+  final outletId = ref.watch(selectedInventoryOutletProvider);
   final filter = ref.watch(inventoryFilterProvider);
 
   return repo.getStocks(
-    outletId: filter.outletId,
-    lowStock: filter.lowStockOnly ? true : null,
+    outletId: outletId,
+    lowStock: filter.status == 'low' ? true : null,
     search: filter.searchQuery.isEmpty ? null : filter.searchQuery,
   );
 });

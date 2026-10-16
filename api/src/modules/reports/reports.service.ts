@@ -214,7 +214,7 @@ export class ReportsService {
       include: {
         items: {
           include: {
-            product: { select: { name: true, cost_idr: true } },
+            product: { select: { name: true } },
           },
         },
       },
@@ -233,7 +233,7 @@ export class ReportsService {
       paymentMethods[t.payment_method] = (paymentMethods[t.payment_method] || 0) + t.total_idr;
 
       for (const item of t.items) {
-        const itemCost = item.unit_cost_idr ?? item.product?.cost_idr ?? 0;
+        const itemCost = item.unit_cost_idr ?? 0;
         totalEstimatedCost += itemCost * item.quantity;
 
         if (!itemSales[item.product_id]) {
@@ -272,12 +272,11 @@ export class ReportsService {
   }
 
   private async _aggregateInventory(outletScope: string[]) {
-    const stocks = await prisma.inventory.findMany({
+    const stocks = await prisma.ingredient.findMany({
       where: {
         outlet_id: { in: outletScope },
       },
       include: {
-        product: { select: { name: true, sku: true, cost_idr: true, unit: true } },
         outlet: { select: { name: true } },
       },
     });
@@ -293,15 +292,15 @@ export class ReportsService {
     }> = [];
 
     for (const s of stocks) {
-      totalQuantity += s.quantity;
-      const cost = s.product.cost_idr || 0;
-      totalStockValueIdr += s.quantity * cost;
+      totalQuantity += s.stock_qty;
+      const cost = s.cost_per_unit || 0;
+      totalStockValueIdr += s.stock_qty * cost;
 
-      if (s.quantity <= s.reorder_level) {
+      if (s.stock_qty <= s.reorder_level) {
         lowStockItems.push({
-          product_name: s.product.name,
+          product_name: s.name,
           outlet_name: s.outlet.name,
-          quantity: s.quantity,
+          quantity: s.stock_qty,
           reorder_level: s.reorder_level,
         });
       }

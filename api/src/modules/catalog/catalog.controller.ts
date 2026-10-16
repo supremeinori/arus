@@ -46,7 +46,7 @@ export async function updateCategory(req: Request, res: Response, next: NextFunc
 export async function listProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const query = productQuerySchema.parse(req.query);
-    const result = await catalogService.listProducts(req.user?.role, query);
+    const result = await catalogService.listProducts(req.user?.role, query, req.userOutlets);
     res.status(200).json({ data: result.products, meta: result.meta });
   } catch (err) {
     next(err);
@@ -55,7 +55,8 @@ export async function listProducts(req: Request, res: Response, next: NextFuncti
 
 export async function getProductById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await catalogService.getProductById(req.params.id, req.user?.role);
+    const outletId = req.query.outlet_id as string | undefined;
+    const data = await catalogService.getProductById(req.params.id, req.user?.role, outletId);
     res.status(200).json({ data });
   } catch (err) {
     next(err);
@@ -76,6 +77,15 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
   try {
     const body = updateProductSchema.parse(req.body);
     const data = await catalogService.updateProduct(req.params.id, body);
+    res.status(200).json({ data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteProduct(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await catalogService.deleteProduct(req.params.id);
     res.status(200).json({ data });
   } catch (err) {
     next(err);

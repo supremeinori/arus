@@ -18,7 +18,7 @@ function sha256(data: string): string {
 }
 
 export async function main() {
-  console.log('🌱 Memulai proses seeding database ARUS (Fast & Lightweight)...');
+  console.log('🌱 Memulai proses seeding database ARUS (Recipe-Driven Architecture)...');
 
   // 1. CLEANUP (Idempotency)
   console.log('🧹 Membersihkan database Supabase...');
@@ -30,7 +30,8 @@ export async function main() {
   await prisma.transactionItem.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.inventoryMovement.deleteMany();
-  await prisma.inventory.deleteMany();
+  await prisma.productRecipe.deleteMany();
+  await prisma.ingredient.deleteMany();
   await prisma.product.deleteMany();
   await prisma.productCategory.deleteMany();
   await prisma.userOutlet.deleteMany();
@@ -123,7 +124,7 @@ export async function main() {
     ],
   });
 
-  // 4. 10 PRODUK UTAMA LENGKAP DENGAN GAMBAR (2 per kategori)
+  // 4. KATEGORI & 10 PRODUK UTAMA LENGKAP DENGAN IMAGE_URL
   console.log('☕ Mengisi 10 Produk Pilihan (lengkap foto menu)...');
   const catCoffee = await prisma.productCategory.create({ data: { name: 'Kopi & Minuman Espresso' } });
   const catTea = await prisma.productCategory.create({ data: { name: 'Teh & Segaran' } });
@@ -133,35 +134,33 @@ export async function main() {
 
   const rawProducts = [
     // Kopi (2 produk)
-    { sku: 'KOP-01', name: 'Es Kopi Susu Gula Aren', unit: 'cup', price: 22000, cost: 9000, catId: catCoffee.id, img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=500&q=80' },
-    { sku: 'KOP-02', name: 'Americano Dingin', unit: 'cup', price: 18000, cost: 6000, catId: catCoffee.id, img: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'KOP-01', name: 'Es Kopi Susu Gula Aren', price: 22000, catId: catCoffee.id, img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'KOP-02', name: 'Americano Dingin', price: 18000, catId: catCoffee.id, img: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80' },
 
     // Teh (2 produk)
-    { sku: 'TEH-01', name: 'Matcha Green Tea Latte', unit: 'cup', price: 26000, cost: 11000, catId: catTea.id, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=500&q=80' },
-    { sku: 'TEH-02', name: 'Lemon Jasmine Tea Segar', unit: 'cup', price: 18000, cost: 6000, catId: catTea.id, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'TEH-01', name: 'Matcha Green Tea Latte', price: 26000, catId: catTea.id, img: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'TEH-02', name: 'Lemon Jasmine Tea Segar', price: 18000, catId: catTea.id, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80' },
 
     // Pastry (2 produk)
-    { sku: 'PAS-01', name: 'Butter Croissant Premium', unit: 'pcs', price: 24000, cost: 11000, catId: catBakery.id, img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=500&q=80' },
-    { sku: 'PAS-02', name: 'Pain Au Chocolat', unit: 'pcs', price: 27000, cost: 12500, catId: catBakery.id, img: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'PAS-01', name: 'Butter Croissant Premium', price: 24000, catId: catBakery.id, img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'PAS-02', name: 'Pain Au Chocolat', price: 27000, catId: catBakery.id, img: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?auto=format&fit=crop&w=500&q=80' },
 
     // Makanan (2 produk)
-    { sku: 'MAK-01', name: 'Nasi Ayam Geprek Sambal Bawang', unit: 'porsi', price: 28000, cost: 14000, catId: catMeals.id, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
-    { sku: 'MAK-02', name: 'Spaghetti Carbonara Creamy', unit: 'porsi', price: 38000, cost: 18000, catId: catMeals.id, img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'MAK-01', name: 'Nasi Ayam Geprek Sambal Bawang', price: 28000, catId: catMeals.id, img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'MAK-02', name: 'Spaghetti Carbonara Creamy', price: 38000, catId: catMeals.id, img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&w=500&q=80' },
 
     // Camilan (2 produk)
-    { sku: 'CAM-01', name: 'Kentang Goreng Truffle', unit: 'porsi', price: 24000, cost: 10000, catId: catSnacks.id, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
-    { sku: 'CAM-02', name: 'Pisang Goreng Keju Aren', unit: 'porsi', price: 20000, cost: 8000, catId: catSnacks.id, img: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'CAM-01', name: 'Kentang Goreng Truffle', price: 24000, catId: catSnacks.id, img: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=500&q=80' },
+    { sku: 'CAM-02', name: 'Pisang Goreng Keju Aren', price: 20000, catId: catSnacks.id, img: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=500&q=80' },
   ];
 
-  const createdProducts = [];
+  const createdProducts: any[] = [];
   for (const p of rawProducts) {
     const prod = await prisma.product.create({
       data: {
         sku: p.sku,
         name: p.name,
-        unit: p.unit,
         price_idr: p.price,
-        cost_idr: p.cost,
         image_url: p.img,
         category_id: p.catId,
       },
@@ -169,40 +168,101 @@ export async function main() {
     createdProducts.push(prod);
   }
 
-  // 5. INVENTARIS PER OUTLET (10 produk x 4 outlet = 40 baris)
-  console.log('📦 Mengisi stok inventaris per outlet...');
+  // 5. BAHAN BAKU & STOK REALISTIS PER CABANG
+  console.log('📦 Mengisi bahan baku realistis di setiap cabang...');
+  const ingredientTemplates = [
+    { key: 'kopi', name: 'Biji Kopi Arabika House Blend', unit: 'gram', baseStock: 3000, reorder: 500, cost: 150 },
+    { key: 'air', name: 'Air Mineral Purified', unit: 'ml', baseStock: 25000, reorder: 3000, cost: 2 },
+    { key: 'susu', name: 'Susu UHT Fresh Milk', unit: 'ml', baseStock: 6000, reorder: 1200, cost: 25 },
+    { key: 'aren', name: 'Gula Aren Cair Asli', unit: 'ml', baseStock: 4000, reorder: 500, cost: 35 },
+    { key: 'matcha', name: 'Bubuk Matcha Premium', unit: 'gram', baseStock: 1200, reorder: 250, cost: 300 },
+    { key: 'teh', name: 'Daun Teh Melati Kering', unit: 'gram', baseStock: 1500, reorder: 300, cost: 100 },
+    { key: 'lemon', name: 'Lemon Fresh Segar', unit: 'pcs', baseStock: 60, reorder: 15, cost: 2000 },
+    { key: 'croissant', name: 'Adonan Croissant Butter', unit: 'pcs', baseStock: 50, reorder: 10, cost: 8000 },
+    { key: 'cokelat', name: 'Cokelat Isian Pastry', unit: 'gram', baseStock: 2000, reorder: 400, cost: 60 },
+    { key: 'ayam', name: 'Daging Ayam Fillet Segar', unit: 'gram', baseStock: 6000, reorder: 1200, cost: 50 },
+    { key: 'beras', name: 'Beras Pulen Organik', unit: 'gram', baseStock: 12000, reorder: 2500, cost: 15 },
+    { key: 'pasta', name: 'Spaghetti Pasta Kering', unit: 'gram', baseStock: 5000, reorder: 1000, cost: 30 },
+    { key: 'kentang', name: 'Kentang Truffle Beku', unit: 'gram', baseStock: 6000, reorder: 1200, cost: 25 },
+    { key: 'pisang', name: 'Pisang Kepok Manis', unit: 'pcs', baseStock: 80, reorder: 20, cost: 1500 },
+  ];
+
+  // Map outletId -> { key -> Ingredient }
+  const outletIngredients: Record<string, Record<string, any>> = {};
+
   for (const outlet of outlets) {
-    for (let i = 0; i < createdProducts.length; i++) {
-      const prod = createdProducts[i];
-      let initialQty = 30;
-      if (outlet.id === outletJogja.id && i === 0) initialQty = 4; // Low stock trigger untuk demo!
-      if (outlet.id === outletJogja.id && i === 3) initialQty = 0; // Out of stock
+    outletIngredients[outlet.id] = {};
+    for (const t of ingredientTemplates) {
+      let initialStock = t.baseStock;
 
-      await prisma.inventory.create({
+      // Simulasi trigger demo khusus di Jogja:
+      // Susu menipis (low stock) dan Adonan Croissant habis (out of stock)
+      if (outlet.id === outletJogja.id && t.key === 'susu') initialStock = 800; // <= 1200
+      if (outlet.id === outletJogja.id && t.key === 'croissant') initialStock = 0; // 0 (out of stock)
+
+      const ing = await prisma.ingredient.create({
         data: {
           outlet_id: outlet.id,
-          product_id: prod.id,
-          quantity: initialQty,
-          reorder_level: 5,
-          avg_lead_time_days: 3,
+          name: t.name,
+          unit: t.unit,
+          stock_qty: initialStock,
+          reorder_level: t.reorder,
+          cost_per_unit: t.cost,
         },
       });
 
-      await prisma.inventoryMovement.create({
-        data: {
-          outlet_id: outlet.id,
-          product_id: prod.id,
-          movement_type: MovementType.restock,
-          quantity_delta: initialQty,
-          quantity_after: initialQty,
-          note: 'Stok awal sistem',
-          created_by: owner.id,
-        },
-      });
+      outletIngredients[outlet.id][t.key] = ing;
+
+      if (initialStock > 0) {
+        await prisma.inventoryMovement.create({
+          data: {
+            outlet_id: outlet.id,
+            ingredient_id: ing.id,
+            movement_type: MovementType.restock,
+            quantity_delta: initialStock,
+            quantity_after: initialStock,
+            note: 'Stok awal bahan baku sistem',
+            created_by: owner.id,
+          },
+        });
+      }
     }
   }
 
-  // 6. 10 HARI TRANSAKSI HISTORIS (~120 TRANSAKSI DENGAN BLOCKCHAIN)
+  // 6. RESEP MENU (PRODUCT RECIPES: Menu <-> Bahan Baku)
+  console.log('📖 Menghubungkan Menu dengan Bahan Baku via Resep (Product Recipes)...');
+  const recipeDefinitions: Record<string, Array<{ key: string; amount: number }>> = {
+    'KOP-01': [{ key: 'kopi', amount: 20 }, { key: 'susu', amount: 120 }, { key: 'aren', amount: 30 }],
+    'KOP-02': [{ key: 'kopi', amount: 20 }, { key: 'air', amount: 180 }],
+    'TEH-01': [{ key: 'matcha', amount: 15 }, { key: 'susu', amount: 150 }],
+    'TEH-02': [{ key: 'teh', amount: 10 }, { key: 'air', amount: 200 }, { key: 'lemon', amount: 1 }],
+    'PAS-01': [{ key: 'croissant', amount: 1 }],
+    'PAS-02': [{ key: 'croissant', amount: 1 }, { key: 'cokelat', amount: 30 }],
+    'MAK-01': [{ key: 'ayam', amount: 150 }, { key: 'beras', amount: 100 }],
+    'MAK-02': [{ key: 'pasta', amount: 120 }, { key: 'susu', amount: 100 }],
+    'CAM-01': [{ key: 'kentang', amount: 150 }],
+    'CAM-02': [{ key: 'pisang', amount: 2 }, { key: 'aren', amount: 20 }],
+  };
+
+  for (const prod of createdProducts) {
+    const defs = recipeDefinitions[prod.sku] || [];
+    for (const outlet of outlets) {
+      for (const def of defs) {
+        const ing = outletIngredients[outlet.id][def.key];
+        if (ing) {
+          await prisma.productRecipe.create({
+            data: {
+              product_id: prod.id,
+              ingredient_id: ing.id,
+              amount_needed: def.amount,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // 7. 10 HARI TRANSAKSI HISTORIS (~120 TRANSAKSI DENGAN BLOCKCHAIN)
   console.log('📊 Menghasilkan 10 hari transaksi (~120 transaksi)...');
   const paymentMethods = [PaymentMethod.cash, PaymentMethod.qris_simulated, PaymentMethod.card_simulated];
 
@@ -223,7 +283,6 @@ export async function main() {
     const dateStr = txnDate.toISOString().slice(0, 10).replace(/-/g, '');
 
     for (const outlet of outlets) {
-      // 3 transaksi per outlet per hari = 12 transaksi per hari = 120 total
       for (let t = 0; t < 3; t++) {
         const hour = 10 + t * 4; // 10:00, 14:00, 18:00
         const currentTxnTime = new Date(txnDate);
@@ -242,6 +301,13 @@ export async function main() {
         const method = paymentMethods[t % paymentMethods.length];
         const paid = method === PaymentMethod.cash ? Math.ceil(total / 10000) * 10000 : total;
         const change = paid - total;
+
+        // Hitung estimasi unit_cost_idr dari resep
+        const defs = recipeDefinitions[product.sku] || [];
+        const unitCost = defs.reduce((sum, d) => {
+          const ing = outletIngredients[outlet.id][d.key];
+          return sum + (d.amount * (ing?.cost_per_unit || 0));
+        }, 0);
 
         const transaction = await prisma.transaction.create({
           data: {
@@ -263,7 +329,7 @@ export async function main() {
                   product_id: product.id,
                   product_name_snapshot: product.name,
                   unit_price_idr: product.price_idr,
-                  unit_cost_idr: product.cost_idr,
+                  unit_cost_idr: unitCost,
                   quantity: qty,
                   line_total_idr: subtotal,
                 },
@@ -315,7 +381,7 @@ export async function main() {
     }
   }
 
-  // 7. FEEDBACK PAM & SAMPLE GAME SESSIONS
+  // 8. FEEDBACK PAM & SAMPLE GAME SESSIONS
   console.log('💬 Mengisi feedback PAM & sample game session...');
   await prisma.feedback.create({
     data: {
@@ -350,8 +416,9 @@ export async function main() {
   console.log(`- Users: ${await prisma.user.count()}`);
   console.log(`- Outlets: ${await prisma.outlet.count()}`);
   console.log(`- Kategori: ${await prisma.productCategory.count()}`);
-  console.log(`- Produk: ${await prisma.product.count()} item`);
-  console.log(`- Inventaris: ${await prisma.inventory.count()} baris`);
+  console.log(`- Produk: ${await prisma.product.count()} menu`);
+  console.log(`- Bahan Baku: ${await prisma.ingredient.count()} bahan`);
+  console.log(`- Resep Menu: ${await prisma.productRecipe.count()} resep`);
   console.log(`- Transaksi: ${await prisma.transaction.count()} transaksi (10 hari)`);
   console.log(`- Blockchain: ${await prisma.blockchainRecord.count()} blocks`);
 }
