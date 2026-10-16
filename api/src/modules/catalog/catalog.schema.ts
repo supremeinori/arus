@@ -19,7 +19,7 @@ export const createProductSchema = z.object({
   price_idr: z.number().int().positive('Harga jual harus lebih dari 0'),
   category_id: z.string().min(1).optional(),
   image_url: z.string().url().or(z.literal('')).optional(),
-  recipes: z.array(recipeItemSchema).optional(),
+  recipes: z.array(recipeItemSchema).min(1, 'Minimal 1 bahan baku').max(50).optional(),
 });
 
 export const updateProductSchema = z.object({

@@ -292,7 +292,7 @@ export class CatalogService {
   }
 
   async createProduct(
-    userId: string,
+    _userId: string,
     data: {
       name: string;
       sku: string;
@@ -302,11 +302,12 @@ export class CatalogService {
       recipes?: Array<{ ingredient_id: string; amount_needed: number }>;
     }
   ) {
+    const sku = data.sku.trim().toUpperCase();
     const existingSku = await prisma.product.findUnique({
-      where: { sku: data.sku.trim().toUpperCase() },
+      where: { sku },
     });
     if (existingSku) {
-      throw new AppError('CATALOG_SKU_DUPLICATE', 409, `SKU “${data.sku}” sudah digunakan.`);
+      throw new AppError('CATALOG_SKU_DUPLICATE', 409, `SKU "${sku}" sudah digunakan.`);
     }
 
     if (data.category_id) {
@@ -318,43 +319,62 @@ export class CatalogService {
       }
     }
 
+    // Validasi relasi resep: tak ada duplikat, semua bahan ada, satu outlet
+    // (Ingredient per-outlet, Product global — menu tak boleh campur cabang).
+    const recipeInputs = data.recipes ?? [];
+    const ingredientIds = recipeInputs.map((r) => r.ingredient_id);
+    if (new Set(ingredientIds).size !== ingredientIds.length) {
+      throw new AppError('BAD_REQUEST', 400, 'Bahan baku duplikat dalam satu resep.');
+    }
+    if (ingredientIds.length > 0) {
+      const found = await prisma.ingredient.findMany({
+        where: { id: { in: ingredientIds } },
+        select: { id: true, outlet_id: true },
+      });
+      if (found.length !== ingredientIds.length) {
+        throw new AppError('NOT_FOUND', 404, 'Salah satu bahan baku tidak ditemukan.');
+      }
+      const outlets = new Set(found.map((f) => f.outlet_id));
+      if (outlets.size > 1) {
+        throw new AppError('BAD_REQUEST', 400, 'Semua bahan baku harus dari outlet yang sama.');
+      }
+    }
+
     try {
-      return await prisma.$transaction(async (tx) => {
-        const product = await tx.product.create({
-          data: {
-            name: data.name.trim(),
-            sku: data.sku.trim().toUpperCase(),
-            price_idr: data.price_idr,
-            category_id: data.category_id,
-            image_url: data.image_url,
-          },
-          include: {
-            category: true,
-          },
-        });
-
-        if (data.recipes && data.recipes.length > 0) {
-          await tx.productRecipe.createMany({
-            data: data.recipes.map((r) => ({
-              product_id: product.id,
-              ingredient_id: r.ingredient_id,
-              amount_needed: r.amount_needed,
-            })),
-          });
-        }
-
-        return tx.product.findUnique({
-          where: { id: product.id },
-          include: {
-            category: true,
-            recipes: {
-              include: {
-                ingredient: true,
-              },
+      const product = await prisma.product.create({
+        data: {
+          name: data.name.trim(),
+          sku,
+          price_idr: data.price_idr,
+          category_id: data.category_id,
+          image_url: data.image_url || null,
+          // Nested create: produk + resep tersimpan dalam 1 transaksi database.
+          recipes: recipeInputs.length > 0
+            ? {
+                create: recipeInputs.map((r) => ({
+                  ingredient_id: r.ingredient_id,
+                  amount_needed: r.amount_needed,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          category: true,
+          recipes: {
+            include: {
+              ingredient: true,
             },
           },
-        });
+        },
       });
+
+      // HPP dihitung ulang dari baris DB fresh (anti-manipulasi nilai dari client).
+      const hpp = (product.recipes ?? []).reduce(
+        (sum, r) => sum + r.amount_needed * (r.ingredient?.cost_per_unit ?? 0),
+        0
+      );
+
+      return { ...product, cost_idr: hpp };
     } catch (err: any) {
       if (err instanceof AppError) throw err;
       throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal membuat produk.');

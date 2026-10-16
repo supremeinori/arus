@@ -50,35 +50,47 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   void initState() {
     super.initState();
     if (widget.productId != null) {
+      final cached = ref.read(productDetailProvider(widget.productId!)).valueOrNull;
+      if (cached != null) {
+        _populateFromProduct(cached);
+      }
       _loadProductData();
     }
   }
 
+  void _populateFromProduct(dynamic product) {
+    _nameController.text = product.name;
+    _skuController.text = product.sku;
+    _unitController.text = product.unit;
+    _priceController.text = product.priceIdr.toString();
+    if (product.costIdr != null) {
+      _costController.text = product.costIdr.toString();
+    }
+    if (product.imageUrl != null) {
+      _imageUrlController.text = product.imageUrl!;
+    }
+    _selectedCategoryId = product.categoryId;
+
+    _recipeRows.clear();
+    if (product.recipes != null && product.recipes.isNotEmpty) {
+      for (final r in product.recipes) {
+        _recipeRows.add(_RecipeRow(ingredientId: r.ingredientId, amount: r.amountNeeded));
+      }
+    }
+  }
+
   Future<void> _loadProductData() async {
-    setState(() => _isFetchingInitial = true);
+    if (_nameController.text.isEmpty) {
+      setState(() => _isFetchingInitial = true);
+    }
     try {
       final repo = ref.read(catalogRepositoryProvider);
       final product = await repo.getProductById(widget.productId!);
-      _nameController.text = product.name;
-      _skuController.text = product.sku;
-      _unitController.text = product.unit;
-      _priceController.text = product.priceIdr.toString();
-      if (product.costIdr != null) {
-        _costController.text = product.costIdr.toString();
-      }
-      if (product.imageUrl != null) {
-        _imageUrlController.text = product.imageUrl!;
-      }
-      _selectedCategoryId = product.categoryId;
-
-      _recipeRows.clear();
-      if (product.recipes.isNotEmpty) {
-        for (final r in product.recipes) {
-          _recipeRows.add(_RecipeRow(ingredientId: r.ingredientId, amount: r.amountNeeded));
-        }
-      }
+      _populateFromProduct(product);
     } catch (e) {
-      _errorMessage = 'Gagal memuat data produk: $e';
+      if (_nameController.text.isEmpty) {
+        _errorMessage = 'Gagal memuat data produk: $e';
+      }
     } finally {
       if (mounted) setState(() => _isFetchingInitial = false);
     }
@@ -308,10 +320,15 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     // Kategori Dropdown
                     categoriesState.when(
                       data: (categories) {
+                        final isValidCat = _selectedCategoryId != null &&
+                            categories.any((c) => c.id == _selectedCategoryId);
+                        final selectedVal = isValidCat ? _selectedCategoryId : null;
+
                         return DropdownButtonFormField<String>(
-                          initialValue: _selectedCategoryId,
+                          value: selectedVal,
                           decoration: InputDecoration(
                             labelText: 'Kategori Produk',
+                            hintText: 'Pilih Kategori Produk',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
@@ -321,12 +338,18 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                               borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                             ),
                           ),
-                          items: categories.map((c) {
-                            return DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name, style: GoogleFonts.lexend(fontSize: 14)),
-                            );
-                          }).toList(),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('Tanpa Kategori', style: TextStyle(color: Color(0xFF64748B))),
+                            ),
+                            ...categories.map((c) {
+                              return DropdownMenuItem<String>(
+                                value: c.id,
+                                child: Text(c.name, style: GoogleFonts.lexend(fontSize: 14)),
+                              );
+                            }),
+                          ],
                           onChanged: (val) {
                             setState(() {
                               _selectedCategoryId = val;
@@ -480,6 +503,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                               loading: () => const LinearProgressIndicator(),
                               error: (e, _) => Text('Gagal memuat bahan: $e', style: GoogleFonts.lexend(fontSize: 12)),
                               data: (availableIngredients) {
+                                // Deduplicate by ID to prevent duplicate DropdownMenuItem assertions
+                                final uniqueMap = <String, IngredientModel>{};
+                                for (final ing in availableIngredients) {
+                                  uniqueMap[ing.id] = ing;
+                                }
+                                final ingredientsList = uniqueMap.values.toList();
+
                                 return ListView.separated(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
@@ -487,9 +517,37 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                                   itemBuilder: (context, idx) {
                                     final row = _recipeRows[idx];
-                                    final selectedIngredient = availableIngredients
+                                    final selectedIngredient = ingredientsList
                                         .cast<IngredientModel?>()
                                         .firstWhere((i) => i?.id == row.ingredientId, orElse: () => null);
+
+                                    // Build items list with fallback if row.ingredientId is not in ingredientsList
+                                    final items = ingredientsList.map((ing) {
+                                      return DropdownMenuItem<String>(
+                                        value: ing.id,
+                                        child: Text(
+                                          '${ing.name} (${ing.unit})',
+                                          style: GoogleFonts.lexend(fontSize: 12.5),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    }).toList();
+
+                                    final isKnown = row.ingredientId != null &&
+                                        ingredientsList.any((i) => i.id == row.ingredientId);
+                                    if (row.ingredientId != null && !isKnown) {
+                                      final idText = row.ingredientId!.length > 8
+                                          ? '${row.ingredientId!.substring(0, 8)}...'
+                                          : row.ingredientId!;
+                                      items.add(DropdownMenuItem<String>(
+                                        value: row.ingredientId,
+                                        child: Text(
+                                          'Bahan ($idText)',
+                                          style: GoogleFonts.lexend(fontSize: 12.5),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ));
+                                    }
 
                                     return Container(
                                       padding: const EdgeInsets.all(10),
@@ -505,26 +563,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                                             flex: 3,
                                             child: DropdownButtonFormField<String>(
                                               isExpanded: true,
-                                              initialValue: row.ingredientId != null &&
-                                                      availableIngredients.any((i) => i.id == row.ingredientId)
-                                                  ? row.ingredientId
-                                                  : null,
+                                              value: row.ingredientId,
                                               decoration: InputDecoration(
                                                 labelText: 'Pilih Bahan Baku',
                                                 isDense: true,
                                                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                               ),
-                                              items: availableIngredients.map((ing) {
-                                                return DropdownMenuItem(
-                                                  value: ing.id,
-                                                  child: Text(
-                                                    '${ing.name} (${ing.unit})',
-                                                    style: GoogleFonts.lexend(fontSize: 12.5),
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                );
-                                              }).toList(),
+                                              items: items,
                                               onChanged: (val) {
                                                 setState(() {
                                                   row.ingredientId = val;

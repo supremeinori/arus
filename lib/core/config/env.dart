@@ -4,7 +4,9 @@ class AppEnv {
   /// Memungkinkan pengubahan URL server secara dinamis dari UI jika diinginkan
   static void setCustomBaseUrl(String url) {
     var clean = url.trim();
-    if (clean.isNotEmpty && !clean.endsWith('/api') && !clean.endsWith('/api/')) {
+    if (clean.isNotEmpty &&
+        !clean.endsWith('/api') &&
+        !clean.endsWith('/api/')) {
       clean = clean.endsWith('/') ? '${clean}api' : '$clean/api';
     }
     _customBaseUrl = clean;
@@ -33,6 +35,7 @@ class AppEnv {
     }
 
     // Default ke Cloud Web Service Vercel resmi (online 24/7 HTTPS)
-    return 'https://arus-lime.vercel.app/api';
+    // return 'https://arus-lime.vercel.app/api';
+    return 'http://localhost:5000/api';
   }
 }
