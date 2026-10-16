@@ -80,6 +80,19 @@ class MockAuthNotifier extends StateNotifier<AuthState> implements AuthNotifier 
     logoutCalled = true;
     state = AuthState.unauthenticated();
   }
+
+  @override
+  Future<UserModel?> getPersistedUser() async => state.user;
+
+  @override
+  void setUnauthenticated([String? message]) {
+    state = AuthState.unauthenticated(message);
+  }
+
+  @override
+  void restoreSessionInstant(UserModel user, [String? refreshToken]) {
+    state = AuthState.authenticated(user);
+  }
 }
 
 void main() {

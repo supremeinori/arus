@@ -73,9 +73,14 @@ class ApiClient {
                   return handler.resolve(clonedResponse);
                 }
               }
+            } on DioException catch (dioErr) {
+              // Hanya bersihkan token jika server merespons secara eksplisit bahwa token kedaluwarsa / ditolak (401/403)
+              // Jangan hapus token jika terjadi masalah koneksi fisik / offline / timeout
+              if (dioErr.response?.statusCode == 401 || dioErr.response?.statusCode == 403) {
+                await secureStore.clearTokens();
+              }
             } catch (_) {
-              // Jika refresh gagal, bersihkan token dan logout
-              await secureStore.clearTokens();
+              // Abaikan error tak terduga agar token offline tetap aman
             } finally {
               _isRefreshing = false;
             }

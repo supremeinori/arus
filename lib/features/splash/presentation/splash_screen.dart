@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import '../../../core/storage/secure_store.dart';
 import '../../../core/auth/biometric_service.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../auth/domain/user_model.dart';
 import 'health_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -20,96 +22,172 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
   bool _isBiometricPromptActive = false;
-  int _attemptCount = 1;
+  bool _hasNavigated = false;
+  bool _hasStartedCheck = false;
+  Timer? _fallbackTimer;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        _initiateSessionCheck();
-      }
+    // PERBAIKAN 2: Gunakan addPostFrameCallback agar UI logo Splash Screen
+    // dipastikan sudah selesai di-render secara visual sebelum inisialisasi / prompt biometrik dipicu.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _startSessionCheck();
     });
   }
 
+  @override
+  void dispose() {
+    _fallbackTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Navigasi keluar ke Beranda (Dashboard)
+  void _goToDashboard() {
+    _fallbackTimer?.cancel();
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    debugPrint('[SplashScreen] EXIT ROUTE -> Beranda (/shell)');
+    context.go('/shell');
+  }
+
+  /// Navigasi keluar ke Halaman Login (Email/Password)
+  void _goToLogin() {
+    _fallbackTimer?.cancel();
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    debugPrint('[SplashScreen] EXIT ROUTE -> Login (/login)');
+    ref.read(authProvider.notifier).setUnauthenticated();
+    context.go('/login');
+  }
+
+  void _startSessionCheck() {
+    if (_hasStartedCheck || _hasNavigated) return;
+    _hasStartedCheck = true;
+
+    // Safety fallback timer 4000ms: Memastikan aplikasi tidak pernah stuck di logo jika
+    // storage OS mengalami kebuntuan atau latency tidak normal sebelum sensor biometrik dipicu.
+    _fallbackTimer = Timer(const Duration(milliseconds: 4000), () {
+      if (!_hasNavigated && !_isBiometricPromptActive && mounted) {
+        debugPrint('[SplashScreen] Safety fallback timeout (4000ms) fired. Forcing exit to /login.');
+        _goToLogin();
+      }
+    });
+
+    _initiateSessionCheck();
+  }
+
+  /// PERBAIKAN 1 & 3: Try-Catch menyeluruh & setiap cabang logika memiliki exit route eksplisit
   Future<void> _initiateSessionCheck() async {
-    final localDb = ref.read(localDbProvider);
-    final secureStore = ref.read(secureStoreProvider);
-    final cachedUser = await localDb.getCachedUser();
-    final latestSession = await localDb.getLatestSessionSettings();
-    final refreshToken = latestSession?.refreshToken ?? await secureStore.getRefreshToken();
+    try {
+      final secureStore = ref.read(secureStoreProvider);
+      final localDb = ref.read(localDbProvider);
 
-    final hasValidSession = cachedUser != null &&
-        cachedUser.id.isNotEmpty &&
-        cachedUser.email.isNotEmpty &&
-        cachedUser.name.isNotEmpty &&
-        refreshToken != null &&
-        refreshToken.isNotEmpty;
-
-    if (!hasValidSession) {
-      if (mounted) {
-        await ref.read(authProvider.notifier).checkAuth();
+      debugPrint('[SplashScreen] 1. Memeriksa status kedaluwarsa sesi...');
+      final isExpired = await secureStore.isSessionExpired();
+      if (isExpired) {
+        debugPrint('[SplashScreen] Cabang: Sesi kedaluwarsa (> 7 hari). Navigasi ke /login.');
+        await ref.read(authProvider.notifier).logout();
+        _goToLogin();
+        return;
       }
-      return;
-    }
 
-    final isBiometricActive = latestSession?.biometricEnabled ?? cachedUser.settings.biometricEnabled;
+      debugPrint('[SplashScreen] 2. Membaca sesi dari secure storage & local DB...');
+      final hasStoredSecureSession = await secureStore.hasValidStoredSession();
+      final cachedUser = await ref.read(authProvider.notifier).getPersistedUser();
+      final refreshToken = await secureStore.getRefreshToken() ??
+          (await localDb.getLatestSessionSettings())?.refreshToken;
 
-    if (isBiometricActive) {
-      setState(() {
-        _isBiometricPromptActive = true;
+      final hasValidSession = hasStoredSecureSession ||
+          (cachedUser != null &&
+              cachedUser.id.isNotEmpty &&
+              cachedUser.email.isNotEmpty &&
+              refreshToken != null &&
+              refreshToken.isNotEmpty);
+
+      debugPrint('[SplashScreen] hasValidSession: $hasValidSession, user: ${cachedUser?.email}');
+
+      // Cabang 1: Token kosong atau tidak ada sesi valid -> Langsung keluar ke /login
+      if (!hasValidSession || cachedUser == null) {
+        debugPrint('[SplashScreen] Cabang: Belum ada sesi tersimpan. Exit ke /login.');
+        _goToLogin();
+        return;
+      }
+
+      // Memeriksa flag biometrik yang diaktifkan pengguna
+      final isBiometricActive = await secureStore.isBiometricEnabled() ||
+          cachedUser.settings.biometricEnabled;
+
+      debugPrint('[SplashScreen] isBiometricActive: $isBiometricActive');
+
+      // Cabang 2: Sesi ada tetapi user belum mengaktifkan biometrik -> Keluar ke /login (form login manual)
+      if (!isBiometricActive) {
+        debugPrint('[SplashScreen] Cabang: Biometrik belum diaktifkan user. Exit ke /login.');
+        _goToLogin();
+        return;
+      }
+
+      // Matikan fallback timer saat biometrik aktif agar tidak mendahului pemindaian sidik jari user
+      _fallbackTimer?.cancel();
+      _fallbackTimer = null;
+
+      // PERBAIKAN 2: Beri jeda via addPostFrameCallback agar layout dan badge
+      // "Menunggu sensor biometrik..." terpasang di layar sebelum pop-up OS muncul
+      if (mounted) {
+        setState(() {
+          _isBiometricPromptActive = true;
+        });
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _hasNavigated) return;
+        _triggerBiometricPrompt(cachedUser, refreshToken);
       });
-      await _handleBiometricInterception();
-    } else {
-      if (mounted) {
-        await ref.read(authProvider.notifier).checkAuth(false);
-      }
+    } catch (e, stack) {
+      debugPrint('[SplashScreen] Catch: Terjadi error saat inisialisasi storage: $e\n$stack');
+      // PERBAIKAN 1: Jangan biarkan aplikasi hang. Paksa keluar ke /login
+      _goToLogin();
     }
   }
 
-  Future<void> _handleBiometricInterception() async {
-    final bioService = ref.read(biometricServiceProvider);
-    final isAvailable = await bioService.isBiometricAvailable();
+  /// PERBAIKAN 1 & 2: Pemanggilan authenticate() dibungkus try-catch & aman
+  Future<void> _triggerBiometricPrompt(UserModel user, String? refreshToken) async {
+    _fallbackTimer?.cancel();
+    _fallbackTimer = null;
 
-    if (!isAvailable) {
-      if (mounted) {
-        await ref.read(authProvider.notifier).checkAuth(false);
+    try {
+      final bioService = ref.read(biometricServiceProvider);
+      final isAvailable = await bioService.isBiometricAvailable();
+
+      debugPrint('[SplashScreen] Sensor biometrik tersedia: $isAvailable');
+      // Cabang 3: Hardware biometrik tidak tersedia atau tidak didukung -> Exit ke /login
+      if (!isAvailable) {
+        debugPrint('[SplashScreen] Cabang: Sensor tidak tersedia. Exit ke /login.');
+        _goToLogin();
+        return;
       }
-      return;
-    }
 
-    int attempts = 0;
-    bool authenticated = false;
-
-    while (attempts < 3 && !authenticated && mounted) {
-      attempts++;
-      setState(() {
-        _attemptCount = attempts;
-      });
-
-      authenticated = await bioService.authenticate(
+      final authenticated = await bioService.authenticate(
         localizedReason: 'Pindai sidik jari atau wajah Anda untuk masuk ke ARUS',
       );
 
+      debugPrint('[SplashScreen] Hasil verifikasi biometrik: $authenticated');
+
+      // Cabang 4: Biometrik sukses -> Exit ke Beranda (/shell)
       if (authenticated) {
-        break;
+        debugPrint('[SplashScreen] Cabang: Biometrik sukses. Exit ke Beranda (/shell).');
+        ref.read(authProvider.notifier).restoreSessionInstant(user, refreshToken);
+        _goToDashboard();
+      } else {
+        // Cabang 5: Biometrik dibatalkan atau gagal -> Exit ke /login
+        debugPrint('[SplashScreen] Cabang: Biometrik dibatalkan/gagal. Exit ke /login.');
+        _goToLogin();
       }
-
-      if (attempts < 3 && mounted) {
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
-    }
-
-    if (authenticated && mounted) {
-      await ref.read(authProvider.notifier).checkAuth(false);
-      if (mounted) {
-        context.go('/shell');
-      }
-    } else if (mounted) {
-      await ref.read(authProvider.notifier).logout();
-      if (mounted) {
-        context.go('/login');
-      }
+    } catch (e, stack) {
+      debugPrint('[SplashScreen] Catch: Terjadi error saat trigger biometrik: $e\n$stack');
+      // PERBAIKAN 1: Fallback paksa ke /login jika terjadi PlatformException
+      _goToLogin();
     }
   }
 
@@ -240,7 +318,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             const Icon(Icons.fingerprint_rounded, size: 28, color: AppTheme.primaryBlue),
                             const SizedBox(width: 10),
                             Text(
-                              'Menunggu sensor biometrik... ($_attemptCount/3)',
+                              'Menunggu sensor biometrik...',
                               style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
                             ),
                           ],
@@ -253,11 +331,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             'Batal & Masuk dengan Password',
                             style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
                           ),
-                          onPressed: () async {
-                            await ref.read(authProvider.notifier).logout();
-                            if (context.mounted) {
-                              context.go('/login');
-                            }
+                          onPressed: () {
+                            _goToLogin();
                           },
                         ),
                       ],

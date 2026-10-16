@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/secure_store.dart';
 import '../../../core/storage/local_db.dart';
@@ -38,13 +39,58 @@ class AuthNotifier extends StateNotifier<AuthState> {
         _prefsStore = prefsStore,
         super(AuthState.initial());
 
+  /// Mengambil data user yang tersimpan di SecureStore atau LocalDatabase SQLite
+  Future<UserModel?> getPersistedUser() async {
+    final secureUserJson = await _secureStore.getUserJson();
+    if (secureUserJson != null && secureUserJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(secureUserJson) as Map<String, dynamic>;
+        final user = UserModel.fromJson(decoded);
+        if (user.id.isNotEmpty && user.email.isNotEmpty) {
+          final isBio = await _secureStore.isBiometricEnabled();
+          return user.copyWith(
+            settings: user.settings.copyWith(biometricEnabled: isBio),
+          );
+        }
+      } catch (_) {}
+    }
+
+    final cached = await _localDb.getCachedUser();
+    if (cached != null) {
+      final isBio = await _secureStore.isBiometricEnabled();
+      return cached.copyWith(
+        settings: cached.settings.copyWith(biometricEnabled: isBio || cached.settings.biometricEnabled),
+      );
+    }
+    return null;
+  }
+
+  /// Mengatur state in-memory menjadi unauthenticated tanpa menghapus session secure storage
+  void setUnauthenticated([String? message]) {
+    state = AuthState.unauthenticated(message);
+  }
+
+  /// Memulihkan sesi pengguna secara instan dari cache lokal tanpa memblokir UI
+  void restoreSessionInstant(UserModel user, [String? refreshToken]) {
+    state = AuthState.authenticated(user);
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      _silentBackgroundRefresh(refreshToken, user);
+    }
+  }
+
   /// Memeriksa status sesi saat startup / hot reload.
   /// Sesi HANYA dianggap aktif jika pengguna benar-benar pernah login dan memiliki token valid.
-  Future<void> checkAuth([bool requireBiometricIfEnabled = true]) async {
+  Future<void> checkAuth([bool requireBiometricIfEnabled = false]) async {
     try {
-      final cachedUser = await _localDb.getCachedUser();
+      if (await _secureStore.isSessionExpired()) {
+        await logout();
+        state = AuthState.unauthenticated();
+        return;
+      }
+
+      final cachedUser = await getPersistedUser();
       final latestSession = await _localDb.getLatestSessionSettings();
-      final refreshToken = latestSession?.refreshToken ?? await _secureStore.getRefreshToken();
+      final refreshToken = await _secureStore.getRefreshToken() ?? latestSession?.refreshToken;
 
       // Validasi ketat: Wajib ada profil lengkap (id, email, nama) dan refresh token aktif
       final hasValidSession = cachedUser != null &&
@@ -59,8 +105,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return;
       }
 
-      // Jika user mengaktifkan biometrik, wajib verifikasi sensor fisik
-      final isBiometricActive = latestSession?.biometricEnabled ?? cachedUser.settings.biometricEnabled;
+      final isBioSecure = await _secureStore.isBiometricEnabled();
+      final isBiometricActive = isBioSecure || cachedUser.settings.biometricEnabled;
+
       if (requireBiometricIfEnabled && isBiometricActive) {
         final authenticated = await _biometricService.authenticate(
           localizedReason: 'Konfirmasi sidik jari untuk melanjutkan sesi ARUS',
@@ -71,20 +118,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
         }
       }
 
+      state = AuthState.authenticated(cachedUser);
+
       // Coba segarkan token ke backend web service
       try {
         final response = await _authRepo.refresh(refreshToken);
-        await _secureStore.setAccessToken(response.accessToken);
-        await _secureStore.setRefreshToken(response.refreshToken);
+        final updatedUser = response.user.copyWith(
+          settings: response.user.settings.copyWith(
+            biometricEnabled: isBiometricActive,
+          ),
+        );
+
+        await _secureStore.saveSession(
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          userJson: jsonEncode(updatedUser.toJson()),
+          biometricEnabled: isBiometricActive,
+        );
 
         await _localDb.saveUserSession(
-          user: response.user,
+          user: updatedUser,
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
         );
 
         if (mounted) {
-          state = AuthState.authenticated(response.user);
+          state = AuthState.authenticated(updatedUser);
         }
       } on AppException catch (e) {
         // Jika token ditolak oleh server (kadaluarsa / dicabut), paksa logout
@@ -109,16 +168,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void _silentBackgroundRefresh(String refreshToken, UserModel currentUser) async {
     try {
       final response = await _authRepo.refresh(refreshToken);
-      await _secureStore.setAccessToken(response.accessToken);
-      await _secureStore.setRefreshToken(response.refreshToken);
+      final isBio = await _secureStore.isBiometricEnabled();
+      final updatedUser = response.user.copyWith(
+        settings: response.user.settings.copyWith(
+          biometricEnabled: isBio,
+        ),
+      );
+
+      await _secureStore.saveSession(
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        userJson: jsonEncode(updatedUser.toJson()),
+        biometricEnabled: isBio,
+      );
 
       await _localDb.saveUserSession(
-        user: response.user,
+        user: updatedUser,
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
       );
+
       if (mounted) {
-        state = AuthState.authenticated(response.user);
+        state = AuthState.authenticated(updatedUser);
       }
     } catch (_) {
       // Abaikan jika offline, sesi offline lokal tetap berjalan
@@ -129,11 +200,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState.loading();
     try {
       final response = await _authRepo.login(email, password);
-      await _secureStore.setAccessToken(response.accessToken);
-      await _secureStore.setRefreshToken(response.refreshToken);
-
+      
+      final isBioSecure = await _secureStore.isBiometricEnabled();
       final localSettings = await _localDb.getSessionSettings(response.user.id);
-      final isBiometricActive = localSettings?.biometricEnabled ?? response.user.settings.biometricEnabled;
+      final isBiometricActive = isBioSecure || (localSettings?.biometricEnabled ?? response.user.settings.biometricEnabled);
 
       final userWithSettings = response.user.copyWith(
         settings: response.user.settings.copyWith(
@@ -141,6 +211,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
       );
 
+      final userJson = jsonEncode(userWithSettings.toJson());
+
+      // Simpan ke SecureStore (tahan banting di level OS Encrypted Storage)
+      await _secureStore.saveSession(
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        userJson: userJson,
+        biometricEnabled: isBiometricActive,
+      );
+
+      // Simpan ke LocalDatabase SQLite
       await _localDb.saveUserSession(
         user: userWithSettings,
         accessToken: response.accessToken,
@@ -160,9 +241,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Autentikasi biometrik HANYA jika ada akun sah yang pernah login di HP ini.
   Future<bool> authenticateWithBiometric() async {
-    final cachedUser = await _localDb.getCachedUser();
+    if (await _secureStore.isSessionExpired()) {
+      await logout();
+      state = AuthState.unauthenticated('Sesi telah kedaluwarsa (lebih dari 7 hari). Silakan login ulang.');
+      return false;
+    }
+
+    final cachedUser = await getPersistedUser();
     final latestSession = await _localDb.getLatestSessionSettings();
-    final refreshToken = latestSession?.refreshToken ?? await _secureStore.getRefreshToken();
+    final refreshToken = await _secureStore.getRefreshToken() ?? latestSession?.refreshToken;
 
     if (cachedUser == null ||
         cachedUser.id.isEmpty ||
@@ -176,7 +263,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final authenticated = await _biometricService.authenticate(
       localizedReason: 'Pindai sidik jari atau wajah Anda untuk masuk ke ARUS',
     );
-    if (!authenticated) return false;
+    if (!authenticated) {
+      // Jangan hapus data sesi saat user membatalkan prompt biometrik
+      return false;
+    }
 
     state = AuthState.authenticated(cachedUser);
     _silentBackgroundRefresh(refreshToken, cachedUser);
@@ -184,13 +274,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> toggleBiometric(bool enabled) async {
-    if (state.user != null) {
-      await _localDb.updateBiometricSetting(state.user!.id, enabled);
-      await _prefsStore?.setBiometricEnabled(enabled);
-      final updatedSettings = state.user!.settings.copyWith(
+    await _secureStore.setBiometricEnabled(enabled);
+    await _prefsStore?.setBiometricEnabled(enabled);
+
+    final currentUser = state.user ?? await getPersistedUser();
+    if (currentUser != null) {
+      await _localDb.updateBiometricSetting(currentUser.id, enabled);
+      final updatedSettings = currentUser.settings.copyWith(
         biometricEnabled: enabled,
       );
-      state = AuthState.authenticated(state.user!.copyWith(settings: updatedSettings));
+      final updatedUser = currentUser.copyWith(settings: updatedSettings);
+      await _secureStore.setUserJson(jsonEncode(updatedUser.toJson()));
+      if (state.isAuthenticated) {
+        state = AuthState.authenticated(updatedUser);
+      }
     }
   }
 

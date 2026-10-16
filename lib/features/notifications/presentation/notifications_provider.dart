@@ -9,7 +9,7 @@ final notificationsListProvider = FutureProvider.autoDispose<NotificationsRespon
 
 final unreadNotificationCountProvider = Provider.autoDispose<int>((ref) {
   final notifsAsync = ref.watch(notificationsListProvider);
-  return notifsAsync.value?.unreadCount ?? 0;
+  return notifsAsync.valueOrNull?.unreadCount ?? 0;
 });
 
 class NotificationActionNotifier extends StateNotifier<bool> {

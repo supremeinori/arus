@@ -28,27 +28,40 @@ import '../../features/about/presentation/about_screen.dart';
 import '../../features/feedback/presentation/feedback_screen.dart';
 import '../../features/users/presentation/user_management_screen.dart';
 
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    _ref.listen<AuthState>(authProvider, (previous, next) {
+      notifyListeners();
+    });
+  }
+}
+
+final routerNotifierProvider = Provider<RouterNotifier>((ref) {
+  return RouterNotifier(ref);
+});
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
     initialLocation: '/splash',
+    refreshListenable: notifier,
     redirect: (BuildContext context, GoRouterState state) {
+      final authState = ref.read(authProvider);
       final isSplash = state.matchedLocation == '/splash';
       final isLoggingIn = state.matchedLocation == '/login';
-
-      if (authState.status == AuthStatus.initial) {
-        return null; // Tetap di splash saat sedang memverifikasi sesi
-      }
-
       final isAuthenticated = authState.isAuthenticated;
 
-      if (!isAuthenticated && !isLoggingIn) {
-        return '/login';
+      // Jika user sudah terotentikasi dan masih berada di /splash atau /login, otomatis alihkan ke /shell
+      if (isAuthenticated && (isSplash || isLoggingIn)) {
+        return '/shell';
       }
 
-      if (isAuthenticated && (isLoggingIn || isSplash)) {
-        return '/shell';
+      // Jika belum terotentikasi dan mengakses rute selain /login atau /splash, alihkan ke /login
+      if (!isAuthenticated && !isLoggingIn && !isSplash) {
+        return '/login';
       }
 
       return null;

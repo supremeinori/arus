@@ -30,6 +30,19 @@ class AuthNotifierMock extends StateNotifier<AuthState> implements AuthNotifier 
 
   @override
   Future<void> toggleBiometric(bool enabled) async {}
+
+  @override
+  Future<UserModel?> getPersistedUser() async => state.user;
+
+  @override
+  void setUnauthenticated([String? message]) {
+    state = AuthState.unauthenticated(message);
+  }
+
+  @override
+  void restoreSessionInstant(UserModel user, [String? refreshToken]) {
+    state = AuthState.authenticated(user);
+  }
 }
 
 class MockShakeEventNotifier extends StateNotifier<DateTime?> implements ShakeEventNotifier {
