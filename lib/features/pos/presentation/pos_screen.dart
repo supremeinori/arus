@@ -8,6 +8,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../catalog/presentation/catalog_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import 'pos_provider.dart';
+import 'pos_cart_sheet.dart';
+import 'pos_menu_thumbnail.dart';
+import 'pos_catalog_provider.dart';
 import 'pos_checkout_sheet.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -30,16 +33,23 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   Future<void> _syncOfflineData() async {
-    final syncService = ref.read(syncServiceProvider);
-    final result = await syncService.syncPendingTransactions();
-    if (mounted && result.totalPending > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message ?? 'Sinkronisasi selesai.'),
-          backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
-        ),
-      );
-      ref.invalidate(productListProvider);
+    // Sync offline tidak boleh merusak layar kasir: di lingkungan tanpa
+    // plugin sqflite (widget test) maupun saat DB terkunci, kegagalan
+    // ditelan diam-diam agar grid katalog tetap tampil.
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      final result = await syncService.syncPendingTransactions();
+      if (mounted && result.totalPending > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Sinkronisasi selesai.'),
+            backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
+          ),
+        );
+        ref.invalidate(productListProvider);
+      }
+    } catch (_) {
+      // Abaikan: kasir tetap bisa jalan offline.
     }
   }
 
@@ -86,7 +96,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       }
     });
 
-    final productsAsync = ref.watch(productListProvider);
+    final productsAsync = ref.watch(posCatalogProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final cartState = ref.watch(posCartProvider);
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
@@ -107,18 +117,32 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.receipt_long_outlined, color: AppTheme.primaryBlue),
+            tooltip: 'Riwayat Transaksi Hari Ini',
+            onPressed: () => context.push('/pos/history'),
+          ),
+          IconButton(
             icon: const Icon(Icons.sync_rounded, color: AppTheme.primaryBlue),
             tooltip: 'Sinkronisasi Transaksi Offline',
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
-              final result = await ref.read(syncServiceProvider).syncPendingTransactions();
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(result.message ?? 'Sinkronisasi selesai.'),
-                  backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
-                ),
-              );
-              ref.invalidate(productListProvider);
+              try {
+                final result = await ref.read(syncServiceProvider).syncPendingTransactions();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(result.message ?? 'Sinkronisasi selesai.'),
+                    backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
+                  ),
+                );
+                ref.invalidate(productListProvider);
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Sinkronisasi gagal: $e'),
+                    backgroundColor: AppTheme.dangerRed,
+                  ),
+                );
+              }
             },
           ),
           IconButton(
@@ -237,15 +261,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               error: (err, _) => Center(
                 child: Text('Gagal memuat produk: $err', style: GoogleFonts.lexend()),
               ),
-              data: (products) {
+              data: (catalogItems) {
                 // Filter lokal berdasarkan pencarian & kategori
                 final query = _searchController.text.trim().toLowerCase();
-                final filtered = products.where((p) {
+                final filtered = catalogItems.where((c) {
+                  final p = c.product;
                   final matchesCat = _selectedCategoryId == null || p.categoryId == _selectedCategoryId;
                   final matchesQuery = query.isEmpty ||
                       p.name.toLowerCase().contains(query) ||
                       p.sku.toLowerCase().contains(query);
-                  return matchesCat && matchesQuery && p.isActive;
+                  return matchesCat && matchesQuery;
                 }).toList();
 
                 if (filtered.isEmpty) {
@@ -265,7 +290,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            products.isEmpty ? 'Katalog Masih Kosong' : 'Tidak Ada Produk Sesuai',
+                            catalogItems.isEmpty ? 'Katalog Masih Kosong' : 'Tidak Ada Produk Sesuai',
                             style: GoogleFonts.lexend(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -274,7 +299,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            products.isEmpty
+                            catalogItems.isEmpty
                                 ? 'Tambahkan produk baru ke katalog untuk mulai transaksi.'
                                 : 'Coba ubah kata kunci atau pilih kategori lain.',
                             textAlign: TextAlign.center,
@@ -321,15 +346,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    final product = filtered[index];
+                    final catalogItem = filtered[index];
+                    final product = catalogItem.product;
+                    final maxPortions = catalogItem.maxPortions;
                     final inCart = cartState.items.any((i) => i.productId == product.id);
-                    final isOutOfStock = product.estimatedPortions <= 0;
+                    final isOutOfStock = !catalogItem.isAvailable;
                     final cartItem = cartState.items.cast<dynamic>().firstWhere(
                           (i) => i.productId == product.id,
                           orElse: () => null,
                         );
                     final inCartQty = cartItem != null ? (cartItem.quantity as int) : 0;
-                    final remainingPortions = (product.estimatedPortions - inCartQty).clamp(0, product.estimatedPortions);
+                    final remainingPortions = (maxPortions - inCartQty).clamp(0, maxPortions > 0 ? maxPortions : 0);
 
                     return InkWell(
                       onTap: () {
@@ -345,19 +372,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           return;
                         }
 
-                        if (inCartQty >= product.estimatedPortions) {
+                        final ok = ref
+                            .read(posCartProvider.notifier)
+                            .addProduct(product, maxPortions: maxPortions);
+                        if (!ok) {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Maksimal estimasi porsi tercapai (${product.estimatedPortions} porsi).'),
+                              content: Text('Maksimal estimasi porsi tercapai ($maxPortions porsi).'),
                               backgroundColor: Colors.amber.shade900,
                               duration: const Duration(seconds: 2),
                             ),
                           );
                           return;
                         }
-
-                        ref.read(posCartProvider.notifier).addProduct(product);
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -405,17 +433,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                     ],
                                   ),
                                 ),
-                                if (product.imageUrl != null && product.imageUrl!.isNotEmpty)
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.network(
-                                      product.imageUrl!,
-                                      width: 36,
-                                      height: 36,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                                    ),
-                                  ),
+                                // Thumbnail SELALU 36x36 (gambar/placeholder). Jangan kembalikan
+                                // box 0x0: ikut di-hit-test mouse desktop -> crash hit-test.
+                                PosMenuThumbnail(imageUrl: product.imageUrl),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -434,8 +454,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                 isOutOfStock
                                     ? 'Habis (Bahan Baku Kurang)'
                                     : (inCartQty > 0
-                                        ? 'Sisa: $remainingPortions / ${product.estimatedPortions} porsi'
-                                        : 'Estimasi: ${product.estimatedPortions} Porsi'),
+                                        ? 'Sisa: $remainingPortions / $maxPortions porsi'
+                                        : 'Estimasi: $maxPortions Porsi'),
                                 style: GoogleFonts.lexend(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -484,67 +504,104 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             ),
           ),
 
-          // Bottom Bar Keranjang Belanja
-          if (cartState.items.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                ),
-              ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${cartState.totalItemsCount} Item Terpilih',
-                          style: GoogleFonts.lexend(
-                            fontSize: 11.5,
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          currencyFormatter.format(cartState.totalIdr),
-                          style: GoogleFonts.lexend(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.accentBlack,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    ElevatedButton.icon(
-                      onPressed: _showCheckoutSheet,
-                      icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
-                      label: Text(
-                        'Checkout',
-                        style: GoogleFonts.lexend(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        elevation: 0,
-                        minimumSize: const Size(130, 44),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          // Bottom Bar Keranjang Belanja — SELALU di-layout (walaupun kosong)
+          // agar tidak ada tombol yang disisipkan mendadak di frame yang sama
+          // dengan tap pertama. Sisipan kondisional (`if items.isNotEmpty`)
+          // membuat OutlinedButton "Keranjang" belum selesai layout saat
+          // MouseTracker desktop me-hit-test posisi mouse yang masih hover di
+          // kartu -> "Cannot hit test a render box with no size"
+          // (RenderConstrainedBox NEEDS-LAYOUT di bawah OutlinedButton <- Row
+          // <- MediaQuery <- Padding <- SafeArea <- ... <- Column).
+          // Saat kosong, tombol dinonaktifkan (onPressed null) alih-alih
+          // dihapus dari tree.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
               ),
             ),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        cartState.items.isEmpty
+                            ? 'Ketuk menu untuk menambah'
+                            : '${cartState.totalItemsCount} Item Terpilih',
+                        style: GoogleFonts.lexend(
+                          fontSize: 11.5,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        currencyFormatter.format(cartState.totalIdr),
+                        style: GoogleFonts.lexend(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: cartState.items.isEmpty
+                              ? const Color(0xFF94A3B8)
+                              : AppTheme.accentBlack,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  OutlinedButton.icon(
+                    onPressed: cartState.items.isEmpty
+                        ? null
+                        : () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const PosCartSheet(),
+                            );
+                          },
+                    icon: const Icon(Icons.shopping_cart_outlined, size: 18),
+                    label: const Text('Keranjang'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryBlue,
+                      side: const BorderSide(color: AppTheme.primaryBlue),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed:
+                        cartState.items.isEmpty ? null : _showCheckoutSheet,
+                    icon: const Icon(Icons.arrow_forward_rounded,
+                        color: Colors.white, size: 18),
+                    label: Text(
+                      'Checkout',
+                      style: GoogleFonts.lexend(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      elevation: 0,
+                      minimumSize: const Size(130, 44),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

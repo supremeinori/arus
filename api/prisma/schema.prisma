@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -242,7 +243,7 @@ model BlockchainRecord {
   id                String   @id @default(uuid()) @db.Uuid
   outlet_id         String   @db.Uuid
   block_index       Int
-  event_id          String   @unique @default(uuid()) @db.VarChar(120)
+  event_id          String?  @unique @db.VarChar(120)
   event_type        String   @default("sale") @db.VarChar(40)
   transaction_id    String?  @db.Uuid
   event_data        Json?

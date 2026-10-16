@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/uuid_generator.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../data/pos_catalog_repository.dart';
 import '../data/pos_repository.dart';
+import 'pos_catalog_provider.dart';
 import 'pos_provider.dart';
 import 'pos_receipt_dialog.dart';
 
@@ -41,14 +43,14 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
 
   Future<void> _processCheckout() async {
     final cartState = ref.read(posCartProvider);
-    final authState = ref.read(authProvider);
-    final user = authState.user;
 
     if (cartState.items.isEmpty) return;
 
-    final outletId = user?.outlets.isNotEmpty == true ? user!.outlets.first.id : '7f9bef3c-5231-4854-922a-abc0fbc55ab4';
-    final outletName = user?.outlets.isNotEmpty == true ? user!.outlets.first.name : 'ARUS Coffee';
-    final cashierName = user?.name ?? 'Kasir Utama';
+    final outletId = ref.read(posOutletIdProvider);
+    if (outletId == null || outletId.isEmpty) {
+      setState(() => _errorMessage = 'Outlet kasir tidak terdeteksi. Login ulang.');
+      return;
+    }
 
     final total = cartState.totalIdr;
     final isCash = cartState.paymentMethod == 'cash';
@@ -66,21 +68,23 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
 
     try {
       final clientRequestId = UuidGenerator.v4();
-      final repo = ref.read(posRepositoryProvider);
+      final posRepo = ref.read(posCatalogRepositoryProvider);
 
-      final transaction = await repo.createTransaction(
-        clientRequestId: clientRequestId,
+      final transaction = await posRepo.checkout(
         outletId: outletId,
+        clientRequestId: clientRequestId,
         paymentMethod: cartState.paymentMethod,
         paidIdr: paidAmount,
         discountIdr: cartState.discountIdr,
-        items: cartState.items,
-        cashierName: cashierName,
-        outletName: outletName,
+        items: cartState.items
+            .map((item) => {'product_id': item.productId, 'quantity': item.quantity})
+            .toList(),
       );
 
-      // Reset Keranjang
+      // Reset keranjang + refresh stok katalog & riwayat
       ref.read(posCartProvider.notifier).clearCart();
+      ref.invalidate(posCatalogProvider);
+      ref.invalidate(posHistoryProvider);
 
       if (mounted) {
         Navigator.of(context).pop(); // Tutup bottom sheet
@@ -91,10 +95,35 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         );
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      // Fallback offline: simpan ke antrean SQLite lokal (jalur lama)
+      try {
+        final user = ref.read(authProvider).user;
+        final offlineRepo = ref.read(posRepositoryProvider);
+        final transaction = await offlineRepo.createTransaction(
+          clientRequestId: UuidGenerator.v4(),
+          outletId: outletId,
+          paymentMethod: cartState.paymentMethod,
+          paidIdr: paidAmount,
+          discountIdr: cartState.discountIdr,
+          items: cartState.items,
+          cashierName: user?.name,
+          outletName: user?.outlets.isNotEmpty == true ? user!.outlets.first.name : null,
+        );
+        ref.read(posCartProvider.notifier).clearCart();
+        if (mounted) {
+          Navigator.of(context).pop();
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => PosReceiptDialog(transaction: transaction),
+          );
+        }
+      } catch (offlineErr) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = offlineErr.toString().replaceAll('Exception: ', '');
+        });
+      }
     }
   }
 
@@ -225,6 +254,38 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
             ),
             const SizedBox(height: 16),
 
+            // Simulasi QRIS / Kartu: tampilkan kode bayar + konfirmasi
+            if (!isCash) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.borderOutline),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.qr_code_2_rounded, size: 120, color: AppTheme.accentBlack),
+                    const SizedBox(height: 8),
+                    Text(
+                      cartState.paymentMethod == 'qris_simulated'
+                          ? 'Scan QR untuk membayar ${currencyFormatter.format(total)}'
+                          : 'Gesek kartu EDC sebesar ${currencyFormatter.format(total)}',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMuted),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Simulasi — tekan "Konfirmasi Pembayaran Diterima" setelah pelanggan membayar.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Jika Tunai: Input Uang & Preset Cepat
             if (isCash) ...[
               TextField(
@@ -319,7 +380,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _processCheckout,
+                onPressed: (_isLoading || (isCash && currentPaid < total)) ? null : _processCheckout,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryBlue,
                   shape: RoundedRectangleBorder(
@@ -333,7 +394,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(
-                        'Konfirmasi & Bayar',
+                        isCash ? 'Selesaikan Transaksi' : 'Konfirmasi Pembayaran Diterima',
                         style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                       ),
               ),

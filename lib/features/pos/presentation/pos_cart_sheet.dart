@@ -1,0 +1,133 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import '../../../core/theme/app_theme.dart';
+import 'pos_provider.dart';
+
+/// Bottom sheet detail keranjang: daftar baris + tombol +, -, hapus per baris,
+/// kalkulasi Subtotal, Diskon, Total live.
+class PosCartSheet extends ConsumerWidget {
+  const PosCartSheet({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cart = ref.watch(posCartProvider);
+    final notifier = ref.read(posCartProvider.notifier);
+    final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Keranjang (${cart.totalItemsCount} item)',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16)),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const Divider(),
+          if (cart.items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('Keranjang kosong.',
+                    style: GoogleFonts.lexend(color: AppTheme.textMuted)),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: cart.items.length,
+                separatorBuilder: (context, index) => const Divider(height: 12),
+                itemBuilder: (_, i) {
+                  final item = cart.items[i];
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.productName,
+                                style: GoogleFonts.lexend(
+                                    fontWeight: FontWeight.w600, fontSize: 13)),
+                            Text(fmt.format(item.unitPriceIdr),
+                                style: GoogleFonts.lexend(
+                                    fontSize: 11.5, color: AppTheme.textMuted)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, size: 20),
+                        onPressed: () => notifier.decrementProduct(item.productId),
+                        tooltip: 'Kurangi',
+                      ),
+                      Text('${item.quantity}',
+                          style: GoogleFonts.lexend(
+                              fontWeight: FontWeight.w700, fontSize: 14)),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline,
+                            size: 20, color: AppTheme.primaryBlue),
+                        onPressed: () => notifier.addProductById(item.productId),
+                        tooltip: 'Tambah',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            size: 20, color: AppTheme.dangerRed),
+                        onPressed: () => notifier.removeProduct(item.productId),
+                        tooltip: 'Hapus baris',
+                      ),
+                      SizedBox(
+                        width: 84,
+                        child: Text(fmt.format(item.lineTotalIdr),
+                            textAlign: TextAlign.right,
+                            style: GoogleFonts.lexend(
+                                fontWeight: FontWeight.w700, fontSize: 13)),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          const Divider(),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13)),
+            Text(fmt.format(cart.subtotalIdr),
+                style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13)),
+          ]),
+          const SizedBox(height: 4),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('Diskon', style: GoogleFonts.lexend(fontSize: 13)),
+            Text('- ${fmt.format(cart.discountIdr)}',
+                style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFFDC2626))),
+          ]),
+          const SizedBox(height: 6),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('Total Tagihan',
+                style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15)),
+            Text(fmt.format(cart.totalIdr),
+                style: GoogleFonts.lexend(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: AppTheme.primaryBlue)),
+          ]),
+        ],
+      ),
+    );
+  }
+}

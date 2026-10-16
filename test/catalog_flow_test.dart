@@ -186,6 +186,9 @@ void main() {
       expect(find.text('Edit Menu / Produk'), findsOneWidget);
       expect(find.text('Es Kopi Susu Aren'), findsOneWidget);
       expect(find.text('KOP-01'), findsOneWidget);
+
+      await tester.drag(find.byType(Form), const Offset(0, -600));
+      await tester.pumpAndSettle();
       expect(find.text('Simpan Perubahan Menu'), findsOneWidget);
     });
   });

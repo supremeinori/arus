@@ -34,6 +34,7 @@ vi.mock('../src/config/db', () => {
         create: vi.fn(),
       },
       $queryRaw: vi.fn().mockResolvedValue([]),
+      $executeRaw: vi.fn().mockResolvedValue(0),
       notification: {
         create: vi.fn(),
       },

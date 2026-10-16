@@ -34,15 +34,21 @@ class PosCartState {
 class PosCartNotifier extends StateNotifier<PosCartState> {
   PosCartNotifier() : super(const PosCartState());
 
-  void addProduct(ProductModel product) {
+  /// Tambah produk ke keranjang; qty dibatasi [maxPortions] bila diberikan.
+  /// Mengembalikan false bila batas tercapai (UI tampilkan snackbar).
+  bool addProduct(ProductModel product, {int? maxPortions}) {
+    final cap = maxPortions ?? product.estimatedPortions;
     final existingIndex = state.items.indexWhere((item) => item.productId == product.id);
 
     if (existingIndex >= 0) {
       final current = state.items[existingIndex];
+      if (cap > 0 && current.quantity + 1 > cap) return false;
       final updatedList = List<PosCartItem>.from(state.items);
       updatedList[existingIndex] = current.copyWith(quantity: current.quantity + 1);
       state = state.copyWith(items: updatedList);
+      return true;
     } else {
+      if (cap <= 0) return false;
       final newItem = PosCartItem(
         productId: product.id,
         productName: product.name,
@@ -51,8 +57,25 @@ class PosCartNotifier extends StateNotifier<PosCartState> {
         quantity: 1,
       );
       state = state.copyWith(items: [...state.items, newItem]);
+      return true;
     }
   }
+
+  /// Increment dari sheet keranjang (tanpa objek produk) — butuh batas max.
+  bool incrementProduct(String productId, {required int maxPortions}) {
+    final existingIndex = state.items.indexWhere((item) => item.productId == productId);
+    if (existingIndex < 0) return false;
+    final current = state.items[existingIndex];
+    if (maxPortions > 0 && current.quantity + 1 > maxPortions) return false;
+    final updatedList = List<PosCartItem>.from(state.items);
+    updatedList[existingIndex] = current.copyWith(quantity: current.quantity + 1);
+    state = state.copyWith(items: updatedList);
+    return true;
+  }
+
+  /// Alias untuk sheet keranjang lama.
+  bool addProductById(String productId, {int maxPortions = 0}) =>
+      incrementProduct(productId, maxPortions: maxPortions);
 
   void decrementProduct(String productId) {
     final existingIndex = state.items.indexWhere((item) => item.productId == productId);

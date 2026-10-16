@@ -4,6 +4,7 @@ import app from '../src/app';
 import { prisma } from '../src/config/db';
 import { signAccessToken } from '../src/shared/jwt';
 import { Role } from '@prisma/client';
+import { integrityService } from '../src/modules/integrity/integrity.service';
 
 vi.mock('../src/config/db', () => {
   return {

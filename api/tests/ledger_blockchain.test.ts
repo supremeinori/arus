@@ -11,6 +11,7 @@ describe('Persistent single-layer transaction blockchain', () => {
     records = [];
     db = {
       $queryRaw: vi.fn().mockResolvedValue([]),
+      $executeRaw: vi.fn().mockResolvedValue(0),
       blockchainRecord: {
         findUnique: vi.fn(async ({ where }: { where: { event_id?: string; id?: string } }) =>
           records.find((record) => record.event_id === where.event_id || record.id === where.id) ?? null,

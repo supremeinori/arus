@@ -18,6 +18,7 @@ import '../../features/outlets/presentation/outlet_form_screen.dart';
 import '../../features/outlets/presentation/outlet_list_screen.dart';
 import '../../features/reports/presentation/report_detail_screen.dart';
 import '../../features/reports/presentation/report_list_screen.dart';
+import '../../features/pos/presentation/pos_history_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/sensors/presentation/sensor_test_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -75,7 +76,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/shell', builder: (context, state) => const MainShell()),
-      GoRoute(path: '/pos', builder: (context, state) => const PosScreen()),
+      GoRoute(
+        path: '/pos',
+        builder: (context, state) => const PosScreen(),
+        routes: [
+          GoRoute(
+            path: 'history',
+            builder: (context, state) => const PosHistoryScreen(),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),

@@ -70,7 +70,11 @@ export class IntegrityService {
     event: BlockchainEvent,
     timestamp = new Date()
   ) {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${outletId}))`;
+    if (typeof tx.$executeRaw === 'function') {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${outletId}))`;
+    } else if (typeof tx.$queryRaw === 'function') {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${outletId}))`;
+    }
 
     const existing = await tx.blockchainRecord.findUnique({ where: { event_id: event.eventId } });
     if (existing) return existing;
