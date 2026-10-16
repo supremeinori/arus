@@ -1,6 +1,5 @@
 import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
 export type InsightSeverity = 'info' | 'warning' | 'critical';
@@ -30,25 +29,6 @@ export class InsightsService {
    * R1 LOW_STOCK, R2 RESTOCK_URGENT, R4 SLOW_MOVING
    */
   async generateInsights(): Promise<{ evaluated_count: number; insights: BusinessInsightItem[] }> {
-    if (!(await isDbAvailable())) {
-      const fallbackList: BusinessInsightItem[] = [
-        {
-          id: 'ins-001',
-          rule_code: 'RESTOCK_URGENT',
-          severity: 'critical',
-          title: 'Stok Kritis: Susu Fresh Milk (Sudirman)',
-          message: 'Sisa stok 3 liter di bawah batas minimum pemesanan ulang (10 liter).',
-          recommendation: 'Lakukan pemesanan ulang 25 liter segera ke supplier Greenfields.',
-          evidence: { current_stock: 3, reorder_level: 10, safety_stock: 5 },
-          status: 'new',
-          outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' },
-          product: { id: 'prod-002', name: 'Susu Fresh Milk Pasteurisasi', sku: 'ING-MILK-01' },
-          created_at: new Date(),
-        },
-      ];
-      return { evaluated_count: fallbackList.length, insights: fallbackList };
-    }
-
     const generatedInsights: BusinessInsightItem[] = [];
 
     // 1. Evaluasi R1 (LOW_STOCK) & R2 (RESTOCK_URGENT)

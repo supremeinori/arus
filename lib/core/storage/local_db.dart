@@ -405,7 +405,10 @@ class LocalDatabase {
     if (session?.userJson != null && session!.userJson!.isNotEmpty) {
       try {
         final decoded = jsonDecode(session.userJson!) as Map<String, dynamic>;
-        return UserModel.fromJson(decoded);
+        final user = UserModel.fromJson(decoded);
+        if (user.id.isNotEmpty && user.email.isNotEmpty && user.name.isNotEmpty) {
+          return user;
+        }
       } catch (_) {}
     }
     return null;
@@ -428,26 +431,22 @@ class LocalDatabase {
     );
   }
 
-  Future<void> clearSession(String userId) async {
+  Future<void> clearSession([String? userId]) async {
     final db = await database;
     if (db == null) {
-      if (_webSessionStore.containsKey(userId)) {
-        _webSessionStore[userId]!['access_token'] = null;
-        _webSessionStore[userId]!['refresh_token'] = null;
-      }
+      _webSessionStore.clear();
       return;
     }
 
-    // Cabut token autentikasi, namun pertahankan profil user di lokal agar biometrik tetap bisa login
-    await db.update(
-      'local_session_settings',
-      {
-        'access_token': null,
-        'refresh_token': null,
-      },
-      where: 'user_id = ?',
-      whereArgs: [userId],
-    );
+    if (userId != null && userId.isNotEmpty) {
+      await db.delete(
+        'local_session_settings',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+      );
+    } else {
+      await db.delete('local_session_settings');
+    }
   }
 
   // ========================================================

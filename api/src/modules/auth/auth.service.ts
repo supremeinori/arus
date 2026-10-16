@@ -1,114 +1,17 @@
 import { randomUUID } from 'crypto';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { env } from '../../config/env';
 import { AppError } from '../../shared/errors';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../shared/jwt';
-import {
-  hashPassword,
-  verifyPassword,
-} from '../../shared/tokens';
+import { signAccessToken } from '../../shared/jwt';
+import { hashPassword, verifyPassword, generateRefreshToken, hashRefreshToken } from '../../shared/tokens';
 
 export class AuthService {
   private failedAttempts: Map<string, { count: number; lockedUntil?: Date }> = new Map();
-
-  private demoLogin(email: string, passwordInput: string) {
-    const validPasswords = ['Demo1234', 'password123', 'demo1234', 'Password123!', 'password123!', 'owner123', 'staff123'];
-    const demoAccounts: Record<string, { id: string; name: string; role: any }> = {
-      'owner@arus.demo': {
-        id: 'u-owner-001',
-        name: 'Rina Kartika (Owner)',
-        role: 'owner',
-      },
-      'owner@arus.local': {
-        id: 'u-owner-001',
-        name: 'Rina Kartika (Owner)',
-        role: 'owner',
-      },
-      'manager@arus.demo': {
-        id: 'u-mgr-001',
-        name: 'Budi Santoso (Manager)',
-        role: 'manager',
-      },
-      'manager@arus.local': {
-        id: 'u-mgr-001',
-        name: 'Budi Santoso (Manager)',
-        role: 'manager',
-      },
-      'staff@arus.demo': {
-        id: 'u-staff-001',
-        name: 'Siti Rahma (Kasir)',
-        role: 'staff',
-      },
-      'staff@arus.local': {
-        id: 'u-staff-001',
-        name: 'Siti Rahma (Kasir)',
-        role: 'staff',
-      },
-    };
-
-    const targetAccount = demoAccounts[email];
-    if (!targetAccount) {
-      throw new AppError(
-        'AUTH_INVALID_CREDENTIALS',
-        401,
-        'Email atau password demo yang Anda masukkan salah.'
-      );
-    }
-
-    if (!validPasswords.includes(passwordInput)) {
-      throw new AppError(
-        'AUTH_INVALID_CREDENTIALS',
-        401,
-        'Password salah. Gunakan password demo default "Demo1234".'
-      );
-    }
-
-    const accessToken = signAccessToken({
-      sub: targetAccount.id,
-      role: targetAccount.role,
-      email,
-    });
-    const rawRefreshToken = signRefreshToken({
-      sub: targetAccount.id,
-      role: targetAccount.role,
-      email,
-    });
-
-    return {
-      access_token: accessToken,
-      refresh_token: rawRefreshToken,
-      expires_in: env.JWT_ACCESS_TTL_SEC,
-      user: {
-        id: targetAccount.id,
-        name: targetAccount.name,
-        email,
-        role: targetAccount.role,
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-        outlets: [
-          { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
-          { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
-          { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
-        ],
-        settings: {
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-          biometric_enabled: false,
-          shake_refresh_enabled: true,
-          tilt_enabled: true,
-        },
-      },
-    };
-  }
 
   async login(emailInput: string, passwordInput: string, deviceLabel?: string) {
     const email = emailInput.trim().toLowerCase();
 
     let user: any = null;
-    if (!(await isDbAvailable())) {
-      return this.demoLogin(email, passwordInput);
-    }
-
     try {
       user = await prisma.user.findUnique({
         where: { email },
@@ -118,8 +21,9 @@ export class AuthService {
           },
         },
       });
-    } catch (_) {
-      return this.demoLogin(email, passwordInput);
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memproses login.');
     }
 
     if (!user || !user.is_active) {
@@ -127,6 +31,15 @@ export class AuthService {
         'AUTH_INVALID_CREDENTIALS',
         401,
         'Email atau password yang Anda masukkan salah.'
+      );
+    }
+
+    const userLockedUntil = (user as any).locked_until;
+    if (userLockedUntil && new Date(userLockedUntil) > new Date()) {
+      throw new AppError(
+        'AUTH_LOCKED',
+        423,
+        'Akun dikunci sementara karena terlalu banyak percobaan. Coba lagi nanti.'
       );
     }
 
@@ -173,11 +86,22 @@ export class AuthService {
       role: user.role,
       email: user.email,
     });
-    const rawRefreshToken = signRefreshToken({
-      sub: user.id,
-      role: user.role,
-      email: user.email,
-    });
+    const rawRefreshToken = generateRefreshToken();
+    const tokenHash = hashRefreshToken(rawRefreshToken);
+    const expiresAt = new Date(Date.now() + env.REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+    if (prisma.refreshToken?.create) {
+      try {
+        await prisma.refreshToken.create({
+          data: {
+            user_id: user.id,
+            token_hash: tokenHash,
+            family_id: randomUUID(),
+            expires_at: expiresAt,
+          },
+        });
+      } catch (_) {}
+    }
 
     let accessibleOutlets = [];
     if (user.role === 'owner') {
@@ -186,11 +110,11 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      accessibleOutlets = user.outlets.map((uo: any) => ({
-        id: uo.outlet.id,
-        name: uo.outlet.name,
-        timezone: uo.outlet.timezone,
-        address: uo.outlet.address,
+      accessibleOutlets = (user.outlets || []).map((uo: any) => ({
+        id: uo.outlet?.id || uo.id,
+        name: uo.outlet?.name || uo.name,
+        timezone: uo.outlet?.timezone || uo.timezone,
+        address: uo.outlet?.address || uo.address,
       }));
     }
 
@@ -217,59 +141,91 @@ export class AuthService {
   }
 
   async refresh(rawToken: string) {
-    if (rawToken && rawToken.startsWith('demo-refresh-')) {
-      const accessToken = signAccessToken({
-        sub: 'u-owner-001',
-        role: 'owner',
-        email: 'owner@arus.demo',
+    if (!rawToken) {
+      throw new AppError('AUTH_SESSION_INVALID', 401, 'Token refresh diperlukan.');
+    }
+
+    const tokenHash = hashRefreshToken(rawToken);
+
+    let tokenRecord: any = null;
+    try {
+      tokenRecord = await prisma.refreshToken.findUnique({
+        where: { token_hash: tokenHash },
+        include: { user: true },
       });
-      return {
-        access_token: accessToken,
-        refresh_token: signRefreshToken({
-          sub: 'u-owner-001',
-          role: 'owner',
-          email: 'owner@arus.demo',
-        }),
-        expires_in: env.JWT_ACCESS_TTL_SEC,
-        user: {
-          id: 'u-owner-001',
-          name: 'Rina Kartika (Owner)',
-          email: 'owner@arus.demo',
-          role: 'owner',
-          outlets: [],
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memperbarui sesi.');
+    }
+
+    if (!tokenRecord) {
+      throw new AppError('AUTH_SESSION_INVALID', 401, 'Sesi tidak valid. Silakan login kembali.');
+    }
+
+    // REUSE DETECTION (BR-AUTH-02): Jika token yang sudah di-rotate dipakai lagi, cabut seluruh keluarga token
+    if (tokenRecord.revoked_at !== null) {
+      await prisma.refreshToken.updateMany({
+        where: { family_id: tokenRecord.family_id },
+        data: { revoked_at: new Date() },
+      });
+      throw new AppError(
+        'AUTH_REFRESH_REUSED',
+        401,
+        'Terdeteksi penggunaan ulang token sesi yang mencurigakan. Seluruh sesi dicabut.'
+      );
+    }
+
+    // Cek kedaluwarsa
+    if (tokenRecord.expires_at < new Date()) {
+      await prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
+        data: { revoked_at: new Date() },
+      });
+      throw new AppError('AUTH_TOKEN_EXPIRED', 401, 'Sesi telah kedaluwarsa. Silakan login kembali.');
+    }
+
+    if (!tokenRecord.user || !tokenRecord.user.is_active) {
+      throw new AppError('AUTH_SESSION_INVALID', 401, 'Akun pengguna dinonaktifkan.');
+    }
+
+    // ROTASI TOKEN: Cabut token lama, buat token baru dalam family yang sama
+    const newRawRefreshToken = generateRefreshToken();
+    const newTokenHash = hashRefreshToken(newRawRefreshToken);
+    const expiresAt = new Date(Date.now() + env.REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000);
+
+    await prisma.$transaction([
+      prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
+        data: {
+          revoked_at: new Date(),
+          replaced_by: newTokenHash,
         },
-      };
-    }
+      }),
+      prisma.refreshToken.create({
+        data: {
+          user_id: tokenRecord.user_id,
+          token_hash: newTokenHash,
+          family_id: tokenRecord.family_id,
+          expires_at: expiresAt,
+        },
+      }),
+    ]);
 
-    const payload = verifyRefreshToken(rawToken);
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-    });
-
-    if (!user || !user.is_active) {
-      throw new AppError('AUTH_SESSION_INVALID', 401, 'Sesi tidak valid atau akun dinonaktifkan.');
-    }
-
-    const newAccessToken = signAccessToken({
-      sub: user.id,
-      role: user.role,
-      email: user.email,
-    });
-    const newRefreshToken = signRefreshToken({
-      sub: user.id,
-      role: user.role,
-      email: user.email,
+    const accessToken = signAccessToken({
+      sub: tokenRecord.user.id,
+      role: tokenRecord.user.role,
+      email: tokenRecord.user.email,
     });
 
     return {
-      access_token: newAccessToken,
-      refresh_token: newRefreshToken,
+      access_token: accessToken,
+      refresh_token: newRawRefreshToken,
       expires_in: env.JWT_ACCESS_TTL_SEC,
     };
   }
 
   async logout(rawToken?: string) {
-    // Stateless token - client drops token from flutter_secure_storage
+    // Stateless token - client drops token from local secure storage
     return;
   }
 
@@ -278,37 +234,20 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    if (userId.startsWith('u-')) {
-      return {
-        user: {
-          id: userId,
-          name: userId === 'u-owner-001' ? 'Rina Kartika (Owner)' : 'Staff Kasir',
-          email: userId === 'u-owner-001' ? 'owner@arus.demo' : 'staff@arus.demo',
-          role: userId === 'u-owner-001' ? 'owner' : 'staff',
+    let user: any = null;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          outlets: {
+            include: { outlet: true },
+          },
         },
-        outlets: [
-          { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)', timezone: 'Asia/Jakarta', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat' },
-          { id: 'out-002', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta', address: 'Jl. Senopati No. 12, Jakarta Selatan' },
-          { id: 'out-003', name: 'Kopi Arus - Canggu', timezone: 'Asia/Makassar', address: 'Jl. Pantai Batu Bolong, Bali' },
-        ],
-        settings: {
-          display_currency: 'IDR',
-          display_timezone: 'Asia/Jakarta',
-          biometric_enabled: false,
-          shake_refresh_enabled: true,
-          tilt_enabled: true,
-        },
-      };
+      });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memuat profil.');
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        outlets: {
-          include: { outlet: true },
-        },
-      },
-    });
 
     if (!user) {
       throw new AppError('NOT_FOUND', 404, 'Pengguna tidak ditemukan.');
@@ -321,7 +260,7 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      outlets = user.outlets.map((uo) => ({
+      outlets = user.outlets.map((uo: any) => ({
         id: uo.outlet.id,
         name: uo.outlet.name,
         timezone: uo.outlet.timezone,
@@ -356,14 +295,19 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, data: { name?: string }) {
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        name: data.name,
-      },
-      select: { id: true, name: true, email: true, role: true },
-    });
-    return updated;
+    try {
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: data.name,
+        },
+        select: { id: true, name: true, email: true, role: true },
+      });
+      return updated;
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memperbarui profil.');
+    }
   }
 
   async changePassword(userId: string, currentPass: string, newPass: string) {
@@ -377,10 +321,15 @@ export class AuthService {
 
     const newHash = await hashPassword(newPass);
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password_hash: newHash },
-    });
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { password_hash: newHash },
+      });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal mengubah password.');
+    }
   }
 }
 

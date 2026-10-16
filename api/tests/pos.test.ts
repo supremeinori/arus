@@ -3,13 +3,14 @@ import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/db';
 import { signAccessToken } from '../src/shared/jwt';
-import { Role, PaymentMethod, TransactionStatus } from '@prisma/client';
+import { Role, PaymentMethod, TxnStatus } from '@prisma/client';
 
 vi.mock('../src/config/db', () => {
   return {
     prisma: {
       user: {
         findUnique: vi.fn(),
+        findMany: vi.fn(),
       },
       outlet: {
         findMany: vi.fn(),
@@ -20,11 +21,18 @@ vi.mock('../src/config/db', () => {
       product: {
         findUnique: vi.fn(),
       },
-      inventory: {
+      ingredient: {
         findUnique: vi.fn(),
         update: vi.fn(),
       },
       inventoryMovement: {
+        create: vi.fn(),
+      },
+      blockchainRecord: {
+        findFirst: vi.fn(),
+        create: vi.fn(),
+      },
+      notification: {
         create: vi.fn(),
       },
       transaction: {
@@ -44,7 +52,7 @@ vi.mock('../src/config/db', () => {
   };
 });
 
-describe('Transactions & POS Module (Milestone 6)', () => {
+describe('Transactions & POS Module (Milestone 6 / Modul 2)', () => {
   const mockStaff = {
     id: 'u-staff-1',
     email: 'staff@arus.demo',
@@ -77,34 +85,52 @@ describe('Transactions & POS Module (Milestone 6)', () => {
     vi.clearAllMocks();
   });
 
-  it('T-POS-01: Berhasil membuat transaksi tunai dan memotong stok', async () => {
+  it('T-POS-01: Berhasil membuat transaksi tunai dan memotong stok bahan baku sesuai resep', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockStaff as any);
-    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: 'out-1' }] as any);
-    vi.mocked(prisma.transaction.findUnique).mockResolvedValue(null); // Idempotency check: belum ada
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: '00000000-0000-0000-0000-000000000001' }] as any);
+    vi.mocked(prisma.transaction.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.product.findUnique).mockResolvedValue({
       id: 'prod-1',
       name: 'Kopi Susu',
       price_idr: 20000,
-      cost_idr: 8000,
       is_active: true,
+      recipes: [
+        {
+          ingredient_id: 'ing-1',
+          amount_needed: 20,
+          ingredient: {
+            id: 'ing-1',
+            outlet_id: '00000000-0000-0000-0000-000000000001',
+            cost_per_unit: 100,
+          },
+        },
+      ],
     } as any);
-    vi.mocked(prisma.inventory.findUnique).mockResolvedValue({
-      outlet_id: 'out-1',
-      product_id: 'prod-1',
-      quantity: 10,
+
+    vi.mocked(prisma.ingredient.findUnique).mockResolvedValue({
+      id: 'ing-1',
+      outlet_id: '00000000-0000-0000-0000-000000000001',
+      name: 'Biji Kopi Arabika',
+      unit: 'gram',
+      stock_qty: 100,
+      reorder_level: 30,
     } as any);
+
+    vi.mocked(prisma.blockchainRecord.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.blockchainRecord.create).mockResolvedValue({} as any);
 
     vi.mocked(prisma.transaction.create).mockResolvedValue({
       id: 'tx-1',
       receipt_no: 'INV-20261006-1234',
-      outlet_id: 'out-1',
+      outlet_id: '00000000-0000-0000-0000-000000000001',
       cashier_id: mockStaff.id,
       subtotal_idr: 40000,
       discount_idr: 0,
       total_idr: 40000,
       paid_idr: 50000,
       change_idr: 10000,
-      status: TransactionStatus.completed,
+      status: TxnStatus.completed,
+      created_at: new Date(),
       items: [
         {
           product_id: 'prod-1',
@@ -121,7 +147,7 @@ describe('Transactions & POS Module (Milestone 6)', () => {
       .set('Authorization', `Bearer ${staffToken}`)
       .send({
         client_request_id: '7b7074e4-a145-427f-a65c-6119f8638b93',
-        outlet_id: 'out-1',
+        outlet_id: '00000000-0000-0000-0000-000000000001',
         payment_method: PaymentMethod.cash,
         paid_idr: 50000,
         items: [{ product_id: 'prod-1', quantity: 2 }],
@@ -130,28 +156,43 @@ describe('Transactions & POS Module (Milestone 6)', () => {
     expect(res.status).toBe(201);
     expect(res.body.data.total_idr).toBe(40000);
     expect(res.body.data.change_idr).toBe(10000);
-    expect(prisma.inventory.update).toHaveBeenCalledWith(
+    // Verifikasi pemotongan stok bahan baku: 100 - (20 * 2) = 60
+    expect(prisma.ingredient.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { quantity: 8 },
+        where: { id: 'ing-1' },
+        data: { stock_qty: 60 },
       })
     );
   });
 
   it('T-POS-02: Menolak checkout jika uang tunai kurang (PAYMENT_INSUFFICIENT)', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockStaff as any);
-    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: 'out-1' }] as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: '00000000-0000-0000-0000-000000000001' }] as any);
     vi.mocked(prisma.transaction.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.product.findUnique).mockResolvedValue({
       id: 'prod-1',
       name: 'Kopi Susu',
       price_idr: 20000,
-      cost_idr: 8000,
       is_active: true,
+      recipes: [
+        {
+          ingredient_id: 'ing-1',
+          amount_needed: 20,
+          ingredient: {
+            id: 'ing-1',
+            outlet_id: '00000000-0000-0000-0000-000000000001',
+            cost_per_unit: 100,
+          },
+        },
+      ],
     } as any);
-    vi.mocked(prisma.inventory.findUnique).mockResolvedValue({
-      outlet_id: 'out-1',
-      product_id: 'prod-1',
-      quantity: 10,
+    vi.mocked(prisma.ingredient.findUnique).mockResolvedValue({
+      id: 'ing-1',
+      outlet_id: '00000000-0000-0000-0000-000000000001',
+      name: 'Biji Kopi Arabika',
+      unit: 'gram',
+      stock_qty: 100,
+      reorder_level: 30,
     } as any);
 
     const res = await request(app)
@@ -159,7 +200,7 @@ describe('Transactions & POS Module (Milestone 6)', () => {
       .set('Authorization', `Bearer ${staffToken}`)
       .send({
         client_request_id: '8b7074e4-a145-427f-a65c-6119f8638b94',
-        outlet_id: 'out-1',
+        outlet_id: '00000000-0000-0000-0000-000000000001',
         payment_method: PaymentMethod.cash,
         paid_idr: 10000, // Total 20.000, dibayar hanya 10.000
         items: [{ product_id: 'prod-1', quantity: 1 }],
@@ -182,28 +223,38 @@ describe('Transactions & POS Module (Milestone 6)', () => {
     expect(res.body.error.code).toBe('FORBIDDEN');
   });
 
-  it('T-POS-04: Owner berhasil melakukan void transaksi dan mengembalikan stok', async () => {
+  it('T-POS-04: Owner berhasil melakukan void transaksi dan mengembalikan stok bahan baku', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
     vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
 
     vi.mocked(prisma.transaction.findUnique).mockResolvedValue({
       id: 'tx-1',
       receipt_no: 'INV-20261006-1234',
-      outlet_id: 'out-1',
-      status: TransactionStatus.completed,
+      outlet_id: '00000000-0000-0000-0000-000000000001',
+      status: TxnStatus.completed,
+      created_at: new Date(),
       items: [{ product_id: 'prod-1', quantity: 2 }],
     } as any);
 
-    vi.mocked(prisma.inventory.findUnique).mockResolvedValue({
-      outlet_id: 'out-1',
-      product_id: 'prod-1',
-      quantity: 8,
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+      id: 'prod-1',
+      recipes: [
+        {
+          ingredient_id: 'ing-1',
+          amount_needed: 20,
+        },
+      ],
+    } as any);
+
+    vi.mocked(prisma.ingredient.findUnique).mockResolvedValue({
+      id: 'ing-1',
+      outlet_id: '00000000-0000-0000-0000-000000000001',
+      stock_qty: 60,
     } as any);
 
     vi.mocked(prisma.transaction.update).mockResolvedValue({
       id: 'tx-1',
-      status: TransactionStatus.voided,
-      void_reason: 'Pelanggan membatalkan pesanan',
+      status: TxnStatus.voided,
     } as any);
 
     const res = await request(app)
@@ -212,11 +263,12 @@ describe('Transactions & POS Module (Milestone 6)', () => {
       .send({ reason: 'Pelanggan membatalkan pesanan' });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.status).toBe(TransactionStatus.voided);
-    // Verifikasi stok dikembalikan dari 8 -> 10 (8 + 2)
-    expect(prisma.inventory.update).toHaveBeenCalledWith(
+    expect(res.body.data.status).toBe(TxnStatus.voided);
+    // Verifikasi stok dikembalikan dari 60 -> 100 (60 + 20*2)
+    expect(prisma.ingredient.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { quantity: 10 },
+        where: { id: 'ing-1' },
+        data: { stock_qty: 100 },
       })
     );
   });

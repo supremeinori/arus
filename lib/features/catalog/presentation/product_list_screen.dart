@@ -289,6 +289,30 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                             ),
                                         ],
                                       ),
+                                      const SizedBox(height: 8),
+
+                                      // Estimasi Porsi Badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: prod.estimatedPortions > 0 ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: prod.estimatedPortions > 0 ? const Color(0xFF93C5FD) : const Color(0xFFFCA5A5),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          prod.estimatedPortions > 0
+                                              ? 'Estimasi: ${prod.estimatedPortions} Porsi'
+                                              : 'Habis (Bahan Baku Kurang)',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: prod.estimatedPortions > 0 ? AppTheme.primaryBlue : AppTheme.dangerRed,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),

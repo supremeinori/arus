@@ -4,6 +4,15 @@ import { gameService } from './game.service';
 import { AppError } from '../../shared/errors';
 
 export class GameController {
+  getScenarios(_req: Request, res: Response, next: NextFunction): void {
+    try {
+      const data = gameService.getScenarios();
+      res.status(200).json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getQuestions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const modeParam = (req.query.mode as string) || 'guess_name';
@@ -23,6 +32,12 @@ export class GameController {
       const userId = req.user?.id;
       if (!userId) {
         throw new AppError('AUTH_UNAUTHORIZED', 401, 'Silakan login terlebih dahulu.');
+      }
+
+      if (req.body.answers && Array.isArray(req.body.answers)) {
+        const result = gameService.submitSession(req.body.answers);
+        res.status(200).json({ data: result });
+        return;
       }
 
       const { mode, score, correct_count, total_questions, duration_sec } = req.body;

@@ -1,6 +1,5 @@
-import { MovementType, PrismaClient, Role } from '@prisma/client';
+import { MovementType, Role } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
 export interface IngredientItem {
@@ -15,18 +14,6 @@ export interface IngredientItem {
   updated_at: Date;
   outlet?: { id: string; name: string };
 }
-
-// Persistent in-memory demo ingredient data for offline/demo operation
-const sharedDemoIngredients: IngredientItem[] = [
-  { id: 'ing-001', outlet_id: 'out-001', name: 'Biji Kopi Arabika House Blend', unit: 'gram', stock_qty: 2400, reorder_level: 500, cost_per_unit: 150, status: 'ok', updated_at: new Date(), outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' } },
-  { id: 'ing-002', outlet_id: 'out-001', name: 'Susu Fresh Milk UHT', unit: 'ml', stock_qty: 350, reorder_level: 1000, cost_per_unit: 20, status: 'low', updated_at: new Date(), outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' } },
-  { id: 'ing-003', outlet_id: 'out-001', name: 'Air Mineral Purified', unit: 'ml', stock_qty: 15000, reorder_level: 2000, cost_per_unit: 2, status: 'ok', updated_at: new Date(), outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' } },
-  { id: 'ing-004', outlet_id: 'out-001', name: 'Gula Aren Cair Organik', unit: 'ml', stock_qty: 0, reorder_level: 500, cost_per_unit: 40, status: 'out', updated_at: new Date(), outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' } },
-  { id: 'ing-005', outlet_id: 'out-001', name: 'Daun Teh Hitam Asli', unit: 'gram', stock_qty: 1200, reorder_level: 300, cost_per_unit: 100, status: 'ok', updated_at: new Date(), outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' } },
-  { id: 'ing-006', outlet_id: 'out-001', name: 'Adonan Croissant Butter', unit: 'pcs', stock_qty: 25, reorder_level: 10, cost_per_unit: 8000, status: 'ok', updated_at: new Date(), outlet: { id: 'out-001', name: 'Kopi Arus - Sudirman (HQ)' } },
-];
-
-const sharedDemoMovements: any[] = [];
 
 export class InventoryService {
   /**
@@ -98,27 +85,6 @@ export class InventoryService {
       where.name = { contains: query.q.trim(), mode: 'insensitive' };
     }
 
-    if (!(await isDbAvailable())) {
-      let filtered = [...sharedDemoIngredients];
-      if (query.outlet_id) {
-        filtered = filtered.filter((s) => s.outlet_id === query.outlet_id);
-      } else if (userScope.role === Role.manager) {
-        filtered = filtered.filter((s) => userScope.allowedOutletIds.includes(s.outlet_id));
-      }
-      if (query.status) {
-        filtered = filtered.filter((s) => s.status === query.status);
-      }
-      if (query.q) {
-        const q = query.q.toLowerCase();
-        filtered = filtered.filter((s) => s.name.toLowerCase().includes(q));
-      }
-      return {
-        ingredients: filtered.slice(skip, skip + pageSize),
-        stocks: filtered.slice(skip, skip + pageSize), // backward-compatible alias
-        meta: { page, page_size: pageSize, total: filtered.length },
-      };
-    }
-
     try {
       const items = await prisma.ingredient.findMany({
         where,
@@ -160,16 +126,9 @@ export class InventoryService {
           total,
         },
       };
-    } catch (_) {
-      let filtered = [...sharedDemoIngredients];
-      if (query.outlet_id) {
-        filtered = filtered.filter((s) => s.outlet_id === query.outlet_id);
-      }
-      return {
-        ingredients: filtered,
-        stocks: filtered,
-        meta: { page: 1, page_size: pageSize, total: filtered.length },
-      };
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Tidak dapat memuat bahan baku.');
     }
   }
 
@@ -208,44 +167,6 @@ export class InventoryService {
       throw new AppError('INVALID_INPUT', 400, 'Satuan bahan baku (unit) wajib diisi.');
     }
 
-    if (!(await isDbAvailable())) {
-      const existing = sharedDemoIngredients.find(
-        (i) => i.outlet_id === data.outlet_id && i.name.toLowerCase() === data.name.trim().toLowerCase()
-      );
-      if (existing) {
-        throw new AppError('DUPLICATE_INGREDIENT', 409, `Bahan baku “${data.name}” sudah ada di cabang ini.`);
-      }
-
-      const newIng: IngredientItem = {
-        id: `ing-${Date.now()}`,
-        outlet_id: data.outlet_id,
-        name: data.name.trim(),
-        unit: data.unit.trim(),
-        stock_qty: stockQty,
-        reorder_level: reorderLevel,
-        cost_per_unit: costPerUnit,
-        status: this.calculateStatus(stockQty, reorderLevel),
-        updated_at: new Date(),
-      };
-      sharedDemoIngredients.unshift(newIng);
-
-      if (stockQty > 0) {
-        sharedDemoMovements.unshift({
-          id: `mov-${Date.now()}`,
-          outlet_id: data.outlet_id,
-          ingredient_id: newIng.id,
-          movement_type: MovementType.restock,
-          quantity_delta: stockQty,
-          quantity_after: stockQty,
-          note: 'Stok awal bahan baku baru',
-          created_by: userId,
-          created_at: new Date(),
-        });
-      }
-
-      return newIng;
-    }
-
     const existing = await prisma.ingredient.findUnique({
       where: {
         outlet_id_name: {
@@ -259,40 +180,45 @@ export class InventoryService {
       throw new AppError('DUPLICATE_INGREDIENT', 409, `Bahan baku “${data.name}” sudah ada di cabang ini.`);
     }
 
-    return prisma.$transaction(async (tx) => {
-      const ingredient = await tx.ingredient.create({
-        data: {
-          outlet_id: data.outlet_id,
-          name: data.name.trim(),
-          unit: data.unit.trim(),
-          stock_qty: stockQty,
-          reorder_level: reorderLevel,
-          cost_per_unit: costPerUnit,
-        },
-        include: {
-          outlet: { select: { id: true, name: true } },
-        },
-      });
-
-      if (stockQty > 0) {
-        await tx.inventoryMovement.create({
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const ingredient = await tx.ingredient.create({
           data: {
             outlet_id: data.outlet_id,
-            ingredient_id: ingredient.id,
-            movement_type: MovementType.restock,
-            quantity_delta: stockQty,
-            quantity_after: stockQty,
-            note: 'Stok awal bahan baku baru',
-            created_by: userId,
+            name: data.name.trim(),
+            unit: data.unit.trim(),
+            stock_qty: stockQty,
+            reorder_level: reorderLevel,
+            cost_per_unit: costPerUnit,
+          },
+          include: {
+            outlet: { select: { id: true, name: true } },
           },
         });
-      }
 
-      return {
-        ...ingredient,
-        status: this.calculateStatus(ingredient.stock_qty, ingredient.reorder_level),
-      };
-    });
+        if (stockQty > 0) {
+          await tx.inventoryMovement.create({
+            data: {
+              outlet_id: data.outlet_id,
+              ingredient_id: ingredient.id,
+              movement_type: MovementType.restock,
+              quantity_delta: stockQty,
+              quantity_after: stockQty,
+              note: 'Stok awal bahan baku baru',
+              created_by: userId,
+            },
+          });
+        }
+
+        return {
+          ...ingredient,
+          status: this.calculateStatus(ingredient.stock_qty, ingredient.reorder_level),
+        };
+      });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal menambahkan bahan baku.');
+    }
   }
 
   /**
@@ -313,21 +239,6 @@ export class InventoryService {
       throw new AppError('FORBIDDEN', 403, 'Role Staff (Kasir) tidak diizinkan mengubah bahan baku.');
     }
 
-    if (!(await isDbAvailable())) {
-      const ing = sharedDemoIngredients.find((i) => i.id === id);
-      if (!ing) throw new AppError('NOT_FOUND', 404, 'Bahan baku tidak ditemukan.');
-      if (userScope.role === Role.manager && !userScope.allowedOutletIds.includes(ing.outlet_id)) {
-        throw new AppError('FORBIDDEN', 403, 'Akses ke cabang ini tidak diizinkan untuk Manager.');
-      }
-      if (data.name !== undefined) ing.name = data.name.trim();
-      if (data.unit !== undefined) ing.unit = data.unit.trim();
-      if (data.reorder_level !== undefined) ing.reorder_level = data.reorder_level;
-      if (data.cost_per_unit !== undefined) ing.cost_per_unit = data.cost_per_unit;
-      ing.status = this.calculateStatus(ing.stock_qty, ing.reorder_level);
-      ing.updated_at = new Date();
-      return ing;
-    }
-
     const existing = await prisma.ingredient.findUnique({ where: { id } });
     if (!existing) throw new AppError('NOT_FOUND', 404, 'Bahan baku tidak ditemukan.');
 
@@ -335,23 +246,28 @@ export class InventoryService {
       throw new AppError('FORBIDDEN', 403, 'Akses ke cabang ini tidak diizinkan untuk Manager.');
     }
 
-    const updated = await prisma.ingredient.update({
-      where: { id },
-      data: {
-        ...(data.name ? { name: data.name.trim() } : {}),
-        ...(data.unit ? { unit: data.unit.trim() } : {}),
-        ...(data.reorder_level !== undefined ? { reorder_level: data.reorder_level } : {}),
-        ...(data.cost_per_unit !== undefined ? { cost_per_unit: data.cost_per_unit } : {}),
-      },
-      include: {
-        outlet: { select: { id: true, name: true } },
-      },
-    });
+    try {
+      const updated = await prisma.ingredient.update({
+        where: { id },
+        data: {
+          ...(data.name ? { name: data.name.trim() } : {}),
+          ...(data.unit ? { unit: data.unit.trim() } : {}),
+          ...(data.reorder_level !== undefined ? { reorder_level: data.reorder_level } : {}),
+          ...(data.cost_per_unit !== undefined ? { cost_per_unit: data.cost_per_unit } : {}),
+        },
+        include: {
+          outlet: { select: { id: true, name: true } },
+        },
+      });
 
-    return {
-      ...updated,
-      status: this.calculateStatus(updated.stock_qty, updated.reorder_level),
-    };
+      return {
+        ...updated,
+        status: this.calculateStatus(updated.stock_qty, updated.reorder_level),
+      };
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal mengubah bahan baku.');
+    }
   }
 
   /**
@@ -366,17 +282,6 @@ export class InventoryService {
       throw new AppError('FORBIDDEN', 403, 'Role Staff (Kasir) tidak diizinkan menghapus bahan baku.');
     }
 
-    if (!(await isDbAvailable())) {
-      const idx = sharedDemoIngredients.findIndex((i) => i.id === id);
-      if (idx === -1) throw new AppError('NOT_FOUND', 404, 'Bahan baku tidak ditemukan.');
-      const ing = sharedDemoIngredients[idx];
-      if (userScope.role === Role.manager && !userScope.allowedOutletIds.includes(ing.outlet_id)) {
-        throw new AppError('FORBIDDEN', 403, 'Akses ke cabang ini tidak diizinkan untuk Manager.');
-      }
-      sharedDemoIngredients.splice(idx, 1);
-      return { success: true, message: `Bahan baku “${ing.name}” berhasil dihapus.` };
-    }
-
     const existing = await prisma.ingredient.findUnique({ where: { id } });
     if (!existing) throw new AppError('NOT_FOUND', 404, 'Bahan baku tidak ditemukan.');
 
@@ -384,8 +289,13 @@ export class InventoryService {
       throw new AppError('FORBIDDEN', 403, 'Akses ke cabang ini tidak diizinkan untuk Manager.');
     }
 
-    await prisma.ingredient.delete({ where: { id } });
-    return { success: true, message: `Bahan baku “${existing.name}” berhasil dihapus.` };
+    try {
+      await prisma.ingredient.delete({ where: { id } });
+      return { success: true, message: `Bahan baku “${existing.name}” berhasil dihapus.` };
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal menghapus bahan baku.');
+    }
   }
 
   /**
@@ -425,74 +335,14 @@ export class InventoryService {
       throw new AppError('INVALID_INPUT', 400, 'Tipe penyesuaian hanya mendukung correction, waste, atau restock.');
     }
 
-    const applyDemoAdjustment = () => {
-      let targetItem = sharedDemoIngredients.find(
-        (s) => s.id === targetIngredientId || s.name.toLowerCase() === targetIngredientId.toLowerCase()
-      );
-      if (!targetItem) {
-        targetItem = {
-          id: targetIngredientId,
-          outlet_id: data.outlet_id,
-          name: targetIngredientId,
-          unit: 'pcs',
-          stock_qty: 10,
-          reorder_level: 5,
-          cost_per_unit: 100,
-          status: 'ok',
-          updated_at: new Date(),
-        };
-        sharedDemoIngredients.push(targetItem);
-      }
-
-      const newQuantity = targetItem.stock_qty + data.quantity_delta;
-      if (newQuantity < 0) {
-        throw new AppError('INSUFFICIENT_STOCK', 400, `Stok bahan baku tidak mencukupi (stok saat ini: ${targetItem.stock_qty}).`);
-      }
-      targetItem.stock_qty = newQuantity;
-      targetItem.status = this.calculateStatus(newQuantity, targetItem.reorder_level);
-      targetItem.updated_at = new Date();
-
-      const movement = {
-        id: `mov-${Date.now()}`,
-        outlet_id: targetItem.outlet_id,
-        ingredient_id: targetItem.id,
-        movement_type: data.movement_type,
-        quantity_delta: data.quantity_delta,
-        quantity_after: targetItem.stock_qty,
-        note: data.note?.trim() || null,
-        created_by: userId,
-        created_at: new Date(),
-      };
-      sharedDemoMovements.unshift(movement);
-
-      return {
-        inventory: {
-          ...targetItem,
-          quantity: targetItem.stock_qty,
-        },
-        ingredient: targetItem,
-        movement,
-      };
-    };
-
-    if (!(await isDbAvailable())) {
-      return applyDemoAdjustment();
-    }
-
     try {
       return await prisma.$transaction(async (tx) => {
         // Ambil stok bahan baku terkini
-        let ingredient = await tx.ingredient.findUnique({
+        const ingredient = await tx.ingredient.findUnique({
           where: { id: targetIngredientId },
         });
 
-        if (!ingredient) {
-          ingredient = await tx.ingredient.findFirst({
-            where: { outlet_id: data.outlet_id },
-          });
-        }
-
-        if (!ingredient) {
+        if (!ingredient || ingredient.outlet_id !== data.outlet_id) {
           throw new AppError('NOT_FOUND', 404, 'Data bahan baku di cabang ini tidak ditemukan.');
         }
 
@@ -543,7 +393,7 @@ export class InventoryService {
       });
     } catch (err: any) {
       if (err instanceof AppError) throw err;
-      return applyDemoAdjustment();
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal melakukan penyesuaian stok.');
     }
   }
 
@@ -587,39 +437,34 @@ export class InventoryService {
     if (targetIngId) where.ingredient_id = targetIngId;
     if (query.movement_type) where.movement_type = query.movement_type;
 
-    if (!(await isDbAvailable())) {
-      let filtered = [...sharedDemoMovements];
-      if (query.outlet_id) filtered = filtered.filter((m) => m.outlet_id === query.outlet_id);
-      if (targetIngId) filtered = filtered.filter((m) => m.ingredient_id === targetIngId);
+    try {
+      const [total, movements] = await Promise.all([
+        prisma.inventoryMovement.count({ where }),
+        prisma.inventoryMovement.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy: { created_at: 'desc' },
+          include: {
+            ingredient: { select: { id: true, name: true, unit: true } },
+            creator: { select: { id: true, name: true, role: true } },
+            transaction: { select: { id: true, receipt_no: true } },
+          },
+        }),
+      ]);
+
       return {
-        movements: filtered.slice(skip, skip + pageSize),
-        meta: { page: 1, page_size: pageSize, total: filtered.length },
-      };
-    }
-
-    const [total, movements] = await Promise.all([
-      prisma.inventoryMovement.count({ where }),
-      prisma.inventoryMovement.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { created_at: 'desc' },
-        include: {
-          ingredient: { select: { id: true, name: true, unit: true } },
-          creator: { select: { id: true, name: true, role: true } },
-          transaction: { select: { id: true, receipt_no: true } },
+        movements,
+        meta: {
+          page,
+          page_size: pageSize,
+          total,
         },
-      }),
-    ]);
-
-    return {
-      movements,
-      meta: {
-        page,
-        page_size: pageSize,
-        total,
-      },
-    };
+      };
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memuat riwayat mutasi.');
+    }
   }
 }
 

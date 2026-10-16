@@ -1,6 +1,5 @@
 import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { analyticsService } from '../analytics/analytics.service';
 import { inventoryService } from '../inventory/inventory.service';
 import { outletsService } from '../outlets/outlets.service';
@@ -114,11 +113,10 @@ ${JSON.stringify(facts, null, 2)}`;
       throw new AppError('INVALID_INPUT', 400, 'Pesan tidak boleh kosong.');
     }
 
-    const dbUp = await isDbAvailable();
     let conversationId = query.conversation_id || `conv-${userId.substring(0, 8)}-${Date.now()}`;
 
     // 1. Profil Pengguna & Personalisasi
-    let userName = userScope.role === Role.owner ? 'Ibu Rina Kartika' : userScope.role === Role.manager ? 'Bapak Budi' : 'Kak Siti';
+    let userName = userScope.role === Role.owner ? 'Owner' : userScope.role === Role.manager ? 'Manager' : 'Staff Kasir';
     let userRoleTitle = userScope.role === Role.owner ? 'Owner' : userScope.role === Role.manager ? 'Manager' : 'Staff Kasir';
 
     // Cek apakah ada panggilan kustom yang tersimpan di sesi percakapan
@@ -137,19 +135,17 @@ ${JSON.stringify(facts, null, 2)}`;
       }
     }
 
-    if (dbUp) {
-      try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { name: true, role: true },
-        });
-        if (dbUser && !savedNickname && !matchCall) {
-          userName = dbUser.name;
-          userRoleTitle = dbUser.role === Role.owner ? 'Owner' : dbUser.role === Role.manager ? 'Manager' : 'Staff Kasir';
-        }
-      } catch (_) {
-        // Fallback
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, role: true },
+      });
+      if (dbUser && !savedNickname && !matchCall) {
+        userName = dbUser.name;
+        userRoleTitle = dbUser.role === Role.owner ? 'Owner' : dbUser.role === Role.manager ? 'Manager' : 'Staff Kasir';
       }
+    } catch (_) {
+      // Fallback
     }
 
     // 2. Analisis Input Pengguna: Apakah Chitchat/Candaan, Tanya Proses Bisnis, atau Metrik Finansial?
@@ -684,7 +680,7 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
       created_at: new Date(),
     };
 
-    if (dbUp && userId && !userId.startsWith('u-')) {
+    if (userId) {
       try {
         await prisma.aiChatLog.create({
           data: {

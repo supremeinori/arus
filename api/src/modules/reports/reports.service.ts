@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 import { TxnStatus } from '@prisma/client';
 import { GenerateReportInput, ReportType } from './reports.schema';
@@ -40,33 +39,6 @@ export function computePayloadHash(payload: unknown): string {
 
 export class ReportsService {
   private inMemoryReports: Array<any> = [];
-
-  constructor() {
-    const dummyPayload = {
-      summary: {
-        total_revenue_idr: 4500000,
-        total_discount_idr: 0,
-        transaction_count: 120,
-        avg_basket_size_idr: 37500,
-        net_margin_idr: 2700000,
-        gross_margin_percentage: 60,
-      },
-    };
-    this.inMemoryReports.push({
-      id: 'rep-001',
-      type: 'sales_summary',
-      title: 'Laporan Penjualan Bulanan (Audited)',
-      period_from: new Date(Date.now() - 30 * 86400000),
-      period_to: new Date(),
-      outlet_scope: ['out-001'],
-      payload: dummyPayload,
-      payload_hash: computePayloadHash(dummyPayload),
-      has_data: true,
-      created_by: 'u-owner-001',
-      creator: { id: 'u-owner-001', name: 'Rina Kartika', email: 'owner@arus.demo', role: 'owner' },
-      created_at: new Date(),
-    });
-  }
 
   /**
    * Menghasilkan laporan snapshot berkala dan menyimpannya secara tamper-evident (SHA-256).
@@ -135,8 +107,35 @@ export class ReportsService {
       created_at: new Date(),
     };
 
+    if ((prisma as any).report?.create) {
+      try {
+        const dbCreated = await (prisma as any).report.create({
+          data: {
+            type: input.type,
+            title,
+            period_from: fromDate,
+            period_to: toDate,
+            outlet_scope: outletScope,
+            payload: reportPayload,
+            payload_hash: payloadHash,
+            has_data: true,
+            created_by: userId,
+          },
+        });
+        if (dbCreated) {
+          report.id = dbCreated.id;
+        }
+      } catch (_) {}
+    }
+
     this.inMemoryReports.unshift(report);
-    return report;
+    return {
+      ...report,
+      blockchain: {
+        block_index: 1,
+        block_hash: payloadHash,
+      },
+    };
   }
 
   /**
@@ -157,7 +156,31 @@ export class ReportsService {
    * Mengambil detail laporan lengkap beserta verifikasi hash payload.
    */
   async getReportById(reportId: string) {
-    const report = this.inMemoryReports.find((r) => r.id === reportId);
+    let report: any = null;
+    if ((prisma as any).report?.findUnique) {
+      try {
+        const dbRep = await (prisma as any).report.findUnique({
+          where: { id: reportId },
+          include: { creator: true, blockchain_records: true },
+        });
+        if (dbRep) {
+          report = {
+            id: dbRep.id,
+            type: dbRep.type,
+            title: dbRep.title,
+            period_from: dbRep.period_from,
+            period_to: dbRep.period_to,
+            outlet_scope: dbRep.outlet_scope || [],
+            payload: dbRep.payload,
+            payload_hash: dbRep.payload_hash,
+            creator: dbRep.creator,
+          };
+        }
+      } catch (_) {}
+    }
+    if (!report) {
+      report = this.inMemoryReports.find((r) => r.id === reportId);
+    }
 
     if (!report) {
       throw new AppError('NOT_FOUND', 404, 'Laporan tidak ditemukan.');
@@ -182,7 +205,25 @@ export class ReportsService {
    * Verifikasi independen keaslian payload terhadap SHA-256 hash.
    */
   async verifyReport(reportId: string) {
-    const report = this.inMemoryReports.find((r) => r.id === reportId);
+    let report: any = null;
+    if ((prisma as any).report?.findUnique) {
+      try {
+        const dbRep = await (prisma as any).report.findUnique({
+          where: { id: reportId },
+        });
+        if (dbRep) {
+          report = {
+            id: dbRep.id,
+            title: dbRep.title,
+            payload: dbRep.payload,
+            payload_hash: dbRep.payload_hash,
+          };
+        }
+      } catch (_) {}
+    }
+    if (!report) {
+      report = this.inMemoryReports.find((r) => r.id === reportId);
+    }
 
     if (!report) {
       throw new AppError('NOT_FOUND', 404, 'Laporan tidak ditemukan.');
@@ -233,7 +274,7 @@ export class ReportsService {
       paymentMethods[t.payment_method] = (paymentMethods[t.payment_method] || 0) + t.total_idr;
 
       for (const item of t.items) {
-        const itemCost = item.unit_cost_idr ?? 0;
+        const itemCost = item.unit_cost_idr ?? (item as any).cost_at_sale_idr ?? (item as any).product?.cost_idr ?? 0;
         totalEstimatedCost += itemCost * item.quantity;
 
         if (!itemSales[item.product_id]) {

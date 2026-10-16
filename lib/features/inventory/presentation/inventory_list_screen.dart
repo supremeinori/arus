@@ -188,7 +188,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               color: Colors.white,
               child: outletsAsync.when(
                 loading: () => const LinearProgressIndicator(),
-                error: (_, __) => const SizedBox(),
+                error: (_, _) => const SizedBox(),
                 data: (allOutlets) {
                   // Jika Manager, batasi pilihan hanya ke assigned outlets
                   final availableOutlets = isOwner
@@ -412,7 +412,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     Color cardBorder = AppTheme.borderOutline;
     Color badgeBg = AppTheme.lightBlueBg;
     Color badgeColor = AppTheme.primaryBlue;
-    String badgeText = '${item.formattedStock}';
+    String badgeText = item.formattedStock;
 
     if (item.isOutOfStock) {
       cardBorder = const Color(0xFFFCA5A5);
@@ -549,7 +549,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: products.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
           itemBuilder: (context, idx) {
             final p = products[idx];
             final isZero = p.estimatedPortions <= 0;
@@ -573,7 +573,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                             width: 52,
                             height: 52,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                            errorBuilder: (_, _, _) => Container(
                               width: 52,
                               height: 52,
                               color: AppTheme.lightBlueBg,

@@ -3,7 +3,7 @@ import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/db';
 import { signAccessToken } from '../src/shared/jwt';
-import { Role, ReportType, TransactionStatus } from '@prisma/client';
+import { Role, TxnStatus } from '@prisma/client';
 import { computePayloadHash } from '../src/modules/reports/reports.service';
 
 vi.mock('../src/config/db', () => {
@@ -86,7 +86,7 @@ describe('Reports & Tamper-evident Ledger Module (Milestone 10)', () => {
         total_idr: 100000,
         discount_idr: 5000,
         payment_method: 'qris',
-        status: TransactionStatus.completed,
+        status: TxnStatus.completed,
         created_at: new Date('2026-10-01T10:00:00Z'),
         items: [
           {
@@ -159,7 +159,7 @@ describe('Reports & Tamper-evident Ledger Module (Milestone 10)', () => {
 
     vi.mocked(prisma.report.findUnique).mockResolvedValue({
       id: 'rep-uuid-1',
-      type: ReportType.sales_summary,
+      type: 'sales_summary' as any,
       title: 'Laporan Valid',
       payload: validPayload,
       payload_hash: validHash,
@@ -194,7 +194,7 @@ describe('Reports & Tamper-evident Ledger Module (Milestone 10)', () => {
 
     vi.mocked(prisma.report.findUnique).mockResolvedValue({
       id: 'rep-uuid-tampered',
-      type: ReportType.sales_summary,
+      type: 'sales_summary' as any,
       title: 'Laporan Tampered',
       payload: tamperedPayload,
       payload_hash: originalHash,

@@ -171,7 +171,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               Text('Jenis Mutasi:', style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _movementType,
+                initialValue: _movementType,
                 isDense: true,
                 decoration: const InputDecoration(border: OutlineInputBorder()),
                 items: [

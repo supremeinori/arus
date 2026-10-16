@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/app_exception.dart';
 import '../domain/auth_response.dart';
 import '../domain/user_model.dart';
 
@@ -18,16 +19,17 @@ class AuthRepository {
       final response = await _apiClient.post<Map<String, dynamic>>(
         '/auth/login',
         data: {
-          'email': email,
+          'email': email.trim(),
           'password': password,
         },
       );
 
       final data = response.data?['data'] as Map<String, dynamic>;
       return AuthResponse.fromJson(data);
+    } on AppException {
+      rethrow;
     } catch (_) {
-      // Offline fallback: izinkan akun demo login tanpa kendala koneksi
-      return _generateDemoAuth(email);
+      throw AppException('Koneksi ke web service terputus. Gagal menghubungi server.');
     }
   }
 
@@ -42,8 +44,10 @@ class AuthRepository {
 
       final data = response.data?['data'] as Map<String, dynamic>;
       return AuthResponse.fromJson(data);
+    } on AppException {
+      rethrow;
     } catch (_) {
-      return _generateDemoAuth('owner@arus.demo');
+      throw AppException('Koneksi ke web service terputus. Sesi gagal diperbarui.');
     }
   }
 
@@ -63,63 +67,10 @@ class AuthRepository {
       final response = await _apiClient.get<Map<String, dynamic>>('/auth/me');
       final data = response.data?['data'] as Map<String, dynamic>;
       return UserModel.fromJson(data['user'] as Map<String, dynamic>);
+    } on AppException {
+      rethrow;
     } catch (_) {
-      return _generateDemoAuth('owner@arus.demo').user;
+      throw AppException('Koneksi ke web service terputus.');
     }
-  }
-
-  AuthResponse _generateDemoAuth(String email) {
-    final lower = email.toLowerCase();
-    final role = lower.contains('manager')
-        ? UserRole.manager
-        : lower.contains('staff')
-            ? UserRole.staff
-            : UserRole.owner;
-
-    final name = role == UserRole.owner
-        ? 'Rina Kusuma (Owner)'
-        : role == UserRole.manager
-            ? 'Budi Santoso (Manager)'
-            : 'Siti Rahma (Kasir)';
-
-    return AuthResponse(
-      accessToken: 'demo-access-token-${role.name}',
-      refreshToken: 'demo-refresh-token-${role.name}',
-      expiresIn: 3600,
-      user: UserModel(
-        id: 'usr-demo-${role.name}',
-        name: name,
-        email: email.isEmpty ? 'owner@arus.demo' : email,
-        role: role,
-        outlets: const [
-          OutletSummary(
-            id: 'out-001',
-            name: 'ARUS Coffee Sudirman HQ',
-            timezone: 'Asia/Jakarta',
-            address: 'Jl. Jend. Sudirman No. 45, Jakarta Selatan',
-          ),
-          OutletSummary(
-            id: 'out-002',
-            name: 'ARUS Hub Senopati',
-            timezone: 'Asia/Jakarta',
-            address: 'Jl. Senopati Raya No. 12, Kebayoran Baru',
-          ),
-          OutletSummary(
-            id: 'out-003',
-            name: 'ARUS London Flagship',
-            timezone: 'Europe/London',
-            address: '14 Oxford Street, London W1D 1BS',
-          ),
-        ],
-        settings: const UserSettingsSummary(
-          displayCurrency: 'IDR',
-          displayTimezone: 'Asia/Jakarta',
-          biometricEnabled: true,
-          shakeRefreshEnabled: true,
-          tiltEnabled: true,
-          dailyRevenueTargetIdr: 15000000,
-        ),
-      ),
-    );
   }
 }

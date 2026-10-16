@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/app_exception.dart';
 import '../domain/inventory_models.dart';
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
@@ -11,69 +12,6 @@ class InventoryRepository {
   final ApiClient _client;
 
   InventoryRepository(this._client);
-
-  static final List<IngredientModel> _demoIngredients = [
-    IngredientModel(
-      id: 'ing-001',
-      outletId: 'out-001',
-      outletName: 'Kopi Arus - Sudirman (HQ)',
-      name: 'Biji Kopi Arabika House Blend',
-      unit: 'gram',
-      stockQty: 2400,
-      reorderLevel: 500,
-      costPerUnit: 150,
-      status: 'ok',
-      updatedAt: DateTime.now(),
-    ),
-    IngredientModel(
-      id: 'ing-002',
-      outletId: 'out-001',
-      outletName: 'Kopi Arus - Sudirman (HQ)',
-      name: 'Susu Fresh Milk UHT',
-      unit: 'ml',
-      stockQty: 350,
-      reorderLevel: 1000,
-      costPerUnit: 20,
-      status: 'low',
-      updatedAt: DateTime.now(),
-    ),
-    IngredientModel(
-      id: 'ing-003',
-      outletId: 'out-001',
-      outletName: 'Kopi Arus - Sudirman (HQ)',
-      name: 'Air Mineral Purified',
-      unit: 'ml',
-      stockQty: 15000,
-      reorderLevel: 2000,
-      costPerUnit: 2,
-      status: 'ok',
-      updatedAt: DateTime.now(),
-    ),
-    IngredientModel(
-      id: 'ing-004',
-      outletId: 'out-001',
-      outletName: 'Kopi Arus - Sudirman (HQ)',
-      name: 'Gula Aren Cair Asli',
-      unit: 'ml',
-      stockQty: 0,
-      reorderLevel: 500,
-      costPerUnit: 35,
-      status: 'out',
-      updatedAt: DateTime.now(),
-    ),
-    IngredientModel(
-      id: 'ing-005',
-      outletId: 'out-001',
-      outletName: 'Kopi Arus - Sudirman (HQ)',
-      name: 'Adonan Croissant Butter',
-      unit: 'pcs',
-      stockQty: 25,
-      reorderLevel: 10,
-      costPerUnit: 8000,
-      status: 'ok',
-      updatedAt: DateTime.now(),
-    ),
-  ];
 
   Future<List<IngredientModel>> getIngredients({
     String? outletId,
@@ -93,19 +31,10 @@ class InventoryRepository {
 
       final list = (response.data?['data'] ?? response.data?['ingredients']) as List<dynamic>? ?? [];
       return list.map((item) => IngredientModel.fromJson(item as Map<String, dynamic>)).toList();
+    } on AppException {
+      rethrow;
     } catch (_) {
-      var filtered = List<IngredientModel>.from(_demoIngredients);
-      if (outletId != null && outletId.isNotEmpty) {
-        filtered = filtered.where((i) => i.outletId == outletId).toList();
-      }
-      if (status != null && status.isNotEmpty && status != 'all') {
-        filtered = filtered.where((i) => i.status == status).toList();
-      }
-      if (search != null && search.isNotEmpty) {
-        final q = search.toLowerCase();
-        filtered = filtered.where((i) => i.name.toLowerCase().contains(q)).toList();
-      }
-      return filtered;
+      throw const AppException('Koneksi ke web service terputus. Data bahan baku tidak dapat dimuat.');
     }
   }
 
@@ -129,23 +58,12 @@ class InventoryRepository {
           'cost_per_unit': costPerUnit ?? 0,
         },
       );
-      final data = response.data?['data'] as Map<String, dynamic>;
+      final data = (response.data?['data'] ?? response.data?['ingredient']) as Map<String, dynamic>;
       return IngredientModel.fromJson(data);
+    } on AppException {
+      rethrow;
     } catch (_) {
-      final newIng = IngredientModel(
-        id: 'ing-${DateTime.now().millisecondsSinceEpoch}',
-        outletId: outletId,
-        outletName: 'Cabang Lokal',
-        name: name,
-        unit: unit,
-        stockQty: stockQty ?? 0,
-        reorderLevel: reorderLevel ?? 100,
-        costPerUnit: costPerUnit ?? 0,
-        status: (stockQty ?? 0) <= 0 ? 'out' : ((stockQty ?? 0) <= (reorderLevel ?? 100) ? 'low' : 'ok'),
-        updatedAt: DateTime.now(),
-      );
-      _demoIngredients.insert(0, newIng);
-      return newIng;
+      throw const AppException('Koneksi ke web service terputus. Gagal menambahkan bahan baku.');
     }
   }
 
@@ -157,37 +75,26 @@ class InventoryRepository {
     int? costPerUnit,
   }) async {
     try {
-      await _client.put('/inventory/ingredients/$id', data: {
-        if (name != null) 'name': name,
-        if (unit != null) 'unit': unit,
-        if (reorderLevel != null) 'reorder_level': reorderLevel,
-        if (costPerUnit != null) 'cost_per_unit': costPerUnit,
-      });
+      final payload = <String, dynamic>{};
+      if (name != null) payload['name'] = name;
+      if (unit != null) payload['unit'] = unit;
+      if (reorderLevel != null) payload['reorder_level'] = reorderLevel;
+      if (costPerUnit != null) payload['cost_per_unit'] = costPerUnit;
+      await _client.put('/inventory/ingredients/$id', data: payload);
+    } on AppException {
+      rethrow;
     } catch (_) {
-      final idx = _demoIngredients.indexWhere((i) => i.id == id);
-      if (idx >= 0) {
-        final current = _demoIngredients[idx];
-        _demoIngredients[idx] = IngredientModel(
-          id: current.id,
-          outletId: current.outletId,
-          outletName: current.outletName,
-          name: name ?? current.name,
-          unit: unit ?? current.unit,
-          stockQty: current.stockQty,
-          reorderLevel: reorderLevel ?? current.reorderLevel,
-          costPerUnit: costPerUnit ?? current.costPerUnit,
-          status: current.status,
-          updatedAt: DateTime.now(),
-        );
-      }
+      throw const AppException('Koneksi ke web service terputus. Gagal memperbarui bahan baku.');
     }
   }
 
   Future<void> deleteIngredient(String id) async {
     try {
       await _client.delete('/inventory/ingredients/$id');
+    } on AppException {
+      rethrow;
     } catch (_) {
-      _demoIngredients.removeWhere((i) => i.id == id);
+      throw const AppException('Koneksi ke web service terputus. Gagal menghapus bahan baku.');
     }
   }
 
@@ -198,27 +105,6 @@ class InventoryRepository {
     required int quantityDelta,
     String? note,
   }) async {
-    void updateLocal() {
-      final idx = _demoIngredients.indexWhere((i) => i.id == ingredientId);
-      if (idx >= 0) {
-        final current = _demoIngredients[idx];
-        final newQty = (current.stockQty + quantityDelta).clamp(0, 9999999);
-        final status = newQty <= 0 ? 'out' : (newQty <= current.reorderLevel ? 'low' : 'ok');
-        _demoIngredients[idx] = IngredientModel(
-          id: current.id,
-          outletId: current.outletId,
-          outletName: current.outletName,
-          name: current.name,
-          unit: current.unit,
-          stockQty: newQty,
-          reorderLevel: current.reorderLevel,
-          costPerUnit: current.costPerUnit,
-          status: status,
-          updatedAt: DateTime.now(),
-        );
-      }
-    }
-
     try {
       await _client.post('/inventory/adjustments', data: {
         'outlet_id': outletId,
@@ -227,9 +113,10 @@ class InventoryRepository {
         'quantity_delta': quantityDelta,
         'note': note,
       });
-      updateLocal();
+    } on AppException {
+      rethrow;
     } catch (_) {
-      updateLocal();
+      throw const AppException('Koneksi ke web service terputus. Gagal melakukan penyesuaian stok bahan baku.');
     }
   }
 
@@ -249,25 +136,12 @@ class InventoryRepository {
         queryParameters: query,
       );
 
-      final list = response.data?['data'] as List<dynamic>? ?? [];
+      final list = (response.data?['data'] ?? response.data?['movements']) as List<dynamic>? ?? [];
       return list.map((item) => InventoryMovementItem.fromJson(item as Map<String, dynamic>)).toList();
+    } on AppException {
+      rethrow;
     } catch (_) {
-      return [
-        InventoryMovementItem(
-          id: 'mov-demo-01',
-          outletId: outletId ?? 'out-001',
-          outletName: 'Kopi Arus - Sudirman (HQ)',
-          ingredientId: ingredientId ?? 'ing-001',
-          ingredientName: 'Biji Kopi Arabika House Blend',
-          unit: 'gram',
-          movementType: 'restock',
-          quantityDelta: 2000,
-          quantityAfter: 2400,
-          note: 'Penerimaan stok bahan baku baru',
-          creatorName: 'Rina Kartika (Owner)',
-          createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        ),
-      ];
+      throw const AppException('Koneksi ke web service terputus. Riwayat mutasi tidak dapat dimuat.');
     }
   }
 

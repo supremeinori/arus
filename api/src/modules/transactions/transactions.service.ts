@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 
 export function toValidUuid(val: string): string {
@@ -43,7 +42,7 @@ export class TransactionsService {
     // Resolusi outlet_id valid (jika dikirim outlet demo seperti out-001, map ke outlet riil di DB)
     const isOutletUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(data.outlet_id);
     let targetOutletId = data.outlet_id;
-    if (!isOutletUuid) {
+    if (!isOutletUuid && typeof prisma.outlet.findFirst === 'function') {
       const defaultOutlet = await prisma.outlet.findFirst({ where: { is_active: true } });
       if (defaultOutlet) {
         targetOutletId = defaultOutlet.id;
@@ -57,7 +56,7 @@ export class TransactionsService {
     // Resolusi cashier_id valid (jika staff login demo, map ke user riil di DB)
     const isCashierUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cashierId);
     let targetCashierId = cashierId;
-    if (!isCashierUuid) {
+    if (!isCashierUuid && typeof prisma.user.findFirst === 'function') {
       const defaultCashier = await prisma.user.findFirst({ where: { is_active: true } });
       if (defaultCashier) {
         targetCashierId = defaultCashier.id;
@@ -65,57 +64,6 @@ export class TransactionsService {
     }
 
     const normalizedClientRequestId = toValidUuid(data.client_request_id);
-
-    if (!(await isDbAvailable())) {
-      const today = new Date();
-      const datePart = today.toISOString().slice(0, 10).replace(/-/g, '');
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-      const receiptNo = `INV-${datePart}-${randomSuffix}`;
-      const discount = Math.max(0, data.discount_idr ?? 0);
-      let calculatedSubtotal = 0;
-      const preparedItems = data.items.map((it, idx) => {
-        const lineTotal = 22000 * it.quantity;
-        calculatedSubtotal += lineTotal;
-        return {
-          id: `item-${Date.now()}-${idx}`,
-          product_id: it.product_id,
-          product_name_snapshot: 'Produk POS',
-          unit_price_idr: 22000,
-          unit_cost_idr: 8500,
-          quantity: it.quantity,
-          line_total_idr: lineTotal,
-        };
-      });
-      const total = Math.max(0, calculatedSubtotal - discount);
-      if (data.payment_method === PaymentMethod.cash && data.paid_idr < total) {
-        throw new AppError(
-          'PAYMENT_INSUFFICIENT',
-          400,
-          `Jumlah uang tunai kurang (total: Rp ${total}, dibayar: Rp ${data.paid_idr}).`
-        );
-      }
-      const paid = data.payment_method === PaymentMethod.cash ? data.paid_idr : total;
-      const change = Math.max(0, paid - total);
-
-      return {
-        id: `tx-${Date.now()}`,
-        receipt_no: receiptNo,
-        outlet_id: targetOutletId,
-        cashier_id: targetCashierId,
-        client_request_id: normalizedClientRequestId,
-        subtotal_idr: calculatedSubtotal,
-        discount_idr: discount,
-        total_idr: total,
-        payment_method: data.payment_method,
-        paid_idr: paid,
-        change_idr: change,
-        status: TxnStatus.completed,
-        created_at: new Date(),
-        items: preparedItems,
-        outlet: { id: targetOutletId, name: 'ARUS Coffee' },
-        cashier: { id: targetCashierId, name: 'Kasir Utama' },
-      };
-    }
 
     // 1. Cek Idempotency: Jika client_request_id sudah pernah diproses, kembalikan transaksi yang ada
     const existingTx = await prisma.transaction.findUnique({

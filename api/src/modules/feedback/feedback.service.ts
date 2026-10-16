@@ -1,23 +1,11 @@
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { CreateFeedbackInput } from './feedback.schema';
-import { randomUUID } from 'crypto';
-
-interface InMemoryFeedback {
-  id: string;
-  user_id: string;
-  kesan: string;
-  saran: string;
-  rating?: number | null;
-  created_at: Date;
-}
+import { AppError } from '../../shared/errors';
 
 export class FeedbackService {
-  private static inMemoryFeedbacks: InMemoryFeedback[] = [];
-
   async createFeedback(userId: string, input: CreateFeedbackInput) {
-    if (await isDbAvailable()) {
-      return prisma.feedback.create({
+    try {
+      return await prisma.feedback.create({
         data: {
           user_id: userId,
           kesan: input.kesan,
@@ -29,24 +17,15 @@ export class FeedbackService {
           },
         },
       });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal mengirim feedback.');
     }
-
-    // In-memory fallback mode
-    const feedback: InMemoryFeedback = {
-      id: randomUUID(),
-      user_id: userId,
-      kesan: input.kesan,
-      saran: input.saran,
-      rating: input.rating ?? 5,
-      created_at: new Date(),
-    };
-    FeedbackService.inMemoryFeedbacks.unshift(feedback);
-    return feedback;
   }
 
   async listFeedbacks(userId?: string) {
-    if (await isDbAvailable()) {
-      return prisma.feedback.findMany({
+    try {
+      return await prisma.feedback.findMany({
         where: userId ? { user_id: userId } : undefined,
         orderBy: { created_at: 'desc' },
         include: {
@@ -55,12 +34,10 @@ export class FeedbackService {
           },
         },
       });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memuat feedback.');
     }
-
-    if (userId) {
-      return FeedbackService.inMemoryFeedbacks.filter((f) => f.user_id === userId);
-    }
-    return FeedbackService.inMemoryFeedbacks;
   }
 }
 

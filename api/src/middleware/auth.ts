@@ -3,7 +3,6 @@ import { Role } from '@prisma/client';
 import { verifyAccessToken } from '../shared/jwt';
 import { AppError } from '../shared/errors';
 import { prisma } from '../config/db';
-import { isDbAvailable } from '../config/db-health';
 
 declare global {
   namespace Express {
@@ -30,31 +29,14 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const decoded = verifyAccessToken(token);
 
     let user = null;
-    const dbUp = await isDbAvailable();
-
-    if (!dbUp) {
-      user = {
-        id: decoded.sub,
-        email: decoded.email,
-        name: decoded.email.includes('owner') ? 'Rina Kartika (Owner)' : decoded.email.includes('manager') ? 'Budi Santoso (Manager)' : 'Siti Rahma (Kasir)',
-        role: decoded.role as Role,
-        is_active: true,
-      };
-    } else {
-      try {
-        user = await prisma.user.findUnique({
-          where: { id: decoded.sub },
-          select: { id: true, email: true, name: true, role: true, is_active: true },
-        });
-      } catch (_) {
-        user = {
-          id: decoded.sub,
-          email: decoded.email,
-          name: decoded.email.includes('owner') ? 'Rina Kartika (Owner)' : decoded.email.includes('manager') ? 'Budi Santoso (Manager)' : 'Siti Rahma (Kasir)',
-          role: decoded.role as Role,
-          is_active: true,
-        };
-      }
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.sub },
+        select: { id: true, email: true, name: true, role: true, is_active: true },
+      });
+    } catch (err: any) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memvalidasi sesi.');
     }
 
     if (!user || !user.is_active) {
@@ -64,28 +46,18 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     req.user = user;
 
     // Scope Outlets (SRS Section 2.2 & BR-LBS-01)
-    if (!dbUp) {
-      req.userOutlets = user.role === Role.owner ? ['out-001', 'out-002', 'out-003'] : ['out-001'];
-    } else if (user.role === Role.owner) {
-      try {
-        const allOutlets = await prisma.outlet.findMany({
-          where: { is_active: true },
-          select: { id: true },
-        });
-        req.userOutlets = allOutlets.map((o) => o.id);
-      } catch (_) {
-        req.userOutlets = ['out-001', 'out-002', 'out-003'];
-      }
+    if (user.role === Role.owner) {
+      const allOutlets = typeof prisma.outlet?.findMany === 'function' ? await prisma.outlet.findMany({
+        where: { is_active: true },
+        select: { id: true },
+      }) : [];
+      req.userOutlets = (allOutlets || []).map((o) => o.id);
     } else {
-      try {
-        const assigned = await prisma.userOutlet.findMany({
-          where: { user_id: user.id },
-          select: { outlet_id: true },
-        });
-        req.userOutlets = assigned.map((uo) => uo.outlet_id);
-      } catch (_) {
-        req.userOutlets = ['out-001'];
-      }
+      const assigned = typeof prisma.userOutlet?.findMany === 'function' ? await prisma.userOutlet.findMany({
+        where: { user_id: user.id },
+        select: { outlet_id: true },
+      }) : [];
+      req.userOutlets = (assigned || []).map((uo) => uo.outlet_id);
     }
 
     next();
@@ -122,41 +94,10 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
     const token = authHeader.substring(7);
     const decoded = verifyAccessToken(token);
 
-    const dbUp = await isDbAvailable();
-    let user = null;
-
-    if (!dbUp) {
-      user = {
-        id: decoded.sub,
-        email: decoded.email,
-        name: decoded.email.includes('owner')
-          ? 'Rina Kartika (Owner)'
-          : decoded.email.includes('manager')
-            ? 'Budi Santoso (Manager)'
-            : 'Siti Rahma (Kasir)',
-        role: decoded.role as Role,
-        is_active: true,
-      };
-    } else {
-      try {
-        user = await prisma.user.findUnique({
-          where: { id: decoded.sub },
-          select: { id: true, email: true, name: true, role: true, is_active: true },
-        });
-      } catch (_) {
-        user = {
-          id: decoded.sub,
-          email: decoded.email,
-          name: decoded.email.includes('owner')
-            ? 'Rina Kartika (Owner)'
-            : decoded.email.includes('manager')
-              ? 'Budi Santoso (Manager)'
-              : 'Siti Rahma (Kasir)',
-          role: decoded.role as Role,
-          is_active: true,
-        };
-      }
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.sub },
+      select: { id: true, email: true, name: true, role: true, is_active: true },
+    });
 
     if (user && user.is_active) {
       req.user = user;
@@ -166,4 +107,3 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
     return next();
   }
 }
-

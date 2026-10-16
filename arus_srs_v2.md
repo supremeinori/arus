@@ -101,7 +101,7 @@ Sistem ARUS disusun secara modular menjadi **5 Modul Utama** yang membawahi selu
 ```
 ARUS System
 ├── MOD-1: Autentikasi, Keamanan & Profil (Fitur 1–7)
-├── MOD-2: Operasional — Katalog, Stok, Kasir POS & Pencarian (Fitur 8–15)
+├── MOD-2: Operasional — Menu, Resep, Bahan Baku (Inventaris) & Kasir POS (Fitur 8–15)
 ├── MOD-3: Blockchain SHA-256 & Notifikasi Mobile (Fitur 16–18)
 ├── MOD-4: Dashboard Analitik, Konversi, Sensor & LBS (Fitur 19–24)
 └── MOD-5: Kecerdasan Buatan (AI/LLM) & Mini Game (Fitur 25–27)
@@ -125,21 +125,45 @@ Modul pengelola identitas, sesi aman, biometrik, profil pengguna, dan feedback a
 
 ---
 
-### 3.2 MOD-2: Operasional — Katalog, Stok, Kasir POS & Pencarian (Fitur 8–15)
-Modul transaksi penjualan harian, master produk, mutasi inventaris, dan pencarian.
+### 3.2 MOD-2: Operasional — Menu, Resep, Bahan Baku (Inventaris) & Kasir POS (Fitur 8–15)
+Berbeda dengan ritel barang jadi, operasional bisnis F&B multi-outlet ARUS memisahkan secara tegas antara **Bahan Baku di Gudang (`ingredients`)** dan **Menu Jualan di Kasir (`products`)**, yang dihubungkan erat melalui **Resep (`product_recipes`)**:
 
-* **Fitur 8 — CRUD Produk & Kategori:** Mengelola katalog barang, SKU unik, kategori, harga jual (`price_idr`), dan harga modal (`cost_idr`).
-* **Fitur 9 — Pencarian & Filter Katalog:** Pencarian instan berdasarkan nama/SKU produk dan filter kategori atau status aktif.
-* **Fitur 10 — Backup Offline Katalog (SQLite):** Sinkronisasi otomatis saat online ke tabel SQLite `backup_products`. Jika internet mati, kasir tetap bisa melihat katalog barang.
-* **Fitur 11 — Filter Status Stok Cabang:** Monitoring stok cabang dengan indikator warna status (`ok` > reorder_level, `low` <= reorder_level, `out` = 0) serta estimasi *days of cover*.
-* **Fitur 12 — Penyesuaian Stok (*Stock Adjustment*):** Pencatatan perubahan stok non-penjualan (`restock`, `correction`, `waste`) yang wajib masuk ke `inventory_movements`.
-* **Fitur 13 — Kasir Mobile (POS):** Pemilihan produk ke keranjang belanja, kalkulasi total dan kembalian di server, serta pengurangan stok secara atomik. Idempoten menggunakan `client_request_id`.
-* **Fitur 14 — Pencarian Struk & Backup Transaksi (SQLite):** Riwayat transaksi dengan pencarian nomor struk/tanggal/metode bayar, serta penyimpanan 50 struk terakhir ke `backup_transactions`.
-* **Fitur 15 — Pembatalan Transaksi (*Void*):** Pembatalan transaksi salah (khusus Manager/Owner, batas 24 jam) yang mengembalikan stok dan mencatat blok pembatalan di blockchain.
+1. **Database Menu Jualan (`products`):** Menyimpan informasi produk yang dijual di kasir (nama menu seperti *Cappuccino* atau *Americano*, SKU, kategori, foto `image_url` untuk POS & Mini-Game *"Guess the Menu"*, serta harga jual `price_idr`).
+2. **Database Bahan Baku & Stok per Cabang (`ingredients`):** Menyimpan stok bahan mentah di masing-masing cabang (`outlets`), seperti *Biji Kopi*, *Air Mineral*, *Susu UHT*, dan *Gula Aren* dalam satuan dasar (`gram`, `ml`, `pcs`).
+3. **Jembatan Resep (`product_recipes`):** Menghubungkan Menu dengan Bahan Baku karena setiap produk membutuhkan takaran bahan baku tertentu untuk 1 porsi (`amount_needed`).
+4. **Kalkulasi Estimasi Porsi Dinamis (*Real-Time Portion Estimation*):** Kuota porsi menu di kasir dihitung secara dinamis dari stok bahan baku terkecil (*bottleneck*):
+   $$\text{Estimasi Porsi} = \min_{i \in \text{Resep}} \left\lfloor \frac{\text{Stok Bahan Baku}_i}{\text{Takaran per Porsi}_i} \right\rfloor$$
+
+#### Alur Penggunaan Sistem per Role (User Flow)
+* **👑 Flow Owner (Kendali Penuh di Semua Cabang):** Owner membuka menu Inventory & Stock, bebas memilih cabang via *Outlet Selector*, membuat bahan baku baru (*Air*, *Biji Kopi*, *Susu UHT*), melakukan restock, koreksi, mencatat waste, melihat audit mutasi keluar-masuk barang di seluruh cabang, serta mengelola menu dan komposisi resepnya.
+* **👔 Flow Manager (Kendali Penuh di Cabang Tugas):** Menjalankan alur operasional bahan baku yang sama persis dengan Owner, namun cakupannya dikunci otomatis pada cabang yang di-assign oleh Owner via `user_outlets`. Cabang lain ditolak dengan HTTP 403/404.
+* **🛒 Flow Kasir / Staff (Estimasi Porsi & Transaksi POS):** Kasir tidak memiliki akses manajemen bahan baku. Di layar POS dan tab Stok, Kasir melihat kartu menu lengkap dengan lencana **Estimasi Porsi** (misal: *"Americano — Estimasi: 25 Porsi"*). Jika bahan baku habis (`estimated_portions == 0`), menu otomatis berstatus *"Habis (Bahan Baku Kurang)"* dan tombol tambah dinonaktifkan.
+
+#### Matriks Hak Akses Modul 2 (RBAC)
+| Kemampuan Fungsional | 👑 Owner | 👔 Manager | 🛒 Staff (Kasir) |
+| :--- | :--- | :--- | :--- |
+| **Pilih Cabang (*Outlet Selector*)** | Semua Cabang | Hanya Cabang Ditugaskan | Terkunci 1 Cabang Tugas |
+| **Create Bahan Baku (Air, Kopi, dll)** | ✔ Diizinkan (Semua Cabang) | ✔ Diizinkan (Cabang Sendiri) | ❌ Ditolak (HTTP 403) |
+| **Tambah / Restock / Koreksi / Waste Stok** | ✔ Diizinkan (Semua Cabang) | ✔ Diizinkan (Cabang Sendiri) | ❌ Ditolak (HTTP 403) |
+| **Hapus (*Delete*) Bahan Baku & Stok** | ✔ Diizinkan (Semua Cabang) | ✔ Diizinkan (Cabang Sendiri) | ❌ Ditolak (HTTP 403) |
+| **Lihat Riwayat Mutasi (`inventory_movements`)** | ✔ Semua Cabang | ✔ Cabang Sendiri | ❌ Ditolak (HTTP 403) |
+| **Kelola Menu & Komposisi Resep (`products`)** | ✔ CRUD Penuh | ✔ CRUD Penuh | 👁️ Read-Only (Tanpa HPP) |
+| **Lihat Estimasi Porsi Menu per Bahan Baku** | ✔ Ya | ✔ Ya | ✔ **Ya (Tampilan Utama Kasir)** |
+| **Input Transaksi Penjualan (POS)** | ✔ Semua Cabang | ✔ Cabang Sendiri | ✔ Cabang Sendiri |
+
+#### Daftar Fitur Modul 2 (Fitur 8 s/d 15)
+* **Fitur 8 — Kelola Menu & Resep (CRUD Products & Recipes):** [Owner, Manager] Mengelola daftar menu makanan/minuman beserta foto (`image_url`), harga jual (`price_idr`), dan rincian takaran bahan bakunya (`product_recipes`).
+* **Fitur 9 — Pencarian & Filter Katalog Menu (Dengan Estimasi Porsi):** [Semua Role] Mencari menu berdasarkan nama/SKU dan memfilter per kategori. Setiap kartu menu menampilkan badge **Estimasi Porsi Tersedia** hasil kalkulasi dari bahan baku cabang.
+* **Fitur 10 — Backup Offline Katalog & Estimasi Porsi (SQLite):** [Semua Role] Menyimpan salinan daftar menu beserta angka `estimated_portions` terakhir ke tabel SQLite `backup_products` agar tetap dapat dilihat saat perangkat *offline*.
+* **Fitur 11 — Manajemen & Filter Bahan Baku Cabang:** [Owner: Semua Cabang | Manager: Cabang Sendiri] Memilih cabang, membuat bahan baku baru (*air, kopi, susu*), menghapus bahan baku, serta memfilter status stok bahan (`ok`, `low`, `out`). Kasir/Staff hanya melihat daftar estimasi porsi per menu secara Read-Only.
+* **Fitur 12 — Penyesuaian Stok Bahan Baku (*Ingredient Adjustment*):** [Owner, Manager] Mencatat penambahan stok bahan baku (*restock*), koreksi opname (`correction`), atau bahan baku rusak/basi (`waste`) yang wajib tercatat di tabel audit `inventory_movements`.
+* **Fitur 13 — Kasir Mobile (POS) Berbasis Resep Atomik:** [Semua Role] Kasir memilih menu ke keranjang berdasarkan kuota estimasi porsi. Saat pembayaran dikonfirmasi, server menghitung total kebutuhan seluruh bahan baku dari item di keranjang, memotong stok di tabel `ingredients`, mencatat log keluar untuk tiap bahan baku di `inventory_movements`, dan menyimpan struk dalam 1 transaksi database atomik.
+* **Fitur 14 — Pencarian Struk & Backup Transaksi (SQLite):** [Semua Role] Mencari struk berdasarkan nomor `receipt_no`, tanggal, atau metode bayar, serta mencadangkan 50 struk terakhir ke SQLite `backup_transactions`.
+* **Fitur 15 — Pembatalan Transaksi (*Void*) & Pengembalian Bahan Baku:** [Owner: Kapan Saja | Manager: Maks. 24 Jam] Membatalkan struk transaksi yang keliru, mengembalikan stok bahan baku ke tabel `ingredients` sesuai takaran resep (`void_return`), dan mencatat blok pembatalan di `blockchain_records`.
 
 **Tautan Source Code:**
-* Flutter UI: [`lib/features/catalog/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/catalog) · [`lib/features/inventory/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/inventory) · [`lib/features/pos/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/pos) · [`lib/features/search/`](https://github.com/supremeinori/arus/tree/main/app/lib/features/search)
-* Flutter Core: [`lib/core/storage/local_db.dart`](https://github.com/supremeinori/arus/blob/main/app/lib/core/storage/local_db.dart)
+* Flutter UI: [`lib/features/catalog/`](https://github.com/supremeinori/arus/tree/main/lib/features/catalog) · [`lib/features/inventory/`](https://github.com/supremeinori/arus/tree/main/lib/features/inventory) · [`lib/features/pos/`](https://github.com/supremeinori/arus/tree/main/lib/features/pos) · [`lib/features/search/`](https://github.com/supremeinori/arus/tree/main/lib/features/search)
+* Flutter Core: [`lib/core/storage/local_db.dart`](https://github.com/supremeinori/arus/blob/main/lib/core/storage/local_db.dart)
 * Backend API: [`api/src/modules/catalog/`](https://github.com/supremeinori/arus/tree/main/api/src/modules/catalog) · [`api/src/modules/inventory/`](https://github.com/supremeinori/arus/tree/main/api/src/modules/inventory) · [`api/src/modules/transactions/`](https://github.com/supremeinori/arus/tree/main/api/src/modules/transactions) · [`api/src/modules/search/`](https://github.com/supremeinori/arus/tree/main/api/src/modules/search)
 
 ---
@@ -199,28 +223,31 @@ Modul penalaran cerdas berbasis data nyata dan simulasi pelatihan keputusan bisn
 * **BR-AUTH-07:** Tiga kali kegagalan otentikasi biometrik memaksa aplikasi kembali meminta input email & password manual.
 
 ### 4.2 Katalog Produk & Harga (BR-CAT)
-* **BR-CAT-01:** Kode SKU bersifat unik global; duplikasi memicu respon HTTP 409 `CATALOG_SKU_DUPLICATE`.
-* **BR-CAT-02:** Seluruh nilai harga (`price_idr`) dan biaya modal (`cost_idr`) wajib disimpan sebagai tipe data **integer IDR**. Tidak diperkenankan desimal floating-point.
+* **BR-CAT-01:** Kode SKU bersifat unik global; harga jual (`price_idr`) dan harga modal bahan baku (`cost_per_unit`) wajib disimpan sebagai tipe data **integer IDR**. Tidak diperkenankan desimal floating-point.
+* **BR-CAT-02:** Setiap menu aktif wajib memiliki minimal 1 baris bahan baku pada tabel `product_recipes` agar estimasi porsinya dapat dihitung.
 * **BR-CAT-03:** Perubahan harga produk di katalog tidak boleh mengubah riwayat harga snapshot di tabel `transaction_items` yang sudah terbit.
-* **BR-CAT-04:** Nilai `cost_idr` disaring ketat di backend; role Staff tidak boleh menerima field harga modal di response JSON apapun.
+* **BR-CAT-04:** Nilai `cost_per_unit` pada bahan baku dan `unit_cost_idr` (HPP resep) disaring ketat di backend; role Staff tidak boleh menerima field harga modal di response JSON apapun.
 * **BR-CAT-05:** Produk non-aktif (`is_active = false`) ditolak saat diinput ke keranjang kasir POS (HTTP 409 `TXN_PRODUCT_INACTIVE`).
 
-### 4.3 Inventaris & Mutasi Stok (BR-INV)
-* **BR-INV-01:** Setiap perubahan kuantitas stok wajib dicatat di tabel `inventory_movements` pada transaksi database yang sama (Atomik).
-* **BR-INV-02:** Batasan `quantity >= 0` ditegakkan secara absolut di tingkat PostgreSQL (`CHECK constraint`). Stok tidak boleh minus dalam kondisi apapun.
-* **BR-INV-03:** Dua kasir yang menjual sisa barang terakhir secara bersamaan: kasir tercepat berhasil, kasir kedua menerima respon HTTP 409 `INVENTORY_INSUFFICIENT`.
-* **BR-INV-04:** Klasifikasi status stok:
+### 4.3 Inventaris, Bahan Baku & Mutasi Stok (BR-INV)
+* **BR-INV-01:** Rumus kalkulasi estimasi porsi untuk produk $P$ di cabang $O$:
+  * Ambil semua resep $R_i$ milik produk $P$ beserta stok bahan baku terkait di cabang $O$.
+  * Untuk setiap bahan baku $i$, hitung $\text{porsi}_i = \lfloor \text{stock\_qty}_i \div \text{amount\_needed}_i \rfloor$.
+  * Nilai `estimated_portions` untuk produk $P$ adalah nilai terkecil ($\min$) dari seluruh $\text{porsi}_i$. Jika produk belum memiliki resep di cabang tersebut, nilai `estimated_portions = 0`.
+* **BR-INV-02:** Batasan `stock_qty >= 0` ditegakkan secara absolut di tingkat PostgreSQL (`CHECK constraint`). Stok bahan baku tidak boleh minus dalam kondisi apapun.
+* **BR-INV-03:** Setiap perubahan penambahan/pengurangan `stock_qty` pada `ingredients` wajib menulis baris catatan ke `inventory_movements` dalam transaksi database yang sama (Atomik).
+* **BR-INV-04:** Klasifikasi status stok bahan baku:
   * `ok`: Kuantitas > `reorder_level`
   * `low`: Kuantitas $\leq$ `reorder_level` dan Kuantitas > 0
   * `out`: Kuantitas = 0
 * **BR-INV-05:** Catatan pada `inventory_movements` bersifat *append-only* (dilarang *hard delete*).
 
-### 4.4 Kasir POS & Transaksi (BR-POS)
-* **BR-POS-01:** Subtotal, diskon, dan total akhir **wajib dikalkulasi ulang di server**. Nilai nominal harga dari client diabaikan total demi mencegah kecurangan harga.
+### 4.4 Kasir POS & Transaksi Berbasis Resep (BR-POS)
+* **BR-POS-01 (Validasi Bahan Baku Gabungan di Keranjang):** Jika pelanggan membeli beberapa menu yang memakai bahan baku yang sama (misal *Cappuccino* dan *Americano* sama-sama memakai *Biji Kopi*), server wajib menjumlahkan total kebutuhan setiap bahan baku terlebih dahulu sebelum memotong stok. Jika ada satu saja bahan baku yang kurang, seluruh transaksi ditolak dengan HTTP 409 `INVENTORY_INSUFFICIENT` beserta nama bahan baku yang kurang.
 * **BR-POS-02:** Endpoint `POST /transactions` bersifat idempoten menggunakan UUID `client_request_id`. Request ganda dengan ID yang sama mengembalikan struk asli tanpa memotong stok ulang.
-* **BR-POS-03:** Transaksi POS bersifat *all-or-nothing* (atomik). Jika satu barang kehabisan stok, seluruh transaksi dan pemotongan stok dibatalkan (rollback).
-* **BR-POS-04:** Nominal pembayaran tunai yang kurang dari total belanja (`paid_idr < total_idr`) menghasilkan error HTTP 422 `TXN_PAYMENT_INSUFFICIENT`.
-* **BR-POS-05:** Pembatalan transaksi (*Void*) hanya diizinkan dalam rentang 24 jam setelah transaksi dibuat. Void mengembalikan stok secara otomatis dan mencatat blok pembatalan di blockchain.
+* **BR-POS-03:** Transaksi POS bersifat *all-or-nothing* (atomik). Jika satu bahan baku kehabisan stok, seluruh transaksi dan pemotongan stok bahan baku dibatalkan (rollback).
+* **BR-POS-04:** Saat transaksi POS berhasil, `unit_cost_idr` pada `transaction_items` diisi dengan hasil penjumlahan HPP resep saat itu ($\sum (\text{amount\_needed}_i \times \text{cost\_per\_unit}_i)$) sebagai snapshot untuk laporan laba kotor.
+* **BR-POS-05:** Pembatalan transaksi (*Void*) hanya diizinkan dalam rentang 24 jam setelah transaksi dibuat (Manager) atau kapan saja (Owner). Void mengembalikan stok bahan baku ke tabel `ingredients` sesuai takaran resep (`void_return`) dan mencatat blok pembatalan di blockchain.
 * **BR-POS-06:** Transaksi yang berstatus `voided` otomatis dikeluarkan dari seluruh perhitungan omzet dan KPI analitik.
 * **BR-POS-07:** Format nomor struk: `TXN-{outlet_id_pendek}-{YYYYMMDD}-{sequence:04d}`.
 
@@ -362,7 +389,7 @@ model Outlet {
   updated_at DateTime     @updatedAt @db.Timestamptz()
 
   users        UserOutlet[]
-  inventory    Inventory[]
+  ingredients  Ingredient[]
   transactions Transaction[]
   blocks       BlockchainRecord[]
 
@@ -393,7 +420,7 @@ model Feedback {
 }
 
 // ==========================================
-// MODUL 2: KATALOG & INVENTARIS (DENGAN MUTASI)
+// MODUL 2: KATALOG MENU, BAHAN BAKU & RESEP
 // ==========================================
 
 model ProductCategory {
@@ -406,59 +433,76 @@ model ProductCategory {
   @@map("product_categories")
 }
 
+// 1. DATABASE MENU / PRODUK JUALAN
 model Product {
-  id          String           @id @default(uuid()) @db.Uuid
-  category_id String?          @db.Uuid
-  sku         String           @unique @db.VarChar(40)
-  name        String           @db.VarChar(120)
-  image_url   String?          @db.Text // Dipakai untuk Katalog POS & Mini-Game "Guess the Menu"
-  unit        String           @default("pcs") @db.VarChar(20)
+  id          String            @id @default(uuid()) @db.Uuid
+  category_id String?           @db.Uuid
+  sku         String            @unique @db.VarChar(40)
+  name        String            @db.VarChar(120) // Contoh: "Cappuccino", "Americano"
+  image_url   String?           @db.Text         // Foto untuk POS & Mini-Game "Guess the Menu"
   price_idr   Int
-  cost_idr    Int?
-  is_active   Boolean          @default(true)
-  created_at  DateTime         @default(now()) @db.Timestamptz()
-  updated_at  DateTime         @updatedAt @db.Timestamptz()
+  is_active   Boolean           @default(true)
+  created_at  DateTime          @default(now()) @db.Timestamptz()
+  updated_at  DateTime          @updatedAt @db.Timestamptz()
 
   category    ProductCategory?  @relation(fields: [category_id], references: [id])
-  inventory   Inventory[]
+  recipes     ProductRecipe[]   // Terhubung erat ke bahan baku lewat resep
   txn_items   TransactionItem[]
 
   @@map("products")
 }
 
-model Inventory {
-  outlet_id          String   @db.Uuid
-  product_id         String   @db.Uuid
-  quantity           Int      @default(0)
-  reorder_level      Int      @default(5)
-  avg_lead_time_days Int      @default(3)
-  updated_at         DateTime @updatedAt @db.Timestamptz()
+// 2. DATABASE BAHAN BAKU & STOK PER CABANG
+model Ingredient {
+  id            String   @id @default(uuid()) @db.Uuid
+  outlet_id     String   @db.Uuid
+  name          String   @db.VarChar(100) // Contoh: "Biji Kopi Espresso", "Air Mineral", "Susu UHT"
+  unit          String   @db.VarChar(20)  // Contoh: "gram", "ml", "pcs"
+  stock_qty     Int      @default(0)      // Tidak boleh minus (>= 0)
+  reorder_level Int      @default(100)    // Batas peringatan notifikasi stok tipis
+  cost_per_unit Int      @default(0)      // Harga modal per 1 gram/ml/pcs dalam IDR
+  updated_at    DateTime @updatedAt @db.Timestamptz()
 
-  outlet             Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
-  product            Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  movements          InventoryMovement[]
+  outlet        Outlet              @relation(fields: [outlet_id], references: [id], onDelete: Cascade)
+  recipes       ProductRecipe[]
+  movements     InventoryMovement[]
 
-  @@id([outlet_id, product_id])
-  @@map("inventory")
+  @@unique([outlet_id, name])
+  @@map("ingredients")
 }
 
+// 3. TABEL PENGHUBUNG RESEP (Menu <-> Bahan Baku)
+model ProductRecipe {
+  id            String     @id @default(uuid()) @db.Uuid
+  product_id    String     @db.Uuid
+  ingredient_id String     @db.Uuid
+  amount_needed Int        // Takaran bahan baku untuk membuat 1 porsi menu
+
+  product       Product    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  ingredient    Ingredient @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, ingredient_id])
+  @@map("product_recipes")
+}
+
+// 4. TABEL RIWAYAT MUTASI BAHAN BAKU (Untuk Analisis Bisnis & Audit)
 model InventoryMovement {
   id             String       @id @default(uuid()) @db.Uuid
   outlet_id      String       @db.Uuid
-  product_id     String       @db.Uuid
-  movement_type  MovementType
-  quantity_delta Int
-  quantity_after Int
+  ingredient_id  String       @db.Uuid
+  movement_type  MovementType // 'sale', 'void_return', 'restock', 'correction', 'waste'
+  quantity_delta Int          // Bertanda: negatif (-) saat terpakai, positif (+) saat restock
+  quantity_after Int          // Snapshot sisa stok bahan baku setelah perubahan
   transaction_id String?      @db.Uuid
   note           String?      @db.VarChar(255)
   created_by     String       @db.Uuid
   created_at     DateTime     @default(now()) @db.Timestamptz()
 
-  inventory      Inventory    @relation(fields: [outlet_id, product_id], references: [outlet_id, product_id], onDelete: Cascade)
+  ingredient     Ingredient   @relation(fields: [ingredient_id], references: [id], onDelete: Cascade)
   transaction    Transaction? @relation(fields: [transaction_id], references: [id])
   creator        User         @relation(fields: [created_by], references: [id])
 
-  @@index([outlet_id, product_id, created_at])
+  @@index([outlet_id, ingredient_id, created_at])
   @@map("inventory_movements")
 }
 
@@ -595,7 +639,7 @@ CREATE TABLE IF NOT EXISTS local_session_settings (
   cached_eur_rate REAL DEFAULT 0.000059
 );
 
--- 2. Backup Katalog Produk, Gambar & Stok untuk Mode Offline / Mini-Game
+-- 2. Backup Katalog Produk, Gambar & Estimasi Porsi untuk Mode Offline / Mini-Game
 CREATE TABLE IF NOT EXISTS backup_products (
   product_id TEXT,
   outlet_id TEXT,
@@ -604,8 +648,7 @@ CREATE TABLE IF NOT EXISTS backup_products (
   image_url TEXT,
   category_name TEXT,
   price_idr INTEGER NOT NULL,
-  stock_quantity INTEGER NOT NULL,
-  reorder_level INTEGER NOT NULL,
+  estimated_portions INTEGER NOT NULL, -- Hasil kalkulasi estimasi porsi dari bahan baku
   last_sync_at TEXT NOT NULL,
   PRIMARY KEY (product_id, outlet_id)
 );
@@ -671,21 +714,21 @@ Semua response API wajib mengikuti format envelope standar:
 * `DELETE /api/users/:id` — [Owner] Menonaktifkan user (`is_active = false`).
 * `POST /api/feedback` — Mengirimkan form kesan & saran PAM.
 
-#### MOD-2: Operasional (Katalog, Inventaris & POS)
-* `GET /api/catalog/products` — Daftar produk aktif (filter: `q`, `category_id`, `status`).
-* `POST /api/catalog/products` — [Owner, Manager] Menambah produk baru.
-* `PUT /api/catalog/products/:id` — [Owner, Manager] Memperbarui produk.
-* `DELETE /api/catalog/products/:id` — [Owner, Manager] Menonaktifkan produk.
-* `GET /api/catalog/categories` — Daftar kategori produk.
-* `POST /api/catalog/categories` — [Owner, Manager] Menambah kategori baru.
-* `GET /api/inventory` — Monitoring stok cabang saat ini.
-* `POST /api/inventory/adjustments` — [Owner, Manager] Restock/koreksi/waste stok.
-* `GET /api/inventory/movements` — Riwayat audit mutasi keluar-masuk barang.
-* `GET /api/inventory/low-stock` — Daftar barang dengan kuantitas $\leq$ `reorder_level`.
-* `POST /api/transactions` — Membuat transaksi penjualan POS atomik (idempoten via `client_request_id`).
-* `GET /api/transactions` — Riwayat transaksi (Staff: hanya cabang sendiri & hari ini).
-* `GET /api/transactions/:id` — Detail struk transaksi lengkap.
-* `POST /api/transactions/:id/void` — [Owner, Manager] Membatalkan transaksi ($\leq$ 24 jam).
+#### MOD-2: Operasional (Katalog Menu, Resep, Bahan Baku & POS)
+* `GET /api/catalog/products?outlet_id=...&q=...&category_id=...` — Daftar menu aktif beserta kalkulasi `estimated_portions` secara real-time dari stok bahan baku cabang.
+* `POST /api/catalog/products` — [Owner, Manager] Menambah menu baru beserta takaran bahan baku `recipes: [{ ingredient_id, amount_needed }]`.
+* `PUT /api/catalog/products/:id` — [Owner, Manager] Memperbarui detail menu, harga, atau komposisi resepnya.
+* `DELETE /api/catalog/products/:id` — [Owner, Manager] Menonaktifkan menu (`is_active = false`).
+* `GET /api/catalog/categories` & `POST /api/catalog/categories` — Daftar dan penambahan kategori menu.
+* `GET /api/inventory/ingredients?outlet_id=...&status=ok|low|out&q=...` — [Owner, Manager] Manajemen daftar bahan baku cabang (Staff ditolak 403).
+* `POST /api/inventory/ingredients` — [Owner, Manager] Menambah bahan baku baru di cabang tertentu.
+* `PUT /api/inventory/ingredients/:id` — [Owner, Manager] Memperbarui nama, unit, reorder level, atau biaya modal bahan baku.
+* `DELETE /api/inventory/ingredients/:id` — [Owner, Manager] Menghapus bahan baku dan stoknya dari cabang.
+* `POST /api/inventory/adjustments` — [Owner, Manager] Mencatat restock, koreksi, atau bahan terbuang (*waste*) atomik ke `inventory_movements`.
+* `GET /api/inventory/movements` — [Owner, Manager] Riwayat audit mutasi keluar-masuk bahan baku.
+* `POST /api/transactions` — Membuat transaksi penjualan POS atomik berbasis resep (validasi akumulasi bahan baku keranjang, potong stok `ingredients`, catat `inventory_movements`, buat blok blockchain).
+* `GET /api/transactions` & `GET /api/transactions/:id` — Riwayat dan detail struk transaksi lengkap.
+* `POST /api/transactions/:id/void` — [Owner, Manager] Membatalkan transaksi dan mengembalikan seluruh stok bahan baku sesuai resep (`void_return`).
 * `GET /api/search?q=` — Pencarian global (produk, transaksi, cabang).
 
 #### MOD-3: Blockchain & Notifikasi Mobile

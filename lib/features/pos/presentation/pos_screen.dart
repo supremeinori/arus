@@ -315,7 +315,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio: screenWidth >= 600 ? 1.2 : 1.05,
+                    childAspectRatio: screenWidth >= 600 ? 1.05 : 0.88,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
@@ -323,41 +323,127 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   itemBuilder: (context, index) {
                     final product = filtered[index];
                     final inCart = cartState.items.any((i) => i.productId == product.id);
+                    final isOutOfStock = product.estimatedPortions <= 0;
+                    final cartItem = cartState.items.cast<dynamic>().firstWhere(
+                          (i) => i.productId == product.id,
+                          orElse: () => null,
+                        );
+                    final inCartQty = cartItem != null ? (cartItem.quantity as int) : 0;
+                    final remainingPortions = (product.estimatedPortions - inCartQty).clamp(0, product.estimatedPortions);
 
                     return InkWell(
-                      onTap: () => ref.read(posCartProvider.notifier).addProduct(product),
+                      onTap: () {
+                        if (isOutOfStock) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Menu ${product.name} habis (bahan baku tidak cukup).'),
+                              backgroundColor: AppTheme.dangerRed,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (inCartQty >= product.estimatedPortions) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Maksimal estimasi porsi tercapai (${product.estimatedPortions} porsi).'),
+                              backgroundColor: Colors.amber.shade900,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+
+                        ref.read(posCartProvider.notifier).addProduct(product);
+                      },
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: inCart ? const Color(0xFFEFF6FF) : Colors.white,
+                          color: isOutOfStock
+                              ? const Color(0xFFFEF2F2).withValues(alpha: 0.6)
+                              : (inCart ? const Color(0xFFEFF6FF) : Colors.white),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: inCart ? AppTheme.primaryBlue : AppTheme.borderOutline,
+                            color: isOutOfStock
+                                ? const Color(0xFFFCA5A5)
+                                : (inCart ? AppTheme.primaryBlue : AppTheme.borderOutline),
                             width: inCart ? 1.5 : 1.0,
                           ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              product.name,
-                              style: GoogleFonts.lexend(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13.5,
-                                color: AppTheme.accentBlack,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        product.name,
+                                        style: GoogleFonts.lexend(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
+                                          color: isOutOfStock ? const Color(0xFF991B1B) : AppTheme.accentBlack,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        product.categoryName ?? 'Umum',
+                                        style: GoogleFonts.lexend(
+                                          fontSize: 11,
+                                          color: AppTheme.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (product.imageUrl != null && product.imageUrl!.isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      product.imageUrl!,
+                                      width: 36,
+                                      height: 36,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              product.categoryName ?? 'Umum',
-                              style: GoogleFonts.lexend(
-                                fontSize: 11,
-                                color: AppTheme.textMuted,
+                            const SizedBox(height: 6),
+
+                            // Estimasi Porsi Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isOutOfStock ? const Color(0xFFFEE2E2) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: isOutOfStock ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                                ),
+                              ),
+                              child: Text(
+                                isOutOfStock
+                                    ? 'Habis (Bahan Baku Kurang)'
+                                    : (inCartQty > 0
+                                        ? 'Sisa: $remainingPortions / ${product.estimatedPortions} porsi'
+                                        : 'Estimasi: ${product.estimatedPortions} Porsi'),
+                                style: GoogleFonts.lexend(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: isOutOfStock ? AppTheme.dangerRed : AppTheme.primaryBlue,
+                                ),
                               ),
                             ),
+
                             const Spacer(),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -366,19 +452,23 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   product.formattedPrice,
                                   style: GoogleFonts.lexend(
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.primaryBlue,
+                                    color: isOutOfStock ? AppTheme.textMuted : AppTheme.primaryBlue,
                                     fontSize: 13,
                                   ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color: inCart ? AppTheme.primaryBlue : const Color(0xFFEFF6FF),
+                                    color: isOutOfStock
+                                        ? Colors.grey.shade300
+                                        : (inCart ? AppTheme.primaryBlue : const Color(0xFFEFF6FF)),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
-                                    Icons.add,
-                                    color: inCart ? Colors.white : AppTheme.primaryBlue,
+                                    isOutOfStock ? Icons.block_rounded : Icons.add,
+                                    color: isOutOfStock
+                                        ? Colors.grey.shade600
+                                        : (inCart ? Colors.white : AppTheme.primaryBlue),
                                     size: 16,
                                   ),
                                 ),

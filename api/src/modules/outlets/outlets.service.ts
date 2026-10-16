@@ -1,5 +1,4 @@
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 import { Role, TxnStatus } from '@prisma/client';
 import { CreateOutletInput, UpdateOutletInput } from './outlets.schema';
@@ -30,47 +29,6 @@ export class OutletsService {
 
     if (!isPrivileged) {
       where.id = { in: userOutlets };
-    }
-
-    if (!(await isDbAvailable())) {
-      return [
-        {
-          id: 'out-001',
-          name: 'Kopi Arus - Sudirman (HQ)',
-          address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
-          latitude: -6.21462,
-          longitude: 106.82155,
-          timezone: 'Asia/Jakarta',
-          is_active: true,
-          inventory_count: 18,
-          assigned_users_count: 5,
-          created_at: new Date(),
-        },
-        {
-          id: 'out-002',
-          name: 'Kopi Arus - Senopati',
-          address: 'Jl. Senopati No. 12, Jakarta Selatan',
-          latitude: -6.22851,
-          longitude: 106.80812,
-          timezone: 'Asia/Jakarta',
-          is_active: true,
-          inventory_count: 15,
-          assigned_users_count: 4,
-          created_at: new Date(),
-        },
-        {
-          id: 'out-003',
-          name: 'Kopi Arus - Canggu',
-          address: 'Jl. Pantai Batu Bolong, Bali',
-          latitude: -8.65392,
-          longitude: 115.13054,
-          timezone: 'Asia/Makassar',
-          is_active: true,
-          inventory_count: 12,
-          assigned_users_count: 3,
-          created_at: new Date(),
-        },
-      ];
     }
 
     try {
@@ -234,47 +192,6 @@ export class OutletsService {
    * Menghitung indikator performa untuk pewarnaan peta LBS (optimal / warning / critical).
    */
   async getOutletsPerformance() {
-    if (!(await isDbAvailable())) {
-      return [
-        {
-          outlet_id: 'out-001',
-          name: 'Kopi Arus - Sudirman (HQ)',
-          address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
-          latitude: -6.21462,
-          longitude: 106.82155,
-          timezone: 'Asia/Jakarta',
-          revenue_30d_idr: 15000000,
-          transaction_count_30d: 350,
-          low_stock_count: 0,
-          performance_status: 'optimal' as const,
-        },
-        {
-          outlet_id: 'out-002',
-          name: 'Kopi Arus - Senopati',
-          address: 'Jl. Senopati No. 12, Jakarta Selatan',
-          latitude: -6.22851,
-          longitude: 106.80812,
-          timezone: 'Asia/Jakarta',
-          revenue_30d_idr: 4500000,
-          transaction_count_30d: 110,
-          low_stock_count: 2,
-          performance_status: 'warning' as const,
-        },
-        {
-          outlet_id: 'out-003',
-          name: 'Kopi Arus - Canggu',
-          address: 'Jl. Pantai Batu Bolong, Bali',
-          latitude: -8.65392,
-          longitude: 115.13054,
-          timezone: 'Asia/Makassar',
-          revenue_30d_idr: 0,
-          transaction_count_30d: 0,
-          low_stock_count: 6,
-          performance_status: 'critical' as const,
-        },
-      ];
-    }
-
     const outlets = await prisma.outlet.findMany({
       where: { is_active: true },
       include: {

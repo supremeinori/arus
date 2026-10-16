@@ -4,8 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../inventory/domain/inventory_models.dart';
+import '../../inventory/presentation/inventory_provider.dart';
 import '../data/catalog_repository.dart';
 import 'catalog_provider.dart';
+
+class _RecipeRow {
+  String? ingredientId;
+  final TextEditingController amountController;
+
+  _RecipeRow({this.ingredientId, int? amount})
+      : amountController = TextEditingController(text: amount != null && amount > 0 ? amount.toString() : '');
+
+  void dispose() {
+    amountController.dispose();
+  }
+}
 
 class ProductFormScreen extends ConsumerStatefulWidget {
   final String? productId; // Null = create, non-null = edit
@@ -26,6 +40,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   final _costController = TextEditingController();
   final _imageUrlController = TextEditingController();
 
+  final List<_RecipeRow> _recipeRows = [];
   String? _selectedCategoryId;
   bool _isLoading = false;
   bool _isFetchingInitial = false;
@@ -55,6 +70,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         _imageUrlController.text = product.imageUrl!;
       }
       _selectedCategoryId = product.categoryId;
+
+      _recipeRows.clear();
+      if (product.recipes.isNotEmpty) {
+        for (final r in product.recipes) {
+          _recipeRows.add(_RecipeRow(ingredientId: r.ingredientId, amount: r.amountNeeded));
+        }
+      }
     } catch (e) {
       _errorMessage = 'Gagal memuat data produk: $e';
     } finally {
@@ -70,7 +92,23 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _priceController.dispose();
     _costController.dispose();
     _imageUrlController.dispose();
+    for (final r in _recipeRows) {
+      r.dispose();
+    }
     super.dispose();
+  }
+
+  void _addRecipeRow() {
+    setState(() {
+      _recipeRows.add(_RecipeRow());
+    });
+  }
+
+  void _removeRecipeRow(int index) {
+    setState(() {
+      final removed = _recipeRows.removeAt(index);
+      removed.dispose();
+    });
   }
 
   Future<void> _submit() async {
@@ -89,6 +127,19 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           : null;
       final imageUrl = _imageUrlController.text.trim().isEmpty ? null : _imageUrlController.text.trim();
 
+      final List<Map<String, dynamic>> recipesPayload = [];
+      for (final r in _recipeRows) {
+        if (r.ingredientId != null && r.ingredientId!.isNotEmpty) {
+          final amt = int.tryParse(r.amountController.text.trim()) ?? 0;
+          if (amt > 0) {
+            recipesPayload.add({
+              'ingredient_id': r.ingredientId!,
+              'amount_needed': amt,
+            });
+          }
+        }
+      }
+
       if (widget.productId == null) {
         await repo.createProduct(
           name: _nameController.text.trim(),
@@ -98,6 +149,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           costIdr: cost,
           categoryId: _selectedCategoryId,
           imageUrl: imageUrl,
+          recipes: recipesPayload,
         );
       } else {
         await repo.updateProduct(
@@ -109,6 +161,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           costIdr: cost,
           categoryId: _selectedCategoryId,
           imageUrl: imageUrl,
+          recipes: recipesPayload,
         );
       }
 
@@ -120,8 +173,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             backgroundColor: AppTheme.accentBlack,
             content: Text(
               widget.productId == null
-                  ? 'Produk baru berhasil ditambahkan ke database!'
-                  : 'Produk berhasil diperbarui di database!',
+                  ? 'Produk & resep berhasil disimpan!'
+                  : 'Produk & resep berhasil diperbarui!',
               style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
             ),
           ),
@@ -139,12 +192,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   @override
   Widget build(BuildContext context) {
     final categoriesState = ref.watch(categoriesProvider);
+    final ingredientsState = ref.watch(ingredientsListProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
         title: Text(
-          widget.productId == null ? 'Tambah Produk Baru' : 'Edit Produk',
+          widget.productId == null ? 'Tambah Menu / Produk' : 'Edit Menu / Produk',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
@@ -186,7 +240,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       controller: _nameController,
                       style: GoogleFonts.lexend(fontSize: 14),
                       decoration: InputDecoration(
-                        labelText: 'Nama Produk *',
+                        labelText: 'Nama Menu / Produk *',
                         hintText: 'Contoh: Es Kopi Susu Aren',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -198,7 +252,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         ),
                       ),
                       validator: (val) =>
-                          val == null || val.trim().isEmpty ? 'Nama produk wajib diisi' : null,
+                          val == null || val.trim().isEmpty ? 'Nama menu wajib diisi' : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -234,7 +288,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                             controller: _unitController,
                             style: GoogleFonts.lexend(fontSize: 14),
                             decoration: InputDecoration(
-                              labelText: 'Satuan *',
+                              labelText: 'Satuan',
                               hintText: 'cup',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -245,8 +299,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                                 borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
                               ),
                             ),
-                            validator: (val) =>
-                                val == null || val.trim().isEmpty ? 'Wajib diisi' : null,
                           ),
                         ),
                       ],
@@ -308,7 +360,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Baris Harga Jual & HPP
+                    // Baris Harga Jual & HPP Estimasi
                     Row(
                       children: [
                         Expanded(
@@ -341,8 +393,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                             style: GoogleFonts.lexend(fontSize: 14),
                             decoration: InputDecoration(
-                              labelText: 'HPP / Modal (Rp)',
-                              hintText: '9000',
+                              labelText: 'HPP Manual (Opsional)',
+                              hintText: 'Otomatis dari resep',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
@@ -355,6 +407,168 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ==========================================
+                    // SEKSI KOMPOSISI RESEP (PRODUCT RECIPES)
+                    // ==========================================
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Komposisi Resep Menu',
+                                    style: GoogleFonts.lexend(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.accentBlack,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Takaran bahan baku per 1 porsi pesanan',
+                                    style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                                  ),
+                                ],
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: _addRecipeRow,
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text('Bahan'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.lightBlueBg,
+                                  foregroundColor: AppTheme.primaryBlue,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  textStyle: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: const BorderSide(color: AppTheme.primaryBlue, width: 1),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 20, color: AppTheme.borderOutline),
+
+                          if (_recipeRows.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Center(
+                                child: Text(
+                                  'Belum ada takaran resep. Klik "+ Bahan" untuk menambahkan bahan baku.',
+                                  style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            )
+                          else
+                            ingredientsState.when(
+                              loading: () => const LinearProgressIndicator(),
+                              error: (e, _) => Text('Gagal memuat bahan: $e', style: GoogleFonts.lexend(fontSize: 12)),
+                              data: (availableIngredients) {
+                                return ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: _recipeRows.length,
+                                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                                  itemBuilder: (context, idx) {
+                                    final row = _recipeRows[idx];
+                                    final selectedIngredient = availableIngredients
+                                        .cast<IngredientModel?>()
+                                        .firstWhere((i) => i?.id == row.ingredientId, orElse: () => null);
+
+                                    return Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: AppTheme.borderOutline),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Dropdown Bahan Baku
+                                          Expanded(
+                                            flex: 3,
+                                            child: DropdownButtonFormField<String>(
+                                              isExpanded: true,
+                                              initialValue: row.ingredientId != null &&
+                                                      availableIngredients.any((i) => i.id == row.ingredientId)
+                                                  ? row.ingredientId
+                                                  : null,
+                                              decoration: InputDecoration(
+                                                labelText: 'Pilih Bahan Baku',
+                                                isDense: true,
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              items: availableIngredients.map((ing) {
+                                                return DropdownMenuItem(
+                                                  value: ing.id,
+                                                  child: Text(
+                                                    '${ing.name} (${ing.unit})',
+                                                    style: GoogleFonts.lexend(fontSize: 12.5),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                );
+                                              }).toList(),
+                                              onChanged: (val) {
+                                                setState(() {
+                                                  row.ingredientId = val;
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+
+                                          // Takaran
+                                          Expanded(
+                                            flex: 2,
+                                            child: TextFormField(
+                                              controller: row.amountController,
+                                              keyboardType: TextInputType.number,
+                                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                              style: GoogleFonts.lexend(fontSize: 12.5),
+                                              decoration: InputDecoration(
+                                                labelText: 'Takaran',
+                                                hintText: '18',
+                                                suffixText: selectedIngredient?.unit ?? '',
+                                                isDense: true,
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          // Tombol Hapus Baris
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, color: AppTheme.dangerRed, size: 20),
+                                            onPressed: () => _removeRecipeRow(idx),
+                                            tooltip: 'Hapus bahan ini',
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 28),
 
@@ -379,7 +593,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                               ),
                             )
                           : Text(
-                              widget.productId == null ? 'Simpan Produk Baru' : 'Simpan Perubahan',
+                              widget.productId == null ? 'Simpan Menu Baru' : 'Simpan Perubahan Menu',
                               style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                             ),
                     ),

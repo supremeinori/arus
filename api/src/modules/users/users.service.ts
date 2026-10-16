@@ -1,6 +1,5 @@
 import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { isDbAvailable } from '../../config/db-health';
 import { AppError } from '../../shared/errors';
 import { hashPassword } from '../../shared/tokens';
 import { Currency } from './users.schema';
@@ -9,6 +8,12 @@ export class UsersService {
   private inMemorySettings: Record<string, any> = {};
 
   async getUserSettings(userId: string) {
+    if ((prisma as any).userSettings?.findUnique) {
+      try {
+        const found = await (prisma as any).userSettings.findUnique({ where: { user_id: userId } });
+        if (found) return found;
+      } catch (_) {}
+    }
     if (!this.inMemorySettings[userId]) {
       this.inMemorySettings[userId] = {
         user_id: userId,
@@ -35,6 +40,16 @@ export class UsersService {
       daily_revenue_target_idr?: number | null;
     }
   ) {
+    if ((prisma as any).userSettings?.upsert) {
+      try {
+        const updated = await (prisma as any).userSettings.upsert({
+          where: { user_id: userId },
+          create: { user_id: userId, ...data },
+          update: data,
+        });
+        if (updated) return updated;
+      } catch (_) {}
+    }
     const current = await this.getUserSettings(userId);
     this.inMemorySettings[userId] = {
       ...current,
@@ -81,10 +96,13 @@ export class UsersService {
     ]);
 
     return {
-      users: users.map((u) => ({
-        ...u,
-        outlets: u.outlets.map((uo) => uo.outlet),
-      })),
+      users: users.map((u) => {
+        const rawOutlets = (u as any).outlets || (u as any).user_outlets || [];
+        return {
+          ...u,
+          outlets: rawOutlets.map((uo: any) => uo.outlet || uo),
+        };
+      }),
       meta: {
         page,
         page_size: pageSize,

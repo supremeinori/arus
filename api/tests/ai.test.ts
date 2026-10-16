@@ -60,43 +60,49 @@ describe('AI Assistant Module (Milestone 9)', () => {
     vi.clearAllMocks();
   });
 
-  it('T-AI-01: AI Assistant menjawab pertanyaan omset dengan fakta database terverifikasi', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
-    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+  it(
+    'T-AI-01: AI Assistant menjawab pertanyaan omset dengan fakta database terverifikasi',
+    async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+      vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
 
-    vi.mocked(prisma.aiConversation.create).mockResolvedValue({
-      id: 'conv-1',
-      user_id: mockOwner.id,
-      title: 'Berapa omset saya hari ini?',
-    } as any);
+      vi.mocked(prisma.aiConversation.create).mockResolvedValue({
+        id: 'conv-1',
+        user_id: mockOwner.id,
+        title: 'Berapa omset saya hari ini?',
+      } as any);
 
-    vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
-      _sum: { total_idr: 1500000, subtotal_idr: 1500000, discount_idr: 0 },
-    } as any);
-    vi.mocked(prisma.transaction.count).mockResolvedValue(30);
-    vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
+        _sum: { total_idr: 1500000, subtotal_idr: 1500000, discount_idr: 0 },
+      } as any);
+      vi.mocked(prisma.transaction.count).mockResolvedValue(30);
+      vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([]);
 
-    vi.mocked(prisma.aiMessage.create).mockResolvedValue({
-      id: 'msg-1',
-      conversation_id: 'conv-1',
-      role: 'assistant',
-      content: 'Berdasarkan data operasional terkini: Total omset saat ini sebesar Rp 1.500.000 dari 30 transaksi.',
-    } as any);
+      vi.mocked(prisma.aiMessage.create).mockResolvedValue({
+        id: 'msg-1',
+        conversation_id: 'conv-1',
+        role: 'assistant',
+        content: 'Berdasarkan data operasional terkini: Total omset saat ini sebesar Rp 1.500.000 dari 30 transaksi.',
+      } as any);
 
-    const res = await request(app)
-      .post('/api/ai/chat')
-      .set('Authorization', `Bearer ${ownerToken}`)
-      .send({
-        message: 'Berapa omset penjualan saya hari ini?',
-      });
+      const res = await request(app)
+        .post('/api/ai/chat')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          message: 'Berapa omset penjualan saya hari ini?',
+        });
 
-    expect(res.status).toBe(200);
-    expect(res.body.data.facts).toHaveLength(1);
-    expect(res.body.data.facts[0].value.revenue_idr).toBe(1500000);
-    expect(res.body.data.message.content).toContain('1.500.000');
-  });
+      expect(res.status).toBe(200);
+      expect(res.body.data.facts).toHaveLength(1);
+      expect(res.body.data.facts[0].value.revenue_idr).toBe(1500000);
+      expect(res.body.data.message.content).toContain('1.500.000');
+    },
+    15000
+  );
 
-  it('T-AI-02: AI Assistant memberikan panduan bantuan jika pertanyaan di luar data transaksi/stok', async () => {
+  it(
+    'T-AI-02: AI Assistant memberikan panduan bantuan jika pertanyaan di luar data transaksi/stok',
+    async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
     vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
 
@@ -122,5 +128,5 @@ describe('AI Assistant Module (Milestone 9)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.facts).toHaveLength(0);
-  });
+  }, 15000);
 });

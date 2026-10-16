@@ -144,6 +144,79 @@ class ProductDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              // Estimasi Porsi & Resep
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Estimasi Ketersediaan Menu',
+                          style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: prod.estimatedPortions > 0 ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: prod.estimatedPortions > 0 ? const Color(0xFF93C5FD) : const Color(0xFFFCA5A5),
+                            ),
+                          ),
+                          child: Text(
+                            prod.estimatedPortions > 0
+                                ? '${prod.estimatedPortions} Porsi'
+                                : 'Habis (Bahan Kurang)',
+                            style: GoogleFonts.lexend(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              color: prod.estimatedPortions > 0 ? AppTheme.primaryBlue : AppTheme.dangerRed,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20, color: AppTheme.borderOutline),
+                    Text(
+                      'Komposisi Resep (Bahan Baku per Porsi):',
+                      style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF475569)),
+                    ),
+                    const SizedBox(height: 8),
+                    if (prod.recipes.isEmpty)
+                      Text(
+                        'Belum ada komposisi resep yang dikonfigurasi.',
+                        style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+                      )
+                    else
+                      ...prod.recipes.map(
+                        (r) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '• ${r.ingredientName ?? 'Bahan'}',
+                                style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.accentBlack),
+                              ),
+                              Text(
+                                '${r.amountNeeded} ${r.ingredientUnit ?? ''}',
+                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryBlue),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
 
               // Outlet Stock List

@@ -18,6 +18,7 @@ void main() {
       unit: 'cup',
       priceIdr: 18000,
       categoryName: 'Kopi',
+      estimatedPortions: 25,
     );
 
     testWidgets('PosScreen menampilkan produk katalog dan menambahkan item ke keranjang saat diklik', (tester) async {
