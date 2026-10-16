@@ -6,6 +6,7 @@ import '../../../core/config/env.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/auth/biometric_service.dart';
 import 'auth_provider.dart';
 import 'auth_state.dart';
 
@@ -45,7 +46,95 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _passwordController.text,
         );
     if (success && mounted) {
-      context.go('/shell');
+      final authState = ref.read(authProvider);
+      final user = authState.user;
+      final isBiometricAvailable = await ref.read(biometricServiceProvider).isBiometricAvailable();
+      final isAlreadyEnabled = user?.settings.biometricEnabled ?? false;
+
+      if (isBiometricAvailable && !isAlreadyEnabled && mounted) {
+        final shouldEnable = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.lightBlueBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue, size: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Aktifkan Login Biometrik?',
+                    style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Aktifkan login biometrik untuk akses lebih cepat?',
+              style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF475569), height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(
+                  'Nanti Saja',
+                  style: GoogleFonts.lexend(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                ),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text(
+                  'Ya, Aktifkan',
+                  style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldEnable == true && mounted) {
+          final confirmed = await ref.read(biometricServiceProvider).authenticate(
+            localizedReason: 'Konfirmasi sidik jari atau wajah Anda untuk mengaktifkan login biometrik',
+          );
+
+          if (confirmed && mounted) {
+            await ref.read(authProvider.notifier).toggleBiometric(true);
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: AppTheme.successGreen,
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Login biometrik berhasil diaktifkan!',
+                      style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+
+      if (mounted) {
+        context.go('/shell');
+      }
     }
   }
 

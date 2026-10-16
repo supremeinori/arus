@@ -419,6 +419,18 @@ class LocalDatabase {
     if (db == null) {
       if (_webSessionStore.containsKey(userId)) {
         _webSessionStore[userId]!['biometric_enabled'] = enabled ? 1 : 0;
+        final rawUser = _webSessionStore[userId]!['user_json'] as String?;
+        if (rawUser != null) {
+          try {
+            final decoded = jsonDecode(rawUser) as Map<String, dynamic>;
+            if (decoded['settings'] is Map) {
+              decoded['settings']['biometric_enabled'] = enabled;
+            } else {
+              decoded['settings'] = {'biometric_enabled': enabled};
+            }
+            _webSessionStore[userId]!['user_json'] = jsonEncode(decoded);
+          } catch (_) {}
+        }
       }
       return;
     }
@@ -429,6 +441,30 @@ class LocalDatabase {
       where: 'user_id = ?',
       whereArgs: [userId],
     );
+
+    try {
+      final maps = await db.query(
+        'local_session_settings',
+        columns: ['user_json'],
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        limit: 1,
+      );
+      if (maps.isNotEmpty && maps.first['user_json'] != null) {
+        final decoded = jsonDecode(maps.first['user_json'] as String) as Map<String, dynamic>;
+        if (decoded['settings'] is Map) {
+          decoded['settings']['biometric_enabled'] = enabled;
+        } else {
+          decoded['settings'] = {'biometric_enabled': enabled};
+        }
+        await db.update(
+          'local_session_settings',
+          {'user_json': jsonEncode(decoded)},
+          where: 'user_id = ?',
+          whereArgs: [userId],
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> clearSession([String? userId]) async {

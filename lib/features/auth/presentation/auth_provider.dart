@@ -3,6 +3,7 @@ import '../../../core/storage/secure_store.dart';
 import '../../../core/storage/local_db.dart';
 import '../../../core/auth/biometric_service.dart';
 import '../../../core/network/app_exception.dart';
+import '../../../core/storage/prefs_store.dart';
 import '../data/auth_repository.dart';
 import '../domain/user_model.dart';
 import 'auth_state.dart';
@@ -12,7 +13,11 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final secureStore = ref.watch(secureStoreProvider);
   final localDb = ref.watch(localDbProvider);
   final biometricService = ref.watch(biometricServiceProvider);
-  return AuthNotifier(authRepo, secureStore, localDb, biometricService);
+  PrefsStore? prefsStore;
+  try {
+    prefsStore = ref.watch(prefsStoreProvider);
+  } catch (_) {}
+  return AuthNotifier(authRepo, secureStore, localDb, biometricService, prefsStore);
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -20,14 +25,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final SecureStore _secureStore;
   final LocalDatabase _localDb;
   final BiometricService _biometricService;
+  final PrefsStore? _prefsStore;
 
   AuthNotifier(
     this._authRepo,
     this._secureStore, [
     LocalDatabase? localDb,
     BiometricService? biometricService,
+    PrefsStore? prefsStore,
   ])  : _localDb = localDb ?? LocalDatabase.instance,
         _biometricService = biometricService ?? BiometricService(),
+        _prefsStore = prefsStore,
         super(AuthState.initial());
 
   /// Memeriksa status sesi saat startup / hot reload.
@@ -178,13 +186,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> toggleBiometric(bool enabled) async {
     if (state.user != null) {
       await _localDb.updateBiometricSetting(state.user!.id, enabled);
-      final updatedSettings = UserSettingsSummary(
-        displayCurrency: state.user!.settings.displayCurrency,
-        displayTimezone: state.user!.settings.displayTimezone,
+      await _prefsStore?.setBiometricEnabled(enabled);
+      final updatedSettings = state.user!.settings.copyWith(
         biometricEnabled: enabled,
-        shakeRefreshEnabled: state.user!.settings.shakeRefreshEnabled,
-        tiltEnabled: state.user!.settings.tiltEnabled,
-        dailyRevenueTargetIdr: state.user!.settings.dailyRevenueTargetIdr,
       );
       state = AuthState.authenticated(state.user!.copyWith(settings: updatedSettings));
     }

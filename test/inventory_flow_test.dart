@@ -26,15 +26,6 @@ class AuthNotifierMock extends StateNotifier<AuthState> implements AuthNotifier 
   Future<void> logout() async {}
 
   @override
-  Future<void> setShakeRefreshEnabled(bool enabled) async {}
-
-  @override
-  Future<void> setTiltEnabled(bool enabled) async {}
-
-  @override
-  Future<void> setShakeThreshold(double threshold) async {}
-
-  @override
   Future<bool> authenticateWithBiometric() async => true;
 
   @override
@@ -46,9 +37,6 @@ class MockShakeEventNotifier extends StateNotifier<DateTime?> implements ShakeEv
 
   @override
   void reset() {}
-
-  @override
-  void triggerManualShake() {}
 
   @override
   void triggerShake() {}

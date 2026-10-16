@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/auth/biometric_service.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import '../../sensors/presentation/shake_settings_sheet.dart';
 
@@ -140,8 +141,17 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: Text('Buka kunci sesi otomatis dengan sensor biometrik HP', style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted)),
                   activeThumbColor: AppTheme.primaryBlue,
                   value: user?.settings.biometricEnabled ?? false,
-                  onChanged: (val) {
-                    ref.read(authProvider.notifier).toggleBiometric(val);
+                  onChanged: (val) async {
+                    if (val) {
+                      final confirmed = await ref.read(biometricServiceProvider).authenticate(
+                        localizedReason: 'Konfirmasi sidik jari atau wajah untuk mengaktifkan biometrik',
+                      );
+                      if (confirmed) {
+                        ref.read(authProvider.notifier).toggleBiometric(true);
+                      }
+                    } else {
+                      ref.read(authProvider.notifier).toggleBiometric(false);
+                    }
                   },
                 ),
                 const Divider(height: 1, indent: 56, color: AppTheme.borderOutline),

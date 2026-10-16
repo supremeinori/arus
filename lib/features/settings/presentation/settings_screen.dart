@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/timezone_converter.dart';
+import '../../../core/auth/biometric_service.dart';
+import '../../auth/presentation/auth_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import '../../sensors/presentation/shake_settings_sheet.dart';
 import 'currency_provider.dart';
@@ -589,6 +591,98 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ],
                 ),
                 onTap: () => ShakeSettingsSheet.show(context),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Section 4: Keamanan & Autentikasi Biometrik
+            Text(
+              'Keamanan & Akses Cepat',
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.accentBlack),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Kelola autentikasi sidik jari/wajah dan kunci layar otomatis setelah 5 menit di background.',
+              style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+              ),
+              child: SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.lightBlueBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue, size: 24),
+                ),
+                title: Text(
+                  'Login Biometrik',
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+                subtitle: Text(
+                  'Buka kunci dengan sidik jari/wajah & kunci otomatis 5 menit.',
+                  style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                ),
+                activeThumbColor: AppTheme.primaryBlue,
+                value: ref.watch(authProvider).user?.settings.biometricEnabled ?? false,
+                onChanged: (enabled) async {
+                  if (enabled) {
+                    final bioService = ref.read(biometricServiceProvider);
+                    final available = await bioService.isBiometricAvailable();
+                    if (!available) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.dangerRed,
+                            content: Text(
+                              'Sensor biometrik tidak tersedia atau belum didaftarkan di perangkat ini.',
+                              style: GoogleFonts.lexend(color: Colors.white),
+                            ),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
+                    final confirmed = await bioService.authenticate(
+                       localizedReason: 'Konfirmasi sidik jari atau wajah untuk mengaktifkan login biometrik',
+                    );
+                    if (confirmed && context.mounted) {
+                      await ref.read(authProvider.notifier).toggleBiometric(true);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppTheme.successGreen,
+                          content: Text(
+                            'Login biometrik berhasil diaktifkan.',
+                            style: GoogleFonts.lexend(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    await ref.read(authProvider.notifier).toggleBiometric(false);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppTheme.accentBlack,
+                          content: Text(
+                            'Login biometrik dinonaktifkan.',
+                            style: GoogleFonts.lexend(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
               ),
             ),
           ],
