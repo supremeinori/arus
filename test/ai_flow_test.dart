@@ -38,6 +38,11 @@ class FakeAiRepository implements AiRepository {
       createdAt: DateTime.now(),
     );
   }
+
+  @override
+  Future<String> getTtsAudio(String text) async {
+    return 'fake_audio_base64_data';
+  }
 }
 
 void main() {
@@ -86,8 +91,8 @@ void main() {
       // Memastikan pesan user dan pesan assistant muncul
       expect(find.text('Bagaimana ringkasan penjualan hari ini?'), findsOneWidget);
       expect(find.textContaining('Penjualan hari ini mencapai Rp 1.500.000'), findsOneWidget);
-      expect(find.textContaining('Data Terverifikasi Sistem'), findsOneWidget);
-      expect(find.textContaining('Saran: Tingkatkan stok espresso blend'), findsOneWidget);
+      expect(find.textContaining('Grounded Fact: 1 fakta database'), findsOneWidget);
+      expect(find.textContaining('Tingkatkan stok espresso blend'), findsOneWidget);
     });
   });
 }

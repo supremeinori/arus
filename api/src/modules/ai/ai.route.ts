@@ -11,7 +11,10 @@ router.use('/ai', requireAuth, requireRole([Role.owner, Role.manager]));
 // 1. POST /api/ai/chat - Kirim pesan & dapatkan jawaban grounded fakta
 router.post('/ai/chat', (req, res, next) => aiAssistantController.chat(req, res, next));
 
-// 1b. POST /api/ai/recommend-price - Rekomendasi Harga Jual AI untuk Menu Baru
+// 1b. POST /api/ai/tts - Sintesis Teks ke Suara (Edge TTS id-ID-GadisNeural)
+router.post('/ai/tts', (req, res, next) => aiAssistantController.tts(req, res, next));
+
+// 1c. POST /api/ai/recommend-price - Rekomendasi Harga Jual AI untuk Menu Baru
 router.post('/ai/recommend-price', (req, res, next) => aiAssistantController.recommendPrice(req, res, next));
 
 // 2. GET /api/ai/conversations - Daftar percakapan

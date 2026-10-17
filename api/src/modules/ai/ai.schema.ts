@@ -23,5 +23,11 @@ export const aiChatSchema = z.object({
   screen_context: z.string().optional(),
 });
 
+export const ttsSchema = z.object({
+  text: z.string().min(1, 'Teks wajib diisi').max(2000),
+});
+
 export type RecommendPriceInput = z.infer<typeof recommendPriceSchema>;
 export type AiChatInput = z.infer<typeof aiChatSchema>;
+export type TtsInput = z.infer<typeof ttsSchema>;
+

@@ -5,6 +5,27 @@ import { inventoryService } from '../inventory/inventory.service';
 import { outletsService } from '../outlets/outlets.service';
 import { AppError } from '../../shared/errors';
 import { env } from '../../config/env';
+import { ttsService } from './tts.service';
+
+export function cleanVoiceSummaryText(text: string): string {
+  const stripped = text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/\[VOICE_SUMMARY\]:?/gi, '')
+    .replace(/[*#_~`>]/g, '')
+    .replace(/^\s*[-•]\s+/gm, '')
+    .replace(/\|.*?\|/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const match = stripped.match(/[^.!?]+[.!?]+/g);
+  if (match && match.length > 0) {
+    const summary = match.slice(0, 2).join(' ').trim();
+    if (summary.length >= 15) {
+      return summary;
+    }
+  }
+  return stripped.length > 180 ? stripped.substring(0, 177) + '...' : stripped;
+}
 
 export interface ChatMemoryTurn {
   role: 'user' | 'assistant';
@@ -44,7 +65,11 @@ Karakter & Gaya Komunikasi:
 - Panggil pengguna dengan panggilan yang diminta atau secara personal (${userContext.name}).
 - Ingat konteks percakapan sebelumnya agar diskusi mengalir alami.
 - Jika membahas data bisnis, gunakan FAKTA DATA BISNIS berikut sebagai kebenaran mutlak (jangan halusinasi angka di luar data ini):
-${JSON.stringify(facts, null, 2)}`;
+${JSON.stringify(facts, null, 2)}
+
+Format Output:
+Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar), sertakan juga TEPAT DI BAGIAN PALING AKHIR satu ringkasan lisan 1-2 kalimat yang ramah, ringkas, santai, dan BEBAS DARI SIMBOL MARKDOWN (*, #, -, bullet, tabel) serta menyebutkan angka dengan natural agar dapat dibacakan oleh suara wanita Gadis (TTS). Awali bagian ringkasan tersebut dengan penanda persis:
+[VOICE_SUMMARY]: <ringkasan suara 1-2 kalimat>`;
 
       const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
@@ -450,8 +475,16 @@ ${JSON.stringify(facts, null, 2)}`;
       role: userRoleTitle,
     }, query.screen_context);
 
+    let voiceSummary = '';
     if (liveGeminiText) {
-      aiResponseText = liveGeminiText;
+      if (liveGeminiText.includes('[VOICE_SUMMARY]:')) {
+        const parts = liveGeminiText.split('[VOICE_SUMMARY]:');
+        aiResponseText = parts[0].trim();
+        voiceSummary = cleanVoiceSummaryText(parts[1]);
+      } else {
+        aiResponseText = liveGeminiText.trim();
+        voiceSummary = cleanVoiceSummaryText(aiResponseText);
+      }
       suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini.';
     } else if (currentTopic === 'chitchat' || facts.length === 0) {
       // RESPONS NATURAL UNTUK INTERAKSI MANUSIAWI, BERCANDA, DAN CHITCHAT
@@ -701,11 +734,27 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
       }
     }
 
+    if (!voiceSummary) {
+      voiceSummary = cleanVoiceSummaryText(aiResponseText);
+    }
+
+    let audioBase64 = '';
+    if (voiceSummary) {
+      try {
+        audioBase64 = await ttsService.textToSpeechBase64(voiceSummary);
+      } catch (err) {
+        console.warn('[AudioBase64 Generation Error]', err);
+      }
+    }
+
     return {
       conversation_id: conversationId,
       message: savedAiMessage,
       facts,
       suggestion: suggestionText,
+      reply_text: aiResponseText,
+      voice_summary: voiceSummary,
+      audio_base64: audioBase64,
     };
   }
 

@@ -49,11 +49,29 @@ class AiRepository {
         },
       );
 
-      final data = response.data?['data'] as Map<String, dynamic>;
-      final msgJson = data['message'] as Map<String, dynamic>;
-      return AiMessageModel.fromJson(msgJson);
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      final msgJson = (data['message'] as Map<String, dynamic>?) ?? {};
+      return AiMessageModel.fromJson({
+        ...msgJson,
+        if (data['voice_summary'] != null) 'voice_summary': data['voice_summary'],
+        if (data['audio_base64'] != null) 'audio_base64': data['audio_base64'],
+        if (data['reply_text'] != null && msgJson['content'] == null) 'content': data['reply_text'],
+      });
     } catch (_) {
       return _generateOfflineResponse(message, conversationId);
+    }
+  }
+
+  Future<String> getTtsAudio(String text) async {
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/ai/tts',
+        data: {'text': text},
+      );
+      final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+      return data['audio_base64'] as String? ?? '';
+    } catch (_) {
+      return '';
     }
   }
 

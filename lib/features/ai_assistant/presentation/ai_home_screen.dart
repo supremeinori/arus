@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../auth/presentation/auth_state.dart';
 import '../domain/ai_models.dart';
+import '../domain/voice_models.dart';
 import 'ai_provider.dart';
+import 'voice_session_controller.dart';
 
 class AiHomeScreen extends ConsumerStatefulWidget {
   const AiHomeScreen({super.key});
@@ -14,20 +18,13 @@ class AiHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final pending = ref.read(aiPendingPromptProvider);
-      if (pending != null && pending.isNotEmpty) {
-        ref.read(aiPendingPromptProvider.notifier).state = null;
-        _handleSend(pending);
-      }
-    });
-  }
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final SpeechToText _dictationStt = SpeechToText();
+
   String? _selectedOutletId;
+  bool _isVoiceMode = false;
+  bool _isDictating = false;
 
   final List<String> _quickPrompts = [
     'Bagaimana ringkasan penjualan hari ini?',
@@ -37,9 +34,28 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _inputController.addListener(_onTextChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final pending = ref.read(aiPendingPromptProvider);
+      if (pending != null && pending.isNotEmpty) {
+        ref.read(aiPendingPromptProvider.notifier).state = null;
+        _handleSend(pending);
+      }
+    });
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _inputController.removeListener(_onTextChanged);
     _inputController.dispose();
     _scrollController.dispose();
+    _dictationStt.stop();
     super.dispose();
   }
 
@@ -73,6 +89,48 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     _scrollToBottom();
   }
 
+  Future<void> _toggleDictation() async {
+    if (_isDictating) {
+      await _dictationStt.stop();
+      if (mounted) setState(() => _isDictating = false);
+      return;
+    }
+
+    try {
+      final available = await _dictationStt.initialize(
+        onError: (_) {
+          if (mounted) setState(() => _isDictating = false);
+        },
+        onStatus: (status) {
+          if (status == 'notListening' || status == 'done') {
+            if (mounted) setState(() => _isDictating = false);
+          }
+        },
+      );
+
+      if (available && mounted) {
+        setState(() => _isDictating = true);
+        await _dictationStt.listen(
+          onResult: (result) {
+            if (mounted) {
+              setState(() {
+                _inputController.text = result.recognizedWords;
+                _inputController.selection = TextSelection.fromPosition(
+                  TextPosition(offset: _inputController.text.length),
+                );
+              });
+            }
+          },
+          listenOptions: SpeechListenOptions(
+            localeId: 'id_ID',
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isDictating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(aiChatProvider);
@@ -94,7 +152,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
               width: 36,
               height: 36,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(
+              errorBuilder: (_, _, _) => const Icon(
                 Icons.smart_toy_outlined,
                 color: AppTheme.primaryBlue,
                 size: 20,
@@ -107,7 +165,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Asisten AI Bisnis',
+              _isVoiceMode ? 'ARUS Voice Mode' : 'Asisten AI Bisnis',
               style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -122,50 +180,53 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
-            tooltip: 'Mulai Percakapan Baru',
-            onPressed: () {
-              ref.read(aiChatProvider.notifier).startNewChat();
-            },
-          ),
+          if (!_isVoiceMode)
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
+              tooltip: 'Mulai Percakapan Baru',
+              onPressed: () {
+                ref.read(aiChatProvider.notifier).startNewChat();
+              },
+            ),
         ],
       ),
-      body: Column(
-        children: [
-          if (chatState.errorMessage != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEF2F2),
-                border: Border(
-                  bottom: BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      chatState.errorMessage!,
-                      style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+      body: _isVoiceMode
+          ? _buildVoiceModeView(chatState, authState, outlets)
+          : Column(
+              children: [
+                if (chatState.errorMessage != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFEF2F2),
+                      border: Border(
+                        bottom: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            chatState.errorMessage!,
+                            style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                Expanded(
+                  child: chatState.messages.isEmpty && !chatState.isLoading
+                      ? _buildEmptyState()
+                      : _buildMessageList(chatState.messages, chatState.isLoading),
+                ),
+                _buildInputBar(chatState.isLoading),
+              ],
             ),
-          Expanded(
-            child: chatState.messages.isEmpty && !chatState.isLoading
-                ? _buildEmptyState()
-                : _buildMessageList(chatState.messages, chatState.isLoading),
-          ),
-          _buildInputBar(chatState.isLoading),
-        ],
-      ),
     );
   }
 
@@ -189,7 +250,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 width: 72,
                 height: 72,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, _, _) => const Icon(
                   Icons.analytics_outlined,
                   size: 42,
                   color: AppTheme.primaryBlue,
@@ -295,7 +356,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 width: 32,
                 height: 32,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, _, _) => const Icon(
                   Icons.smart_toy_outlined,
                   color: AppTheme.primaryBlue,
                   size: 16,
@@ -337,48 +398,41 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.verified_outlined, size: 12, color: AppTheme.primaryBlue),
-                          const SizedBox(width: 5),
+                          const Icon(Icons.verified_outlined, size: 12, color: Color(0xFF16A34A)),
+                          const SizedBox(width: 4),
                           Text(
-                            'Data Terverifikasi Sistem (${message.factsUsed.length} fakta)',
-                            style: GoogleFonts.lexend(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.accentBlack,
-                            ),
+                            'Grounded Fact: ${message.factsUsed.length} fakta database',
+                            style: GoogleFonts.lexend(fontSize: 10.5, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
                           ),
                         ],
                       ),
                     ),
                   ],
-                  if (!isUser && message.suggestion != null) ...[
+                  if (!isUser && message.suggestion != null && message.suggestion!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () => _handleSend(message.suggestion!),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppTheme.primaryBlue, width: 1.2),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.lightbulb_outline, size: 13, color: AppTheme.primaryBlue),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                'Saran: ${message.suggestion!}',
-                                style: GoogleFonts.lexend(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.primaryBlue,
-                                ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppTheme.borderOutline, width: 1),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.tips_and_updates_outlined, size: 14, color: Color(0xFFD97706)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              message.suggestion!,
+                              style: GoogleFonts.lexend(
+                                fontSize: 11.5,
+                                fontStyle: FontStyle.italic,
+                                color: const Color(0xFF475569),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -395,6 +449,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Container(
             margin: const EdgeInsets.only(top: 2, right: 8),
@@ -422,7 +477,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     width: 20,
                     height: 20,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -444,7 +499,12 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     );
   }
 
+  /// Desain Input Bar Dinamis (Ala ChatGPT - Tema Jade Tosca #00A896)
+  /// [ (Expanded) TextField Ketik Pesan... ]  [ 🎤 Ikon Mic STT ]  [ 🟢 Tombol Aksi Utama ]
   Widget _buildInputBar(bool isLoading) {
+    final hasText = _inputController.text.trim().isNotEmpty;
+    const jadeTosca = Color(0xFF00A896);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: const BoxDecoration(
@@ -465,8 +525,13 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 enabled: !isLoading,
                 style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.accentBlack),
                 decoration: InputDecoration(
-                  hintText: 'Tanyakan sesuatu tentang bisnis...',
-                  hintStyle: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF94A3B8)),
+                  hintText: _isDictating
+                      ? 'Mendengarkan suara Anda...'
+                      : 'Tanyakan sesuatu tentang bisnis...',
+                  hintStyle: GoogleFonts.lexend(
+                    fontSize: 13,
+                    color: _isDictating ? jadeTosca : const Color(0xFF94A3B8),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -476,30 +541,305 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                    borderSide: BorderSide(
+                      color: _isDictating ? jadeTosca : AppTheme.borderOutline,
+                      width: 1.5,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                    borderSide: const BorderSide(color: jadeTosca, width: 2),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
+
+            // 1. Ikon Mic STT (Dictation Mode)
+            IconButton(
+              icon: Icon(
+                _isDictating ? Icons.mic : Icons.mic_none_rounded,
+                color: _isDictating ? const Color(0xFFDC2626) : AppTheme.textSecondary,
+                size: 24,
+              ),
+              tooltip: _isDictating ? 'Hentikan Dikte' : 'Dikte Suara (STT)',
+              onPressed: isLoading ? null : _toggleDictation,
+            ),
+            const SizedBox(width: 4),
+
+            // 2. Tombol Aksi Utama (Bulat, Warna Jade Tosca #00A896)
             Container(
-              decoration: BoxDecoration(
-                color: AppTheme.primaryBlue,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: jadeTosca,
+                shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
-                onPressed: isLoading ? null : () => _handleSend(),
+                icon: Icon(
+                  hasText ? Icons.arrow_upward_rounded : Icons.graphic_eq_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                tooltip: hasText ? 'Kirim Pesan Teks' : 'Buka ARUS Voice Mode',
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        if (hasText) {
+                          _handleSend();
+                        } else {
+                          setState(() => _isVoiceMode = true);
+                        }
+                      },
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Antarmuka "ARUS Voice Mode" (Push-to-Talk Tektokan dengan Auto-Cut)
+  Widget _buildVoiceModeView(
+    AiChatState chatState,
+    AuthState authState,
+    List<dynamic> outlets,
+  ) {
+    final voiceState = ref.watch(voiceSessionProvider);
+    final voiceNotifier = ref.read(voiceSessionProvider.notifier);
+    const jadeTosca = Color(0xFF00A896);
+
+    Color statusColor;
+    String statusTitle;
+    IconData statusIcon;
+
+    switch (voiceState.sessionState) {
+      case VoiceSessionState.listening:
+        statusColor = const Color(0xFFDC2626);
+        statusTitle = 'Mendengarkan...';
+        statusIcon = Icons.mic_rounded;
+        break;
+      case VoiceSessionState.processingFiller:
+        statusColor = const Color(0xFFD97706);
+        statusTitle = 'Menganalisis...';
+        statusIcon = Icons.hourglass_top_rounded;
+        break;
+      case VoiceSessionState.speakingResult:
+        statusColor = jadeTosca;
+        statusTitle = 'Gadis Berbicara...';
+        statusIcon = Icons.volume_up_rounded;
+        break;
+      case VoiceSessionState.idle:
+        statusColor = AppTheme.primaryToska;
+        statusTitle = 'Siap Berbicara';
+        statusIcon = Icons.graphic_eq_rounded;
+        break;
+    }
+
+    return Column(
+      children: [
+        // Top Bar Voice Mode
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDFA),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: jadeTosca.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusTitle,
+                      style: GoogleFonts.lexend(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, color: AppTheme.accentBlack),
+                tooltip: 'Kembali ke Chat Teks',
+                onPressed: () {
+                  voiceNotifier.stopSession();
+                  setState(() => _isVoiceMode = false);
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1, color: AppTheme.borderOutline),
+
+        // Center Area: Mascot Pulse & Live Transcript Box
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: voiceState.sessionState == VoiceSessionState.listening ||
+                              voiceState.sessionState == VoiceSessionState.speakingResult
+                          ? 120
+                          : 96,
+                      height: voiceState.sessionState == VoiceSessionState.listening ||
+                              voiceState.sessionState == VoiceSessionState.speakingResult
+                          ? 120
+                          : 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: statusColor.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    ClipOval(
+                      child: Image.asset(
+                        'assets/images/ai_mascot.png',
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => CircleAvatar(
+                          radius: 36,
+                          backgroundColor: jadeTosca,
+                          child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 36),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Dialog / Live Transcript Card
+                Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(minHeight: 80),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        voiceState.liveTranscript.isNotEmpty
+                            ? voiceState.liveTranscript
+                            : voiceState.activeFillerText != null
+                                ? voiceState.activeFillerText!
+                                : voiceState.lastAiSpokenText != null
+                                    ? voiceState.lastAiSpokenText!
+                                    : 'Tahan tombol di bawah untuk berbicara dengan Gadis (ARUS Voice)...',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lexend(
+                          fontSize: 14,
+                          fontWeight: voiceState.liveTranscript.isNotEmpty || voiceState.lastAiSpokenText != null
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: voiceState.liveTranscript.isNotEmpty
+                              ? AppTheme.accentBlack
+                              : voiceState.lastAiSpokenText != null
+                                  ? jadeTosca
+                                  : AppTheme.textMuted,
+                          height: 1.45,
+                        ),
+                      ),
+                      if (voiceState.errorMessage != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          voiceState.errorMessage!,
+                          style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFFDC2626)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Bottom Action Area: Big Push-to-Talk (PTT) Button
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTapDown: (_) => voiceNotifier.onPttPressDown(),
+                  onTapUp: (_) => voiceNotifier.onPttRelease(outletId: _selectedOutletId),
+                  onTapCancel: () => voiceNotifier.onPttRelease(outletId: _selectedOutletId),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: voiceState.sessionState == VoiceSessionState.listening
+                          ? const Color(0xFFDC2626)
+                          : jadeTosca,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (voiceState.sessionState == VoiceSessionState.listening
+                                  ? const Color(0xFFDC2626)
+                                  : jadeTosca)
+                              .withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        voiceState.sessionState == VoiceSessionState.listening
+                            ? Icons.mic_rounded
+                            : Icons.mic_none_rounded,
+                        color: Colors.white,
+                        size: 38,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  voiceState.sessionState == VoiceSessionState.listening
+                      ? 'Lepas tombol untuk mengirim suara'
+                      : voiceState.sessionState == VoiceSessionState.speakingResult
+                          ? 'Sentuh tombol untuk memotong (Auto-Cut)'
+                          : 'Tahan untuk bicara, lepas untuk kirim',
+                  style: GoogleFonts.lexend(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

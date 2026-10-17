@@ -35,9 +35,9 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
 
   AiChatNotifier(this._repository) : super(const AiChatState());
 
-  Future<void> sendMessage(String text, {String? outletId}) async {
+  Future<AiMessageModel?> sendMessage(String text, {String? outletId}) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) return null;
 
     final userMsg = AiMessageModel(
       id: 'local-${DateTime.now().millisecondsSinceEpoch}',
@@ -65,11 +65,13 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
         conversationId: aiMsg.conversationId.isNotEmpty ? aiMsg.conversationId : state.conversationId,
         isLoading: false,
       );
+      return aiMsg;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Gagal mendapatkan respon AI: $e',
       );
+      return null;
     }
   }
 
