@@ -14,7 +14,7 @@ import 'package:arus/features/outlets/presentation/outlets_provider.dart';
 
 void main() {
   testWidgets(
-    'Owner sees live daily and transaction blocks for the selected outlet',
+    'Owner sees live single-layer transaction blocks for the selected outlet',
     (tester) async {
       const owner = UserModel(
         id: 'owner-1',
@@ -34,30 +34,24 @@ void main() {
       const snapshot = IntegrityChainSnapshot(
         overview: IntegrityChainOverview(
           outletId: 'outlet-1',
-          totalDays: 1,
-          currentActiveTxCount: 0,
-          days: [
-            IntegrityDailyBlock(
-              dayIndex: 0,
-              date: '2026-10-15',
-              parentHash: 'parent-hash-live',
-              previousParentHash: 'genesis-hash',
-              merkleRoot: 'merkle-live',
-              timestamp: '2026-10-16T00:00:00.000Z',
-              transactionCount: 1,
-              transactions: [
-                IntegrityTransactionBlock(
-                  index: 0,
-                  timestamp: '2026-10-15T10:30:00.000Z',
-                  hash: 'transaction-hash-live',
-                  previousHash: 'genesis-hash',
-                  receiptNo: 'INV-REAL-0001',
-                  totalAmount: 42000,
-                  cashierId: 'cashier-1',
-                  eventType: 'sale',
-                  sourceId: 'transaction-1',
-                ),
-              ],
+          blockCount: 1,
+          blocks: [
+            IntegrityBlockItem(
+              index: 1,
+              eventId: 'sale:trx-1',
+              eventType: 'sale',
+              transactionId: 'trx-1',
+              timestamp: '2026-10-15T10:30:00.000Z',
+              hash: 'transaction-hash-live',
+              previousHash:
+                  '0000000000000000000000000000000000000000000000000000000000000000',
+              dataHash: 'data-hash-live',
+              data: {
+                'receipt_no': 'INV-REAL-0001',
+                'total_idr': 42000,
+                'cashier_id': 'cashier-1',
+              },
+              recoverable: true,
             ),
           ],
         ),
@@ -87,12 +81,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Daily block #0'));
-      await tester.pumpAndSettle();
 
-      expect(find.text('INV-REAL-0001'), findsOneWidget);
+      expect(find.text('BLOK #1 (GENESIS)'), findsOneWidget);
+      expect(find.text('Struk: INV-REAL-0001'), findsOneWidget);
       expect(find.textContaining('42.000'), findsOneWidget);
-      expect(find.text('parent-hash-live'), findsOneWidget);
+      expect(find.text('transaction-hash-live'), findsOneWidget);
       expect(find.textContaining('VALID ·'), findsOneWidget);
       expect(find.text('Uji Integritas'), findsOneWidget);
     },

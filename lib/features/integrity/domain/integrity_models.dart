@@ -10,106 +10,86 @@ class IntegrityChainSnapshot {
 
 class IntegrityChainOverview {
   final String outletId;
-  final int totalDays;
-  final int currentActiveTxCount;
-  final List<IntegrityDailyBlock> days;
+  final int blockCount;
+  final List<IntegrityBlockItem> blocks;
 
   const IntegrityChainOverview({
     required this.outletId,
-    required this.totalDays,
-    required this.currentActiveTxCount,
-    required this.days,
+    required this.blockCount,
+    required this.blocks,
   });
 
   factory IntegrityChainOverview.fromJson(Map<String, dynamic> json) {
-    final rawDays = json['days'] as List<dynamic>? ?? const [];
+    final rawBlocks = json['blocks'] as List<dynamic>? ?? const [];
     return IntegrityChainOverview(
       outletId: json['outletId'] as String? ?? '',
-      totalDays: (json['totalDays'] as num?)?.toInt() ?? 0,
-      currentActiveTxCount:
-          (json['currentActiveTxCount'] as num?)?.toInt() ?? 0,
-      days: rawDays
+      blockCount: (json['blockCount'] as num?)?.toInt() ?? rawBlocks.length,
+      blocks: rawBlocks
           .whereType<Map<String, dynamic>>()
-          .map(IntegrityDailyBlock.fromJson)
+          .map(IntegrityBlockItem.fromJson)
           .toList(growable: false),
     );
   }
 }
 
-class IntegrityDailyBlock {
-  final int dayIndex;
-  final String date;
-  final String parentHash;
-  final String previousParentHash;
-  final String merkleRoot;
-  final String timestamp;
-  final int transactionCount;
-  final List<IntegrityTransactionBlock> transactions;
-
-  const IntegrityDailyBlock({
-    required this.dayIndex,
-    required this.date,
-    required this.parentHash,
-    required this.previousParentHash,
-    required this.merkleRoot,
-    required this.timestamp,
-    required this.transactionCount,
-    required this.transactions,
-  });
-
-  factory IntegrityDailyBlock.fromJson(Map<String, dynamic> json) {
-    final rawTransactions = json['transactions'] as List<dynamic>? ?? const [];
-    return IntegrityDailyBlock(
-      dayIndex: (json['dayIndex'] as num?)?.toInt() ?? 0,
-      date: json['date'] as String? ?? '',
-      parentHash: json['parentHash'] as String? ?? '',
-      previousParentHash: json['previousParentHash'] as String? ?? '',
-      merkleRoot: json['merkleRoot'] as String? ?? '',
-      timestamp: json['timestamp'] as String? ?? '',
-      transactionCount:
-          (json['transactionCount'] as num?)?.toInt() ?? rawTransactions.length,
-      transactions: rawTransactions
-          .whereType<Map<String, dynamic>>()
-          .map(IntegrityTransactionBlock.fromJson)
-          .toList(growable: false),
-    );
-  }
-}
-
-class IntegrityTransactionBlock {
+class IntegrityBlockItem {
   final int index;
-  final String timestamp;
-  final String hash;
-  final String previousHash;
-  final String receiptNo;
-  final int totalAmount;
-  final String cashierId;
+  final String eventId;
   final String eventType;
-  final String sourceId;
+  final String? transactionId;
+  final String timestamp;
+  final String previousHash;
+  final String dataHash;
+  final String hash;
+  final Map<String, dynamic> data;
+  final bool recoverable;
 
-  const IntegrityTransactionBlock({
+  const IntegrityBlockItem({
     required this.index,
-    required this.timestamp,
-    required this.hash,
-    required this.previousHash,
-    required this.receiptNo,
-    required this.totalAmount,
-    required this.cashierId,
+    required this.eventId,
     required this.eventType,
-    required this.sourceId,
+    this.transactionId,
+    required this.timestamp,
+    required this.previousHash,
+    required this.dataHash,
+    required this.hash,
+    required this.data,
+    required this.recoverable,
   });
 
-  factory IntegrityTransactionBlock.fromJson(Map<String, dynamic> json) {
-    return IntegrityTransactionBlock(
+  String get receiptNo {
+    final raw = data['receipt_no'] ?? data['receiptNo'] ?? '';
+    return raw.toString();
+  }
+
+  int get totalAmount {
+    final val = data['total_idr'] ?? data['totalAmount'];
+    if (val is num) return val.toInt();
+    return 0;
+  }
+
+  String get cashierId {
+    final raw = data['cashier_id'] ?? data['cashierId'] ?? '';
+    return raw.toString();
+  }
+
+  bool get isGenesis =>
+      index == 1 ||
+      previousHash ==
+          '0000000000000000000000000000000000000000000000000000000000000000';
+
+  factory IntegrityBlockItem.fromJson(Map<String, dynamic> json) {
+    return IntegrityBlockItem(
       index: (json['index'] as num?)?.toInt() ?? 0,
-      timestamp: json['timestamp'] as String? ?? '',
-      hash: json['hash'] as String? ?? '',
-      previousHash: json['previousHash'] as String? ?? '',
-      receiptNo: json['receiptNo'] as String? ?? '',
-      totalAmount: (json['totalAmount'] as num?)?.toInt() ?? 0,
-      cashierId: json['cashierId'] as String? ?? '',
+      eventId: json['eventId'] as String? ?? '',
       eventType: json['eventType'] as String? ?? 'sale',
-      sourceId: json['sourceId'] as String? ?? '',
+      transactionId: json['transactionId'] as String?,
+      timestamp: json['timestamp'] as String? ?? '',
+      previousHash: json['previousHash'] as String? ?? '',
+      dataHash: json['dataHash'] as String? ?? '',
+      hash: json['hash'] as String? ?? '',
+      data: (json['data'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+      recoverable: json['recoverable'] as bool? ?? false,
     );
   }
 }
@@ -118,18 +98,28 @@ class IntegrityValidation {
   final bool isValid;
   final String status;
   final String message;
+  final Map<String, dynamic>? details;
 
   const IntegrityValidation({
     required this.isValid,
     required this.status,
     required this.message,
+    this.details,
   });
+
+  int? get tamperedBlockIndex {
+    if (details == null) return null;
+    final val = details!['blockIndex'];
+    if (val is num) return val.toInt();
+    return null;
+  }
 
   factory IntegrityValidation.fromJson(Map<String, dynamic> json) {
     return IntegrityValidation(
       isValid: json['isValid'] as bool? ?? false,
       status: json['status'] as String? ?? 'UNKNOWN',
       message: json['message'] as String? ?? '',
+      details: json['details'] as Map<String, dynamic>?,
     );
   }
 }

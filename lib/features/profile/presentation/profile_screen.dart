@@ -340,15 +340,15 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Atur hak akses kasir, manager, dan role pengguna',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
-                      fontSize: 11.5,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
+                  // subtitle: Text(
+                  //   'Atur hak akses kasir, manager, dan role pengguna',
+                  //   maxLines: 2,
+                  //   overflow: TextOverflow.ellipsis,
+                  //   style: GoogleFonts.lexend(
+                  //     fontSize: 11.5,
+                  //     color: AppTheme.textMuted,
+                  //   ),
+                  // ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
@@ -375,15 +375,15 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
-                      fontSize: 11.5,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
+                  // subtitle: Text(
+                  //   'Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)',
+                  //   maxLines: 2,
+                  //   overflow: TextOverflow.ellipsis,
+                  //   style: GoogleFonts.lexend(
+                  //     fontSize: 11.5,
+                  //     color: AppTheme.textMuted,
+                  //   ),
+                  // ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
@@ -402,7 +402,7 @@ class ProfileScreen extends ConsumerWidget {
                     color: AppTheme.primaryBlue,
                   ),
                   title: Text(
-                    'Tentang ARUS Decision Hub',
+                    'Tentang ARUS',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
@@ -410,15 +410,15 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Versi rilis v2.4.0, lisensi, & arsitektur sistem',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
-                      fontSize: 11.5,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
+                  // subtitle: Text(
+                  //   'Versi rilis v2.4.0, lisensi, & arsitektur sistem',
+                  //   maxLines: 2,
+                  //   overflow: TextOverflow.ellipsis,
+                  //   style: GoogleFonts.lexend(
+                  //     fontSize: 11.5,
+                  //     color: AppTheme.textMuted,
+                  //   ),
+                  // ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
@@ -525,7 +525,9 @@ class _LetterAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final u = user;
-    final initial = (u != null && u.name.isNotEmpty) ? u.name[0].toUpperCase() : 'U';
+    final initial = (u != null && u.name.isNotEmpty)
+        ? u.name[0].toUpperCase()
+        : 'U';
     return Container(
       width: 56,
       height: 56,

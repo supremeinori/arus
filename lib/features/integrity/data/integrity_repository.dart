@@ -42,16 +42,40 @@ class IntegrityRepository {
     }
   }
 
-  Future<void> closeCurrentDay(String outletId) async {
+  Future<void> simulateTamper(
+    String outletId,
+    int blockIndex, {
+    int fakeAmount = 99999999,
+  }) async {
     try {
       await _client.post<Map<String, dynamic>>(
-        '/integrity/blockchain/close-day',
-        data: {'outletId': outletId},
+        '/integrity/blockchain/simulate-tamper',
+        data: {
+          'outletId': outletId,
+          'blockIndex': blockIndex,
+          'fakeAmount': fakeAmount,
+        },
       );
     } on AppException {
       rethrow;
     } catch (_) {
-      throw AppException('Tidak dapat menutup rantai transaksi hari ini.');
+      throw AppException('Gagal mensimulasikan manipulasi data transaksi.');
+    }
+  }
+
+  Future<void> recoverBlock(String outletId, int blockIndex) async {
+    try {
+      await _client.post<Map<String, dynamic>>(
+        '/integrity/blockchain/recover',
+        data: {
+          'outletId': outletId,
+          'blockIndex': blockIndex,
+        },
+      );
+    } on AppException {
+      rethrow;
+    } catch (_) {
+      throw AppException('Gagal memulihkan blok data dari snapshot cadangan.');
     }
   }
 }

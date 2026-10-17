@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/sync/sync_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/app_widgets.dart';
@@ -43,7 +44,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Sinkronisasi selesai.'),
-            backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
+            backgroundColor: result.failedCount == 0
+                ? Colors.green.shade700
+                : Colors.amber.shade800,
           ),
         );
         ref.invalidate(productListProvider);
@@ -81,7 +84,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             backgroundColor: AppTheme.accentBlack,
             content: Row(
               children: [
-                const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.vibration_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Guncangan terdeteksi! Memperbarui katalog POS...',
@@ -116,7 +123,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.receipt_long_outlined, color: AppTheme.primaryBlue),
+            icon: const Icon(
+              Icons.receipt_long_outlined,
+              color: AppTheme.primaryBlue,
+            ),
             tooltip: 'Riwayat Transaksi Hari Ini',
             onPressed: () => context.push('/pos/history'),
           ),
@@ -126,11 +136,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
               try {
-                final result = await ref.read(syncServiceProvider).syncPendingTransactions();
+                final result = await ref
+                    .read(syncServiceProvider)
+                    .syncPendingTransactions();
                 messenger.showSnackBar(
                   SnackBar(
                     content: Text(result.message ?? 'Sinkronisasi selesai.'),
-                    backgroundColor: result.failedCount == 0 ? Colors.green.shade700 : Colors.amber.shade800,
+                    backgroundColor: result.failedCount == 0
+                        ? Colors.green.shade700
+                        : Colors.amber.shade800,
                   ),
                 );
                 ref.invalidate(productListProvider);
@@ -144,28 +158,31 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               }
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.add_business_outlined, color: AppTheme.primaryBlue),
-            tooltip: 'Tambah Produk Baru',
-            onPressed: () => context.push('/catalog/new'),
-          ),
+          // IconButton(
+          //   icon: const Icon(
+          //     Icons.add_business_outlined,
+          //     color: AppTheme.primaryBlue,
+          //   ),
+          //   tooltip: 'Tambah Produk Baru',
+          //   onPressed: () => context.push('/catalog/new'),
+          // ),
           IconButton(
             // SELALU di-layout (tanpa guard `if items.isNotEmpty`): tombol
             // yang disisipkan kondisional di frame yang sama dengan tap
             // pertama memicu "Cannot hit test a render box with no size"
             // (RenderConstrainedBox NEEDS-LAYOUT di bawah OutlinedButton).
             // Saat kosong, tombol dinonaktifkan (onPressed null).
-              icon: Icon(
-                Icons.delete_sweep_outlined,
-                color: cartState.items.isEmpty
-                    ? AppTheme.textMuted.withValues(alpha: 0.4)
-                    : AppTheme.accentBlack,
-              ),
-              tooltip: 'Kosongkan Keranjang',
-              onPressed: cartState.items.isEmpty
-                  ? null
-                  : () => ref.read(posCartProvider.notifier).clearCart(),
+            icon: Icon(
+              Icons.delete_sweep_outlined,
+              color: cartState.items.isEmpty
+                  ? AppTheme.textMuted.withValues(alpha: 0.4)
+                  : AppTheme.accentBlack,
             ),
+            tooltip: 'Kosongkan Keranjang',
+            onPressed: cartState.items.isEmpty
+                ? null
+                : () => ref.read(posCartProvider.notifier).clearCart(),
+          ),
         ],
       ),
       body: Column(
@@ -177,20 +194,35 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Cari produk atau SKU...',
-                prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMuted),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppTheme.textMuted,
+                ),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  borderSide: const BorderSide(
+                    color: AppTheme.borderOutline,
+                    width: 1.0,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  borderSide: const BorderSide(
+                    color: AppTheme.borderOutline,
+                    width: 1.0,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: AppTheme.primaryBlue,
+                    width: 1.5,
+                  ),
                 ),
               ),
               onChanged: (_) => setState(() {}),
@@ -213,19 +245,29 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         'Semua',
                         style: GoogleFonts.lexend(
                           fontSize: 12.5,
-                          fontWeight: _selectedCategoryId == null ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: _selectedCategoryId == null
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
                       ),
                       selected: _selectedCategoryId == null,
                       selectedColor: AppTheme.primaryBlue,
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: const BorderSide(
+                        color: AppTheme.borderOutline,
+                        width: 1.0,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       labelStyle: TextStyle(
-                        color: _selectedCategoryId == null ? Colors.white : AppTheme.accentBlack,
+                        color: _selectedCategoryId == null
+                            ? Colors.white
+                            : AppTheme.accentBlack,
                       ),
                       onSelected: (selected) {
-                        if (selected) setState(() => _selectedCategoryId = null);
+                        if (selected)
+                          setState(() => _selectedCategoryId = null);
                       },
                     ),
                     const SizedBox(width: 8),
@@ -238,19 +280,32 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             cat.name,
                             style: GoogleFonts.lexend(
                               fontSize: 12.5,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                           ),
                           selected: isSelected,
                           selectedColor: AppTheme.primaryBlue,
                           backgroundColor: Colors.white,
-                          side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          side: const BorderSide(
+                            color: AppTheme.borderOutline,
+                            width: 1.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppTheme.accentBlack,
+                            color: isSelected
+                                ? Colors.white
+                                : AppTheme.accentBlack,
                           ),
                           onSelected: (selected) {
-                            setState(() => _selectedCategoryId = selected ? cat.id : null);
+                            setState(
+                              () => _selectedCategoryId = selected
+                                  ? cat.id
+                                  : null,
+                            );
                           },
                         ),
                       );
@@ -269,15 +324,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 child: CircularProgressIndicator(color: AppTheme.primaryBlue),
               ),
               error: (err, _) => Center(
-                child: Text('Gagal memuat produk: $err', style: GoogleFonts.lexend()),
+                child: Text(
+                  'Gagal memuat produk: $err',
+                  style: GoogleFonts.lexend(),
+                ),
               ),
               data: (catalogItems) {
                 // Filter lokal berdasarkan pencarian & kategori
                 final query = _searchController.text.trim().toLowerCase();
                 final filtered = catalogItems.where((c) {
                   final p = c.product;
-                  final matchesCat = _selectedCategoryId == null || p.categoryId == _selectedCategoryId;
-                  final matchesQuery = query.isEmpty ||
+                  final matchesCat =
+                      _selectedCategoryId == null ||
+                      p.categoryId == _selectedCategoryId;
+                  final matchesQuery =
+                      query.isEmpty ||
                       p.name.toLowerCase().contains(query) ||
                       p.sku.toLowerCase().contains(query);
                   return matchesCat && matchesQuery;
@@ -296,11 +357,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               color: Color(0xFFEFF6FF),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.inventory_2_outlined, size: 36, color: AppTheme.primaryBlue),
+                            child: const Icon(
+                              Icons.inventory_2_outlined,
+                              size: 36,
+                              color: AppTheme.primaryBlue,
+                            ),
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            catalogItems.isEmpty ? 'Katalog Masih Kosong' : 'Tidak Ada Produk Sesuai',
+                            catalogItems.isEmpty
+                                ? 'Katalog Masih Kosong'
+                                : 'Tidak Ada Produk Sesuai',
                             style: GoogleFonts.lexend(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -321,7 +388,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: () => context.push('/catalog/new'),
-                            icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                            icon: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             label: Text(
                               'Tambah Produk Baru',
                               style: GoogleFonts.lexend(
@@ -333,8 +404,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryBlue,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ],
@@ -344,10 +420,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 }
 
                 final screenWidth = MediaQuery.sizeOf(context).width;
-                final crossAxisCount = screenWidth >= 900 ? 4 : (screenWidth >= 600 ? 3 : 2);
+                final crossAxisCount = screenWidth >= 900
+                    ? 4
+                    : (screenWidth >= 600 ? 3 : 2);
 
                 return GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
                     childAspectRatio: screenWidth >= 600 ? 1.05 : 0.88,
@@ -359,14 +440,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     final catalogItem = filtered[index];
                     final product = catalogItem.product;
                     final maxPortions = catalogItem.maxPortions;
-                    final inCart = cartState.items.any((i) => i.productId == product.id);
+                    final inCart = cartState.items.any(
+                      (i) => i.productId == product.id,
+                    );
                     final isOutOfStock = !catalogItem.isAvailable;
                     final cartItem = cartState.items.cast<dynamic>().firstWhere(
-                          (i) => i.productId == product.id,
-                          orElse: () => null,
-                        );
-                    final inCartQty = cartItem != null ? (cartItem.quantity as int) : 0;
-                    final remainingPortions = (maxPortions - inCartQty).clamp(0, maxPortions > 0 ? maxPortions : 0);
+                      (i) => i.productId == product.id,
+                      orElse: () => null,
+                    );
+                    final inCartQty = cartItem != null
+                        ? (cartItem.quantity as int)
+                        : 0;
+                    final remainingPortions = (maxPortions - inCartQty).clamp(
+                      0,
+                      maxPortions > 0 ? maxPortions : 0,
+                    );
 
                     return InkWell(
                       onTap: () {
@@ -374,7 +462,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Menu ${product.name} habis (bahan baku tidak cukup).'),
+                              content: Text(
+                                'Menu ${product.name} habis (bahan baku tidak cukup).',
+                              ),
                               backgroundColor: AppTheme.dangerRed,
                               duration: const Duration(seconds: 2),
                             ),
@@ -389,7 +479,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Maksimal estimasi porsi tercapai ($maxPortions porsi).'),
+                              content: Text(
+                                'Maksimal estimasi porsi tercapai ($maxPortions porsi).',
+                              ),
                               backgroundColor: Colors.amber.shade900,
                               duration: const Duration(seconds: 2),
                             ),
@@ -403,12 +495,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         decoration: BoxDecoration(
                           color: isOutOfStock
                               ? const Color(0xFFFEF2F2).withValues(alpha: 0.6)
-                              : (inCart ? const Color(0xFFEFF6FF) : Colors.white),
+                              : (inCart
+                                    ? const Color(0xFFEFF6FF)
+                                    : Colors.white),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isOutOfStock
                                 ? const Color(0xFFFCA5A5)
-                                : (inCart ? AppTheme.primaryBlue : AppTheme.borderOutline),
+                                : (inCart
+                                      ? AppTheme.primaryBlue
+                                      : AppTheme.borderOutline),
                             width: inCart ? 1.5 : 1.0,
                           ),
                         ),
@@ -420,14 +516,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         product.name,
                                         style: GoogleFonts.lexend(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5,
-                                          color: isOutOfStock ? const Color(0xFF991B1B) : AppTheme.accentBlack,
+                                          color: isOutOfStock
+                                              ? const Color(0xFF991B1B)
+                                              : AppTheme.accentBlack,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -454,26 +553,35 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
                             // Estimasi Porsi Badge
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: isOutOfStock ? const Color(0xFFFEE2E2) : const Color(0xFFEFF6FF),
+                                color: isOutOfStock
+                                    ? const Color(0xFFFEE2E2)
+                                    : const Color(0xFFEFF6FF),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: isOutOfStock ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                                  color: isOutOfStock
+                                      ? const Color(0xFFFCA5A5)
+                                      : const Color(0xFFBFDBFE),
                                 ),
                               ),
                               child: Text(
                                 isOutOfStock
                                     ? 'Habis (Bahan Baku Kurang)'
                                     : (inCartQty > 0
-                                        ? 'Sisa: $remainingPortions / $maxPortions porsi'
-                                        : 'Estimasi: $maxPortions Porsi'),
+                                          ? 'Sisa: $remainingPortions / $maxPortions porsi'
+                                          : 'Estimasi: $maxPortions Porsi'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.lexend(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: isOutOfStock ? AppTheme.dangerRed : AppTheme.primaryBlue,
+                                  color: isOutOfStock
+                                      ? AppTheme.dangerRed
+                                      : AppTheme.primaryBlue,
                                 ),
                               ),
                             ),
@@ -483,14 +591,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                  product.formattedPrice,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.lexend(
-                                    fontWeight: FontWeight.w700,
-                                    color: isOutOfStock ? AppTheme.textMuted : AppTheme.primaryBlue,
-                                    fontSize: 13,
-                                  ),
+                                    product.formattedPrice,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.lexend(
+                                      fontWeight: FontWeight.w700,
+                                      color: isOutOfStock
+                                          ? AppTheme.textMuted
+                                          : AppTheme.primaryBlue,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                                 Container(
@@ -498,14 +608,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   decoration: BoxDecoration(
                                     color: isOutOfStock
                                         ? Colors.grey.shade300
-                                        : (inCart ? AppTheme.primaryBlue : const Color(0xFFEFF6FF)),
+                                        : (inCart
+                                              ? AppTheme.primaryBlue
+                                              : const Color(0xFFEFF6FF)),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
-                                    isOutOfStock ? Icons.block_rounded : Icons.add,
+                                    isOutOfStock
+                                        ? Icons.block_rounded
+                                        : Icons.add,
                                     color: isOutOfStock
                                         ? Colors.grey.shade600
-                                        : (inCart ? Colors.white : AppTheme.primaryBlue),
+                                        : (inCart
+                                              ? Colors.white
+                                              : AppTheme.primaryBlue),
                                     size: 16,
                                   ),
                                 ),
@@ -575,37 +691,41 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ),
                   Flexible(
                     child: OutlinedButton.icon(
-                    onPressed: cartState.items.isEmpty
-                        ? null
-                        : () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) => const PosCartSheet(),
-                            );
-                          },
-                    icon: const Icon(Icons.shopping_cart_outlined, size: 18),
-                    label: const Text(
-                      'Keranjang',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryBlue,
-                      side: const BorderSide(color: AppTheme.primaryBlue),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                      onPressed: cartState.items.isEmpty
+                          ? null
+                          : () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const PosCartSheet(),
+                              );
+                            },
+                      icon: const Icon(Icons.shopping_cart_outlined, size: 18),
+                      label: const Text(
+                        'Keranjang',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.primaryBlue,
+                        side: const BorderSide(color: AppTheme.primaryBlue),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
-                    onPressed:
-                        cartState.items.isEmpty ? null : _showCheckoutSheet,
-                    icon: const Icon(Icons.arrow_forward_rounded,
-                        color: Colors.white, size: 18),
+                    onPressed: cartState.items.isEmpty
+                        ? null
+                        : _showCheckoutSheet,
+                    icon: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                     label: const Text(
                       'Checkout',
                       maxLines: 1,
@@ -617,7 +737,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       elevation: 0,
                       minimumSize: const Size(0, 44),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),

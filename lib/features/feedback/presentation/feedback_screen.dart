@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -103,11 +104,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       final apiClient = ref.read(apiClientProvider);
       await apiClient.post(
         '/feedback',
-        data: {
-          'kesan': kesan,
-          'saran': saran,
-          'rating': 5,
-        },
+        data: {'kesan': kesan, 'saran': saran, 'rating': 5},
       );
       sentToBackend = true;
     } catch (_) {
@@ -124,7 +121,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     if (mounted) {
       setState(() {
         _isSending = false;
-        _savedAt = '$dateStr ${sentToBackend ? "(Tersimpan di Cloud)" : "(Tersimpan Offline)"}';
+        _savedAt =
+            '$dateStr ${sentToBackend ? "(Tersimpan di Cloud)" : "(Tersimpan Offline)"}';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,7 +175,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFBFDBFE)),
                   ),
-                  child: const Icon(Icons.school_outlined, color: AppTheme.primaryBlue, size: 28),
+                  child: const Icon(
+                    Icons.school_outlined,
+                    color: AppTheme.primaryBlue,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -186,21 +188,31 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     children: [
                       Text(
                         'Praktikum Aplikasi Mobile (PAM)',
-                        style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                        style: GoogleFonts.lexend(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.accentBlack,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir (Phase 1)',
-                        style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                        style: GoogleFonts.lexend(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
+                        ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (_savedAt != null) ...[
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF0FDF4),
                             borderRadius: BorderRadius.circular(6),
@@ -208,7 +220,11 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                           ),
                           child: Text(
                             'Status: $_savedAt',
-                            style: GoogleFonts.lexend(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF16A34A)),
+                            style: GoogleFonts.lexend(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF16A34A),
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -235,20 +251,17 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 3),
-          Text(
-            'Bagaimana pengalaman Anda selama mengikuti perkuliahan dan praktikum PAM semester ini?',
-            style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
           const SizedBox(height: 8),
           TextField(
             controller: _kesanController,
             maxLines: 5,
             style: GoogleFonts.lexend(fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'Tuliskan kesan Anda di sini (misal: materi sangat terstruktur, praktikum hands-on sangat membantu memahami arsitektur Flutter & Express)...',
-              hintStyle: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF94A3B8)),
+              hintText: 'Tuliskan kesan Anda di sini...',
+              hintStyle: GoogleFonts.lexend(
+                fontSize: 12.5,
+                color: const Color(0xFF94A3B8),
+              ),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -261,7 +274,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppTheme.primaryBlue,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -279,21 +295,17 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 3),
-          Text(
-            'Apa saran Anda untuk perbaikan metode mengajar, tugas, atau praktikum ke depan?',
-            style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
           const SizedBox(height: 8),
           TextField(
             controller: _saranController,
             maxLines: 5,
             style: GoogleFonts.lexend(fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'Tuliskan saran Anda di sini (misal: perbanyak sesi bedah arsitektur state management dan studi kasus deployment ke production)...',
-              hintStyle: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF94A3B8)),
+              hintText: 'Tuliskan saran Anda di sini',
+              hintStyle: GoogleFonts.lexend(
+                fontSize: 12.5,
+                color: const Color(0xFF94A3B8),
+              ),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -306,7 +318,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppTheme.primaryBlue,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -320,23 +335,36 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               backgroundColor: AppTheme.primaryBlue,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: _isSending
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
                           'Simpan & Kirim Masukan',
-                          style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: GoogleFonts.lexend(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

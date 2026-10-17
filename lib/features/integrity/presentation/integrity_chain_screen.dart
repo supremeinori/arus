@@ -29,12 +29,18 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
     final role = ref.watch(authProvider).user?.role;
     if (role != UserRole.owner && role != UserRole.manager) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Ledger Integritas', maxLines: 1, overflow: TextOverflow.ellipsis)),
+        appBar: AppBar(
+          title: const Text(
+            'Ledger Integritas',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-              'Fitur ini hanya tersedia untuk Owner dan Manager.',
+              'Fitur audit blockchain hanya tersedia untuk Owner dan Manager.',
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -49,7 +55,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
         title: Text(
-          'Ledger Integritas & Blockchain',
+          'Ledger Transaksi & Blockchain',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -64,7 +70,6 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
   }
 }
 
-/// Ledger per outlet — widget class top-level (aturan E23).
 class _OutletLedger extends ConsumerStatefulWidget {
   final List<OutletModel> outlets;
 
@@ -97,12 +102,16 @@ class _OutletLedgerState extends ConsumerState<_OutletLedger> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: AppDropdown<String>(
             value: outlet.id,
-            labelText: 'Cabang',
+            labelText: 'Pilih Cabang (Chain Independen)',
             items: outlets
                 .map(
                   (item) => DropdownMenuItem<String>(
                     value: item.id,
-                    child: Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 )
                 .toList(),
@@ -113,7 +122,8 @@ class _OutletLedgerState extends ConsumerState<_OutletLedger> {
           child: AsyncStateView<IntegrityChainSnapshot>(
             value: ref.watch(integrityChainProvider(outlet.id)),
             onRetry: () => ref.invalidate(integrityChainProvider(outlet.id)),
-            dataBuilder: (snapshot) => _LedgerView(outlet: outlet, snapshot: snapshot),
+            dataBuilder: (snapshot) =>
+                _SingleChainLedgerView(outlet: outlet, snapshot: snapshot),
           ),
         ),
       ],
@@ -121,23 +131,25 @@ class _OutletLedgerState extends ConsumerState<_OutletLedger> {
   }
 }
 
-/// Tampilan ledger — widget class top-level (aturan E23).
-class _LedgerView extends ConsumerStatefulWidget {
+class _SingleChainLedgerView extends ConsumerStatefulWidget {
   final OutletModel outlet;
   final IntegrityChainSnapshot snapshot;
 
-  const _LedgerView({required this.outlet, required this.snapshot});
+  const _SingleChainLedgerView({
+    required this.outlet,
+    required this.snapshot,
+  });
 
   @override
-  ConsumerState<_LedgerView> createState() => _LedgerViewState();
+  ConsumerState<_SingleChainLedgerView> createState() =>
+      _SingleChainLedgerViewState();
 }
 
-class _LedgerViewState extends ConsumerState<_LedgerView> {
-  bool _isVerifying = false;
-  bool _isClosingDay = false;
+class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> {
+  bool _isActionLoading = false;
 
   Future<void> _verifyChain(String outletId) async {
-    setState(() => _isVerifying = true);
+    setState(() => _isActionLoading = true);
     try {
       final snapshot = await ref.refresh(
         integrityChainProvider(outletId).future,
@@ -160,51 +172,63 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Verifikasi gagal: $error', maxLines: 3, overflow: TextOverflow.ellipsis),
+          content: Text(
+            'Verifikasi gagal: $error',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
           backgroundColor: AppTheme.dangerRed,
           behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
-      if (mounted) setState(() => _isVerifying = false);
+      if (mounted) setState(() => _isActionLoading = false);
     }
   }
 
-  Future<void> _closeCurrentDay(String outletId) async {
-    final shouldClose = await showDialog<bool>(
+  Future<void> _simulateTamper(String outletId, int blockIndex) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tutup blok transaksi hari ini?', maxLines: 2, overflow: TextOverflow.ellipsis),
+      builder: (ctx) => AlertDialog(
+        title: Text('Simulasi Manipulasi Blok #$blockIndex?'),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
-          child: const SingleChildScrollView(
-            child: Text(
-              'Transaksi aktif akan dirangkum ke dalam parent daily block.',
-            ),
+          child: Text(
+            'Sistem akan sengaja mengubah nominal transaksi blok #$blockIndex menjadi Rp 99.999.999 di database. Ini untuk mendemonstrasikan bahwa sistem ARUS mendeteksi kecurangan (TAMPERED).',
+            style: GoogleFonts.lexend(fontSize: 13),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Batal'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Tutup hari'),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.dangerRed),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Simulasikan Tamper'),
           ),
         ],
       ),
     );
-    if (shouldClose != true || !mounted) return;
 
-    setState(() => _isClosingDay = true);
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isActionLoading = true);
     try {
-      await ref.read(integrityRepositoryProvider).closeCurrentDay(outletId);
+      await ref
+          .read(integrityRepositoryProvider)
+          .simulateTamper(outletId, blockIndex, fakeAmount: 99999999);
       ref.invalidate(integrityChainProvider(outletId));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Daily block berhasil dibuat.', maxLines: 2, overflow: TextOverflow.ellipsis),
+        SnackBar(
+          content: Text(
+            'Simulasi tamper berhasil pada Blok #$blockIndex! Periksa status verifikasi.',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          backgroundColor: AppTheme.dangerRed,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -212,12 +236,42 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menutup hari: $error', maxLines: 3, overflow: TextOverflow.ellipsis),
+          content: Text('Gagal simulasi tamper: $error'),
           backgroundColor: AppTheme.dangerRed,
         ),
       );
     } finally {
-      if (mounted) setState(() => _isClosingDay = false);
+      if (mounted) setState(() => _isActionLoading = false);
+    }
+  }
+
+  Future<void> _recoverBlock(String outletId, int blockIndex) async {
+    setState(() => _isActionLoading = true);
+    try {
+      await ref.read(integrityRepositoryProvider).recoverBlock(outletId, blockIndex);
+      ref.invalidate(integrityChainProvider(outletId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Blok #$blockIndex berhasil dipulihkan dari cadangan snapshot valid!',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          backgroundColor: const Color(0xFF15803D),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memulihkan blok: $error'),
+          backgroundColor: AppTheme.dangerRed,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isActionLoading = false);
     }
   }
 
@@ -227,6 +281,9 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
     final snapshot = widget.snapshot;
     final overview = snapshot.overview;
     final validation = snapshot.validation;
+    final isTampered = !validation.isValid;
+    final tamperedIdx = validation.tamperedBlockIndex;
+
     final statusColor = validation.isValid
         ? const Color(0xFF15803D)
         : AppTheme.dangerRed;
@@ -237,6 +294,7 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Banner Status Integritas Rantai
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -248,6 +306,7 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
                 color: validation.isValid
                     ? const Color(0xFFBBF7D0)
                     : const Color(0xFFFECACA),
+                width: 1.2,
               ),
             ),
             child: Row(
@@ -255,23 +314,24 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
                 Icon(
                   validation.isValid
                       ? Icons.verified_user_rounded
-                      : Icons.warning_amber_rounded,
+                      : Icons.gpp_bad_rounded,
                   color: statusColor,
-                  size: 34,
+                  size: 36,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         validation.isValid
-                            ? 'Rantai valid'
-                            : 'Integritas perlu diperiksa',
+                            ? 'Rantai Kriptografis Valid'
+                            : 'Peringatan: Manipulasi Data Terdeteksi!',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
                           color: statusColor,
                         ),
                       ),
@@ -292,214 +352,376 @@ class _LedgerViewState extends ConsumerState<_LedgerView> {
             ),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+
+          // Metrik Ringkasan & Tombol Aksi
+          Row(
             children: [
-              _MetricChip(
-                label: 'Daily blocks',
-                value: '${overview.totalDays}',
+              Chip(
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: AppTheme.borderOutline),
+                label: Text(
+                  '${overview.blockCount} Blok Transaksi',
+                  style: GoogleFonts.lexend(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-              _MetricChip(
-                label: 'Transaksi aktif',
-                value: '${overview.currentActiveTxCount}',
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
+              const Spacer(),
               OutlinedButton.icon(
-                onPressed: _isVerifying ? null : () => _verifyChain(outlet.id),
-                icon: _isVerifying
+                onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
+                icon: _isActionLoading
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: 14,
+                        height: 14,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.shield_outlined),
-                label: Text(_isVerifying ? 'Memeriksa...' : 'Uji Integritas', maxLines: 1, overflow: TextOverflow.ellipsis),
+                    : const Icon(Icons.shield_outlined, size: 16),
+                label: const Text('Uji Integritas'),
               ),
-              if (overview.currentActiveTxCount > 0)
-                FilledButton.tonalIcon(
-                  onPressed: _isClosingDay
-                      ? null
-                      : () => _closeCurrentDay(outlet.id),
-                  icon: _isClosingDay
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.lock_clock_outlined),
-                  label: Text(_isClosingDay ? 'Menutup...' : 'Tutup hari', maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            'Daily chain · ${outlet.name}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
+
+          // Header List Transaksi
+          Row(
+            children: [
+              Text(
+                'Rantai Transaksi · ${outlet.name}',
+                style: GoogleFonts.lexend(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'SHA-256 Per-Cabang',
+                style: GoogleFonts.lexend(
+                  fontSize: 11,
+                  color: AppTheme.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          if (overview.days.isEmpty)
+          const SizedBox(height: 10),
+
+          if (overview.blocks.isEmpty)
             const EmptyStateView(
-              message: 'Belum ada daily block yang ditutup untuk cabang ini.',
-              icon: Icons.inventory_2_outlined,
-            ),
-          // List kecil — render inline tanpa scroll bersarang (aturan A4).
-          ...overview.days.map((block) => _DailyBlockCard(block: block)),
+              message:
+                  'Belum ada blok transaksi tercatat untuk cabang ini.\nLakukan transaksi di Kasir POS untuk membentuk blok baru.',
+              icon: Icons.link_off_rounded,
+            )
+          else ...[
+            for (int i = 0; i < overview.blocks.length; i++) ...[
+              _TransactionBlockCard(
+                block: overview.blocks[i],
+                isTampered: isTampered &&
+                    (tamperedIdx == overview.blocks[i].index ||
+                        overview.blocks[i].data['total_idr'] == 99999999 ||
+                        overview.blocks[i].data['totalAmount'] == 99999999),
+                onSimulateTamper: () =>
+                    _simulateTamper(outlet.id, overview.blocks[i].index),
+                onRecover: () =>
+                    _recoverBlock(outlet.id, overview.blocks[i].index),
+              ),
+              if (i < overview.blocks.length - 1)
+                _ChainConnector(
+                  sourceIndex: overview.blocks[i].index,
+                  targetIndex: overview.blocks[i + 1].index,
+                ),
+            ],
+          ],
         ],
       ),
     );
   }
-
 }
 
-/// Kartu satu daily block — widget class top-level (aturan E23).
-class _DailyBlockCard extends StatelessWidget {
-  final IntegrityDailyBlock block;
+class _TransactionBlockCard extends StatelessWidget {
+  final IntegrityBlockItem block;
+  final bool isTampered;
+  final VoidCallback onSimulateTamper;
+  final VoidCallback onRecover;
 
-  const _DailyBlockCard({required this.block});
+  const _TransactionBlockCard({
+    required this.block,
+    required this.isTampered,
+    required this.onSimulateTamper,
+    required this.onRecover,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isGenesis = block.isGenesis;
+    final isSale = block.eventType == 'sale';
+    final date = DateTime.tryParse(block.timestamp)?.toLocal();
+    final formattedDate = date == null
+        ? block.timestamp
+        : '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
+    final borderColor = isTampered
+        ? AppTheme.dangerRed
+        : isGenesis
+            ? const Color(0xFFF59E0B)
+            : AppTheme.borderOutline;
+
+    final badgeColor = isTampered
+        ? AppTheme.dangerRed
+        : isGenesis
+            ? const Color(0xFFD97706)
+            : AppTheme.primaryBlue;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.zero,
       elevation: 0,
+      color: isTampered ? const Color(0xFFFEF2F2) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.borderOutline),
+        side: BorderSide(
+          color: borderColor,
+          width: isTampered ? 1.8 : 1.0,
+        ),
       ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        title: Text(
-          'Daily block #${block.dayIndex} · ${block.date}',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          '${block.transactionCount} catatan transaksi / inventaris',
-          style: GoogleFonts.lexend(fontSize: 11),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        children: [
-          _HashRow(label: 'Parent hash', value: block.parentHash),
-          _HashRow(label: 'Previous parent', value: block.previousParentHash),
-          _HashRow(label: 'Merkle root', value: block.merkleRoot),
-          const Divider(),
-          if (block.transactions.isEmpty)
-            const Text('Tidak ada transaksi dalam blok ini.')
-          else
-            ...block.transactions.map(
-              (transaction) => _TransactionBlockTile(transaction: transaction),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Baris 1: Header Blok
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withAlpha(25),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: badgeColor.withAlpha(70)),
+                  ),
+                  child: Text(
+                    isGenesis
+                        ? 'BLOK #${block.index} (GENESIS)'
+                        : 'BLOK #${block.index}',
+                    style: GoogleFonts.lexend(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isSale
+                        ? const Color(0xFFDCFCE7)
+                        : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isSale ? 'SALE' : block.eventType.toUpperCase(),
+                    style: GoogleFonts.lexend(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: isSale
+                          ? const Color(0xFF15803D)
+                          : AppTheme.dangerRed,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  MoneyFormatter.format(block.totalAmount),
+                  style: GoogleFonts.lexend(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isTampered ? AppTheme.dangerRed : AppTheme.accentBlack,
+                  ),
+                ),
+              ],
             ),
-        ],
+            const SizedBox(height: 8),
+
+            // Baris 2: Info Struk & Waktu
+            Row(
+              children: [
+                Icon(
+                  isSale
+                      ? Icons.receipt_long_outlined
+                      : Icons.swap_horiz_rounded,
+                  size: 16,
+                  color: AppTheme.primaryBlue,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    block.receiptNo.isNotEmpty
+                        ? 'Struk: ${block.receiptNo}'
+                        : 'Event ID: ${block.eventId}',
+                    style: GoogleFonts.lexend(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  formattedDate,
+                  style: GoogleFonts.lexend(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 18),
+
+            // Baris 3: Data Hash Kriptografis
+            _HashLine(label: 'Block Hash', value: block.hash, isPrimary: true),
+            const SizedBox(height: 4),
+            _HashLine(
+              label: 'Prev Hash',
+              value: block.previousHash,
+              isGenesis: isGenesis,
+            ),
+
+            // Baris 4: Tombol Aksi Demo (Tamper / Pulihkan)
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isTampered) ...[
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF15803D),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: onRecover,
+                    icon: const Icon(Icons.restore_rounded, size: 15),
+                    label: const Text('Pulihkan Blok'),
+                  ),
+                ] else ...[
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.dangerRed,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: onSimulateTamper,
+                    icon: const Icon(Icons.bug_report_outlined, size: 14),
+                    label: const Text(
+                      'Simulasi Tamper',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _TransactionBlockTile extends StatelessWidget {
-  final IntegrityTransactionBlock transaction;
+class _HashLine extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isPrimary;
+  final bool isGenesis;
 
-  const _TransactionBlockTile({required this.transaction});
+  const _HashLine({
+    required this.label,
+    required this.value,
+    this.isPrimary = false,
+    this.isGenesis = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isSale = transaction.eventType == 'sale';
-    final title = transaction.receiptNo.isEmpty
-        ? transaction.sourceId
-        : transaction.receiptNo;
-    final date = DateTime.tryParse(transaction.timestamp)?.toLocal();
-    final formattedDate = date == null
-        ? transaction.timestamp
-        : '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        isSale ? Icons.receipt_long_outlined : Icons.inventory_2_outlined,
-        color: AppTheme.primaryBlue,
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        '${transaction.eventType} · $formattedDate\nHash ${transaction.hash}',
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.lexend(fontSize: 10),
-      ),
-      trailing: Text(
-        MoneyFormatter.format(transaction.totalAmount),
-        style: GoogleFonts.lexend(fontSize: 11, fontWeight: FontWeight.w600),
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 75,
+          child: Text(
+            '$label:',
+            style: GoogleFonts.lexend(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textMuted,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SelectableText(
+            isGenesis && value.startsWith('0000000000')
+                ? '000000000000... (Genesis Block)'
+                : value,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 10,
+              fontWeight: isPrimary ? FontWeight.w600 : FontWeight.normal,
+              color: isPrimary ? AppTheme.accentBlack : AppTheme.textMuted,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _HashRow extends StatelessWidget {
-  final String label;
-  final String value;
+class _ChainConnector extends StatelessWidget {
+  final int sourceIndex;
+  final int targetIndex;
 
-  const _HashRow({required this.label, required this.value});
+  const _ChainConnector({
+    required this.sourceIndex,
+    required this.targetIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 115,
-            child: Text(
-              '$label:',
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 1.5,
+              height: 18,
+              color: AppTheme.primaryBlue.withAlpha(120),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.link_rounded,
+              size: 16,
+              color: AppTheme.primaryBlue.withAlpha(200),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Terkunci SHA-256 (Blok #$sourceIndex ➔ Blok #$targetIndex)',
               style: GoogleFonts.lexend(
                 fontSize: 10,
-                color: AppTheme.textMuted,
+                color: AppTheme.primaryBlue,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          Expanded(
-            child: SelectableText(
-              value,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+            const SizedBox(width: 6),
+            Container(
+              width: 1.5,
+              height: 18,
+              color: AppTheme.primaryBlue.withAlpha(120),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Chip metrik ledger — widget class top-level const (aturan E23).
-class _MetricChip extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MetricChip({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text(
-        '$label: $value',
-        style: GoogleFonts.lexend(fontSize: 11),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+          ],
+        ),
       ),
     );
   }
