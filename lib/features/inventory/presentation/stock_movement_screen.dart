@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import 'inventory_provider.dart';
+
+/// E21: formatter dibuat sekali di luar build, bukan di dalam build().
+final _movementDateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
 class StockMovementScreen extends ConsumerWidget {
   final String? outletId;
@@ -22,38 +27,16 @@ class StockMovementScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: movementsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
-              const SizedBox(height: 12),
-              Text('Gagal memuat mutasi: $err'),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(inventoryMovementsProvider(outletId)),
-                child: const Text('Coba Lagi'),
-              ),
-            ],
-          ),
-        ),
-        data: (movements) {
+      body: AsyncStateView(
+        value: movementsAsync,
+        onRetry: () => ref.invalidate(inventoryMovementsProvider(outletId)),
+        dataBuilder: (movements) {
           if (movements.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.history_toggle_off_rounded, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Belum ada riwayat mutasi stok.', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                ],
-              ),
+            return const EmptyStateView(
+              message: 'Belum ada riwayat mutasi stok.',
+              icon: Icons.history_toggle_off_rounded,
             );
           }
-
-          final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -93,33 +76,47 @@ class StockMovementScreen extends ConsumerWidget {
                           children: [
                             Text(
                               item.productName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${item.typeLabel} • ${item.outletName}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                             ),
                             if (item.note != null && item.note!.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 'Catatan: ${item.note}',
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
                               ),
                             ],
                             const SizedBox(height: 4),
                             Text(
-                              'Oleh: ${item.creatorName} • ${dateFormat.format(item.createdAt)}',
+                              'Oleh: ${item.creatorName} • ${_movementDateFormat.format(item.createdAt)}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
                             ),
                           ],
                         ),
                       ),
-                      Column(
+                      const SizedBox(width: 8),
+                      // B9: trailing dibatasi lebarnya agar tidak unbounded width.
+                      SizedBox(
+                        width: 88,
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
                             '${isPositive ? '+' : ''}${item.quantityDelta} ${item.unit}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -129,9 +126,12 @@ class StockMovementScreen extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Sisa: ${item.quantityAfter}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                           ),
                         ],
+                        ),
                       ),
                     ],
                   ),

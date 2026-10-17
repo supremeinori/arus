@@ -3,8 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../domain/notification_models.dart';
 import 'notifications_provider.dart';
+
+/// Formatter tanggal notifikasi — top-level final (aturan E21:
+/// tidak dibuat di dalam build).
+final notifDateFormatter = DateFormat('dd MMM, HH:mm');
 
 class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
@@ -27,11 +33,13 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Pusat Notifikasi'),
+            const Text('Pusat Notifikasi', maxLines: 1, overflow: TextOverflow.ellipsis),
             if (unreadCount > 0)
               Text(
                 '$unreadCount pesan belum dibaca',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),
@@ -45,7 +53,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                     await ref.read(notificationActionProvider.notifier).markAllAsRead();
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Semua notifikasi ditandai dibaca')),
+                      const SnackBar(content: Text('Semua notifikasi ditandai dibaca', maxLines: 2, overflow: TextOverflow.ellipsis)),
                     );
                   },
           ),
@@ -60,7 +68,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                         .evaluateNotifications();
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Evaluasi selesai ($triggered peringatan baru)')),
+                      SnackBar(content: Text('Evaluasi selesai ($triggered peringatan baru)', maxLines: 2, overflow: TextOverflow.ellipsis)),
                     );
                   },
           ),
@@ -68,29 +76,15 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       ),
       body: Column(
         children: [
-          _buildFilterChips(),
+          _FilterChips(
+            selectedFilter: _selectedFilter,
+            onSelected: (val) => setState(() => _selectedFilter = val),
+          ),
           Expanded(
-            child: notifsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 12),
-                      Text('Gagal memuat notifikasi: $err', textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(notificationsListProvider),
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              data: (data) {
+            child: AsyncStateView<NotificationsResponse>(
+              value: notifsAsync,
+              onRetry: () => ref.invalidate(notificationsListProvider),
+              dataBuilder: (data) {
                 var list = data.notifications;
                 if (_selectedFilter == 'unread') {
                   list = list.where((n) => !n.isRead).toList();
@@ -99,10 +93,13 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                 }
 
                 if (list.isEmpty) {
-                  return _buildEmptyState();
+                  return const EmptyStateView(
+                    message: 'Tidak Ada Notifikasi. Semua kondisi operasional berjalan lancar dan belum ada peringatan baru.',
+                    icon: Icons.notifications_off_outlined,
+                  );
                 }
 
-                return _buildNotificationList(list);
+                return _NotificationList(items: list);
               },
             ),
           ),
@@ -110,171 +107,174 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       ),
     );
   }
+}
 
-  Widget _buildFilterChips() {
-    final filters = [
-      {'label': 'Semua', 'val': null},
-      {'label': 'Belum Dibaca', 'val': 'unread'},
-      {'label': 'Stok Menipis', 'val': 'low_stock'},
-      {'label': 'Target', 'val': 'target_achieved'},
-    ];
+/// Filter chips notifikasi — widget class top-level (aturan E23).
+class _FilterChips extends StatelessWidget {
+  final String? selectedFilter;
+  final ValueChanged<String?> onSelected;
 
+  const _FilterChips({required this.selectedFilter, required this.onSelected});
+
+  static const List<Map<String, String?>> _filters = [
+    {'label': 'Semua', 'val': null},
+    {'label': 'Belum Dibaca', 'val': 'unread'},
+    {'label': 'Stok Menipis', 'val': 'low_stock'},
+    {'label': 'Target', 'val': 'target_achieved'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        children: filters.map((f) {
-          final isSelected = _selectedFilter == f['val'];
+        children: _filters.map((f) {
+          final isSelected = selectedFilter == f['val'];
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: Text(f['label'] as String),
+              label: Text(f['label']!, maxLines: 1, overflow: TextOverflow.ellipsis),
               selected: isSelected,
-              onSelected: (_) {
-                setState(() => _selectedFilter = f['val']);
-              },
+              onSelected: (_) => onSelected(f['val']),
             ),
           );
         }).toList(),
       ),
     );
   }
+}
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'Tidak Ada Notifikasi',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Semua kondisi operasional berjalan lancar dan belum ada peringatan baru.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+/// Daftar notifikasi — widget class top-level ConsumerWidget (aturan E23).
+class _NotificationList extends ConsumerWidget {
+  final List<NotificationModel> items;
 
-  Widget _buildNotificationList(List<NotificationModel> list) {
-    final dateFormatter = DateFormat('dd MMM, HH:mm');
+  const _NotificationList({required this.items});
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: list.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final item = list[index];
+        return _NotificationCard(item: items[index]);
+      },
+    );
+  }
+}
 
-        IconData icon = Icons.info_outline;
-        Color color = AppTheme.primaryToska;
+/// Kartu satu notifikasi — widget class top-level (aturan E23).
+class _NotificationCard extends ConsumerWidget {
+  final NotificationModel item;
 
-        if (item.type == 'low_stock') {
-          icon = Icons.warning_amber_rounded;
-          color = Colors.red;
-        } else if (item.type == 'target_achieved') {
-          icon = Icons.emoji_events_outlined;
-          color = Colors.green;
-        } else if (item.type == 'sales_change') {
-          icon = Icons.trending_up_rounded;
-          color = Colors.orange;
-        }
+  const _NotificationCard({required this.item});
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          elevation: 0,
-          color: item.isRead ? Colors.white : AppTheme.lightToskaBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: item.isRead ? Colors.grey.shade200 : AppTheme.primaryBlue.withAlpha(50),
-              width: item.isRead ? 1 : 1.5,
-            ),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () async {
-              if (!item.isRead) {
-                await ref.read(notificationActionProvider.notifier).markAsRead(item.id);
-              }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    IconData icon = Icons.info_outline;
+    Color color = AppTheme.primaryToska;
 
-              if (!context.mounted) return;
-              if (item.type == 'low_stock') {
-                context.push('/inventory');
-              } else if (item.type == 'target_achieved' || item.type == 'sales_change') {
-                context.push('/shell');
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: color.withAlpha(25),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: color, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+    if (item.type == 'low_stock') {
+      icon = Icons.warning_amber_rounded;
+      color = Colors.red;
+    } else if (item.type == 'target_achieved') {
+      icon = Icons.emoji_events_outlined;
+      color = Colors.green;
+    } else if (item.type == 'sales_change') {
+      icon = Icons.trending_up_rounded;
+      color = Colors.orange;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      color: item.isRead ? Colors.white : AppTheme.lightToskaBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: item.isRead ? Colors.grey.shade200 : AppTheme.primaryBlue.withAlpha(50),
+          width: item.isRead ? 1 : 1.5,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          if (!item.isRead) {
+            await ref.read(notificationActionProvider.notifier).markAsRead(item.id);
+          }
+
+          if (!context.mounted) return;
+          if (item.type == 'low_stock') {
+            context.push('/inventory');
+          } else if (item.type == 'target_achieved' || item.type == 'sales_change') {
+            context.push('/shell');
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withAlpha(25),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.title,
-                                style: TextStyle(
-                                  fontWeight: item.isRead ? FontWeight.w600 : FontWeight.bold,
-                                  fontSize: 14,
-                                  color: Colors.black87,
-                                ),
-                              ),
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: TextStyle(
+                              fontWeight: item.isRead ? FontWeight.w600 : FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.black87,
                             ),
-                            if (!item.isRead) ...[
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: AppTheme.primaryBlue,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ],
-                          ],
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.body,
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.3),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          dateFormatter.format(item.createdAt),
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        ),
+                        if (!item.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.primaryBlue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      item.body,
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.3),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      notifDateFormatter.format(item.createdAt),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

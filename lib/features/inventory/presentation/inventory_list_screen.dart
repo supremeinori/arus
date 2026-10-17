@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../outlets/presentation/outlets_provider.dart';
@@ -61,9 +63,23 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Hapus Bahan Baku?', style: GoogleFonts.lexend(fontWeight: FontWeight.w700)),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus bahan baku “${item.name}” dari cabang ini? Riwayat mutasi dan resep yang bersinggungan akan terpengaruh.',
-          style: GoogleFonts.lexend(fontSize: 13),
+        // C15: konten dialog dibatasi + scroll agar tidak overflow.
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Apakah Anda yakin ingin menghapus bahan baku “${item.name}” dari cabang ini? Riwayat mutasi dan resep yang bersinggungan akan terpengaruh.',
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(fontSize: 13),
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -186,10 +202,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: Colors.white,
-              child: outletsAsync.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (_, _) => const SizedBox(),
-                data: (allOutlets) {
+              child: AsyncStateView(
+                value: outletsAsync,
+                dataBuilder: (allOutlets) {
                   // Jika Manager, batasi pilihan hanya ke assigned outlets
                   final availableOutlets = isOwner
                       ? allOutlets
@@ -198,7 +213,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                           : allOutlets);
 
                   if (availableOutlets.isEmpty) {
-                    return Text('Tidak ada cabang yang ditugaskan.', style: GoogleFonts.lexend(fontSize: 13));
+                    return Text(
+                      'Tidak ada cabang yang ditugaskan.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.lexend(fontSize: 13),
+                    );
                   }
 
                   final currentOutletId = selectedOutletId != null && availableOutlets.any((o) => o.id == selectedOutletId)
@@ -254,7 +274,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
 
           // Tampilan Staff (Kasir): Melihat Estimasi Porsi Menu (Read-Only)
           if (isStaff)
-            Expanded(child: _buildStaffPortionView())
+            const Expanded(child: _StaffPortionView())
           else ...[
             // Tampilan Owner & Manager: Manajemen Bahan Baku
             Padding(
@@ -290,13 +310,13 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildFilterChip('Semua Bahan', 'all', filterState.status == 'all'),
+                        _InventoryFilterChip(label: 'Semua Bahan', value: 'all', isSelected: filterState.status == 'all'),
                         const SizedBox(width: 8),
-                        _buildFilterChip('Stok Aman', 'ok', filterState.status == 'ok'),
+                        _InventoryFilterChip(label: 'Stok Aman', value: 'ok', isSelected: filterState.status == 'ok'),
                         const SizedBox(width: 8),
-                        _buildFilterChip('Stok Menipis', 'low', filterState.status == 'low', Icons.warning_amber_rounded, AppTheme.dangerRed),
+                        _InventoryFilterChip(label: 'Stok Menipis', value: 'low', isSelected: filterState.status == 'low', icon: Icons.warning_amber_rounded, color: AppTheme.dangerRed),
                         const SizedBox(width: 8),
-                        _buildFilterChip('Stok Habis', 'out', filterState.status == 'out', Icons.cancel_outlined, const Color(0xFF991B1B)),
+                        _InventoryFilterChip(label: 'Stok Habis', value: 'out', isSelected: filterState.status == 'out', icon: Icons.cancel_outlined, color: const Color(0xFF991B1B)),
                       ],
                     ),
                   ),
@@ -306,56 +326,28 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             const Divider(height: 12),
 
             // List Bahan Baku
+            // E24: loading/error/data lewat satu AsyncStateView.
             Expanded(
-              child: ingredientsAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppTheme.primaryBlue),
-                ),
-                error: (err, _) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, size: 48, color: Color(0xFFDC2626)),
-                      const SizedBox(height: 12),
-                      Text('Gagal memuat bahan baku: $err', style: GoogleFonts.lexend()),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(ingredientsListProvider),
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                ),
-                data: (ingredients) {
+              child: AsyncStateView(
+                value: ingredientsAsync,
+                onRetry: () => ref.invalidate(ingredientsListProvider),
+                dataBuilder: (ingredients) {
                   if (ingredients.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.kitchen_outlined, size: 56, color: Color(0xFF94A3B8)),
-                          const SizedBox(height: 16),
-                          Text(
-                            filterState.status != 'all'
-                                ? 'Tidak ada bahan baku dengan filter ini.'
-                                : 'Belum ada bahan baku di cabang ini.',
-                            style: GoogleFonts.lexend(fontSize: 14, color: const Color(0xFF64748B)),
-                          ),
-                          const SizedBox(height: 12),
-                          if (selectedOutletId != null)
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-                              icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                              label: Text('Tambah Bahan Baku', style: GoogleFonts.lexend(color: Colors.white)),
-                              onPressed: () {
-                                final outletName = outletsAsync.value?.firstWhere(
-                                  (o) => o.id == selectedOutletId,
-                                  orElse: () => outletsAsync.value!.first,
-                                ).name ?? 'Cabang Terpilih';
-                                _openAddIngredientDialog(selectedOutletId, outletName);
-                              },
-                            ),
-                        ],
-                      ),
+                    return EmptyStateView(
+                      message: filterState.status != 'all'
+                          ? 'Tidak ada bahan baku dengan filter ini.'
+                          : 'Belum ada bahan baku di cabang ini.',
+                      icon: Icons.kitchen_outlined,
+                      ctaText: selectedOutletId != null ? 'Tambah Bahan Baku' : null,
+                      onCtaPressed: selectedOutletId != null
+                          ? () {
+                              final outletName = outletsAsync.value?.firstWhere(
+                                (o) => o.id == selectedOutletId,
+                                orElse: () => outletsAsync.value!.first,
+                              ).name ?? 'Cabang Terpilih';
+                              _openAddIngredientDialog(selectedOutletId, outletName);
+                            }
+                          : null,
                     );
                   }
 
@@ -368,7 +360,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final item = ingredients[index];
-                        return _buildIngredientCard(item, selectedOutletId ?? '');
+                        return _IngredientCard(
+                          item: item,
+                          onEdit: () => _openAddIngredientDialog(selectedOutletId ?? '', item.outletName, item),
+                          onDelete: () => _confirmDeleteIngredient(item),
+                          onAdjust: () => _openAdjustmentDialog(item),
+                        );
                       },
                     ),
                   );
@@ -380,12 +377,32 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       ),
     );
   }
+}
 
-  Widget _buildFilterChip(String label, String value, bool isSelected, [IconData? icon, Color? color]) {
+/// E23: chip filter sebagai widget class const (bukan helper _build*).
+class _InventoryFilterChip extends ConsumerWidget {
+  final String label;
+  final String value;
+  final bool isSelected;
+  final IconData? icon;
+  final Color? color;
+
+  const _InventoryFilterChip({
+    required this.label,
+    required this.value,
+    required this.isSelected,
+    this.icon,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return FilterChip(
       avatar: icon != null ? Icon(icon, size: 16, color: isSelected ? Colors.white : color) : null,
       label: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: GoogleFonts.lexend(
           fontSize: 12.5,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -407,8 +424,24 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       },
     );
   }
+}
 
-  Widget _buildIngredientCard(IngredientModel item, String currentOutletId) {
+/// E23: kartu bahan baku sebagai widget class (bukan helper _build* panjang).
+class _IngredientCard extends ConsumerWidget {
+  final IngredientModel item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onAdjust;
+
+  const _IngredientCard({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onAdjust,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     Color cardBorder = AppTheme.borderOutline;
     Color badgeBg = AppTheme.lightBlueBg;
     Color badgeColor = AppTheme.primaryBlue;
@@ -452,6 +485,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   children: [
                     Text(
                       item.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
@@ -461,11 +496,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     const SizedBox(height: 3),
                     Text(
                       'Modal: ${item.formattedCost} • Reorder: ${item.reorderLevel} ${item.unit}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 11.5),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -475,6 +513,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 ),
                 child: Text(
                   badgeText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.lexend(
                     color: badgeColor,
                     fontWeight: FontWeight.w700,
@@ -487,31 +527,37 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              if (item.isOutOfStock)
-                Text(
-                  'Bahan Baku Habis!',
-                  style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.dangerRed),
-                )
-              else if (item.isLowStock)
-                Text(
-                  'Stok Menipis (Batas: ${item.reorderLevel})',
-                  style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFC2410C)),
-                )
-              else
-                Text(
-                  'Stok Aman',
-                  style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF16A34A)),
-                ),
-              const Spacer(),
+              Expanded(
+                child: item.isOutOfStock
+                    ? Text(
+                        'Bahan Baku Habis!',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.dangerRed),
+                      )
+                    : item.isLowStock
+                        ? Text(
+                            'Stok Menipis (Batas: ${item.reorderLevel})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFC2410C)),
+                          )
+                        : Text(
+                            'Stok Aman',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF16A34A)),
+                          ),
+              ),
               IconButton(
                 icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMuted),
                 tooltip: 'Edit Bahan',
-                onPressed: () => _openAddIngredientDialog(currentOutletId, item.outletName, item),
+                onPressed: onEdit,
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.dangerRed),
                 tooltip: 'Hapus Bahan',
-                onPressed: () => _confirmDeleteIngredient(item),
+                onPressed: onDelete,
               ),
               const SizedBox(width: 4),
               ElevatedButton.icon(
@@ -523,7 +569,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
-                onPressed: () => _openAdjustmentDialog(item),
+                onPressed: onAdjust,
               ),
             ],
           ),
@@ -533,16 +579,25 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
   }
 
   // Tampilan khusus Kasir: Hanya melihat daftar menu dan Estimasi Porsi (Read-Only)
-  Widget _buildStaffPortionView() {
+  // E23: sebagai widget class (bukan helper _build*).
+}
+
+class _StaffPortionView extends ConsumerWidget {
+  const _StaffPortionView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(productListProvider);
 
-    return productsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primaryBlue)),
-      error: (e, _) => Center(child: Text('Gagal memuat katalog: $e', style: GoogleFonts.lexend())),
-      data: (products) {
+    // E24: loading/error/data lewat satu AsyncStateView.
+    return AsyncStateView(
+      value: productsAsync,
+      onRetry: () => ref.invalidate(productListProvider),
+      dataBuilder: (products) {
         if (products.isEmpty) {
-          return Center(
-            child: Text('Tidak ada menu terdaftar.', style: GoogleFonts.lexend()),
+          return const EmptyStateView(
+            message: 'Tidak ada menu terdaftar.',
+            icon: Icons.coffee_outlined,
           );
         }
 
@@ -594,16 +649,21 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       children: [
                         Text(
                           p.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${p.formattedPrice} • SKU: ${p.sku}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -617,6 +677,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       children: [
                         Text(
                           isZero ? 'Habis' : '${p.estimatedPortions} Porsi',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -625,6 +687,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                         ),
                         Text(
                           isZero ? 'Bahan Kurang' : 'Estimasi',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(
                             fontSize: 10,
                             color: isZero ? AppTheme.dangerRed : AppTheme.textMuted,

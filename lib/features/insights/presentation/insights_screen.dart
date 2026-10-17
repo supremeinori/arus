@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../data/insights_repository.dart';
 import '../domain/insight_models.dart';
 import 'insights_provider.dart';
@@ -19,6 +21,8 @@ class InsightsScreen extends ConsumerWidget {
             content: Text(
               status == 'acknowledged' ? 'Rekomendasi diterima.' : 'Rekomendasi diabaikan.',
               style: GoogleFonts.lexend(fontSize: 13),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
             backgroundColor: AppTheme.accentBlack,
           ),
@@ -28,7 +32,7 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengubah status: $e', style: GoogleFonts.lexend(fontSize: 13)),
+            content: Text('Gagal mengubah status: $e', style: GoogleFonts.lexend(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -46,6 +50,8 @@ class InsightsScreen extends ConsumerWidget {
             content: Text(
               'Rule engine selesai mengevaluasi inventaris & transaksi!',
               style: GoogleFonts.lexend(fontSize: 13),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
             backgroundColor: AppTheme.primaryBlue,
           ),
@@ -55,7 +61,7 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menjalankan rule engine: $e', style: GoogleFonts.lexend(fontSize: 13)),
+            content: Text('Gagal menjalankan rule engine: $e', style: GoogleFonts.lexend(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -74,6 +80,8 @@ class InsightsScreen extends ConsumerWidget {
         title: Text(
           'Rekomendasi Keputusan (AI/DSS)',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
@@ -91,99 +99,19 @@ class InsightsScreen extends ConsumerWidget {
       body: Column(
         children: [
           // Filter Chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                ChoiceChip(
-                  label: Text(
-                    'Semua',
-                    style: GoogleFonts.lexend(
-                      fontSize: 12.5,
-                      fontWeight: selectedSeverity == null ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  selected: selectedSeverity == null,
-                  selectedColor: AppTheme.primaryBlue,
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  labelStyle: TextStyle(color: selectedSeverity == null ? Colors.white : AppTheme.accentBlack),
-                  onSelected: (selected) {
-                    if (selected) ref.read(selectedSeverityFilterProvider.notifier).state = null;
-                  },
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: Text(
-                    'Kritis',
-                    style: GoogleFonts.lexend(
-                      fontSize: 12.5,
-                      fontWeight: selectedSeverity == 'critical' ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  selected: selectedSeverity == 'critical',
-                  selectedColor: AppTheme.dangerRed,
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  labelStyle: TextStyle(color: selectedSeverity == 'critical' ? Colors.white : AppTheme.accentBlack),
-                  onSelected: (selected) {
-                    ref.read(selectedSeverityFilterProvider.notifier).state = selected ? 'critical' : null;
-                  },
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: Text(
-                    'Peringatan',
-                    style: GoogleFonts.lexend(
-                      fontSize: 12.5,
-                      fontWeight: selectedSeverity == 'warning' ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                  selected: selectedSeverity == 'warning',
-                  selectedColor: AppTheme.warningAmber,
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  labelStyle: TextStyle(color: selectedSeverity == 'warning' ? Colors.white : AppTheme.accentBlack),
-                  onSelected: (selected) {
-                    ref.read(selectedSeverityFilterProvider.notifier).state = selected ? 'warning' : null;
-                  },
-                ),
-              ],
-            ),
-          ),
+          _SeverityFilters(selectedSeverity: selectedSeverity),
           const Divider(height: 1),
 
           // List Insights
           Expanded(
-            child: insightsAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppTheme.primaryBlue),
-              ),
-              error: (err, _) => Center(
-                child: Text('Gagal memuat rekomendasi: $err', style: GoogleFonts.lexend()),
-              ),
-              data: (insights) {
+            child: AsyncStateView<List<BusinessInsightModel>>(
+              value: insightsAsync,
+              onRetry: () => ref.invalidate(insightsListProvider),
+              dataBuilder: (insights) {
                 if (insights.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.verified_rounded, size: 56, color: AppTheme.primaryBlue),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Kondisi Bisnis Prima!',
-                          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tidak ada peringatan kritis atau anomali stok yang terdeteksi.',
-                          style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 13),
-                        ),
-                      ],
-                    ),
+                  return const EmptyStateView(
+                    message: 'Kondisi Bisnis Prima! Tidak ada peringatan kritis atau anomali stok yang terdeteksi.',
+                    icon: Icons.verified_rounded,
                   );
                 }
 
@@ -196,7 +124,11 @@ class InsightsScreen extends ConsumerWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final item = insights[index];
-                      return _buildInsightCard(context, ref, item);
+                      return _InsightCard(
+                        item: item,
+                        onDismiss: () => _updateStatus(context, ref, item.id, 'dismissed'),
+                        onAcknowledge: () => _updateStatus(context, ref, item.id, 'acknowledged'),
+                      );
                     },
                   ),
                 );
@@ -207,8 +139,72 @@ class InsightsScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildInsightCard(BuildContext context, WidgetRef ref, BusinessInsightModel item) {
+/// Filter severity — widget class top-level ConsumerWidget (aturan E23).
+class _SeverityFilters extends ConsumerWidget {
+  final String? selectedSeverity;
+
+  const _SeverityFilters({required this.selectedSeverity});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    Widget chip(String label, String? value, Color selectedColor) {
+      final selected = selectedSeverity == value;
+      return ChoiceChip(
+        label: Text(
+          label,
+          style: GoogleFonts.lexend(
+            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        selected: selected,
+        selectedColor: selectedColor,
+        backgroundColor: Colors.white,
+        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        labelStyle: TextStyle(color: selected ? Colors.white : AppTheme.accentBlack),
+        onSelected: (isSelected) {
+          ref.read(selectedSeverityFilterProvider.notifier).state =
+              isSelected ? value : null;
+        },
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          chip('Semua', null, AppTheme.primaryBlue),
+          const SizedBox(width: 8),
+          chip('Kritis', 'critical', AppTheme.dangerRed),
+          const SizedBox(width: 8),
+          chip('Peringatan', 'warning', AppTheme.warningAmber),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+/// Kartu satu insight — widget class top-level (aturan E23).
+class _InsightCard extends StatelessWidget {
+  final BusinessInsightModel item;
+  final VoidCallback onDismiss;
+  final VoidCallback onAcknowledge;
+
+  const _InsightCard({
+    required this.item,
+    required this.onDismiss,
+    required this.onAcknowledge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final isCritical = item.isCritical;
 
     return Container(
@@ -240,6 +236,8 @@ class InsightsScreen extends ConsumerWidget {
                     fontSize: 14.5,
                     color: AppTheme.accentBlack,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
@@ -259,6 +257,8 @@ class InsightsScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                     color: isCritical ? AppTheme.dangerRed : AppTheme.primaryBlue,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -287,6 +287,8 @@ class InsightsScreen extends ConsumerWidget {
                   child: Text(
                     'Rekomendasi: ${item.recommendation}',
                     style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -299,15 +301,17 @@ class InsightsScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
-                onPressed: () => _updateStatus(context, ref, item.id, 'dismissed'),
+                onPressed: onDismiss,
                 child: Text(
                   'Abaikan',
                   style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12.5, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () => _updateStatus(context, ref, item.id, 'acknowledged'),
+                onPressed: onAcknowledge,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryBlue,
                   minimumSize: const Size(110, 36),
@@ -320,6 +324,8 @@ class InsightsScreen extends ConsumerWidget {
                 child: Text(
                   'Tindak Lanjuti',
                   style: GoogleFonts.lexend(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

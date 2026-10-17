@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/uuid_generator.dart';
+import '../../../shared/widgets/app_widgets.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../data/pos_repository.dart';
@@ -130,7 +131,6 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(posCartProvider);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     final subtotal = cartState.subtotalIdr;
     final total = cartState.totalIdr;
@@ -182,7 +182,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF64748B)),
                 ),
                 Text(
-                  currencyFormatter.format(subtotal),
+                  MoneyFormatter.format(subtotal),
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
                 ),
               ],
@@ -198,19 +198,10 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: TextField(
+                  child: AppTextField(
                     controller: _discountController,
                     keyboardType: TextInputType.number,
-                    style: GoogleFonts.lexend(fontSize: 13.5),
-                    decoration: InputDecoration(
-                      hintText: 'Rp 0',
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      ),
-                    ),
+                    hintText: 'Rp 0',
                     onChanged: (val) {
                       final disc = int.tryParse(val) ?? 0;
                       ref.read(posCartProvider.notifier).setDiscount(disc);
@@ -230,7 +221,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
                 ),
                 Text(
-                  currencyFormatter.format(total),
+                  MoneyFormatter.format(total),
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.primaryBlue),
                 ),
               ],
@@ -269,8 +260,8 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                     const SizedBox(height: 8),
                     Text(
                       cartState.paymentMethod == 'qris_simulated'
-                          ? 'Scan QR untuk membayar ${currencyFormatter.format(total)}'
-                          : 'Gesek kartu EDC sebesar ${currencyFormatter.format(total)}',
+                          ? 'Scan QR untuk membayar ${MoneyFormatter.format(total)}'
+                          : 'Gesek kartu EDC sebesar ${MoneyFormatter.format(total)}',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMuted),
                     ),
@@ -288,23 +279,15 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
 
             // Jika Tunai: Input Uang & Preset Cepat
             if (isCash) ...[
-              TextField(
+              AppTextField(
                 controller: _paidController,
                 keyboardType: TextInputType.number,
-                style: GoogleFonts.lexend(fontSize: 14),
-                decoration: InputDecoration(
-                  labelText: 'Uang Diterima',
-                  hintText: 'Masukkan nominal',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                  ),
-                  prefixText: 'Rp ',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.check_circle_outline, color: AppTheme.primaryBlue),
-                    tooltip: 'Uang Pas',
-                    onPressed: () => _setExactCash(total),
-                  ),
+                labelText: 'Uang Diterima',
+                hintText: 'Masukkan nominal',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.check_circle_outline, color: AppTheme.primaryBlue),
+                  tooltip: 'Uang Pas',
+                  onPressed: () => _setExactCash(total),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -348,7 +331,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                     style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.accentBlack),
                   ),
                   Text(
-                    currencyFormatter.format(change),
+                    MoneyFormatter.format(change),
                     style: GoogleFonts.lexend(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
@@ -378,25 +361,14 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: (_isLoading || (isCash && currentPaid < total)) ? null : _processCheckout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        isCash ? 'Selesaikan Transaksi' : 'Konfirmasi Pembayaran Diterima',
-                        style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                      ),
+              child: PrimaryButton(
+                label: isCash
+                    ? 'Selesaikan Transaksi'
+                    : 'Konfirmasi Pembayaran Diterima',
+                isLoading: _isLoading,
+                onPressed: (_isLoading || (isCash && currentPaid < total))
+                    ? null
+                    : _processCheckout,
               ),
             ),
           ],

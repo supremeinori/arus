@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../data/catalog_repository.dart';
@@ -155,6 +156,8 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                   ),
                   child: Text(
                     _error!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12.5),
                   ),
                 ),
@@ -190,8 +193,10 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                     v == null || v.trim().isEmpty ? 'SKU wajib diisi' : null,
               ),
               const SizedBox(height: 12),
-              categoriesState.when(
-                data: (categories) => DropdownButtonFormField<String>(
+              // E24: loading/error kategori lewat satu AsyncStateView (ringkas).
+              AsyncStateView(
+                value: categoriesState,
+                dataBuilder: (categories) => DropdownButtonFormField<String>(
                   initialValue: _categoryId,
                   decoration: const InputDecoration(
                     labelText: 'Kategori (opsional)',
@@ -200,13 +205,16 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                   items: categories
                       .map((c) => DropdownMenuItem(
                             value: c.id,
-                            child: Text(c.name, style: GoogleFonts.lexend(fontSize: 14)),
+                            child: Text(
+                              c.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.lexend(fontSize: 14),
+                            ),
                           ))
                       .toList(),
                   onChanged: (v) => setState(() => _categoryId = v),
                 ),
-                loading: () => const LinearProgressIndicator(),
-                error: (err, stack) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 20),
 
@@ -228,17 +236,17 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
               ),
               const SizedBox(height: 8),
-              ingredientsState.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (err, stack) => Text('Gagal memuat bahan baku: $err',
-                    style: GoogleFonts.lexend(fontSize: 12)),
-                data: (ingredients) => ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _rows.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
-                  itemBuilder: (_, i) {
-                    final row = _rows[i];
+              // E24: builder resep lewat satu AsyncStateView.
+              AsyncStateView(
+                value: ingredientsState,
+                dataBuilder: (ingredients) => Column(
+                  children: [
+                    // A4: baris dinamis di form dirender dengan ...map,
+                    // bukan ListView bersarang (hindari unbounded height).
+                    for (var i = 0; i < _rows.length; i++) ...[
+                      Builder(
+                        builder: (_) {
+                          final row = _rows[i];
                     IngredientModel? selected;
                     for (final e in ingredients) {
                       if (e.id == row.ingredientId) {
@@ -314,16 +322,20 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         ],
                       ),
                     );
-                  },
+                        },
+                      ),
+                      if (i < _rows.length - 1) const SizedBox(height: 8),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
 
               // ---------- Step 3 + 4: HPP live & rekomendasi ----------
-              ingredientsState.when(
-                loading: () => const SizedBox.shrink(),
-                error: (err, stack) => const SizedBox.shrink(),
-                data: (ingredients) {
+              // E24: HPP & rekomendasi lewat satu AsyncStateView.
+              AsyncStateView(
+                value: ingredientsState,
+                dataBuilder: (ingredients) {
                   final hpp = _calcHpp(ingredients);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -338,11 +350,17 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Step 3 — Total Modal (HPP)',
-                                style: GoogleFonts.lexend(
-                                    fontSize: 13, fontWeight: FontWeight.w600)),
+                            Expanded(
+                              child: Text('Step 3 — Total Modal (HPP)',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.lexend(
+                                      fontSize: 13, fontWeight: FontWeight.w600)),
+                            ),
                             Text(
                               MoneyFormatter.format(hpp),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.lexend(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -402,7 +420,6 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 },
               ),
               const SizedBox(height: 24),
-
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(

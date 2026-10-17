@@ -27,6 +27,8 @@ class EmptyStateView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey.shade600,

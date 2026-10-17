@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import 'sensor_provider.dart';
 
 class ShakeSettingsSheet extends ConsumerWidget {
@@ -20,7 +22,6 @@ class ShakeSettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final threshold = ref.watch(shakeThresholdProvider);
     final settingsAsync = ref.watch(sensorSettingsProvider);
-    final isEnabled = settingsAsync.value?.shakeRefreshEnabled ?? true;
     final liveForce = ref.watch(lastShakeForceProvider);
 
     return Container(
@@ -61,7 +62,11 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     color: AppTheme.primaryBlue.withAlpha(25),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.vibration_rounded, color: AppTheme.primaryBlue, size: 24),
+                  child: const Icon(
+                    Icons.vibration_rounded,
+                    color: AppTheme.primaryBlue,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -70,6 +75,8 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     children: [
                       Text(
                         'Sensitivitas Guncangan',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -78,6 +85,8 @@ class ShakeSettingsSheet extends ConsumerWidget {
                       ),
                       Text(
                         'Atur ambang batas kekuatan Shake-to-Refresh',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontSize: 12,
                           color: AppTheme.textMuted,
@@ -87,7 +96,10 @@ class ShakeSettingsSheet extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppTheme.textMuted),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppTheme.textMuted,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -96,29 +108,50 @@ class ShakeSettingsSheet extends ConsumerWidget {
             const Divider(height: 1),
             const SizedBox(height: 12),
 
-            // Toggle Aktif / Nonaktif
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                'Fitur Shake-to-Refresh Aktif',
-                style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5),
+            // Toggle Aktif / Nonaktif (aturan E24: via AsyncStateView,
+            // bukan `settingsAsync.value?.x ?? default` yang diam saat loading).
+            AsyncStateView(
+              value: settingsAsync,
+              loadingMessage: 'Memuat pengaturan shake...',
+              onRetry: () => ref.refresh(sensorSettingsProvider),
+              dataBuilder: (settings) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Fitur Shake-to-Refresh Aktif',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
+                ),
+                subtitle: Text(
+                  'Segarkan data otomatis saat ponsel diguncangkan',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(
+                    fontSize: 11.5,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+                activeThumbColor: AppTheme.primaryBlue,
+                value: settings.shakeRefreshEnabled,
+                onChanged: (val) {
+                  ref
+                      .read(sensorSettingsProvider.notifier)
+                      .toggleShakeRefresh(val);
+                },
               ),
-              subtitle: Text(
-                'Segarkan data otomatis saat ponsel diguncangkan',
-                style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
-              ),
-              activeThumbColor: AppTheme.primaryBlue,
-              value: isEnabled,
-              onChanged: (val) {
-                ref.read(sensorSettingsProvider.notifier).toggleShakeRefresh(val);
-              },
             ),
             const SizedBox(height: 12),
 
             // Pilihan Cepat (Presets)
             Text(
               'Pilihan Kekuatan Guncangan:',
-              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13),
+              style: GoogleFonts.lexend(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -129,16 +162,25 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: InkWell(
                       onTap: () {
-                        ref.read(shakeThresholdProvider.notifier).setPreset(preset);
+                        ref
+                            .read(shakeThresholdProvider.notifier)
+                            .setPreset(preset);
                       },
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primaryBlue : Colors.grey.shade100,
+                          color: isSelected
+                              ? AppTheme.primaryBlue
+                              : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isSelected ? AppTheme.primaryBlue : Colors.grey.shade300,
+                            color: isSelected
+                                ? AppTheme.primaryBlue
+                                : Colors.grey.shade300,
                             width: isSelected ? 1.5 : 1,
                           ),
                         ),
@@ -149,7 +191,9 @@ class ShakeSettingsSheet extends ConsumerWidget {
                               style: GoogleFonts.lexend(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: isSelected ? Colors.white : AppTheme.accentBlack,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppTheme.accentBlack,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -157,7 +201,9 @@ class ShakeSettingsSheet extends ConsumerWidget {
                               preset.threshold.toStringAsFixed(1),
                               style: GoogleFonts.lexend(
                                 fontSize: 11,
-                                color: isSelected ? Colors.white70 : AppTheme.textMuted,
+                                color: isSelected
+                                    ? Colors.white70
+                                    : AppTheme.textMuted,
                               ),
                             ),
                           ],
@@ -176,16 +222,26 @@ class ShakeSettingsSheet extends ConsumerWidget {
               children: [
                 Text(
                   'Ambang Batas Custom:',
-                  style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryBlue.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${threshold.toStringAsFixed(1)} m/s²',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -211,11 +267,17 @@ class ShakeSettingsSheet extends ConsumerWidget {
               children: [
                 Text(
                   'Kecil / Sangat Peka (3.0)',
-                  style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                  style: GoogleFonts.lexend(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
                 Text(
                   'Besar / Kuat (16.0)',
-                  style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                  style: GoogleFonts.lexend(
+                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -234,10 +296,16 @@ class ShakeSettingsSheet extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.speed_rounded, size: 18, color: AppTheme.accentBlack),
+                      const Icon(
+                        Icons.speed_rounded,
+                        size: 18,
+                        color: AppTheme.accentBlack,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Uji Guncangan Langsung (Realtime)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
@@ -248,7 +316,12 @@ class ShakeSettingsSheet extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Goyangkan HP Anda sekarang untuk menguji apakah kekuatan guncangan melampaui target ${threshold.toStringAsFixed(1)} m/s².',
-                    style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                      fontSize: 11.5,
+                      color: AppTheme.textMuted,
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -260,7 +333,9 @@ class ShakeSettingsSheet extends ConsumerWidget {
                       minHeight: 10,
                       backgroundColor: Colors.grey.shade200,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        liveForce >= threshold ? Colors.green.shade600 : Colors.amber.shade700,
+                        liveForce >= threshold
+                            ? Colors.green.shade600
+                            : Colors.amber.shade700,
                       ),
                     ),
                   ),
@@ -270,28 +345,43 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     children: [
                       Text(
                         'Kekuatan Terakhir: ${liveForce.toStringAsFixed(1)} m/s²',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: liveForce >= threshold ? Colors.green.shade700 : AppTheme.accentBlack,
+                          color: liveForce >= threshold
+                              ? Colors.green.shade700
+                              : AppTheme.accentBlack,
                         ),
                       ),
                       if (liveForce > 0)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: liveForce >= threshold ? Colors.green.shade50 : Colors.amber.shade50,
+                            color: liveForce >= threshold
+                                ? Colors.green.shade50
+                                : Colors.amber.shade50,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: liveForce >= threshold ? Colors.green.shade300 : Colors.amber.shade300,
+                              color: liveForce >= threshold
+                                  ? Colors.green.shade300
+                                  : Colors.amber.shade300,
                             ),
                           ),
                           child: Text(
-                            liveForce >= threshold ? '✅ Lolos Threshold' : '⚠️ Kurang Kuat',
+                            liveForce >= threshold
+                                ? '✅ Lolos Threshold'
+                                : '⚠️ Kurang Kuat',
                             style: GoogleFonts.lexend(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
-                              color: liveForce >= threshold ? Colors.green.shade700 : Colors.amber.shade800,
+                              color: liveForce >= threshold
+                                  ? Colors.green.shade700
+                                  : Colors.amber.shade800,
                             ),
                           ),
                         ),
@@ -308,11 +398,16 @@ class ShakeSettingsSheet extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.touch_app_rounded, size: 16),
-                    label: Text('Tes Getar', style: GoogleFonts.lexend(fontSize: 12.5)),
+                    label: Text(
+                      'Tes Getar',
+                      style: GoogleFonts.lexend(fontSize: 12.5),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: const BorderSide(color: AppTheme.borderOutline),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () {
                       ref.read(shakeEventProvider.notifier).triggerShake();
@@ -326,10 +421,18 @@ class ShakeSettingsSheet extends ConsumerWidget {
                       backgroundColor: AppTheme.primaryBlue,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Simpan & Tutup', style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13)),
+                    child: Text(
+                      'Simpan & Tutup',
+                      style: GoogleFonts.lexend(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
               ],

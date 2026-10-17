@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../data/reports_repository.dart';
 import '../domain/report_models.dart';
+import 'report_list_screen.dart' show reportListDateFormatter;
 import 'reports_provider.dart';
 
 class ReportDetailScreen extends ConsumerStatefulWidget {
@@ -18,14 +20,6 @@ class ReportDetailScreen extends ConsumerStatefulWidget {
 
 class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
   bool _isVerifying = false;
-
-  final currencyFormatter = NumberFormat.currency(
-    locale: 'id_ID',
-    symbol: 'Rp ',
-    decimalDigits: 0,
-  );
-
-  final dateFormatter = DateFormat('dd MMM yyyy');
 
   Future<void> _handleReverify() async {
     setState(() => _isVerifying = true);
@@ -42,6 +36,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
             isValid
                 ? 'Hash SHA-256 Valid! Integritas snapshot data 100% otentik.'
                 : 'PERINGATAN: Integritas data snapshot gagal diverifikasi!',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: isValid ? Colors.green.shade700 : Colors.red.shade700,
         ),
@@ -51,7 +47,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memverifikasi: $e'),
+          content: Text('Gagal memverifikasi: $e', maxLines: 3, overflow: TextOverflow.ellipsis),
           backgroundColor: Colors.red,
         ),
       );
@@ -66,7 +62,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail & Verifikasi Laporan'),
+        title: const Text('Detail & Verifikasi Laporan', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             icon: _isVerifying
@@ -81,32 +77,23 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
           ),
         ],
       ),
-      body: reportAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                const SizedBox(height: 12),
-                Text('Gagal memuat laporan: $err', textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(reportDetailProvider(widget.reportId)),
-                  child: const Text('Coba Lagi'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        data: (report) => _buildContent(context, report),
+      body: AsyncStateView<ReportDetailModel>(
+        value: reportAsync,
+        onRetry: () => ref.invalidate(reportDetailProvider(widget.reportId)),
+        dataBuilder: (report) => _DetailContent(report: report),
       ),
     );
   }
+}
 
-  Widget _buildContent(BuildContext context, ReportDetailModel report) {
+/// Isi detail laporan — widget class top-level (aturan E23).
+class _DetailContent extends StatelessWidget {
+  final ReportDetailModel report;
+
+  const _DetailContent({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -138,11 +125,17 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      dateFormatter.format(report.createdAt),
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    Flexible(
+                      child: Text(
+                        reportListDateFormatter.format(report.createdAt),
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
@@ -150,17 +143,23 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                 Text(
                   report.title,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Periode: ${dateFormatter.format(report.periodFrom)} - ${dateFormatter.format(report.periodTo)}',
+                  'Periode: ${reportListDateFormatter.format(report.periodFrom)} - ${reportListDateFormatter.format(report.periodTo)}',
                   style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (report.createdByName != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     'Dibuat oleh: ${report.createdByName}',
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
@@ -171,7 +170,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         const SizedBox(height: 16),
 
         // Tamper-evident Audit Ledger Card
-        _buildVerificationCard(report),
+        _VerificationCard(report: report),
 
         const SizedBox(height: 20),
 
@@ -179,20 +178,30 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         const Text(
           'Ringkasan Data Snapshot',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 12),
 
         if (report.type == 'sales_summary')
-          _buildSalesSummaryPayload(report.payload)
+          _SalesSummaryPayload(payload: report.payload)
         else if (report.type == 'inventory_status')
-          _buildInventoryPayload(report.payload)
+          _InventoryPayload(payload: report.payload)
         else
-          _buildGenericPayload(report.payload),
+          _GenericPayload(payload: report.payload),
       ],
     );
   }
+}
 
-  Widget _buildVerificationCard(ReportDetailModel report) {
+/// Kartu verifikasi ledger — widget class top-level (aturan E23).
+class _VerificationCard extends StatelessWidget {
+  final ReportDetailModel report;
+
+  const _VerificationCard({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
     final v = report.verification;
     final isValid = v.isValid;
 
@@ -226,6 +235,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                     color: isValid ? Colors.green.shade900 : Colors.red.shade900,
                     fontSize: 13,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -239,6 +250,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
               fontSize: 12,
               color: isValid ? Colors.green.shade900 : Colors.red.shade900,
             ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 12),
           Container(
@@ -257,6 +270,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                       const Text(
                         'SHA-256 Payload Hash:',
                         style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       SelectableText(
@@ -276,7 +291,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: report.payloadHash));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Hash SHA-256 disalin ke clipboard')),
+                      const SnackBar(content: Text('Hash SHA-256 disalin ke clipboard', maxLines: 2, overflow: TextOverflow.ellipsis)),
                     );
                   },
                 ),
@@ -289,12 +304,16 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
               children: [
                 const Icon(Icons.link_rounded, size: 16, color: Colors.indigo),
                 const SizedBox(width: 6),
-                Text(
-                  'Tercatat di Blok #${v.blockIndex} Tamper-evident Ledger',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.indigo,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'Tercatat di Blok #${v.blockIndex} Tamper-evident Ledger',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.indigo,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -304,8 +323,17 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildSalesSummaryPayload(Map<String, dynamic> payload) {
+/// Payload ringkasan penjualan — widget class top-level (aturan E23,
+/// format uang via MoneyFormatter E21).
+class _SalesSummaryPayload extends StatelessWidget {
+  final Map<String, dynamic> payload;
+
+  const _SalesSummaryPayload({required this.payload});
+
+  @override
+  Widget build(BuildContext context) {
     final summary = payload['summary'] as Map<String, dynamic>? ?? {};
     final topItems = payload['top_items'] as List<dynamic>? ?? [];
 
@@ -320,18 +348,18 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildMetricCard(
-                'Total Omzet',
-                currencyFormatter.format(rev),
-                Colors.blue.shade700,
+              child: _PayloadMetricCard(
+                title: 'Total Omzet',
+                value: MoneyFormatter.format(rev),
+                color: Colors.blue.shade700,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildMetricCard(
-                'Estimasi Margin',
-                '${currencyFormatter.format(margin)} ($marginPct%)',
-                Colors.green.shade700,
+              child: _PayloadMetricCard(
+                title: 'Estimasi Margin',
+                value: '${MoneyFormatter.format(margin)} ($marginPct%)',
+                color: Colors.green.shade700,
               ),
             ),
           ],
@@ -340,18 +368,18 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildMetricCard(
-                'Total Transaksi',
-                '$txCount struk',
-                Colors.orange.shade700,
+              child: _PayloadMetricCard(
+                title: 'Total Transaksi',
+                value: '$txCount struk',
+                color: Colors.orange.shade700,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildMetricCard(
-                'Rata-rata Keranjang',
-                currencyFormatter.format(basket),
-                Colors.purple.shade700,
+              child: _PayloadMetricCard(
+                title: 'Rata-rata Keranjang',
+                value: MoneyFormatter.format(basket),
+                color: Colors.purple.shade700,
               ),
             ),
           ],
@@ -363,6 +391,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
             child: Text(
               'Top 5 Produk Terlaris',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 8),
@@ -372,16 +402,23 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
               borderRadius: BorderRadius.circular(10),
               side: BorderSide(color: Colors.grey.shade200),
             ),
+            // List kecil dan tetap (Top 5) — render inline tanpa scroll bersarang (A4).
             child: Column(
               children: topItems.map((item) {
                 final map = item as Map<String, dynamic>;
                 return ListTile(
                   dense: true,
-                  title: Text(map['name'] as String? ?? 'Produk', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${map['quantity']} terjual'),
-                  trailing: Text(
-                    currencyFormatter.format(map['revenue'] as num? ?? 0),
-                    style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blue),
+                  title: Text(map['name'] as String? ?? 'Produk', style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('${map['quantity']} terjual', maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: SizedBox(
+                    width: 110,
+                    child: Text(
+                      MoneyFormatter.format(map['revenue'] as num? ?? 0),
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blue),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
                   ),
                 );
               }).toList(),
@@ -391,8 +428,16 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       ],
     );
   }
+}
 
-  Widget _buildInventoryPayload(Map<String, dynamic> payload) {
+/// Payload inventaris — widget class top-level (aturan E23).
+class _InventoryPayload extends StatelessWidget {
+  final Map<String, dynamic> payload;
+
+  const _InventoryPayload({required this.payload});
+
+  @override
+  Widget build(BuildContext context) {
     final summary = payload['summary'] as Map<String, dynamic>? ?? {};
     final lowStock = payload['low_stock_items'] as List<dynamic>? ?? [];
 
@@ -405,27 +450,27 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildMetricCard(
-                'Total SKU',
-                '$skus produk',
-                Colors.blue.shade700,
+              child: _PayloadMetricCard(
+                title: 'Total SKU',
+                value: '$skus produk',
+                color: Colors.blue.shade700,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildMetricCard(
-                'Total Stok Fisik',
-                '$totalQty unit',
-                Colors.teal.shade700,
+              child: _PayloadMetricCard(
+                title: 'Total Stok Fisik',
+                value: '$totalQty unit',
+                color: Colors.teal.shade700,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        _buildMetricCard(
-          'Total Nilai Aset Stok (HPP)',
-          currencyFormatter.format(assetVal),
-          Colors.indigo.shade700,
+        _PayloadMetricCard(
+          title: 'Total Nilai Aset Stok (HPP)',
+          value: MoneyFormatter.format(assetVal),
+          color: Colors.indigo.shade700,
         ),
         if (lowStock.isNotEmpty) ...[
           const SizedBox(height: 20),
@@ -434,6 +479,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
             child: Text(
               'Daftar Stok Menipis',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 8),
@@ -443,17 +490,24 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
               borderRadius: BorderRadius.circular(10),
               side: BorderSide(color: Colors.red.shade100),
             ),
+            // List kecil — render inline tanpa scroll bersarang (aturan A4).
             child: Column(
               children: lowStock.map((item) {
                 final map = item as Map<String, dynamic>;
                 return ListTile(
                   dense: true,
                   leading: const Icon(Icons.warning_amber_rounded, color: Colors.red),
-                  title: Text(map['product_name'] as String? ?? 'Produk', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Outlet: ${map['outlet_name']}'),
-                  trailing: Text(
-                    'Sisa: ${map['quantity']} (Min: ${map['reorder_level']})',
-                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  title: Text(map['product_name'] as String? ?? 'Produk', style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('Outlet: ${map['outlet_name']}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: SizedBox(
+                    width: 120,
+                    child: Text(
+                      'Sisa: ${map['quantity']} (Min: ${map['reorder_level']})',
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
                   ),
                 );
               }).toList(),
@@ -463,8 +517,16 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       ],
     );
   }
+}
 
-  Widget _buildGenericPayload(Map<String, dynamic> payload) {
+/// Payload generik — widget class top-level (aturan E23).
+class _GenericPayload extends StatelessWidget {
+  final Map<String, dynamic> payload;
+
+  const _GenericPayload({required this.payload});
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -477,8 +539,22 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildMetricCard(String title, String value, Color color) {
+/// Kartu metrik payload — widget class top-level const (aturan E23).
+class _PayloadMetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final Color color;
+
+  const _PayloadMetricCard({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -489,7 +565,12 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(
+            title,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 6),
           Text(
             value,
@@ -498,6 +579,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
               fontWeight: FontWeight.bold,
               color: color,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

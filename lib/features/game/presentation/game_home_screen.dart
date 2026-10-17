@@ -248,8 +248,11 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Keluar dari Kuis?'),
-                      content: const Text('Progres kuis saat ini akan dibatalkan.'),
+                      title: const Text('Keluar dari Kuis?', maxLines: 2, overflow: TextOverflow.ellipsis),
+                      content: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 320),
+                        child: const Text('Progres kuis saat ini akan dibatalkan.'),
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
@@ -393,7 +396,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildStatCard(
+                  child: _GameStatCard(
                     icon: Icons.image_search_rounded,
                     title: 'Tebak Nama',
                     score: _userStats?.bestGuessName ?? 0,
@@ -402,7 +405,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatCard(
+                  child: _GameStatCard(
                     icon: Icons.payments_rounded,
                     title: 'Tebak Harga',
                     score: _userStats?.bestGuessPrice ?? 0,
@@ -420,23 +423,25 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             ),
             const SizedBox(height: 12),
 
-            _buildModeCard(
+            _GameModeCard(
               modeKey: 'guess_name',
               icon: Icons.fastfood_rounded,
               title: 'Mode 1: Tebak Nama Menu',
               desc: 'Tampilkan foto makanan/minuman, tebak nama produk yang tepat dari 4 pilihan.',
               badgeText: '5 Soal · 10 Detik/Soal',
               color: Colors.indigo,
+              onTap: _startGame,
             ),
             const SizedBox(height: 12),
 
-            _buildModeCard(
+            _GameModeCard(
               modeKey: 'guess_price',
               icon: Icons.price_check_rounded,
               title: 'Mode 2: Tebak Harga Jual',
               desc: 'Lihat foto & nama menu kasir, tebak harga resmi yang terdaftar di POS.',
               badgeText: '5 Soal · Uji Hafalan Kasir',
               color: Colors.deepOrange,
+              onTap: _startGame,
             ),
             const SizedBox(height: 24),
 
@@ -447,15 +452,14 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _userStats!.recentSessions.take(5).length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, idx) {
-                  final s = _userStats!.recentSessions[idx];
-                  final isName = s.mode == 'guess_name';
-                  return Container(
+              // List kecil & tetap (<=5 item): render langsung tanpa ListView
+              // bersarang (aturan A2/A5) agar SingleChildScrollView induk
+              // tetap satu-satunya scrollable.
+              ..._userStats!.recentSessions.take(5).map((s) {
+                final isName = s.mode == 'guess_name';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -480,6 +484,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                             children: [
                               Text(
                                 isName ? 'Tebak Nama Menu' : 'Tebak Harga Jual',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
@@ -487,6 +493,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                               ),
                               Text(
                                 '${s.correctCount}/5 Benar · ${s.durationSec}s',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                               ),
                             ],
@@ -494,6 +502,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                         ),
                         Text(
                           '${s.score} Poin',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w700,
                             color: AppTheme.primary,
@@ -502,132 +512,10 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              }),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required int score,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: color.withValues(alpha: 0.12),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '$score Poin',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeCard({
-    required String modeKey,
-    required IconData icon,
-    required String title,
-    required String desc,
-    required String badgeText,
-    required Color color,
-  }) {
-    return InkWell(
-      onTap: () => _startGame(modeKey),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: color.withValues(alpha: 0.12),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    desc,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12, height: 1.3),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      badgeText,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
           ],
         ),
       ),
@@ -656,6 +544,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 children: [
                   Text(
                     'Soal ${_currentQuestionIndex + 1} dari ${_questions.length}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -668,6 +558,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                       const SizedBox(width: 4),
                       Text(
                         '$_currentScore Poin',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
@@ -722,6 +614,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   ),
                   child: Text(
                     currentQ.categoryName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
                       color: AppTheme.primary,
                       fontSize: 12,
@@ -768,6 +662,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 Text(
                   currentQ.promptTitle,
                   textAlign: TextAlign.center,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w800,
                     fontSize: _selectedMode == 'guess_price' ? 18 : 15,
@@ -780,7 +676,13 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 ...currentQ.options.map((opt) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _buildOptionButton(opt, currentQ.correctOptionKey),
+                    child: _GameOptionButton(
+                      opt: opt,
+                      correctKey: currentQ.correctOptionKey,
+                      isAnswerChecked: _isAnswerChecked,
+                      selectedOptionKey: _selectedOptionKey,
+                      onSelect: _selectOption,
+                    ),
                   );
                 }),
               ],
@@ -788,75 +690,6 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildOptionButton(GameQuestionOption opt, String correctKey) {
-    Color buttonColor = Colors.white;
-    Color textColor = Colors.black87;
-    Color borderColor = Colors.grey.shade300;
-    Widget? trailingIcon;
-
-    if (_isAnswerChecked) {
-      if (opt.key == correctKey) {
-        // Jawaban Benar -> Selalu Hijau
-        buttonColor = const Color(0xFFDCFCE7); // Light green
-        borderColor = const Color(0xFF16A34A);
-        textColor = const Color(0xFF15803D);
-        trailingIcon = const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A));
-      } else if (opt.key == _selectedOptionKey) {
-        // Jawaban Terpilih Tapi Salah -> Merah
-        buttonColor = const Color(0xFFFEE2E2); // Light red
-        borderColor = const Color(0xFFDC2626);
-        textColor = const Color(0xFFB91C1C);
-        trailingIcon = const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626));
-      }
-    }
-
-    return InkWell(
-      onTap: _isAnswerChecked ? null : () => _selectOption(opt.key),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: buttonColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                opt.key.replaceAll('opt_', '').toUpperCase(),
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                opt.label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: textColor,
-                ),
-              ),
-            ),
-            ?trailingIcon,
-          ],
-        ),
-      ),
     );
   }
 
@@ -931,6 +764,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
           const SizedBox(height: 6),
           Text(
             badgeTitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -973,13 +808,13 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildResultMetric(
+                    _GameResultMetric(
                       label: 'Jawaban Benar',
                       value: '$_correctCount / ${_questions.length}',
                       icon: Icons.check_circle_rounded,
                       color: Colors.green,
                     ),
-                    _buildResultMetric(
+                    _GameResultMetric(
                       label: 'Waktu Bermain',
                       value: '${_totalDurationSec}s',
                       icon: Icons.timer_rounded,
@@ -1031,19 +866,278 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
       ),
     );
   }
+}
 
-  Widget _buildResultMetric({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
+/// Kartu skor rekor per mode (aturan E23: widget class const, bukan helper).
+class _GameStatCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final int score;
+  final Color color;
+
+  const _GameStatCard({
+    required this.icon,
+    required this.title,
+    required this.score,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: color.withValues(alpha: 0.12),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$score Poin',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu mode permainan (aturan E23: widget class const, bukan helper).
+class _GameModeCard extends StatelessWidget {
+  final String modeKey;
+  final IconData icon;
+  final String title;
+  final String desc;
+  final String badgeText;
+  final Color color;
+  final ValueChanged<String> onTap;
+
+  const _GameModeCard({
+    required this.modeKey,
+    required this.icon,
+    required this.title,
+    required this.desc,
+    required this.badgeText,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onTap(modeKey),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    desc,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12, height: 1.3),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      badgeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GameOptionButton extends StatelessWidget {
+  final GameQuestionOption opt;
+  final String correctKey;
+  final bool isAnswerChecked;
+  final String? selectedOptionKey;
+  final ValueChanged<String> onSelect;
+
+  const _GameOptionButton({
+    required this.opt,
+    required this.correctKey,
+    required this.isAnswerChecked,
+    required this.selectedOptionKey,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color buttonColor = Colors.white;
+    Color textColor = Colors.black87;
+    Color borderColor = Colors.grey.shade300;
+    Widget? trailingIcon;
+
+    if (isAnswerChecked) {
+      if (opt.key == correctKey) {
+        // Jawaban Benar -> Selalu Hijau
+        buttonColor = const Color(0xFFDCFCE7); // Light green
+        borderColor = const Color(0xFF16A34A);
+        textColor = const Color(0xFF15803D);
+        trailingIcon = const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A));
+      } else if (opt.key == selectedOptionKey) {
+        // Jawaban Terpilih Tapi Salah -> Merah
+        buttonColor = const Color(0xFFFEE2E2); // Light red
+        borderColor = const Color(0xFFDC2626);
+        textColor = const Color(0xFFB91C1C);
+        trailingIcon = const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626));
+      }
+    }
+
+    return InkWell(
+      onTap: isAnswerChecked ? null : () => onSelect(opt.key),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: buttonColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                opt.key.replaceAll('opt_', '').toUpperCase(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                opt.label,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: textColor,
+                ),
+              ),
+            ),
+            ?trailingIcon,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Metrik hasil permainan (aturan E23: widget class const, bukan helper).
+class _GameResultMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _GameResultMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 6),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
             fontSize: 16,
@@ -1051,6 +1145,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
         ),
         Text(
           label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
         ),
       ],

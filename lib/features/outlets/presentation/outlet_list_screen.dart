@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/outlet_models.dart';
@@ -41,7 +43,7 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manajemen Cabang & LBS'),
+        title: const Text('Manajemen Cabang & LBS', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -66,30 +68,40 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
               backgroundColor: AppTheme.primaryBlue,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add_location_alt_rounded),
-              label: const Text('Tambah Cabang'),
+              label: const Text('Tambah Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
               onPressed: () => context.push('/outlets/new'),
             )
           : null,
+      // Tiap tab punya scroll sendiri, bukan scroll induk (aturan A13).
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildOutletsTab(outletsAsync, performanceAsync),
-          _buildLbsTab(nearestAsync),
+          _OutletsTab(outletsAsync: outletsAsync, performanceAsync: performanceAsync),
+          _LbsTab(nearestAsync: nearestAsync),
         ],
       ),
     );
   }
+}
 
-  Widget _buildOutletsTab(
-    AsyncValue<List<OutletModel>> outletsAsync,
-    AsyncValue<List<OutletPerformanceModel>> performanceAsync,
-  ) {
-    return outletsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Gagal memuat cabang: $err')),
-      data: (outlets) {
+/// Tab daftar cabang — widget class top-level (aturan E23, E24).
+class _OutletsTab extends StatelessWidget {
+  final AsyncValue<List<OutletModel>> outletsAsync;
+  final AsyncValue<List<OutletPerformanceModel>> performanceAsync;
+
+  const _OutletsTab({required this.outletsAsync, required this.performanceAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    return AsyncStateView<List<OutletModel>>(
+      value: outletsAsync,
+      onRetry: null,
+      dataBuilder: (outlets) {
         if (outlets.isEmpty) {
-          return const Center(child: Text('Belum ada cabang terdaftar.'));
+          return const EmptyStateView(
+            message: 'Belum ada cabang terdaftar.',
+            icon: Icons.storefront_outlined,
+          );
         }
 
         final perfMap = {
@@ -103,107 +115,151 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
           itemBuilder: (context, index) {
             final outlet = outlets[index];
             final perf = perfMap[outlet.id];
-
-            Color statusColor = Colors.green;
-            String statusText = 'Optimal';
-            if (perf?.performanceStatus == 'critical') {
-              statusColor = Colors.red;
-              statusText = 'Kritis';
-            } else if (perf?.performanceStatus == 'warning') {
-              statusColor = Colors.orange;
-              statusText = 'Perhatian';
-            }
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => context.push('/outlets/${outlet.id}'),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              outlet.name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: statusColor.withAlpha(25),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(radius: 4, backgroundColor: statusColor),
-                                const SizedBox(width: 6),
-                                Text(
-                                  statusText,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: statusColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        outlet.address,
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade600),
-                          const SizedBox(width: 4),
-                          Text(
-                            outlet.timezone,
-                            style: const TextStyle(fontSize: 12, color: Colors.black54),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${outlet.inventoryCount} SKU Produk',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryBlue,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
+            return _OutletCard(outlet: outlet, perf: perf);
           },
         );
       },
     );
   }
+}
 
-  Widget _buildLbsTab(AsyncValue<NearestOutletResult> nearestAsync) {
+/// Kartu satu outlet — widget class top-level const (aturan E23).
+class _OutletCard extends StatelessWidget {
+  final OutletModel outlet;
+  final OutletPerformanceModel? perf;
+
+  const _OutletCard({required this.outlet, this.perf});
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor = Colors.green;
+    String statusText = 'Optimal';
+    if (perf?.performanceStatus == 'critical') {
+      statusColor = Colors.red;
+      statusText = 'Kritis';
+    } else if (perf?.performanceStatus == 'warning') {
+      statusColor = Colors.orange;
+      statusText = 'Perhatian';
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push('/outlets/${outlet.id}'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      outlet.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withAlpha(25),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(radius: 4, backgroundColor: statusColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                outlet.address,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      outlet.timezone,
+                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    '${outlet.inventoryCount} SKU Produk',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryBlue,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Label jam lokal untuk LBS — fungsi top-level murni (aturan E21:
+/// DateTime.now tidak lagi di dalam build).
+String lbsLocalTimeDisplay(String timezone) {
+  final nowUtc = DateTime.now().toUtc();
+  if (timezone.contains('London')) {
+    return '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 1)))} BST';
+  } else if (timezone.contains('Makassar')) {
+    return '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 8)))} WITA';
+  }
+  return '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 7)))} WIB';
+}
+
+/// Tab LBS / cabang terdekat — widget class top-level (aturan E23).
+/// Scroll milik tab sendiri, bukan scroll induk (aturan A13).
+class _LbsTab extends ConsumerWidget {
+  final AsyncValue<NearestOutletResult> nearestAsync;
+
+  const _LbsTab({required this.nearestAsync});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentCoord = ref.watch(userCoordinatesProvider);
 
     return ListView(
@@ -219,16 +275,20 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.my_location_rounded, size: 18, color: Colors.deepPurple),
-                    SizedBox(width: 8),
-                    Text(
-                      'Simulasi Posisi Pengguna (LBS GPS)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.deepPurple,
+                    const Icon(Icons.my_location_rounded, size: 18, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Simulasi Posisi Pengguna (LBS GPS)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.deepPurple,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -237,6 +297,8 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                 Text(
                   'Koordinat saat ini: ${currentCoord.$1.toStringAsFixed(4)}, ${currentCoord.$2.toStringAsFixed(4)}',
                   style: const TextStyle(fontSize: 12, color: Colors.black87),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -273,18 +335,16 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
           ),
         ),
         const SizedBox(height: 16),
-        nearestAsync.when(
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          error: (err, _) => Center(child: Text('Gagal menghitung jarak LBS: $err')),
-          data: (result) {
+        AsyncStateView<NearestOutletResult>(
+          value: nearestAsync,
+          onRetry: null,
+          dataBuilder: (result) {
             final nearest = result.nearestOutlet;
             if (nearest == null) {
-              return const Center(child: Text('Tidak ada data cabang.'));
+              return const EmptyStateView(
+                message: 'Tidak ada data cabang.',
+                icon: Icons.location_off_outlined,
+              );
             }
 
             return Column(
@@ -320,17 +380,21 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                               color: Colors.white.withAlpha(40),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
-                                SizedBox(width: 6),
-                                Text(
-                                  'CABANG TERDEKAT (LBS)',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'CABANG TERDEKAT (LBS)',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -343,6 +407,8 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -354,11 +420,15 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         nearest.address,
                         style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 14),
                       ElevatedButton.icon(
@@ -370,7 +440,7 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                           ),
                         ),
                         icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                        label: const Text('Buka Detail Cabang Terdekat'),
+                        label: const Text('Buka Detail Cabang Terdekat', maxLines: 1, overflow: TextOverflow.ellipsis),
                         onPressed: () => context.push('/outlets/${nearest.id}'),
                       ),
                     ],
@@ -380,18 +450,13 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                 const Text(
                   'Seluruh Cabang Terurut Berdasarkan Jarak:',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
+                // List kecil dan tetap — render inline tanpa scroll bersarang (aturan A4).
                 ...result.allOutletsSorted.map((item) {
-                  final nowUtc = DateTime.now().toUtc();
-                  String localTime = '';
-                  if (item.timezone.contains('London')) {
-                    localTime = '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 1)))} BST';
-                  } else if (item.timezone.contains('Makassar')) {
-                    localTime = '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 8)))} WITA';
-                  } else {
-                    localTime = '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 7)))} WIB';
-                  }
+                  final localTime = lbsLocalTimeDisplay(item.timezone);
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -405,9 +470,9 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
                         backgroundColor: Colors.teal.shade50,
                         child: const Icon(Icons.location_on, color: Colors.teal, size: 20),
                       ),
-                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime'),
-                      trailing: const Icon(Icons.chevron_right, size: 18),
+                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime', maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, size: 18)),
                       onTap: () => context.push('/outlets/${item.id}'),
                     ),
                   );

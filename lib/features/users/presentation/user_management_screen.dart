@@ -48,6 +48,8 @@ class UserManagementScreen extends StatelessWidget {
         title: Text(
           'Manajemen Pengguna & Tim',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       body: ListView(
@@ -56,6 +58,8 @@ class UserManagementScreen extends StatelessWidget {
           Text(
             'Daftar Anggota & Hak Akses Toko',
             style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF64748B)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 12),
           ..._demoUsers.map((u) {
@@ -98,10 +102,14 @@ class UserManagementScreen extends StatelessWidget {
                         Text(
                           u['name'],
                           style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           u['email'],
                           style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -115,12 +123,18 @@ class UserManagementScreen extends StatelessWidget {
                               child: Text(
                                 u['role'],
                                 style: GoogleFonts.lexend(fontSize: 10.5, fontWeight: FontWeight.w700, color: badgeColor),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              '• ${u['outlet']}',
-                              style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF94A3B8)),
+                            Expanded(
+                              child: Text(
+                                '• ${u['outlet']}',
+                                style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF94A3B8)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),

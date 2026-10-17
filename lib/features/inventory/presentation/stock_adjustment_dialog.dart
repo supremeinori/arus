@@ -104,6 +104,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -113,11 +114,16 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
           const SizedBox(height: 3),
           Text(
             '$_name • $_outletName',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
           ),
         ],
       ),
-      content: SingleChildScrollView(
+      // C15: konten dialog dibatasi lebarnya agar tidak overflow di layar sempit.
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: SingleChildScrollView(
         child: Form(
           key: _formKey,
           child: Column(
@@ -134,9 +140,18 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Stok Saat Ini:', style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.accentBlack)),
+                    Expanded(
+                      child: Text(
+                        'Stok Saat Ini:',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.accentBlack),
+                      ),
+                    ),
                     Text(
                       '$_currentStock $_unit',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primaryBlue),
                     ),
                   ],
@@ -159,6 +174,8 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       Expanded(
                         child: Text(
                           _errorMessage!,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.dangerRed),
                         ),
                       ),
@@ -207,9 +224,18 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Estimasi stok akhir:', style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted)),
+                  Expanded(
+                    child: Text(
+                      'Estimasi stok akhir:',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+                    ),
+                  ),
                   Text(
                     '$projectedQty $_unit',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -231,6 +257,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               ),
             ],
           ),
+        ),
         ),
       ),
       actions: [

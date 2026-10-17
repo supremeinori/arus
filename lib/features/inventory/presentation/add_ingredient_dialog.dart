@@ -111,6 +111,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -120,11 +121,16 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
           const SizedBox(height: 4),
           Text(
             'Cabang: ${widget.outletName}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
           ),
         ],
       ),
-      content: SingleChildScrollView(
+      // C15: konten dialog dibatasi lebarnya agar tidak overflow di layar sempit.
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: SingleChildScrollView(
         child: Form(
           key: _formKey,
           child: Column(
@@ -146,6 +152,8 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                       Expanded(
                         child: Text(
                           _errorMessage!,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.dangerRed),
                         ),
                       ),
@@ -224,6 +232,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
               ),
             ],
           ),
+        ),
         ),
       ),
       actions: [

@@ -7,6 +7,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/auth/biometric_service.dart';
+import '../../../shared/widgets/app_widgets.dart';
 import 'auth_provider.dart';
 import 'auth_state.dart';
 
@@ -21,12 +22,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController(text: 'owner@arus.demo');
   final _passwordController = TextEditingController(text: 'Demo1234');
+  late final TextEditingController _serverController;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _serverController = TextEditingController(text: AppEnv.apiBaseUrl);
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _serverController.dispose();
     super.dispose();
   }
 
@@ -71,14 +80,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Expanded(
                   child: Text(
                     'Aktifkan Login Biometrik?',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
             ),
-            content: Text(
-              'Aktifkan login biometrik untuk akses lebih cepat?',
-              style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF475569), height: 1.4),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Text(
+                'Aktifkan login biometrik untuk akses lebih cepat?',
+                style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF475569), height: 1.4),
+              ),
             ),
             actions: [
               TextButton(
@@ -119,9 +133,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
-                    Text(
-                      'Login biometrik berhasil diaktifkan!',
-                      style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600),
+                    Expanded(
+                      child: Text(
+                        'Login biometrik berhasil diaktifkan!',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),
@@ -193,6 +211,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Masuk ke ${StringsId.appName}',
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
@@ -226,6 +246,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Expanded(
                             child: Text(
                               authState.errorMessage!,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFFDC2626)),
                             ),
                           ),
@@ -236,19 +258,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
 
                   // Email Input
-                  TextFormField(
+                  AppTextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: GoogleFonts.lexend(fontSize: 14, color: AppTheme.accentBlack),
-                    decoration: InputDecoration(
-                      labelText: 'Alamat Email',
-                      hintText: 'nama@email.com',
-                      prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.accentBlack, size: 20),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      ),
-                    ),
+                    labelText: 'Alamat Email',
+                    hintText: 'nama@email.com',
+                    prefixIcon: Icons.email_outlined,
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
                         return 'Email wajib diisi';
@@ -262,29 +277,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 16),
 
                   // Password Input
-                  TextFormField(
+                  AppTextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: GoogleFonts.lexend(fontSize: 14, color: AppTheme.accentBlack),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.accentBlack, size: 20),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: AppTheme.accentBlack,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                    labelText: 'Password',
+                    prefixIcon: Icons.lock_outline,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: AppTheme.accentBlack,
+                        size: 20,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
@@ -299,30 +307,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 22),
 
                   // Submit Button
-                  ElevatedButton(
-                    onPressed: isLoading ? null : _submitLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
-                      ),
-                    ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Masuk',
-                            style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700),
-                          ),
+                  PrimaryButton(
+                    label: 'Masuk',
+                    isLoading: isLoading,
+                    onPressed: _submitLogin,
                   ),
 
                   const SizedBox(height: 12),
@@ -331,6 +319,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     icon: const Icon(Icons.fingerprint, color: AppTheme.primaryBlue, size: 20),
                     label: Text(
                       'Masuk dengan Biometrik (Sidik Jari)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -399,6 +389,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             Flexible(
                               child: Text(
                                 'Server: ${AppEnv.apiBaseUrl}',
+                                maxLines: 1,
                                 style: GoogleFonts.lexend(
                                   fontSize: 11.5,
                                   color: const Color(0xFF64748B),
@@ -422,7 +413,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showServerConfigDialog(BuildContext context) {
-    final serverController = TextEditingController(text: AppEnv.apiBaseUrl);
+    _serverController.text = AppEnv.apiBaseUrl;
 
     showDialog(
       context: context,
@@ -433,32 +424,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               const Icon(Icons.settings_ethernet_rounded, color: AppTheme.primaryBlue, size: 24),
               const SizedBox(width: 10),
-              Text(
-                'Alamat Web Service',
-                style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  'Alamat Web Service',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
-                style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: serverController,
-                decoration: InputDecoration(
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 14),
+                AppTextField(
+                  controller: _serverController,
                   labelText: 'URL Server Backend',
                   hintText: 'http://10.3.25.69:5000/api',
-                  prefixIcon: const Icon(Icons.link, size: 18),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  prefixIcon: Icons.link,
                 ),
-                style: GoogleFonts.lexend(fontSize: 13),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -472,7 +468,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {
-                final newUrl = serverController.text.trim();
+                final newUrl = _serverController.text.trim();
                 if (newUrl.isNotEmpty) {
                   AppEnv.setCustomBaseUrl(newUrl);
                   ref.read(apiClientProvider).updateBaseUrl(AppEnv.apiBaseUrl);
@@ -483,6 +479,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: AppTheme.accentBlack,
                       content: Text(
                         'URL Server diubah ke: ${AppEnv.apiBaseUrl}',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(fontSize: 12.5, color: Colors.white),
                       ),
                     ),

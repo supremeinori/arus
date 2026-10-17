@@ -81,11 +81,15 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
             Text(
               'Asisten AI Bisnis',
               style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             if (outlets.isNotEmpty)
               Text(
                 'Cabang: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
                 style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),
@@ -119,6 +123,8 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     child: Text(
                       chatState.errorMessage!,
                       style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

@@ -8,6 +8,7 @@ import '../../auth/domain/user_model.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
+import '../../../shared/widgets/async_state_view.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -26,9 +27,13 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'Guncangan terdeteksi! Memperbarui data KPI...',
-                  style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                Expanded(
+                  child: Text(
+                    'Guncangan terdeteksi! Memperbarui data KPI...',
+                    style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -68,9 +73,12 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(analyticsOverviewProvider);
           ref.invalidate(salesTrendProvider);
         },
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
             // Welcome Header Enterprise
             Container(
               padding: const EdgeInsets.all(14),
@@ -114,6 +122,8 @@ class DashboardScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w700,
                             color: AppTheme.accentBlack,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           'Akses: ${user?.role.toDisplayString() ?? ""}',
@@ -122,6 +132,8 @@ class DashboardScreen extends ConsumerWidget {
                             color: const Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -240,26 +252,10 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 18),
 
             // KPI Overview Cards
-            overviewAsync.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(color: AppTheme.primaryBlue),
-                ),
-              ),
-              error: (err, _) => Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
-                ),
-                child: Text(
-                  'Gagal memuat KPI: $err',
-                  style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 13),
-                ),
-              ),
-              data: (kpi) => _buildKpiGrid(kpi, isOwnerOrManager),
+            AsyncStateView<AnalyticsOverviewModel>(
+              value: overviewAsync,
+              onRetry: () => ref.invalidate(analyticsOverviewProvider),
+              dataBuilder: (kpi) => _KpiGrid(kpi: kpi, isOwnerOrManager: isOwnerOrManager),
             ),
 
             const SizedBox(height: 20),
@@ -272,18 +268,14 @@ class DashboardScreen extends ConsumerWidget {
                 fontSize: 15,
                 color: AppTheme.accentBlack,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 10),
-            trendAsync.when(
-              loading: () => const SizedBox(
-                height: 140,
-                child: Center(child: CircularProgressIndicator(color: AppTheme.primaryBlue)),
-              ),
-              error: (err, _) => Text(
-                'Gagal memuat tren: $err',
-                style: GoogleFonts.lexend(fontSize: 13),
-              ),
-              data: (trendPoints) => _buildTrendBars(trendPoints),
+            AsyncStateView<List<SalesTrendPoint>>(
+              value: trendAsync,
+              onRetry: () => ref.invalidate(salesTrendProvider),
+              dataBuilder: (trendPoints) => _TrendBars(points: trendPoints),
             ),
 
             const SizedBox(height: 20),
@@ -311,6 +303,8 @@ class DashboardScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -320,11 +314,16 @@ class DashboardScreen extends ConsumerWidget {
                             fontSize: 12,
                             height: 1.35,
                           ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
                 ],
+              ),
+            ),
+                ]),
               ),
             ),
           ],
@@ -333,13 +332,23 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildKpiGrid(AnalyticsOverviewModel kpi, bool isOwnerOrManager) {
+}
+
+/// Grid KPI dashboard — widget class top-level const (aturan E23).
+class _KpiGrid extends StatelessWidget {
+  final AnalyticsOverviewModel kpi;
+  final bool isOwnerOrManager;
+
+  const _KpiGrid({required this.kpi, required this.isOwnerOrManager});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _buildMetricCard(
+              child: _MetricCard(
                 title: 'Total Omset',
                 value: kpi.formattedRevenue,
                 icon: Icons.account_balance_wallet_outlined,
@@ -347,7 +356,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _buildMetricCard(
+              child: _MetricCard(
                 title: 'Total Transaksi',
                 value: '${kpi.transactionCount}',
                 icon: Icons.receipt_long_outlined,
@@ -359,7 +368,7 @@ class DashboardScreen extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _buildMetricCard(
+              child: _MetricCard(
                 title: 'Rata-rata Keranjang',
                 value: kpi.formattedAvgBasket,
                 icon: Icons.shopping_basket_outlined,
@@ -368,7 +377,7 @@ class DashboardScreen extends ConsumerWidget {
             if (isOwnerOrManager && kpi.grossProfitIdr != null) ...[
               const SizedBox(width: 10),
               Expanded(
-                child: _buildMetricCard(
+                child: _MetricCard(
                   title: 'Estimasi Margin (${kpi.grossMarginPct ?? 0}%)',
                   value: kpi.formattedGrossProfit,
                   icon: Icons.trending_up_rounded,
@@ -380,12 +389,22 @@ class DashboardScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
+/// Kartu metrik tunggal dashboard (aturan E23).
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
@@ -430,13 +449,23 @@ class DashboardScreen extends ConsumerWidget {
               color: AppTheme.accentBlack,
               letterSpacing: -0.2,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildTrendBars(List<SalesTrendPoint> points) {
+/// Bar chart tren 7 hari — widget class top-level (aturan E23).
+class _TrendBars extends StatelessWidget {
+  final List<SalesTrendPoint> points;
+
+  const _TrendBars({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
     if (points.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -449,6 +478,8 @@ class DashboardScreen extends ConsumerWidget {
           child: Text(
             'Belum ada data tren.',
             style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 13),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       );
@@ -468,27 +499,31 @@ class DashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: points.map<Widget>((p) {
           final ratio = maxRevenue > 0 ? (p.revenueIdr / maxRevenue).clamp(0.08, 1.0).toDouble() : 0.08;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 22,
-                height: 85.0 * ratio,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryBlue,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+          return Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 22,
+                  height: 85.0 * ratio,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primaryBlue,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                p.date.length >= 5 ? p.date.substring(5) : p.date,
-                style: GoogleFonts.lexend(
-                  fontSize: 11,
-                  color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 8),
+                Text(
+                  p.date.length >= 5 ? p.date.substring(5) : p.date,
+                  style: GoogleFonts.lexend(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         }).toList(),
       ),

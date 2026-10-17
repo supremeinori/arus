@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/app_widgets.dart';
+import '../domain/outlet_models.dart';
 import 'outlets_provider.dart';
 
 class OutletFormScreen extends ConsumerStatefulWidget {
@@ -22,7 +24,6 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
   final _lngController = TextEditingController();
   String _selectedTimezone = 'Asia/Jakarta';
   bool _isActive = true;
-  bool _isInit = false;
 
   final List<String> _timezones = [
     'Asia/Jakarta',
@@ -40,12 +41,26 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
     super.dispose();
   }
 
-  void _populateExisting() {
-    if (_isInit || widget.outletId == null) return;
-    _isInit = true;
+  @override
+  void initState() {
+    super.initState();
+    // Prefill edit dijadwalkan setelah frame pertama (aturan E26:
+    // tanpa side-effect sinkron di build). Data susulan ditangani
+    // ref.listen di build.
+    if (widget.outletId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(outletDetailProvider(widget.outletId!)).whenData(_fillForm);
+      });
+    }
+  }
 
-    final outletAsync = ref.read(outletDetailProvider(widget.outletId!));
-    outletAsync.whenData((outlet) {
+  bool _isInit = false;
+
+  void _fillForm(OutletModel outlet) {
+    if (_isInit || !mounted) return;
+    _isInit = true;
+    setState(() {
       _nameController.text = outlet.name;
       _addressController.text = outlet.address;
       _latController.text = outlet.latitude.toString();
@@ -102,6 +117,8 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             widget.outletId == null
                 ? 'Outlet baru berhasil ditambahkan.'
                 : 'Informasi outlet berhasil diperbarui.',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: Colors.green,
         ),
@@ -110,7 +127,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
       final err = ref.read(outletMutationProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan: $err'),
+          content: Text('Gagal menyimpan: $err', maxLines: 3, overflow: TextOverflow.ellipsis),
           backgroundColor: Colors.red,
         ),
       );
@@ -122,40 +139,42 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
     final isEditing = widget.outletId != null;
     final mutationState = ref.watch(outletMutationProvider);
 
-    if (isEditing && !_isInit) {
-      _populateExisting();
+    // Data yang tiba belakangan (FutureProvider) didengar di sini tanpa
+    // memutasi state sinkron di build (aturan E26): whenData + guard _isInit.
+    if (isEditing) {
+      ref.listen(outletDetailProvider(widget.outletId!), (prev, next) {
+        next.whenData(_fillForm);
+      });
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Informasi Cabang' : 'Tambah Cabang Baru'),
+        title: Text(
+          isEditing ? 'Edit Informasi Cabang' : 'Tambah Cabang Baru',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
+            AppTextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Cabang / Outlet *',
-                hintText: 'Misal: ARUS Surabaya Tunjungan',
-                border: OutlineInputBorder(),
-              ),
+              labelText: 'Nama Cabang / Outlet *',
+              hintText: 'Misal: ARUS Surabaya Tunjungan',
               validator: (val) {
                 if (val == null || val.trim().isEmpty) return 'Nama outlet wajib diisi';
                 return null;
               },
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            AppTextField(
               controller: _addressController,
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Alamat Lengkap *',
-                hintText: 'Jl. Pemuda No. 10, Surabaya',
-                border: OutlineInputBorder(),
-              ),
+              labelText: 'Alamat Lengkap *',
+              hintText: 'Jl. Pemuda No. 10, Surabaya',
               validator: (val) {
                 if (val == null || val.trim().isEmpty) return 'Alamat outlet wajib diisi';
                 return null;
@@ -165,14 +184,11 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
+                  child: AppTextField(
                     controller: _latController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Latitude *',
-                      hintText: '-7.2612',
-                      border: OutlineInputBorder(),
-                    ),
+                    labelText: 'Latitude *',
+                    hintText: '-7.2612',
                     validator: (val) {
                       if (val == null || double.tryParse(val) == null) {
                         return 'Latitude tidak valid';
@@ -183,14 +199,11 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextFormField(
+                  child: AppTextField(
                     controller: _lngController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Longitude *',
-                      hintText: '112.7388',
-                      border: OutlineInputBorder(),
-                    ),
+                    labelText: 'Longitude *',
+                    hintText: '112.7388',
                     validator: (val) {
                       if (val == null || double.tryParse(val) == null) {
                         return 'Longitude tidak valid';
@@ -205,6 +218,8 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             const Text(
               'Preset Koordinat Cepat:',
               style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 6),
             SingleChildScrollView(
@@ -234,24 +249,21 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedTimezone,
+            AppDropdown<String>(
+              value: _selectedTimezone,
               items: _timezones.map((tz) {
-                return DropdownMenuItem(value: tz, child: Text(tz));
+                return DropdownMenuItem(value: tz, child: Text(tz, maxLines: 1, overflow: TextOverflow.ellipsis));
               }).toList(),
               onChanged: (val) {
                 if (val != null) setState(() => _selectedTimezone = val);
               },
-              decoration: const InputDecoration(
-                labelText: 'Zona Waktu Cabang',
-                border: OutlineInputBorder(),
-              ),
+              labelText: 'Zona Waktu Cabang',
             ),
             if (isEditing) ...[
               const SizedBox(height: 16),
               SwitchListTile(
-                title: const Text('Status Operasional Aktif'),
-                subtitle: const Text('Cabang aktif dapat bertransaksi dan menerima pesanan kasir'),
+                title: const Text('Status Operasional Aktif', maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: const Text('Cabang aktif dapat bertransaksi dan menerima pesanan kasir', maxLines: 2, overflow: TextOverflow.ellipsis),
                 value: _isActive,
                 onChanged: (val) => setState(() => _isActive = val),
               ),
@@ -271,7 +283,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                       height: 20,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : Text(isEditing ? 'Simpan Perubahan' : 'Buat Cabang'),
+                  : Text(isEditing ? 'Simpan Perubahan' : 'Buat Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),

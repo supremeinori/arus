@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../core/sync/sync_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/catalog_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import 'pos_provider.dart';
@@ -99,7 +99,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final productsAsync = ref.watch(posCatalogProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final cartState = ref.watch(posCartProvider);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
@@ -150,11 +149,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             tooltip: 'Tambah Produk Baru',
             onPressed: () => context.push('/catalog/new'),
           ),
-          if (cartState.items.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_sweep_outlined, color: AppTheme.accentBlack),
+          IconButton(
+            // SELALU di-layout (tanpa guard `if items.isNotEmpty`): tombol
+            // yang disisipkan kondisional di frame yang sama dengan tap
+            // pertama memicu "Cannot hit test a render box with no size"
+            // (RenderConstrainedBox NEEDS-LAYOUT di bawah OutlinedButton).
+            // Saat kosong, tombol dinonaktifkan (onPressed null).
+              icon: Icon(
+                Icons.delete_sweep_outlined,
+                color: cartState.items.isEmpty
+                    ? AppTheme.textMuted.withValues(alpha: 0.4)
+                    : AppTheme.accentBlack,
+              ),
               tooltip: 'Kosongkan Keranjang',
-              onPressed: () => ref.read(posCartProvider.notifier).clearCart(),
+              onPressed: cartState.items.isEmpty
+                  ? null
+                  : () => ref.read(posCartProvider.notifier).clearCart(),
             ),
         ],
       ),
@@ -425,6 +435,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       const SizedBox(height: 3),
                                       Text(
                                         product.categoryName ?? 'Umum',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.lexend(
                                           fontSize: 11,
                                           color: AppTheme.textMuted,
@@ -456,6 +468,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                     : (inCartQty > 0
                                         ? 'Sisa: $remainingPortions / $maxPortions porsi'
                                         : 'Estimasi: $maxPortions Porsi'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.lexend(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -466,14 +480,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
                             const Spacer(),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
+                                Expanded(
+                                  child: Text(
                                   product.formattedPrice,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.lexend(
                                     fontWeight: FontWeight.w700,
                                     color: isOutOfStock ? AppTheme.textMuted : AppTheme.primaryBlue,
                                     fontSize: 13,
+                                  ),
                                   ),
                                 ),
                                 Container(
@@ -504,12 +521,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             ),
           ),
 
-          // Bottom Bar Keranjang Belanja — SELALU di-layout (walaupun kosong)
-          // agar tidak ada tombol yang disisipkan mendadak di frame yang sama
-          // dengan tap pertama. Sisipan kondisional (`if items.isNotEmpty`)
-          // membuat OutlinedButton "Keranjang" belum selesai layout saat
-          // MouseTracker desktop me-hit-test posisi mouse yang masih hover di
-          // kartu -> "Cannot hit test a render box with no size"
+          // Bottom Bar Keranjang Belanja — SELALU di-layout (aturan anti
+          // hit-test crash + D18: layout HP, tanpa split-view 380dp).
+          // Sisipan kondisional membuat OutlinedButton belum selesai layout
+          // saat MouseTracker desktop hit-test posisi mouse yang masih hover
+          // di kartu -> "Cannot hit test a render box with no size"
           // (RenderConstrainedBox NEEDS-LAYOUT di bawah OutlinedButton <- Row
           // <- MediaQuery <- Padding <- SafeArea <- ... <- Column).
           // Saat kosong, tombol dinonaktifkan (onPressed null) alih-alih
@@ -525,34 +541,40 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             child: SafeArea(
               child: Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        cartState.items.isEmpty
-                            ? 'Ketuk menu untuk menambah'
-                            : '${cartState.totalItemsCount} Item Terpilih',
-                        style: GoogleFonts.lexend(
-                          fontSize: 11.5,
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
+                  // Kolom total dibungkus Expanded (aturan B8) agar tidak
+                  // overflow di layar 360dp saat teks total panjang.
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          cartState.items.isEmpty
+                              ? 'Ketuk menu untuk menambah'
+                              : '${cartState.totalItemsCount} Item Terpilih',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.lexend(
+                            fontSize: 11.5,
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      Text(
-                        currencyFormatter.format(cartState.totalIdr),
-                        style: GoogleFonts.lexend(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: cartState.items.isEmpty
-                              ? const Color(0xFF94A3B8)
-                              : AppTheme.accentBlack,
+                        MoneyText(
+                          cartState.totalIdr,
+                          style: GoogleFonts.lexend(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: cartState.items.isEmpty
+                                ? const Color(0xFF94A3B8)
+                                : AppTheme.accentBlack,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const Spacer(),
-                  OutlinedButton.icon(
+                  Flexible(
+                    child: OutlinedButton.icon(
                     onPressed: cartState.items.isEmpty
                         ? null
                         : () {
@@ -564,13 +586,18 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             );
                           },
                     icon: const Icon(Icons.shopping_cart_outlined, size: 18),
-                    label: const Text('Keranjang'),
+                    label: const Text(
+                      'Keranjang',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.primaryBlue,
                       side: const BorderSide(color: AppTheme.primaryBlue),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                    ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -579,22 +606,24 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         cartState.items.isEmpty ? null : _showCheckoutSheet,
                     icon: const Icon(Icons.arrow_forward_rounded,
                         color: Colors.white, size: 18),
-                    label: Text(
+                    label: const Text(
                       'Checkout',
-                      style: GoogleFonts.lexend(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryBlue,
+                      foregroundColor: Colors.white,
                       elevation: 0,
-                      minimumSize: const Size(130, 44),
+                      minimumSize: const Size(0, 44),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10),
+                          horizontal: 14, vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
                       ),
                     ),
                   ),

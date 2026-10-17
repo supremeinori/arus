@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/app_widgets.dart';
 import '../domain/pos_models.dart';
+
+/// Format tanggal struk — top-level agar tidak diinstansiasi ulang tiap build
+/// (aturan E21).
+final _receiptDateFmt = DateFormat('dd MMM yyyy, HH:mm');
 
 class PosReceiptDialog extends StatelessWidget {
   final PosTransactionModel transaction;
@@ -11,29 +17,38 @@ class PosReceiptDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    final dateFormatter = DateFormat('dd MMM yyyy, HH:mm');
-
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
       ),
-      title: Row(
-        children: [
-          const Icon(Icons.check_circle_rounded, color: AppTheme.primaryBlue, size: 22),
-          const SizedBox(width: 8),
-          Text(
-            'Transaksi Berhasil!',
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
-          ),
-        ],
-      ),
-      content: SingleChildScrollView(
+      // Batasi lebar dialog HP + tablet (aturan C15).
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                const Icon(Icons.check_circle_rounded,
+                    color: AppTheme.primaryBlue, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Transaksi Berhasil!',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: AppTheme.accentBlack),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Center(
               child: Column(
                 children: [
@@ -44,15 +59,20 @@ class PosReceiptDialog extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     transaction.outletName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'No: ${transaction.receiptNo}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.accentBlack),
                   ),
                   Text(
-                    dateFormatter.format(transaction.createdAt),
+                    _receiptDateFmt.format(transaction.createdAt),
                     style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
                   ),
                   const SizedBox(height: 6),
@@ -69,9 +89,13 @@ class PosReceiptDialog extends StatelessWidget {
                         children: [
                           Icon(Icons.cloud_off_rounded, size: 14, color: Colors.amber.shade800),
                           const SizedBox(width: 4),
-                          Text(
+                          Flexible(
+                            child: Text(
                             'OFFLINE (Tersimpan di SQLite Lokal)',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.lexend(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.amber.shade900),
+                            ),
                           ),
                         ],
                       ),
@@ -89,9 +113,13 @@ class PosReceiptDialog extends StatelessWidget {
                         children: [
                           Icon(Icons.cloud_done_rounded, size: 14, color: Colors.green.shade700),
                           const SizedBox(width: 4),
-                          Text(
+                          Flexible(
+                            child: Text(
                             'ONLINE (Tersinkronkan ke Supabase)',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.lexend(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade800),
+                            ),
                           ),
                         ],
                       ),
@@ -106,16 +134,17 @@ class PosReceiptDialog extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: Text(
                         '${item.productName} x${item.quantity}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.accentBlack),
                       ),
                     ),
-                    Text(
-                      currencyFormatter.format(item.lineTotalIdr),
+                    const SizedBox(width: 8),
+                    MoneyText(item.lineTotalIdr,
                       style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentBlack),
                     ),
                   ],
@@ -128,8 +157,7 @@ class PosReceiptDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF64748B))),
-                Text(
-                  currencyFormatter.format(transaction.subtotalIdr),
+                MoneyText(transaction.subtotalIdr,
                   style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.accentBlack),
                 ),
               ],
@@ -141,7 +169,9 @@ class PosReceiptDialog extends StatelessWidget {
                 children: [
                   Text('Diskon', style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFFDC2626))),
                   Text(
-                    '- ${currencyFormatter.format(transaction.discountIdr)}',
+                    '- ${MoneyFormatter.format(transaction.discountIdr)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
                   ),
                 ],
@@ -155,8 +185,7 @@ class PosReceiptDialog extends StatelessWidget {
                   'Total',
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.accentBlack),
                 ),
-                Text(
-                  transaction.formattedTotal,
+                MoneyText(transaction.totalIdr,
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.primaryBlue),
                 ),
               ],
@@ -165,12 +194,15 @@ class PosReceiptDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                Flexible(
+                  child: Text(
                   'Metode (${transaction.paymentMethod.toUpperCase()})',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
+                  ),
                 ),
-                Text(
-                  currencyFormatter.format(transaction.paidIdr),
+                MoneyText(transaction.paidIdr,
                   style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.accentBlack),
                 ),
               ],
@@ -183,8 +215,7 @@ class PosReceiptDialog extends StatelessWidget {
                   'Kembalian',
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
                 ),
-                Text(
-                  currencyFormatter.format(transaction.changeIdr),
+                MoneyText(transaction.changeIdr,
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.accentBlack),
                 ),
               ],
@@ -193,25 +224,19 @@ class PosReceiptDialog extends StatelessWidget {
             Center(
               child: Text(
                 'Kasir: ${transaction.cashierName}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
               ),
             ),
           ],
         ),
+        ),
       ),
       actions: [
-        ElevatedButton(
+        PrimaryButton(
+          label: 'Selesai / Transaksi Baru',
           onPressed: () => Navigator.of(context).pop(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryBlue,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          child: Text(
-            'Selesai / Transaksi Baru',
-            style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
-          ),
         ),
       ],
     );

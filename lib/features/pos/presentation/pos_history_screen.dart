@@ -3,11 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/app_widgets.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../domain/pos_models.dart';
 import 'pos_catalog_provider.dart';
+
+/// Format jam struk riwayat — top-level, bukan di build (aturan E21).
+final _historyTimeFmt = DateFormat('HH:mm');
 
 /// Tab/halaman "Riwayat Transaksi Hari Ini": daftar struk outlet aktif +
 /// tombol Void (input alasan) → POST /api/pos/void.
@@ -33,15 +40,17 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Void ${tx.receiptNo}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15)),
-        content: TextField(
+        // Batasi lebar dialog + field standar (aturan C15).
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: AppTextField(
           controller: reasonCtrl,
-          autofocus: true,
+          labelText: 'Alasan void *',
+          hintText: 'Contoh: salah input menu',
           maxLines: 2,
-          decoration: const InputDecoration(
-            labelText: 'Alasan void *',
-            hintText: 'Contoh: salah input menu',
-            border: OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -90,14 +99,12 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final history = ref.watch(posHistoryProvider);
-    final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    final timeFmt = DateFormat('HH:mm');
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
         title: Text('Riwayat Transaksi Hari Ini',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16)),
         actions: [
           IconButton(
@@ -107,14 +114,15 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
           ),
         ],
       ),
-      body: history.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Gagal memuat riwayat: $e')),
-        data: (list) {
+      // Satu .when() terpusat via AsyncStateView (aturan E24).
+      body: AsyncStateView<List<PosTransactionModel>>(
+        value: ref.watch(posHistoryProvider),
+        onRetry: () => ref.invalidate(posHistoryProvider),
+        dataBuilder: (list) {
           if (list.isEmpty) {
-            return Center(
-              child: Text('Belum ada transaksi hari ini.',
-                  style: GoogleFonts.lexend(color: AppTheme.textMuted)),
+            return const EmptyStateView(
+              message: 'Belum ada transaksi hari ini.',
+              icon: Icons.receipt_long_outlined,
             );
           }
           return ListView.separated(
@@ -123,73 +131,106 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
             separatorBuilder: (context, index) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
               final tx = list[i];
-              final voided = tx.status == 'voided';
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: voided ? const Color(0xFFF8FAFC) : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.borderOutline),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(tx.receiptNo,
-                            style: GoogleFonts.lexend(
-                                fontWeight: FontWeight.w700, fontSize: 13)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: voided
-                                ? const Color(0xFFFEE2E2)
-                                : const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            voided ? 'VOID' : '${timeFmt.format(tx.createdAt)} • ${tx.status}',
-                            style: GoogleFonts.lexend(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: voided
-                                    ? AppTheme.dangerRed
-                                    : Colors.green.shade800),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${fmt.format(tx.totalIdr)}',
-                      style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
-                    ),
-                    if (!voided && _canVoid) ...[
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: OutlinedButton.icon(
-                          onPressed: _voiding ? null : () => _askVoidReason(tx),
-                          icon: const Icon(Icons.undo_rounded,
-                              size: 16, color: AppTheme.dangerRed),
-                          label: Text('Void',
-                              style: GoogleFonts.lexend(
-                                  fontSize: 12, color: AppTheme.dangerRed)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppTheme.dangerRed),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+              return _HistoryCard(
+                tx: tx,
+                canVoid: _canVoid,
+                voiding: _voiding,
+                onVoid: () => _askVoidReason(tx),
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// Kartu satu struk riwayat — widget const agar build ringan (aturan E23).
+class _HistoryCard extends StatelessWidget {
+  final PosTransactionModel tx;
+  final bool canVoid;
+  final bool voiding;
+  final VoidCallback onVoid;
+
+  const _HistoryCard({
+    required this.tx,
+    required this.canVoid,
+    required this.voiding,
+    required this.onVoid,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final voided = tx.status == 'voided';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: voided ? const Color(0xFFF8FAFC) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.borderOutline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(tx.receiptNo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                        fontWeight: FontWeight.w700, fontSize: 13)),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: voided
+                      ? const Color(0xFFFEE2E2)
+                      : const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  voided ? 'VOID' : '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.lexend(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: voided
+                          ? AppTheme.dangerRed
+                          : Colors.green.shade800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${MoneyFormatter.format(tx.totalIdr)}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+          ),
+          if (!voided && canVoid) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: voiding ? null : onVoid,
+                icon: const Icon(Icons.undo_rounded,
+                    size: 16, color: AppTheme.dangerRed),
+                label: Text('Void',
+                    style: GoogleFonts.lexend(
+                        fontSize: 12, color: AppTheme.dangerRed)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppTheme.dangerRed),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

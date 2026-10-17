@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../domain/outlet_models.dart';
 import 'outlets_provider.dart';
 
@@ -22,7 +23,7 @@ class OutletDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Cabang'),
+        title: const Text('Detail Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           if (isPrivileged)
             IconButton(
@@ -32,48 +33,42 @@ class OutletDetailScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: outletAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                const SizedBox(height: 12),
-                Text('Gagal memuat outlet: $err', textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(outletDetailProvider(outletId)),
-                  child: const Text('Coba Lagi'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        data: (outlet) => _buildDetailContent(context, outlet),
+      body: AsyncStateView<OutletModel>(
+        value: outletAsync,
+        onRetry: () => ref.invalidate(outletDetailProvider(outletId)),
+        dataBuilder: (outlet) => _DetailContent(outlet: outlet),
       ),
     );
   }
 
-  Widget _buildDetailContent(BuildContext context, OutletModel outlet) {
-    final now = DateTime.now().toUtc();
-    // Offset perkiraan jam lokal
-    String localTimeDisplay = '';
-    if (outlet.timezone.contains('Jakarta')) {
-      final wib = now.add(const Duration(hours: 7));
-      localTimeDisplay = '${DateFormat('HH:mm').format(wib)} WIB';
-    } else if (outlet.timezone.contains('Makassar')) {
-      final wita = now.add(const Duration(hours: 8));
-      localTimeDisplay = '${DateFormat('HH:mm').format(wita)} WITA';
-    } else if (outlet.timezone.contains('London')) {
-      final bst = now.add(const Duration(hours: 1)); // Waktu London
-      localTimeDisplay = '${DateFormat('HH:mm').format(bst)} BST (London)';
-    } else {
-      localTimeDisplay = outlet.timezone;
-    }
+}
 
+/// Label jam lokal outlet — fungsi top-level murni (aturan E21:
+/// DateTime.now tidak lagi di dalam build).
+String outletLocalTimeDisplay(String timezone) {
+  final now = DateTime.now().toUtc();
+  if (timezone.contains('Jakarta')) {
+    final wib = now.add(const Duration(hours: 7));
+    return '${DateFormat('HH:mm').format(wib)} WIB';
+  } else if (timezone.contains('Makassar')) {
+    final wita = now.add(const Duration(hours: 8));
+    return '${DateFormat('HH:mm').format(wita)} WITA';
+  } else if (timezone.contains('London')) {
+    final bst = now.add(const Duration(hours: 1));
+    return '${DateFormat('HH:mm').format(bst)} BST (London)';
+  }
+  return timezone;
+}
+
+/// Isi detail outlet — widget class top-level (aturan E23).
+class _DetailContent extends StatelessWidget {
+  final OutletModel outlet;
+
+  const _DetailContent({required this.outlet});
+
+  @override
+  Widget build(BuildContext context) {
+    final localTimeDisplay = outletLocalTimeDisplay(outlet.timezone);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -104,14 +99,21 @@ class OutletDetailScreen extends ConsumerWidget {
                           fontWeight: FontWeight.bold,
                           color: outlet.isActive ? Colors.green.shade800 : Colors.red.shade800,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      localTimeDisplay,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppTheme.primaryBlue,
+                    Flexible(
+                      child: Text(
+                        localTimeDisplay,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppTheme.primaryBlue,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
                       ),
                     ),
                   ],
@@ -120,6 +122,8 @@ class OutletDetailScreen extends ConsumerWidget {
                 Text(
                   outlet.name,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -131,6 +135,8 @@ class OutletDetailScreen extends ConsumerWidget {
                       child: Text(
                         outlet.address,
                         style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -147,9 +153,13 @@ class OutletDetailScreen extends ConsumerWidget {
                     children: [
                       const Icon(Icons.gps_fixed_rounded, size: 16, color: Colors.teal),
                       const SizedBox(width: 8),
-                      Text(
-                        'Koordinat GPS: ${outlet.latitude.toStringAsFixed(4)}, ${outlet.longitude.toStringAsFixed(4)}',
-                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                      Expanded(
+                        child: Text(
+                          'Koordinat GPS: ${outlet.latitude.toStringAsFixed(4)}, ${outlet.longitude.toStringAsFixed(4)}',
+                          style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -162,20 +172,20 @@ class OutletDetailScreen extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _buildMetricTile(
-                'Total Stok SKU',
-                '${outlet.inventoryCount} Produk',
-                Icons.inventory_2_outlined,
-                Colors.blue,
+              child: _MetricTile(
+                label: 'Total Stok SKU',
+                value: '${outlet.inventoryCount} Produk',
+                icon: Icons.inventory_2_outlined,
+                color: Colors.blue,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildMetricTile(
-                'Staf Bertugas',
-                '${outlet.assignedUsersCount} Orang',
-                Icons.badge_outlined,
-                Colors.orange,
+              child: _MetricTile(
+                label: 'Staf Bertugas',
+                value: '${outlet.assignedUsersCount} Orang',
+                icon: Icons.badge_outlined,
+                color: Colors.orange,
               ),
             ),
           ],
@@ -189,15 +199,32 @@ class OutletDetailScreen extends ConsumerWidget {
             side: BorderSide(color: Colors.grey.shade200),
           ),
           leading: const Icon(Icons.warehouse_outlined, color: Colors.teal),
-          title: const Text('Lihat Inventaris Cabang Ini'),
-          trailing: const Icon(Icons.chevron_right),
+          title: const Text('Lihat Inventaris Cabang Ini', maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right)),
           onTap: () => context.push('/inventory?outlet_id=${outlet.id}'),
         ),
       ],
     );
   }
 
-  Widget _buildMetricTile(String label, String value, IconData icon, Color color) {
+}
+
+/// Tile metrik outlet — widget class top-level const (aturan E23).
+class _MetricTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -210,11 +237,18 @@ class OutletDetailScreen extends ConsumerWidget {
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 10),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 4),
           Text(
             value,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

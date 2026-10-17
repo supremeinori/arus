@@ -31,6 +31,9 @@ class AsyncStateView<T> extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               loadingMessage ?? StringsId.loading,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             ),
           ],
@@ -59,6 +62,8 @@ class AsyncStateView<T> extends StatelessWidget {
                     Text(
                       message,
                       textAlign: TextAlign.center,
+                      maxLines: 5,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -68,6 +73,8 @@ class AsyncStateView<T> extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Kode: $code',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 12, color: Colors.red.shade400),
                     ),
                     if (onRetry != null) ...[

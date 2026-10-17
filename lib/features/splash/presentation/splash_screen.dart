@@ -280,6 +280,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Status: ${health.status.toUpperCase()} • DB: ${health.db} • v${health.version}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade700,
@@ -288,6 +290,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Waktu Server: ${health.time}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey.shade500,

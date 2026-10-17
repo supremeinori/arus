@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../analytics/domain/analytics_models.dart';
 import 'analytics_provider.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
@@ -12,7 +15,6 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final overviewAsync = ref.watch(analyticsOverviewProvider);
     final peakHoursAsync = ref.watch(peakHoursProvider);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
@@ -20,6 +22,8 @@ class AnalyticsScreen extends ConsumerWidget {
         title: Text(
           'Analitik Performa',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
@@ -38,62 +42,17 @@ class AnalyticsScreen extends ConsumerWidget {
           ref.invalidate(analyticsOverviewProvider);
           ref.invalidate(peakHoursProvider);
         },
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
             // Overview Box
-            overviewAsync.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(color: AppTheme.primaryBlue),
-                ),
-              ),
-              error: (e, _) => Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
-                ),
-                child: Text('Error: $e', style: GoogleFonts.lexend(color: const Color(0xFFDC2626))),
-              ),
-              data: (kpi) => Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppTheme.borderOutline, width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Pendapatan Terakumulasi',
-                      style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      kpi.formattedRevenue,
-                      style: GoogleFonts.lexend(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 24,
-                        color: AppTheme.accentBlack,
-                      ),
-                    ),
-                    const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildMiniStat('Transaksi', '${kpi.transactionCount} kali'),
-                        _buildMiniStat('Rata-rata Order', kpi.formattedAvgBasket),
-                        if (kpi.grossMarginPct != null)
-                          _buildMiniStat('Margin Kotor', '${kpi.grossMarginPct}%'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            AsyncStateView<AnalyticsOverviewModel>(
+              value: overviewAsync,
+              onRetry: () => ref.invalidate(analyticsOverviewProvider),
+              dataBuilder: (kpi) => _OverviewCard(kpi: kpi),
             ),
 
             const SizedBox(height: 24),
@@ -106,121 +65,206 @@ class AnalyticsScreen extends ConsumerWidget {
                 fontSize: 15,
                 color: AppTheme.accentBlack,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               'Gunakan data ini untuk penyesuaian jadwal kasir & persiapan persediaan bahan.',
               style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
 
-            peakHoursAsync.when(
-              loading: () => const Center(
-                child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppTheme.primaryBlue)),
+            AsyncStateView<List<PeakHourPoint>>(
+              value: peakHoursAsync,
+              onRetry: () => ref.invalidate(peakHoursProvider),
+              dataBuilder: (hours) => _PeakHoursList(hours: hours),
+            ),
+                ]),
               ),
-              error: (e, _) => Text('Error: $e', style: GoogleFonts.lexend()),
-              data: (hours) {
-                final busiestHours = hours.where((h) => h.transactionCount > 0).toList()
-                  ..sort((a, b) => b.transactionCount.compareTo(a.transactionCount));
-
-                if (busiestHours.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppTheme.borderOutline, width: 1.5),
-                    ),
-                    child: Text(
-                      'Belum ada data transaksi yang tercatat.',
-                      style: GoogleFonts.lexend(color: const Color(0xFF64748B)),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: busiestHours.take(6).map((h) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppTheme.borderOutline, width: 1.5),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
-                            ),
-                            child: Center(
-                              child: Text(
-                                h.label.split(':')[0],
-                                style: GoogleFonts.lexend(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppTheme.primaryBlue,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Pukul ${h.label}',
-                                  style: GoogleFonts.lexend(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                    color: AppTheme.accentBlack,
-                                  ),
-                                ),
-                                Text(
-                                  '${h.transactionCount} transaksi selesai',
-                                  style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            currencyFormatter.format(h.totalRevenueIdr),
-                            style: GoogleFonts.lexend(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.primaryBlue,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildMiniStat(String label, String value) {
+/// Kartu ringkasan analitik — widget class top-level (aturan E23).
+class _OverviewCard extends StatelessWidget {
+  final AnalyticsOverviewModel kpi;
+
+  const _OverviewCard({required this.kpi});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Total Pendapatan Terakumulasi',
+            style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            kpi.formattedRevenue,
+            style: GoogleFonts.lexend(
+              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              color: AppTheme.accentBlack,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
+          Row(
+            children: [
+              Expanded(child: _MiniStat(label: 'Transaksi', value: '${kpi.transactionCount} kali')),
+              Expanded(child: _MiniStat(label: 'Rata-rata Order', value: kpi.formattedAvgBasket)),
+              if (kpi.grossMarginPct != null)
+                Expanded(child: _MiniStat(label: 'Margin Kotor', value: '${kpi.grossMarginPct}%')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Stat mini — widget class top-level const (aturan E23, B7 Expanded di call-site).
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MiniStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B))),
+        Text(
+          label,
+          style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 2),
         Text(
           value,
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+}
+
+/// Daftar jam ramai — widget class top-level (aturan E23, empty via EmptyStateView).
+class _PeakHoursList extends StatelessWidget {
+  final List<PeakHourPoint> hours;
+
+  const _PeakHoursList({required this.hours});
+
+  @override
+  Widget build(BuildContext context) {
+    final busiestHours = hours.where((h) => h.transactionCount > 0).toList()
+      ..sort((a, b) => b.transactionCount.compareTo(a.transactionCount));
+
+    if (busiestHours.isEmpty) {
+      return const EmptyStateView(
+        message: 'Belum ada data transaksi yang tercatat.',
+        icon: Icons.bar_chart_outlined,
+      );
+    }
+
+    // List kecil dan tetap (maks 6 item) — render inline tanpa scroll bersarang (aturan A4).
+    return Column(
+      children: busiestHours.take(6).map((h) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
+                ),
+                child: Center(
+                  child: Text(
+                    h.label.split(':')[0],
+                    style: GoogleFonts.lexend(
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primaryBlue,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pukul ${h.label}',
+                      style: GoogleFonts.lexend(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppTheme.accentBlack,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '${h.transactionCount} transaksi selesai',
+                      style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  MoneyFormatter.format(h.totalRevenueIdr),
+                  style: GoogleFonts.lexend(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primaryBlue,
+                    fontSize: 13.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

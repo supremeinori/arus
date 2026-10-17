@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// Format tanggal feedback — fungsi top-level murni (aturan E21:
+/// DateTime.now tidak menentukan struktur di dalam build; dipakai di handler).
+String formatFeedbackDateTime(DateTime now) {
+  return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+}
 
 class FeedbackScreen extends ConsumerStatefulWidget {
   const FeedbackScreen({super.key});
@@ -78,6 +84,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           content: Text(
             'Harap lengkapi kolom Kesan dan Saran.',
             style: GoogleFonts.lexend(fontSize: 13),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: const Color(0xFFDC2626),
         ),
@@ -87,9 +95,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
     setState(() => _isSending = true);
 
-    final now = DateTime.now();
-    final dateStr =
-        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final dateStr = formatFeedbackDateTime(DateTime.now());
 
     // 1. Simpan ke database online via REST API backend (Phase 1)
     bool sentToBackend = false;
@@ -128,6 +134,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 ? 'Terima kasih! Kesan & saran PAM berhasil tersimpan di database online & lokal.'
                 : 'Tersimpan di penyimpanan lokal perangkat (akan disinkronkan saat online).',
             style: GoogleFonts.lexend(fontSize: 13),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: const Color(0xFF16A34A),
           behavior: SnackBarBehavior.floating,
@@ -144,6 +152,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
         title: Text(
           'Saran & Kesan Kuliah PAM',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       body: ListView(
@@ -177,11 +187,15 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                       Text(
                         'Praktikum Aplikasi Mobile (PAM)',
                         style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir (Phase 1)',
                         style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (_savedAt != null) ...[
                         const SizedBox(height: 8),
@@ -195,6 +209,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                           child: Text(
                             'Status: $_savedAt',
                             style: GoogleFonts.lexend(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF16A34A)),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -215,11 +231,15 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               fontWeight: FontWeight.w700,
               color: AppTheme.accentBlack,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 3),
           Text(
             'Bagaimana pengalaman Anda selama mengikuti perkuliahan dan praktikum PAM semester ini?',
             style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           TextField(
@@ -256,11 +276,15 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               fontWeight: FontWeight.w700,
               color: AppTheme.accentBlack,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 3),
           Text(
             'Apa saran Anda untuk perbaikan metode mengajar, tugas, atau praktikum ke depan?',
             style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           TextField(
@@ -309,9 +333,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     children: [
                       const Icon(Icons.send_rounded, color: Colors.white, size: 18),
                       const SizedBox(width: 8),
-                      Text(
-                        'Simpan & Kirim Masukan',
-                        style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                      Flexible(
+                        child: Text(
+                          'Simpan & Kirim Masukan',
+                          style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

@@ -79,8 +79,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ),
 
           // Horizontal Category Filter Chips
-          categoriesState.when(
-            data: (categories) => SizedBox(
+          // E24: render lewat AsyncStateView; loading/error tampil sebagai strip
+          // setinggi chips agar tidak menggeser layout (tanpa mengubah teks).
+          AsyncStateView(
+            value: categoriesState,
+            dataBuilder: (categories) => SizedBox(
               height: 48,
               child: ListView(
                 scrollDirection: Axis.horizontal,
@@ -108,7 +111,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     (cat) => Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: FilterChip(
-                        label: Text(cat.name),
+                        label: Text(
+                          cat.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         selected: selectedCategory == cat.id,
                         selectedColor: AppTheme.primaryBlue,
                         backgroundColor: Colors.white,
@@ -128,8 +135,6 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 ],
               ),
             ),
-            loading: () => const SizedBox(height: 48),
-            error: (_, _) => const SizedBox(height: 48),
           ),
           const Divider(height: 1),
 
@@ -213,6 +218,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                     children: [
                                       Text(
                                         prod.name,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
@@ -232,6 +239,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                             ),
                                             child: Text(
                                               prod.sku,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontFamily: 'monospace',
@@ -241,11 +250,15 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                           ),
                                           if (prod.categoryName != null) ...[
                                             const SizedBox(width: 6),
-                                            Text(
-                                              '• ${prod.categoryName}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
+                                            Expanded(
+                                              child: Text(
+                                                '• ${prod.categoryName}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -257,12 +270,16 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(
-                                            prod.formattedPrice,
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppTheme.primaryBlue,
+                                          Expanded(
+                                            child: Text(
+                                              prod.formattedPrice,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppTheme.primaryBlue,
+                                              ),
                                             ),
                                           ),
                                           if (canManage && prod.formattedCost != null)
@@ -280,6 +297,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               ),
                                               child: Text(
                                                 'HPP: ${prod.formattedCost}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
                                                   fontSize: 11,
                                                   color: Colors.amber.shade900,

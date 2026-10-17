@@ -13,6 +13,8 @@ class AboutScreen extends StatelessWidget {
         title: Text(
           'Tentang Aplikasi ARUS',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       body: ListView(
@@ -47,11 +49,17 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'ARUS Business DSS & POS',
                   style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.accentBlack),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Versi 1.0.0 (Final Enterprise Baseline)',
                   style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -72,6 +80,8 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'Deskripsi Sistem',
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -97,13 +107,15 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'Teknologi yang Digunakan',
                   style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
-                _buildTechRow('Frontend', 'Flutter 3.x, Riverpod 2.x, go_router, Google Fonts (Lexend)'),
-                _buildTechRow('Backend', 'Node.js, Express, TypeScript, Prisma ORM, Argon2, Pino'),
-                _buildTechRow('Database', 'PostgreSQL 15+ dengan in-memory fallback offline'),
-                _buildTechRow('Keamanan', 'SHA-256 Tamper-evident Ledger, JWT Access & Rotating Refresh'),
-                _buildTechRow('Decision Support', 'AI Assistant (Gemini/LLM) + Rule Engine (8 Rules)'),
+                const _TechRow(label: 'Frontend', value: 'Flutter 3.x, Riverpod 2.x, go_router, Google Fonts (Lexend)'),
+                const _TechRow(label: 'Backend', value: 'Node.js, Express, TypeScript, Prisma ORM, Argon2, Pino'),
+                const _TechRow(label: 'Database', value: 'PostgreSQL 15+ dengan in-memory fallback offline'),
+                const _TechRow(label: 'Keamanan', value: 'SHA-256 Tamper-evident Ledger, JWT Access & Rotating Refresh'),
+                const _TechRow(label: 'Decision Support', value: 'AI Assistant (Gemini/LLM) + Rule Engine (8 Rules)'),
               ],
             ),
           ),
@@ -113,6 +125,9 @@ class AboutScreen extends StatelessWidget {
             child: Text(
               '© 2026 ARUS System • Hak Cipta Dilindungi',
               style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF94A3B8)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -120,7 +135,17 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTechRow(String label, String value) {
+}
+
+/// Baris teknologi — widget class top-level const (aturan E23).
+class _TechRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TechRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -131,6 +156,8 @@ class AboutScreen extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(

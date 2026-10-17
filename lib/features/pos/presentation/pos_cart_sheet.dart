@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/app_widgets.dart';
 import 'pos_provider.dart';
 
 /// Bottom sheet detail keranjang: daftar baris + tombol +, -, hapus per baris,
 /// kalkulasi Subtotal, Diskon, Total live.
+///
+/// Catatan: format rupiah memakai [MoneyFormatter]/[MoneyText] (aturan E21 —
+/// jangan instansiasi NumberFormat di build).
 class PosCartSheet extends ConsumerWidget {
   const PosCartSheet({super.key});
 
@@ -14,7 +18,6 @@ class PosCartSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(posCartProvider);
     final notifier = ref.read(posCartProvider.notifier);
-    final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     return Container(
       padding: EdgeInsets.only(
@@ -64,9 +67,13 @@ class PosCartSheet extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(item.productName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.lexend(
                                     fontWeight: FontWeight.w600, fontSize: 13)),
-                            Text(fmt.format(item.unitPriceIdr),
+                            Text(MoneyFormatter.format(item.unitPriceIdr),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.lexend(
                                     fontSize: 11.5, color: AppTheme.textMuted)),
                           ],
@@ -94,7 +101,9 @@ class PosCartSheet extends ConsumerWidget {
                       ),
                       SizedBox(
                         width: 84,
-                        child: Text(fmt.format(item.lineTotalIdr),
+                        child: Text(MoneyFormatter.format(item.lineTotalIdr),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
                             style: GoogleFonts.lexend(
                                 fontWeight: FontWeight.w700, fontSize: 13)),
@@ -107,20 +116,20 @@ class PosCartSheet extends ConsumerWidget {
           const Divider(),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13)),
-            Text(fmt.format(cart.subtotalIdr),
+            MoneyText(cart.subtotalIdr,
                 style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13)),
           ]),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('Diskon', style: GoogleFonts.lexend(fontSize: 13)),
-            Text('- ${fmt.format(cart.discountIdr)}',
+            Text('- ${MoneyFormatter.format(cart.discountIdr)}',
                 style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFFDC2626))),
           ]),
           const SizedBox(height: 6),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('Total Tagihan',
                 style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15)),
-            Text(fmt.format(cart.totalIdr),
+            MoneyText(cart.totalIdr,
                 style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w800,
                     fontSize: 18,

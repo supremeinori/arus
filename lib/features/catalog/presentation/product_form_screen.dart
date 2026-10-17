@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/async_state_view.dart';
 import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../data/catalog_repository.dart';
@@ -193,76 +194,122 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
     if (isEditing) {
       final productAsync = ref.watch(productDetailProvider(widget.productId!));
-      return productAsync.when(
-        loading: () => Scaffold(
-          backgroundColor: AppTheme.backgroundWhite,
-          appBar: AppBar(
-            title: Text(
-              'Edit Menu / Produk',
-              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
-            ),
-          ),
-          body: const Center(child: CircularProgressIndicator()),
-        ),
-        error: (err, stack) => Scaffold(
-          backgroundColor: AppTheme.backgroundWhite,
-          appBar: AppBar(
-            title: Text(
-              'Edit Menu / Produk',
-              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
-            ),
-          ),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, color: AppTheme.dangerRed, size: 48),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Gagal memuat produk: $err',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.lexend(fontSize: 14, color: AppTheme.accentBlack),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.refresh(productDetailProvider(widget.productId!)),
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
-              ),
-            ),
+      // E24: loading/error/data lewat satu AsyncStateView dalam satu Scaffold
+      // (satu AppBar saja, anti judul ganda). Mode data memakai Scaffold-less
+      // body agar tidak ada Scaffold bertumpuk.
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundWhite,
+        appBar: AppBar(
+          title: Text(
+            'Edit Menu / Produk',
+            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
           ),
         ),
-        data: (product) {
-          _populateExisting(product);
-          return _buildFormScaffold(context);
-        },
+        body: AsyncStateView(
+          value: productAsync,
+          onRetry: () => ref.refresh(productDetailProvider(widget.productId!)),
+          dataBuilder: (product) {
+            _populateExisting(product);
+            return _ProductFormBody(
+              formKey: _formKey,
+              nameController: _nameController,
+              skuController: _skuController,
+              unitController: _unitController,
+              priceController: _priceController,
+              costController: _costController,
+              imageUrlController: _imageUrlController,
+              recipeRows: _recipeRows,
+              selectedCategoryId: _selectedCategoryId,
+              isLoading: _isLoading,
+              errorMessage: _errorMessage,
+              isEditing: true,
+              showScaffold: false,
+              onCategoryChanged: (val) => setState(() => _selectedCategoryId = val),
+              onAddRecipeRow: _addRecipeRow,
+              onRemoveRecipeRow: _removeRecipeRow,
+              onSubmit: _submit,
+            );
+          },
+        ),
       );
     }
 
-    return _buildFormScaffold(context);
+    return _ProductFormBody(
+      formKey: _formKey,
+      nameController: _nameController,
+      skuController: _skuController,
+      unitController: _unitController,
+      priceController: _priceController,
+      costController: _costController,
+      imageUrlController: _imageUrlController,
+      recipeRows: _recipeRows,
+      selectedCategoryId: _selectedCategoryId,
+      isLoading: _isLoading,
+      errorMessage: _errorMessage,
+      isEditing: false,
+      onCategoryChanged: (val) => setState(() => _selectedCategoryId = val),
+      onAddRecipeRow: _addRecipeRow,
+      onRemoveRecipeRow: _removeRecipeRow,
+      onSubmit: _submit,
+    );
   }
+}
 
-  Widget _buildFormScaffold(BuildContext context) {
-    final categoriesState = ref.watch(categoriesProvider);
-    final ingredientsState = ref.watch(ingredientsListProvider);
+/// E23: badan form sebagai widget class (bukan helper _build* yang panjang).
+/// Berbentuk StatefulWidget agar perubahan baris resep lokal bisa rebuild
+/// lewat setState sendiri; state induk tetap pemilik controller & data.
+class _ProductFormBody extends ConsumerStatefulWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController nameController;
+  final TextEditingController skuController;
+  final TextEditingController unitController;
+  final TextEditingController priceController;
+  final TextEditingController costController;
+  final TextEditingController imageUrlController;
+  final List<_RecipeRow> recipeRows;
+  final String? selectedCategoryId;
+  final bool isLoading;
+  final String? errorMessage;
+  final bool isEditing;
+  final bool showScaffold;
+  final ValueChanged<String?> onCategoryChanged;
+  final VoidCallback onAddRecipeRow;
+  final void Function(int index) onRemoveRecipeRow;
+  final VoidCallback onSubmit;
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
-      appBar: AppBar(
-        title: Text(
-          widget.productId == null ? 'Tambah Menu / Produk' : 'Edit Menu / Produk',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
-        ),
-      ),
-      body: Form(
-        key: _formKey,
+  const _ProductFormBody({
+    required this.formKey,
+    required this.nameController,
+    required this.skuController,
+    required this.unitController,
+    required this.priceController,
+    required this.costController,
+    required this.imageUrlController,
+    required this.recipeRows,
+    required this.selectedCategoryId,
+    required this.isLoading,
+    required this.errorMessage,
+    required this.isEditing,
+    this.showScaffold = true,
+    required this.onCategoryChanged,
+    required this.onAddRecipeRow,
+    required this.onRemoveRecipeRow,
+    required this.onSubmit,
+  });
+
+  @override
+  ConsumerState<_ProductFormBody> createState() => _ProductFormBodyState();
+}
+
+class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
+  @override
+  Widget build(BuildContext context) {
+    final form = Form(
+      key: widget.formKey,
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            if (_errorMessage != null) ...[
+            if (widget.errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -276,7 +323,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _errorMessage!,
+                        widget.errorMessage!,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12.5),
                       ),
                     ),
@@ -288,7 +337,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
             // Nama Produk
             TextFormField(
-              controller: _nameController,
+              controller: widget.nameController,
               style: GoogleFonts.lexend(fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Nama Menu / Produk *',
@@ -313,7 +362,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
-                    controller: _skuController,
+                    controller: widget.skuController,
                     style: GoogleFonts.lexend(fontSize: 14),
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
@@ -336,7 +385,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 Expanded(
                   flex: 1,
                   child: TextFormField(
-                    controller: _unitController,
+                    controller: widget.unitController,
                     style: GoogleFonts.lexend(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Satuan',
@@ -357,8 +406,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             const SizedBox(height: 16),
 
             // Kategori Dropdown
-            categoriesState.when(
-              data: (categories) {
+            // E24: loading/error tampil ringkas, data lewat satu builder.
+            AsyncStateView(
+              value: ref.watch(categoriesProvider),
+              dataBuilder: (categories) {
                 final uniqueCategories = <String, String>{};
                 for (final c in categories) {
                   if (c.id.isNotEmpty) {
@@ -366,9 +417,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   }
                 }
 
-                final isValidCat = _selectedCategoryId != null &&
-                    uniqueCategories.containsKey(_selectedCategoryId);
-                final selectedVal = isValidCat ? _selectedCategoryId : null;
+                final isValidCat = widget.selectedCategoryId != null &&
+                    uniqueCategories.containsKey(widget.selectedCategoryId);
+                final selectedVal = isValidCat ? widget.selectedCategoryId : null;
 
                 return DropdownButtonFormField<String?>(
                   initialValue: selectedVal,
@@ -392,25 +443,24 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     ...uniqueCategories.entries.map((entry) {
                       return DropdownMenuItem<String?>(
                         value: entry.key,
-                        child: Text(entry.value, style: GoogleFonts.lexend(fontSize: 14)),
+                        child: Text(
+                          entry.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.lexend(fontSize: 14),
+                        ),
                       );
                     }),
                   ],
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedCategoryId = val;
-                    });
-                  },
+                  onChanged: widget.onCategoryChanged,
                 );
               },
-              loading: () => const LinearProgressIndicator(),
-              error: (err, stack) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
 
             // URL Foto / Gambar Produk
             TextFormField(
-              controller: _imageUrlController,
+              controller: widget.imageUrlController,
               style: GoogleFonts.lexend(fontSize: 14),
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
@@ -434,7 +484,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: _priceController,
+                    controller: widget.priceController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: GoogleFonts.lexend(fontSize: 14),
@@ -457,7 +507,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextFormField(
-                    controller: _costController,
+                    controller: widget.costController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: GoogleFonts.lexend(fontSize: 14),
@@ -495,26 +545,32 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Komposisi Resep Menu',
-                            style: GoogleFonts.lexend(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.accentBlack,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Komposisi Resep Menu',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.lexend(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.accentBlack,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Takaran bahan baku per 1 porsi pesanan',
-                            style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              'Takaran bahan baku per 1 porsi pesanan',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                            ),
+                          ],
+                        ),
                       ),
                       ElevatedButton.icon(
-                        onPressed: _addRecipeRow,
+                        onPressed: widget.onAddRecipeRow,
                         icon: const Icon(Icons.add, size: 16),
                         label: const Text('Bahan'),
                         style: ElevatedButton.styleFrom(
@@ -533,22 +589,24 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   ),
                   const Divider(height: 20, color: AppTheme.borderOutline),
 
-                  if (_recipeRows.isEmpty)
+                  if (widget.recipeRows.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Center(
                         child: Text(
                           'Belum ada takaran resep. Klik "+ Bahan" untuk menambahkan bahan baku.',
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
                           textAlign: TextAlign.center,
                         ),
                       ),
                     )
                   else
-                    ingredientsState.when(
-                      loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => Text('Gagal memuat bahan: $e', style: GoogleFonts.lexend(fontSize: 12)),
-                      data: (availableIngredients) {
+                    // E24: loading/error/data bahan lewat satu AsyncStateView.
+                    AsyncStateView(
+                      value: ref.watch(ingredientsListProvider),
+                      dataBuilder: (availableIngredients) {
                         final uniqueMap = <String, IngredientModel>{};
                         for (final ing in availableIngredients) {
                           if (ing.id.isNotEmpty) {
@@ -559,10 +617,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
                         return Column(
                           children: [
-                            for (int idx = 0; idx < _recipeRows.length; idx++) ...[
+                            for (int idx = 0; idx < widget.recipeRows.length; idx++) ...[
                               Builder(
                                 builder: (context) {
-                                  final row = _recipeRows[idx];
+                                  final row = widget.recipeRows[idx];
                                   final selectedIngredient = ingredientsList
                                       .cast<IngredientModel?>()
                                       .firstWhere((i) => i?.id == row.ingredientId, orElse: () => null);
@@ -641,7 +699,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                                         // Tombol Hapus Baris
                                         IconButton(
                                           icon: const Icon(Icons.delete_outline, color: AppTheme.dangerRed, size: 20),
-                                          onPressed: () => _removeRecipeRow(idx),
+                                          onPressed: () {
+                                            widget.onRemoveRecipeRow(idx);
+                                            setState(() {});
+                                          },
                                           tooltip: 'Hapus bahan ini',
                                         ),
                                       ],
@@ -649,7 +710,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                                   );
                                 },
                               ),
-                              if (idx < _recipeRows.length - 1) const SizedBox(height: 10),
+                              if (idx < widget.recipeRows.length - 1) const SizedBox(height: 10),
                             ],
                           ],
                         );
@@ -662,7 +723,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
             // Submit Button
             ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
+              onPressed: widget.isLoading ? null : widget.onSubmit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
                 foregroundColor: Colors.white,
@@ -671,7 +732,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: _isLoading
+              child: widget.isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
@@ -681,13 +742,24 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       ),
                     )
                   : Text(
-                      widget.productId == null ? 'Simpan Menu Baru' : 'Simpan Perubahan Menu',
+                      widget.isEditing ? 'Simpan Perubahan Menu' : 'Simpan Menu Baru',
                       style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
             ),
           ],
         ),
+    );
+
+    if (!widget.showScaffold) return form;
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundWhite,
+      appBar: AppBar(
+        title: Text(
+          widget.isEditing ? 'Edit Menu / Produk' : 'Tambah Menu / Produk',
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+        ),
       ),
+      body: form,
     );
   }
 }

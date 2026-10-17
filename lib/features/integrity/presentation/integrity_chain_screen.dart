@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/app_widgets.dart';
+import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../outlets/domain/outlet_models.dart';
@@ -21,7 +24,115 @@ class IntegrityChainScreen extends ConsumerStatefulWidget {
 }
 
 class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final role = ref.watch(authProvider).user?.role;
+    if (role != UserRole.owner && role != UserRole.manager) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Ledger Integritas', maxLines: 1, overflow: TextOverflow.ellipsis)),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Fitur ini hanya tersedia untuk Owner dan Manager.',
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final outletsAsync = ref.watch(outletsListProvider);
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundWhite,
+      appBar: AppBar(
+        title: Text(
+          'Ledger Integritas & Blockchain',
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      body: AsyncStateView<List<OutletModel>>(
+        value: outletsAsync,
+        onRetry: () => ref.invalidate(outletsListProvider),
+        dataBuilder: (outlets) => _OutletLedger(outlets: outlets),
+      ),
+    );
+  }
+}
+
+/// Ledger per outlet — widget class top-level (aturan E23).
+class _OutletLedger extends ConsumerStatefulWidget {
+  final List<OutletModel> outlets;
+
+  const _OutletLedger({required this.outlets});
+
+  @override
+  ConsumerState<_OutletLedger> createState() => _OutletLedgerState();
+}
+
+class _OutletLedgerState extends ConsumerState<_OutletLedger> {
   String? _selectedOutletId;
+
+  @override
+  Widget build(BuildContext context) {
+    final outlets = widget.outlets;
+    if (outlets.isEmpty) {
+      return const EmptyStateView(
+        message: 'Tidak ada cabang yang dapat diakses.',
+        icon: Icons.storefront_outlined,
+      );
+    }
+    final selectedIndex = outlets.indexWhere(
+      (item) => item.id == _selectedOutletId,
+    );
+    final outlet = outlets[selectedIndex >= 0 ? selectedIndex : 0];
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: AppDropdown<String>(
+            value: outlet.id,
+            labelText: 'Cabang',
+            items: outlets
+                .map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item.id,
+                    child: Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                )
+                .toList(),
+            onChanged: (id) => setState(() => _selectedOutletId = id),
+          ),
+        ),
+        Expanded(
+          child: AsyncStateView<IntegrityChainSnapshot>(
+            value: ref.watch(integrityChainProvider(outlet.id)),
+            onRetry: () => ref.invalidate(integrityChainProvider(outlet.id)),
+            dataBuilder: (snapshot) => _LedgerView(outlet: outlet, snapshot: snapshot),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Tampilan ledger — widget class top-level (aturan E23).
+class _LedgerView extends ConsumerStatefulWidget {
+  final OutletModel outlet;
+  final IntegrityChainSnapshot snapshot;
+
+  const _LedgerView({required this.outlet, required this.snapshot});
+
+  @override
+  ConsumerState<_LedgerView> createState() => _LedgerViewState();
+}
+
+class _LedgerViewState extends ConsumerState<_LedgerView> {
   bool _isVerifying = false;
   bool _isClosingDay = false;
 
@@ -36,6 +147,8 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
         SnackBar(
           content: Text(
             '${snapshot.validation.status}: ${snapshot.validation.message}',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: snapshot.validation.isValid
               ? const Color(0xFF15803D)
@@ -47,7 +160,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Verifikasi gagal: $error'),
+          content: Text('Verifikasi gagal: $error', maxLines: 3, overflow: TextOverflow.ellipsis),
           backgroundColor: AppTheme.dangerRed,
           behavior: SnackBarBehavior.floating,
         ),
@@ -61,9 +174,14 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
     final shouldClose = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tutup blok transaksi hari ini?'),
-        content: const Text(
-          'Transaksi aktif akan dirangkum ke dalam parent daily block.',
+        title: const Text('Tutup blok transaksi hari ini?', maxLines: 2, overflow: TextOverflow.ellipsis),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: const SingleChildScrollView(
+            child: Text(
+              'Transaksi aktif akan dirangkum ke dalam parent daily block.',
+            ),
+          ),
         ),
         actions: [
           TextButton(
@@ -86,7 +204,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Daily block berhasil dibuat.'),
+          content: Text('Daily block berhasil dibuat.', maxLines: 2, overflow: TextOverflow.ellipsis),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -94,7 +212,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menutup hari: $error'),
+          content: Text('Gagal menutup hari: $error', maxLines: 3, overflow: TextOverflow.ellipsis),
           backgroundColor: AppTheme.dangerRed,
         ),
       );
@@ -105,85 +223,8 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final role = ref.watch(authProvider).user?.role;
-    if (role != UserRole.owner && role != UserRole.manager) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Ledger Integritas')),
-        body: const Center(
-          child: Text('Fitur ini hanya tersedia untuk Owner dan Manager.'),
-        ),
-      );
-    }
-
-    final outletsAsync = ref.watch(outletsListProvider);
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
-      appBar: AppBar(
-        title: Text(
-          'Ledger Integritas & Blockchain',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
-        ),
-      ),
-      body: outletsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ErrorState(
-          message: 'Tidak dapat memuat cabang: $error',
-          onRetry: () => ref.invalidate(outletsListProvider),
-        ),
-        data: _buildOutletLedger,
-      ),
-    );
-  }
-
-  Widget _buildOutletLedger(List<OutletModel> outlets) {
-    if (outlets.isEmpty) {
-      return const Center(child: Text('Tidak ada cabang yang dapat diakses.'));
-    }
-    final selectedIndex = outlets.indexWhere(
-      (item) => item.id == _selectedOutletId,
-    );
-    final outlet = outlets[selectedIndex >= 0 ? selectedIndex : 0];
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: DropdownButtonFormField<String>(
-            initialValue: outlet.id,
-            decoration: const InputDecoration(
-              labelText: 'Cabang',
-              prefixIcon: Icon(Icons.storefront_outlined),
-              border: OutlineInputBorder(),
-            ),
-            items: outlets
-                .map(
-                  (item) => DropdownMenuItem<String>(
-                    value: item.id,
-                    child: Text(item.name, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: (id) => setState(() => _selectedOutletId = id),
-          ),
-        ),
-        Expanded(
-          child: ref
-              .watch(integrityChainProvider(outlet.id))
-              .when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => _ErrorState(
-                  message: 'Ledger tidak dapat dimuat: $error',
-                  onRetry: () =>
-                      ref.invalidate(integrityChainProvider(outlet.id)),
-                ),
-                data: (snapshot) => _buildLedger(outlet, snapshot),
-              ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLedger(OutletModel outlet, IntegrityChainSnapshot snapshot) {
+    final outlet = widget.outlet;
+    final snapshot = widget.snapshot;
     final overview = snapshot.overview;
     final validation = snapshot.validation;
     final statusColor = validation.isValid
@@ -227,6 +268,8 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
                         validation.isValid
                             ? 'Rantai valid'
                             : 'Integritas perlu diperiksa',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontWeight: FontWeight.w700,
                           color: statusColor,
@@ -235,6 +278,8 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
                       const SizedBox(height: 3),
                       Text(
                         '${validation.status} · ${validation.message}',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontSize: 12,
                           color: statusColor,
@@ -275,7 +320,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.shield_outlined),
-                label: Text(_isVerifying ? 'Memeriksa...' : 'Uji Integritas'),
+                label: Text(_isVerifying ? 'Memeriksa...' : 'Uji Integritas', maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               if (overview.currentActiveTxCount > 0)
                 FilledButton.tonalIcon(
@@ -289,13 +334,15 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.lock_clock_outlined),
-                  label: Text(_isClosingDay ? 'Menutup...' : 'Tutup hari'),
+                  label: Text(_isClosingDay ? 'Menutup...' : 'Tutup hari', maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             'Daily chain · ${outlet.name}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.lexend(
               fontWeight: FontWeight.w700,
               fontSize: 16,
@@ -303,16 +350,27 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
           ),
           const SizedBox(height: 8),
           if (overview.days.isEmpty)
-            const _EmptyState(
+            const EmptyStateView(
               message: 'Belum ada daily block yang ditutup untuk cabang ini.',
+              icon: Icons.inventory_2_outlined,
             ),
-          ...overview.days.map(_buildDailyBlock),
+          // List kecil — render inline tanpa scroll bersarang (aturan A4).
+          ...overview.days.map((block) => _DailyBlockCard(block: block)),
         ],
       ),
     );
   }
 
-  Widget _buildDailyBlock(IntegrityDailyBlock block) {
+}
+
+/// Kartu satu daily block — widget class top-level (aturan E23).
+class _DailyBlockCard extends StatelessWidget {
+  final IntegrityDailyBlock block;
+
+  const _DailyBlockCard({required this.block});
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
@@ -325,10 +383,14 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
         title: Text(
           'Daily block #${block.dayIndex} · ${block.date}',
           style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${block.transactionCount} catatan transaksi / inventaris',
           style: GoogleFonts.lexend(fontSize: 11),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
         children: [
@@ -423,6 +485,7 @@ class _HashRow extends StatelessWidget {
   }
 }
 
+/// Chip metrik ledger — widget class top-level const (aturan E23).
 class _MetricChip extends StatelessWidget {
   final String label;
   final String value;
@@ -432,45 +495,12 @@ class _MetricChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
-      label: Text('$label: $value', style: GoogleFonts.lexend(fontSize: 11)),
+      label: Text(
+        '$label: $value',
+        style: GoogleFonts.lexend(fontSize: 11),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String message;
-
-  const _EmptyState({required this.message});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(24),
-    child: Center(child: Text(message, textAlign: TextAlign.center)),
-  );
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Coba lagi'),
-          ),
-        ],
-      ),
-    ),
-  );
 }
