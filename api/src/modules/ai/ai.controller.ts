@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { aiAssistantService } from './ai.service';
+import { recommendPriceSchema } from './ai.schema';
 
 export class AiAssistantController {
   async chat(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -14,6 +15,20 @@ export class AiAssistantController {
         { role: user.role, allowedOutletIds }
       );
 
+      res.status(200).json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async recommendPrice(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const parsed = recommendPriceSchema.parse(req.body);
+      const result = await aiAssistantService.recommendPrice({
+        menu_name: parsed.menu_name,
+        total_cogs_idr: parsed.total_cogs_idr,
+        recipes: parsed.recipes ?? [],
+      });
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);

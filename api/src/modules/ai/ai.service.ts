@@ -826,6 +826,76 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
       },
     ];
   }
+
+  /**
+   * Menganalisis rekomendasi harga jual kompetitif via Gemini LLM berdasarkan HPP & nama menu.
+   */
+  async recommendPrice(input: {
+    menu_name: string;
+    total_cogs_idr: number;
+    recipes?: Array<any>;
+  }): Promise<{ recommended_price: number; margin_percentage: number; reasoning: string }> {
+    const menuName = input.menu_name || 'Menu Baru';
+    const cogs = input.total_cogs_idr || 0;
+
+    const apiKey = env.LLM_API_KEY;
+    if (apiKey && apiKey !== 'dummy_key_for_dev') {
+      try {
+        const model = env.LLM_MODEL || 'gemini-3.5-flash-lite';
+        const prompt = `Anda adalah seorang ahli pricing strategi F&B di Indonesia. 
+Analisis harga jual kompetitif untuk menu baru berikut:
+- Nama Menu: "${menuName}"
+- Total HPP (Modal): Rp ${cogs}
+- Komposisi Resep: ${JSON.stringify(input.recipes || [])}
+
+Pertimbangkan margin keuntungan F&B wajar (biasanya 40% - 100% di atas HPP), daya beli pasar Indonesia, serta biaya operasional tak langsung (listrik, gaji, sewa, alat).
+WAJIB KEMBALIKAN HANYA DALAM FORMAT JSON MURNI tanpa markdown backticks (tanpa \`\`\`json ... \`\`\`), dengan skema persis berikut:
+{
+  "recommended_price": [angka bulat integer harga jual rupiah yang disarankan],
+  "margin_percentage": [angka bulat persentase margin dari HPP, misal 50 atau 70],
+  "reasoning": "[penjelasan singkat profesional 1-2 kalimat dalam Bahasa Indonesia mengapa harga ini ideal]"
+}`;
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            }),
+            signal: AbortSignal.timeout(10000),
+          }
+        );
+
+        if (response.ok) {
+          const json: any = await response.json();
+          let text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(text);
+          if (parsed.recommended_price && parsed.margin_percentage) {
+            return {
+              recommended_price: Number(parsed.recommended_price),
+              margin_percentage: Number(parsed.margin_percentage),
+              reasoning: String(parsed.reasoning || 'Rekomendasi optimal berdasarkan analisis margin F&B standar.'),
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('[RecommendPrice AI Fallback]', err);
+      }
+    }
+
+    // Fallback cerdas offline (margin 50%)
+    const fallbackMargin = 50;
+    const recommendedPrice = Math.round((cogs * (100 + fallbackMargin)) / 100 / 500) * 500; // dibulatkan ke kelipatan 500 terdekat
+    return {
+      recommended_price: recommendedPrice > 0 ? recommendedPrice : 15000,
+      margin_percentage: fallbackMargin,
+      reasoning: `Rekomendasi standar margin ${fallbackMargin}% di atas HPP Rp ${cogs} untuk menutup operasional & profit sehat.`,
+    };
+  }
+
 }
 
 export const aiAssistantService = new AiAssistantService();

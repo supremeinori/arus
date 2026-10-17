@@ -12,6 +12,9 @@ import '../../inventory/presentation/inventory_list_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../../core/theme/app_theme.dart';
 
+/// State Provider untuk mengontrol tab aktif pada MainShell (0-indexed).
+final shellTabIndexProvider = StateProvider<int>((ref) => 0);
+
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
@@ -20,13 +23,12 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
-  int _currentIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final isStaff = user?.role == UserRole.staff;
+    final currentIndex = ref.watch(shellTabIndexProvider);
 
     // Definisikan tab berdasarkan Role per SRS Section 16.2
     final List<Widget> pages = isStaff
@@ -95,7 +97,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             ),
           ];
 
-    final safeIndex = _currentIndex >= pages.length ? 0 : _currentIndex;
+    final safeIndex = currentIndex >= pages.length ? 0 : currentIndex;
 
     return Scaffold(
       body: IndexedStack(
@@ -114,9 +116,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           elevation: 0,
           currentIndex: safeIndex,
           onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            ref.read(shellTabIndexProvider.notifier).state = index;
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppTheme.primaryBlue,

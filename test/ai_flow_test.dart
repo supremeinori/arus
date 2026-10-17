@@ -7,6 +7,19 @@ import 'package:arus/features/ai_assistant/presentation/ai_home_screen.dart';
 
 class FakeAiRepository implements AiRepository {
   @override
+  Future<PriceRecommendation> recommendPrice({
+    required String menuName,
+    required int totalCogsIdr,
+    required List<Map<String, dynamic>> recipes,
+  }) async {
+    return PriceRecommendation(
+      recommendedPrice: (totalCogsIdr * 1.5).round(),
+      marginPercentage: 50,
+      reasoning: 'Rekomendasi harga test.',
+    );
+  }
+
+  @override
   Future<AiMessageModel> sendMessage({
     String? conversationId,
     required String message,

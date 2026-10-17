@@ -6,8 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../ai_assistant/data/ai_repository.dart';
+import '../../ai_assistant/presentation/ai_provider.dart';
 import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
+import '../../shell/presentation/main_shell.dart';
 import '../data/catalog_repository.dart';
 import 'catalog_provider.dart';
 
@@ -21,10 +24,7 @@ class _RecipeRow {
 
 /// Layar "Tambah Menu Baru" — slice terisolasi untuk flow:
 /// Step 1 info dasar → Step 2 builder resep dinamis →
-/// Step 3 HPP live → Step 4 rekomendasi harga (30/50/100%).
-///
-/// HPP murni turunan lokal (state widget), bukan Notifier baru:
-/// dihitung ulang setiap dropdown/takaran berubah.
+/// Step 3 HPP live → Step 4 rekomendasi harga (30/50/100% & AI).
 class MenuCreateScreen extends ConsumerStatefulWidget {
   const MenuCreateScreen({super.key});
 
@@ -42,6 +42,12 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
   String? _categoryId;
   bool _saving = false;
   String? _error;
+
+  // State Rekomendasi Harga AI
+  bool _aiLoading = false;
+  int? _aiRecommendedPrice;
+  int? _aiMarginPercentage;
+  String? _aiReasoning;
 
   @override
   void dispose() {
@@ -76,6 +82,72 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
 
   /// Step 4: harga jual = modal + margin%.
   int _priceFor(int hpp, int marginPct) => (hpp * (100 + marginPct) / 100).round();
+
+  /// Panggil API Backend POST /api/ai/recommend-price
+  Future<void> _fetchAiRecommendation(int hpp) async {
+    final menuName = _nameCtrl.text.trim();
+    if (menuName.isEmpty) {
+      setState(() => _error = 'Isi Nama Menu terlebih dahulu untuk rekomendasi AI.');
+      return;
+    }
+
+    final recipes = <Map<String, dynamic>>[];
+    for (final r in _rows) {
+      final amt = int.tryParse(r.amountController.text.trim()) ?? 0;
+      if (r.ingredientId != null && amt > 0) {
+        recipes.add({'ingredient_id': r.ingredientId!, 'amount_needed': amt});
+      }
+    }
+
+    setState(() {
+      _aiLoading = true;
+      _error = null;
+    });
+
+    try {
+      final aiRepo = ref.read(aiRepositoryProvider);
+      final result = await aiRepo.recommendPrice(
+        menuName: menuName,
+        totalCogsIdr: hpp,
+        recipes: recipes,
+      );
+
+      if (mounted) {
+        setState(() {
+          _aiLoading = false;
+          _aiRecommendedPrice = result.recommendedPrice;
+          _aiMarginPercentage = result.marginPercentage;
+          _aiReasoning = result.reasoning;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _aiLoading = false;
+          _error = 'Gagal mengambil rekomendasi AI: $e';
+        });
+      }
+    }
+  }
+
+  /// Pindah ke AI Chat dengan konteks bawaan (Passing Context & Navigation)
+  void _navigateToAiChat(int hpp) {
+    final menuName = _nameCtrl.text.trim().isEmpty ? 'Menu Baru' : _nameCtrl.text.trim();
+    final recPrice = _aiRecommendedPrice ?? _priceFor(hpp, 50);
+
+    final promptText =
+        'Saya sedang membuat produk baru bernama $menuName dengan HPP ${MoneyFormatter.format(hpp)}. '
+        'Tadi kamu merekomendasikan harga ${MoneyFormatter.format(recPrice)}. '
+        'Tolong berikan simulasi detail BEP atau analisis lebih lanjut mengenai harga ini.';
+
+    // Set pending prompt di provider
+    ref.read(aiPendingPromptProvider.notifier).state = promptText;
+    // Set tab aktif Shell ke Tab AI (Index 2 untuk Owner/Manager)
+    ref.read(shellTabIndexProvider.notifier).state = 2;
+
+    // Pindah route ke MainShell
+    context.go('/shell');
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -193,7 +265,6 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                     v == null || v.trim().isEmpty ? 'SKU wajib diisi' : null,
               ),
               const SizedBox(height: 12),
-              // E24: loading/error kategori lewat satu AsyncStateView (ringkas).
               AsyncStateView(
                 value: categoriesState,
                 dataBuilder: (categories) => DropdownButtonFormField<String>(
@@ -236,92 +307,88 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
               ),
               const SizedBox(height: 8),
-              // E24: builder resep lewat satu AsyncStateView.
               AsyncStateView(
                 value: ingredientsState,
                 dataBuilder: (ingredients) => Column(
                   children: [
-                    // A4: baris dinamis di form dirender dengan ...map,
-                    // bukan ListView bersarang (hindari unbounded height).
                     for (var i = 0; i < _rows.length; i++) ...[
                       Builder(
                         builder: (_) {
                           final row = _rows[i];
-                    IngredientModel? selected;
-                    for (final e in ingredients) {
-                      if (e.id == row.ingredientId) {
-                        selected = e;
-                        break;
-                      }
-                    }
-                    return Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.borderOutline),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: DropdownButtonFormField<String>(
-                              isExpanded: true,
-                              initialValue: row.ingredientId != null &&
-                                      ingredients.any((e) => e.id == row.ingredientId)
-                                  ? row.ingredientId
-                                  : null,
-                              decoration: const InputDecoration(
-                                labelText: 'Bahan baku',
-                                isDense: true,
-                                border: OutlineInputBorder(),
-                              ),
-                              items: ingredients
-                                  .map((g) => DropdownMenuItem(
-                                        value: g.id,
-                                        child: Text(
-                                          '${g.name} (${MoneyFormatter.format(g.costPerUnit)}/${g.unit})',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.lexend(fontSize: 12.5),
-                                        ),
-                                      ))
-                                  .toList(),
-                              onChanged: (v) => setState(() => row.ingredientId = v),
-                              validator: (_) => row.ingredientId == null
-                                  ? 'Pilih bahan'
-                                  : null,
+                          IngredientModel? selected;
+                          for (final e in ingredients) {
+                            if (e.id == row.ingredientId) {
+                              selected = e;
+                              break;
+                            }
+                          }
+                          return Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppTheme.borderOutline),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              controller: row.amountController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                              // Picu hitung ulang HPP setiap takaran berubah.
-                              onChanged: (_) => setState(() {}),
-                              style: GoogleFonts.lexend(fontSize: 12.5),
-                              decoration: InputDecoration(
-                                labelText: 'Takaran',
-                                hintText: '18',
-                                suffixText: selected?.unit ?? '',
-                                isDense: true,
-                                border: const OutlineInputBorder(),
-                              ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    initialValue: row.ingredientId != null &&
+                                            ingredients.any((e) => e.id == row.ingredientId)
+                                        ? row.ingredientId
+                                        : null,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Bahan baku',
+                                      isDense: true,
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: ingredients
+                                        .map((g) => DropdownMenuItem(
+                                              value: g.id,
+                                              child: Text(
+                                                '${g.name} (${MoneyFormatter.format(g.costPerUnit)}/${g.unit})',
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.lexend(fontSize: 12.5),
+                                              ),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) => setState(() => row.ingredientId = v),
+                                    validator: (_) => row.ingredientId == null
+                                        ? 'Pilih bahan'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  flex: 2,
+                                  child: TextFormField(
+                                    controller: row.amountController,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    onChanged: (_) => setState(() {}),
+                                    style: GoogleFonts.lexend(fontSize: 12.5),
+                                    decoration: InputDecoration(
+                                      labelText: 'Takaran',
+                                      hintText: '18',
+                                      suffixText: selected?.unit ?? '',
+                                      isDense: true,
+                                      border: const OutlineInputBorder(),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline,
+                                      color: AppTheme.dangerRed, size: 20),
+                                  tooltip: 'Hapus baris ini',
+                                  onPressed: _rows.length > 1
+                                      ? () => setState(() => _rows.removeAt(i).dispose())
+                                      : null,
+                                ),
+                              ],
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline,
-                                color: AppTheme.dangerRed, size: 20),
-                            tooltip: 'Hapus baris ini',
-                            onPressed: _rows.length > 1
-                                ? () => setState(() => _rows.removeAt(i).dispose())
-                                : null,
-                          ),
-                        ],
-                      ),
-                    );
+                          );
                         },
                       ),
                       if (i < _rows.length - 1) const SizedBox(height: 8),
@@ -331,8 +398,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ---------- Step 3 + 4: HPP live & rekomendasi ----------
-              // E24: HPP & rekomendasi lewat satu AsyncStateView.
+              // ---------- Step 3 + 4: HPP live & rekomendasi harga AI ----------
               AsyncStateView(
                 value: ingredientsState,
                 dataBuilder: (ingredients) {
@@ -340,6 +406,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Card HPP
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -351,11 +418,15 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text('Step 3 — Total Modal (HPP)',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.lexend(
-                                      fontSize: 13, fontWeight: FontWeight.w600)),
+                              child: Text(
+                                'Step 3 — Total Modal (HPP)',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.lexend(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                             Text(
                               MoneyFormatter.format(hpp),
@@ -370,11 +441,147 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text('Step 4 — Rekomendasi Harga Jual',
-                          style: GoogleFonts.lexend(
-                              fontSize: 14, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 16),
+
+                      Text(
+                        'Step 4 — Rekomendasi Harga Jual',
+                        style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
                       const SizedBox(height: 8),
+
+                      // Tombol "✨ Rekomendasi Harga AI"
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: (_aiLoading || hpp <= 0)
+                              ? null
+                              : () => _fetchAiRecommendation(hpp),
+                          icon: _aiLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.auto_awesome_rounded, size: 18),
+                          label: Text(
+                            '✨ Rekomendasi Harga AI',
+                            style: GoogleFonts.lexend(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Result UI Rekomendasi AI
+                      if (_aiRecommendedPrice != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDFA),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.primaryBlue.withAlpha(100)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.lightbulb_outline_rounded,
+                                    color: AppTheme.primaryBlue,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Rekomendasi AI (${_aiMarginPercentage ?? 50}% Margin)',
+                                    style: GoogleFonts.lexend(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryBlue,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // a) Action Chip/Button harga untuk mengisi price_idr
+                              ActionChip(
+                                backgroundColor: AppTheme.primaryBlue,
+                                side: BorderSide.none,
+                                avatar: const Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                label: Text(
+                                  'Gunakan Harga ${MoneyFormatter.format(_aiRecommendedPrice!)}',
+                                  style: GoogleFonts.lexend(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _priceCtrl.text = _aiRecommendedPrice.toString();
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              // b) Teks reasoning sebagai caption
+                              Text(
+                                _aiReasoning ?? 'Rekomendasi optimal berdasarkan analisis pasar F&B.',
+                                style: GoogleFonts.lexend(
+                                  fontSize: 12,
+                                  color: AppTheme.accentBlack,
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              // c) Tombol sekunder "🤖 Lanjutkan ke Arus AI"
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.primaryBlue,
+                                  side: const BorderSide(color: AppTheme.primaryBlue, width: 1.2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                onPressed: () => _navigateToAiChat(hpp),
+                                icon: const Icon(Icons.forum_outlined, size: 16),
+                                label: Text(
+                                  '🤖 Lanjutkan ke Arus AI',
+                                  style: GoogleFonts.lexend(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 12),
+                      Text(
+                        'Rekomendasi Cepat (Margin Statis):',
+                        style: GoogleFonts.lexend(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,

@@ -7,6 +7,26 @@ final aiRepositoryProvider = Provider<AiRepository>((ref) {
   return AiRepository(apiClient);
 });
 
+class PriceRecommendation {
+  final int recommendedPrice;
+  final int marginPercentage;
+  final String reasoning;
+
+  const PriceRecommendation({
+    required this.recommendedPrice,
+    required this.marginPercentage,
+    required this.reasoning,
+  });
+
+  factory PriceRecommendation.fromJson(Map<String, dynamic> json) {
+    return PriceRecommendation(
+      recommendedPrice: (json['recommended_price'] as num?)?.toInt() ?? 0,
+      marginPercentage: (json['margin_percentage'] as num?)?.toInt() ?? 0,
+      reasoning: json['reasoning'] as String? ?? '',
+    );
+  }
+}
+
 class AiRepository {
   final ApiClient _client;
 
@@ -33,6 +53,23 @@ class AiRepository {
     } catch (_) {
       return _generateOfflineResponse(message, conversationId);
     }
+  }
+
+  Future<PriceRecommendation> recommendPrice({
+    required String menuName,
+    required int totalCogsIdr,
+    required List<Map<String, dynamic>> recipes,
+  }) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      '/ai/recommend-price',
+      data: {
+        'menu_name': menuName,
+        'total_cogs_idr': totalCogsIdr,
+        'recipes': recipes,
+      },
+    );
+    final data = response.data?['data'] as Map<String, dynamic>;
+    return PriceRecommendation.fromJson(data);
   }
 
   AiMessageModel _generateOfflineResponse(String message, String? conversationId) {

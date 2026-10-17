@@ -82,3 +82,6 @@ final aiChatProvider = StateNotifierProvider<AiChatNotifier, AiChatState>((ref) 
   final repo = ref.watch(aiRepositoryProvider);
   return AiChatNotifier(repo);
 });
+
+/// Handoff prompt dari MenuCreate → AI Chat (auto-fill & auto-submit).
+final aiPendingPromptProvider = StateProvider<String?>((ref) => null);

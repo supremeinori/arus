@@ -14,6 +14,17 @@ class AiHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final pending = ref.read(aiPendingPromptProvider);
+      if (pending != null && pending.isNotEmpty) {
+        ref.read(aiPendingPromptProvider.notifier).state = null;
+        _handleSend(pending);
+      }
+    });
+  }
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String? _selectedOutletId;
