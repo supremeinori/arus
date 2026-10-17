@@ -86,6 +86,23 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/ai_mascot.png',
+              width: 36,
+              height: 36,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.smart_toy_outlined,
+                color: AppTheme.primaryBlue,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+        leadingWidth: 52,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -159,16 +176,25 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
         children: [
           const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: AppTheme.borderOutline, width: 1.5),
             ),
-            child: const Icon(
-              Icons.analytics_outlined,
-              size: 42,
-              color: AppTheme.primaryBlue,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/images/ai_mascot.png',
+                width: 72,
+                height: 72,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.analytics_outlined,
+                  size: 42,
+                  color: AppTheme.primaryBlue,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -256,13 +282,25 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           if (!isUser) ...[
             Container(
               margin: const EdgeInsets.only(top: 2, right: 8),
-              padding: const EdgeInsets.all(6),
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: AppTheme.borderOutline, width: 1.5),
               ),
-              child: const Icon(Icons.smart_toy_outlined, color: AppTheme.primaryBlue, size: 16),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                'assets/images/ai_mascot.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.smart_toy_outlined,
+                  color: AppTheme.primaryBlue,
+                  size: 16,
+                ),
+              ),
             ),
           ],
           Flexible(
@@ -378,6 +416,16 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/ai_mascot.png',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+                const SizedBox(width: 6),
                 const SizedBox(
                   width: 14,
                   height: 14,

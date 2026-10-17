@@ -147,12 +147,23 @@ class _MainShellState extends ConsumerState<MainShell> {
       ),
       // Global Floating Action Button untuk AI Companion (Selalu ada di mana pun)
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.primaryBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
         elevation: 4,
         tooltip: 'ARUS AI Companion',
         onPressed: () => showAiCompanionBottomSheet(context, ref),
-        child: const Icon(Icons.auto_awesome_rounded, size: 26),
+        child: ClipOval(
+          child: Image.asset(
+            'assets/images/ai_mascot.png',
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.auto_awesome_rounded,
+              size: 26,
+              color: AppTheme.primaryBlue,
+            ),
+          ),
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
