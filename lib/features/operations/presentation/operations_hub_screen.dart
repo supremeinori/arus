@@ -81,14 +81,7 @@ class OperationsHubScreen extends ConsumerWidget {
             badgeText: 'Cabang',
             route: '/outlets',
           ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.assessment_outlined,
-            title: 'Laporan & Audit Snapshot',
-            subtitle: 'Dokumen ringkasan berkala dengan verifikasi integritas SHA-256',
-            badgeText: 'Audit',
-            route: '/reports',
-          ),
+
           const SizedBox(height: 10),
           const _OperationTile(
             icon: Icons.notifications_active_outlined,

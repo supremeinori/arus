@@ -368,16 +368,25 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                 ),
               ),
               const Spacer(),
-              OutlinedButton.icon(
-                onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
-                icon: _isActionLoading
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.shield_outlined, size: 16),
-                label: const Text('Uji Integritas'),
+              SizedBox(
+                height: 38,
+                child: OutlinedButton.icon(
+                  onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 38),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  icon: _isActionLoading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.shield_outlined, size: 16),
+                  label: const Text('Uji Integritas'),
+                ),
               ),
             ],
           ),

@@ -266,8 +266,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             : AppTheme.accentBlack,
                       ),
                       onSelected: (selected) {
-                        if (selected)
+                        if (selected) {
                           setState(() => _selectedCategoryId = null);
+                        }
                       },
                     ),
                     const SizedBox(width: 8),

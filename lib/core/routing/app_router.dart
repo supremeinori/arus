@@ -16,8 +16,6 @@ import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/outlets/presentation/outlet_detail_screen.dart';
 import '../../features/outlets/presentation/outlet_form_screen.dart';
 import '../../features/outlets/presentation/outlet_list_screen.dart';
-import '../../features/reports/presentation/report_detail_screen.dart';
-import '../../features/reports/presentation/report_list_screen.dart';
 import '../../features/pos/presentation/pos_history_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/sensors/presentation/sensor_test_screen.dart';
@@ -120,17 +118,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/reports',
-        builder: (context, state) => const ReportListScreen(),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) =>
-                ReportDetailScreen(reportId: state.pathParameters['id']!),
-          ),
-        ],
-      ),
+
       GoRoute(
         path: '/insights',
         builder: (context, state) => const InsightsScreen(),
