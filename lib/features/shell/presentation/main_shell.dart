@@ -157,7 +157,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             width: 40,
             height: 40,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const Icon(
+            errorBuilder: (_, _, _) => const Icon(
               Icons.auto_awesome_rounded,
               size: 26,
               color: AppTheme.primaryBlue,

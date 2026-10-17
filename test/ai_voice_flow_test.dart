@@ -5,7 +5,6 @@ import 'package:arus/features/ai_assistant/data/ai_repository.dart';
 import 'package:arus/features/ai_assistant/domain/ai_models.dart';
 import 'package:arus/features/ai_assistant/domain/voice_models.dart';
 import 'package:arus/features/ai_assistant/presentation/ai_home_screen.dart';
-import 'package:arus/features/ai_assistant/presentation/voice_session_controller.dart';
 
 class MockVoiceAiRepository implements AiRepository {
   @override
