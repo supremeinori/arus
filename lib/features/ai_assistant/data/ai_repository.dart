@@ -36,6 +36,7 @@ class AiRepository {
     String? conversationId,
     required String message,
     String? outletId,
+    String? screenContext,
   }) async {
     try {
       final response = await _client.post<Map<String, dynamic>>(
@@ -44,6 +45,7 @@ class AiRepository {
           'conversation_id': conversationId,
           'message': message,
           'outlet_id': outletId,
+          'screen_context': screenContext,
         },
       );
 

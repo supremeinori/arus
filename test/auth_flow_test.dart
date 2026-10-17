@@ -126,9 +126,10 @@ void main() {
       // "Beranda" ada di AppBar dan di BottomNav label
       expect(find.text('Beranda'), findsNWidgets(2));
       expect(find.text('Operasi'), findsOneWidget);
-      expect(find.text('AI'), findsOneWidget);
       expect(find.text('Analitik'), findsOneWidget);
       expect(find.text('Lainnya'), findsOneWidget);
+      // AI Companion Floating Action Button
+      expect(find.byType(FloatingActionButton), findsOneWidget);
     });
   });
 }

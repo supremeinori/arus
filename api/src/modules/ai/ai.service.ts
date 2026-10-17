@@ -26,7 +26,8 @@ export class AiAssistantService {
     userMessage: string,
     facts: any[],
     history: ChatMemoryTurn[],
-    userContext: { name: string; role: string; outletName?: string }
+    userContext: { name: string; role: string; outletName?: string },
+    screenContext?: string
   ): Promise<string | null> {
     const apiKey = env.LLM_API_KEY;
     if (!apiKey || apiKey === 'dummy_key_for_dev') {
@@ -105,6 +106,7 @@ ${JSON.stringify(facts, null, 2)}`;
       conversation_id?: string;
       message: string;
       outlet_id?: string;
+      screen_context?: string;
     },
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
@@ -446,7 +448,7 @@ ${JSON.stringify(facts, null, 2)}`;
     const liveGeminiText = await this.callGemini(userMessage, facts, memory, {
       name: userName,
       role: userRoleTitle,
-    });
+    }, query.screen_context);
 
     if (liveGeminiText) {
       aiResponseText = liveGeminiText;

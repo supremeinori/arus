@@ -7,6 +7,7 @@ import '../../dashboard/presentation/shift_summary_screen.dart';
 import '../../pos/presentation/pos_screen.dart';
 import '../../operations/presentation/operations_hub_screen.dart';
 import '../../ai_assistant/presentation/ai_home_screen.dart';
+import '../../ai_assistant/presentation/ai_provider.dart';
 import '../../analytics/presentation/analytics_screen.dart';
 import '../../inventory/presentation/inventory_list_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
@@ -14,6 +15,52 @@ import '../../../core/theme/app_theme.dart';
 
 /// State Provider untuk mengontrol tab aktif pada MainShell (0-indexed).
 final shellTabIndexProvider = StateProvider<int>((ref) => 0);
+
+/// Global helper untuk membuka AI Companion Bottom Sheet dari halaman mana pun (misal Form Tambah Menu)
+void showAiCompanionBottomSheet(BuildContext context, WidgetRef ref, {String? initialPrompt}) {
+  if (initialPrompt != null && initialPrompt.isNotEmpty) {
+    ref.read(aiPendingPromptProvider.notifier).state = initialPrompt;
+  }
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      height: MediaQuery.of(context).size.height * 0.82,
+      decoration: const BoxDecoration(
+        color: AppTheme.backgroundWhite,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        border: Border(
+          top: BorderSide(color: AppTheme.borderOutline, width: 2),
+          left: BorderSide(color: AppTheme.borderOutline, width: 2),
+          right: BorderSide(color: AppTheme.borderOutline, width: 2),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Drag handle bar
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.borderOutline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              child: AiHomeScreen(),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -30,7 +77,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final isStaff = user?.role == UserRole.staff;
     final currentIndex = ref.watch(shellTabIndexProvider);
 
-    // Definisikan tab berdasarkan Role per SRS Section 16.2
+    // Definisikan tab berdasarkan Role per SRS Section 16.2 (Tanpa tab AI terisolasi di bottom bar)
     final List<Widget> pages = isStaff
         ? const [
             ShiftSummaryScreen(),
@@ -41,7 +88,6 @@ class _MainShellState extends ConsumerState<MainShell> {
         : const [
             DashboardScreen(),
             OperationsHubScreen(),
-            AiHomeScreen(),
             AnalyticsScreen(),
             ProfileScreen(),
           ];
@@ -81,11 +127,6 @@ class _MainShellState extends ConsumerState<MainShell> {
               label: 'Operasi',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.auto_awesome_outlined),
-              activeIcon: Icon(Icons.auto_awesome),
-              label: 'AI',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_outlined),
               activeIcon: Icon(Icons.bar_chart),
               label: 'Analitik',
@@ -103,6 +144,15 @@ class _MainShellState extends ConsumerState<MainShell> {
       body: IndexedStack(
         index: safeIndex,
         children: pages,
+      ),
+      // Global Floating Action Button untuk AI Companion (Selalu ada di mana pun)
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        tooltip: 'ARUS AI Companion',
+        onPressed: () => showAiCompanionBottomSheet(context, ref),
+        child: const Icon(Icons.auto_awesome_rounded, size: 26),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(

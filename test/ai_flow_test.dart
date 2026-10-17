@@ -24,6 +24,7 @@ class FakeAiRepository implements AiRepository {
     String? conversationId,
     required String message,
     String? outletId,
+    String? screenContext,
   }) async {
     return AiMessageModel(
       id: 'msg-ai-1',

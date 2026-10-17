@@ -7,7 +7,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../ai_assistant/data/ai_repository.dart';
-import '../../ai_assistant/presentation/ai_provider.dart';
 import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../../shell/presentation/main_shell.dart';
@@ -140,13 +139,8 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
         'Tadi kamu merekomendasikan harga ${MoneyFormatter.format(recPrice)}. '
         'Tolong berikan simulasi detail BEP atau analisis lebih lanjut mengenai harga ini.';
 
-    // Set pending prompt di provider
-    ref.read(aiPendingPromptProvider.notifier).state = promptText;
-    // Set tab aktif Shell ke Tab AI (Index 2 untuk Owner/Manager)
-    ref.read(shellTabIndexProvider.notifier).state = 2;
-
-    // Pindah route ke MainShell
-    context.go('/shell');
+    // Panggil Global AI Companion Bottom Sheet tanpa merusak state form di belakangnya
+    showAiCompanionBottomSheet(context, ref, initialPrompt: promptText);
   }
 
   Future<void> _submit() async {

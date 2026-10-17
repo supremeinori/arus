@@ -16,4 +16,12 @@ export const recommendPriceSchema = z.object({
     .default([]),
 });
 
+export const aiChatSchema = z.object({
+  conversation_id: z.string().optional(),
+  message: z.string().min(1, 'Pesan tidak boleh kosong'),
+  outlet_id: z.string().optional(),
+  screen_context: z.string().optional(),
+});
+
 export type RecommendPriceInput = z.infer<typeof recommendPriceSchema>;
+export type AiChatInput = z.infer<typeof aiChatSchema>;
