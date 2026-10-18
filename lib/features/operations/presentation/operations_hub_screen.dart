@@ -13,131 +13,374 @@ class OperationsHubScreen extends ConsumerWidget {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        backgroundColor: AppTheme.darkBackground,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1.0),
+          child: Divider(
+            height: 1.0,
+            thickness: 1.0,
+            color: AppTheme.darkCardBorder,
+          ),
+        ),
         title: Text(
           'Pusat Operasi',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.lexend(
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            color: AppTheme.textPrimaryDark,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search_rounded, color: AppTheme.accentBlack),
+            icon: const Icon(Icons.search_rounded, color: AppTheme.textPrimaryDark),
             tooltip: 'Pencarian Global',
             onPressed: () => context.push('/search'),
           ),
           IconButton(
             icon: Badge(
               isLabelVisible: unreadCount > 0,
-              backgroundColor: const Color(0xFFDC2626),
-              label: Text('$unreadCount', style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis),
-              child: const Icon(Icons.notifications_outlined, color: AppTheme.accentBlack),
+              backgroundColor: const Color(0xFFEF4444),
+              label: Text(
+                '$unreadCount',
+                style: GoogleFonts.lexend(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                  color: Colors.white,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              child: const Icon(
+                Icons.notifications_outlined,
+                color: AppTheme.textPrimaryDark,
+              ),
             ),
             tooltip: 'Pusat Notifikasi',
             onPressed: () => context.push('/notifications'),
           ),
+          const SizedBox(width: 4),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const _OperationTile(
-            icon: Icons.point_of_sale_rounded,
-            title: 'Mesin Kasir (POS)',
-            subtitle: 'Catat transaksi penjualan kasir, kelola keranjang & cetak struk',
-            badgeText: 'Kasir',
-            route: '/pos',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.inventory_2_outlined,
-            title: 'Katalog Produk & Kategori',
-            subtitle: 'Lihat daftar harga, HPP, tambah produk baru & kategori',
-            badgeText: 'Katalog',
-            route: '/catalog',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.warehouse_outlined,
-            title: 'Inventaris & Stok Outlet',
-            subtitle: 'Pantau sisa stok per cabang dan peringatan menipis',
-            badgeText: 'Stok',
-            route: '/inventory',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.lightbulb_outline_rounded,
-            title: 'Rekomendasi Keputusan (AI/DSS)',
-            subtitle: 'Evaluasi Rule Engine untuk deteksi stok habis & anomali',
-            badgeText: 'Insight',
-            route: '/insights',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.store_mall_directory_outlined,
-            title: 'Manajemen Cabang & LBS',
-            subtitle: 'Pemetaan cabang, pencarian outlet terdekat & jam operasional',
-            badgeText: 'Cabang',
-            route: '/outlets',
-          ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
+          // Hitung aspect ratio dinamis agar tinggi kartu selalu cukup (~146dp) dan bebas RenderFlex overflow
+          final itemWidth = (width - 32 - ((crossAxisCount - 1) * 12)) / crossAxisCount;
+          final childAspectRatio = (itemWidth / 146).clamp(0.95, 1.45);
 
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.notifications_active_outlined,
-            title: 'Notifikasi & Peringatan Sistem',
-            subtitle: 'Peringatan stok menipis, evaluasi target & pesan sistem',
-            badgeText: 'Peringatan',
-            route: '/notifications',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.currency_exchange_rounded,
-            title: 'Pengaturan Kurs & Waktu',
-            subtitle: 'Preferensi multi-currency (IDR/USD/EUR) & zona waktu cabang',
-            badgeText: 'Kurs',
-            route: '/settings',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.security_rounded,
-            title: 'Ledger Integritas & Verifikasi',
-            subtitle: 'Audit trail rantai blok SHA-256 untuk mendeteksi manipulasi data',
-            badgeText: 'Audit Chain',
-            route: '/integrity',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.sports_esports_rounded,
-            title: 'Mini-Game: Guess the Menu',
-            subtitle: 'Uji ketangkasan menghafal foto menu, nama produk, & harga jual POS',
-            badgeText: 'Game',
-            route: '/game',
-          ),
-          const SizedBox(height: 10),
-          const _OperationTile(
-            icon: Icons.sensors_rounded,
-            title: 'Diagnostik Sensor & Biometrik',
-            subtitle: 'Simulasi biometrik, shake-to-refresh, akselerometer & giroskop',
-            badgeText: 'Sensor',
-            route: '/sensors',
-          ),
-        ],
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            children: [
+              // 1. Hero Card: Mesin Kasir (POS)
+              const _PosHeroCard(),
+              const SizedBox(height: 24),
+
+              // 2. Kategori: Manajemen
+              const _SectionHeader(
+                icon: Icons.business_center_outlined,
+                title: 'Manajemen',
+                countBadge: '4 Modul',
+              ),
+              const SizedBox(height: 12),
+              GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: childAspectRatio,
+                children: const [
+                  _OperationGridCard(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Katalog & Kategori',
+                    subtitle: 'Daftar harga jual, HPP, & tambah produk',
+                    badgeText: 'Katalog',
+                    route: '/catalog',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.warehouse_outlined,
+                    title: 'Inventaris & Stok',
+                    subtitle: 'Pantau sisa stok outlet & peringatan tipis',
+                    badgeText: 'Stok',
+                    route: '/inventory',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.store_mall_directory_outlined,
+                    title: 'Cabang & LBS',
+                    subtitle: 'Pemetaan cabang, LBS & jam operasional',
+                    badgeText: 'Cabang',
+                    route: '/outlets',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.security_rounded,
+                    title: 'Integritas Ledger',
+                    subtitle: 'Audit trail rantai blok SHA-256 anti-tamper',
+                    badgeText: 'Audit Chain',
+                    route: '/integrity',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // 3. Kategori: Utilitas
+              const _SectionHeader(
+                icon: Icons.tune_rounded,
+                title: 'Utilitas',
+                countBadge: '5 Alat',
+              ),
+              const SizedBox(height: 12),
+              GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: childAspectRatio,
+                children: const [
+                  _OperationGridCard(
+                    icon: Icons.lightbulb_outline_rounded,
+                    title: 'Rekomendasi AI',
+                    subtitle: 'Evaluasi Rule Engine DSS & anomali stok',
+                    badgeText: 'AI DSS',
+                    route: '/insights',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.notifications_active_outlined,
+                    title: 'Pusat Notifikasi',
+                    subtitle: 'Peringatan stok kritis & evaluasi target',
+                    badgeText: 'Peringatan',
+                    route: '/notifications',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.currency_exchange_rounded,
+                    title: 'Pengaturan Kurs',
+                    subtitle: 'Multi-currency IDR/USD/EUR & zona waktu',
+                    badgeText: 'Kurs & Jam',
+                    route: '/settings',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.sensors_rounded,
+                    title: 'Sensor & Biometrik',
+                    subtitle: 'Simulasi biometrik & akselerometer hardware',
+                    badgeText: 'Sensor',
+                    route: '/sensors',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.sports_esports_rounded,
+                    title: 'Mini-Game Menu',
+                    subtitle: 'Uji ketangkasan hafalan menu & harga POS',
+                    badgeText: 'Game',
+                    route: '/game',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          );
+        },
       ),
     );
   }
-
 }
 
-/// Tile operasi — widget class top-level const (aturan E23).
-class _OperationTile extends StatelessWidget {
+/// Header Kategori Operasi
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String countBadge;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.countBadge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppTheme.jadeTosca),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.lexend(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimaryDark,
+            letterSpacing: 0.2,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: AppTheme.darkCardSurfaceElevated,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+          ),
+          child: Text(
+            countBadge,
+            style: GoogleFonts.lexend(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textMutedDark,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hero Action Card untuk Mesin Kasir (POS)
+class _PosHeroCard extends StatelessWidget {
+  const _PosHeroCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurface,
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.jadeTosca.withValues(alpha: 0.14),
+            AppTheme.darkCardSurface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppTheme.jadeTosca.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => context.push('/pos'),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.jadeTosca,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.jadeTosca.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.point_of_sale_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Mesin Kasir (POS)',
+                              style: GoogleFonts.lexend(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textPrimaryDark,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.jadeTosca.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: AppTheme.jadeTosca.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Text(
+                              'Kasir Utama',
+                              style: GoogleFonts.lexend(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.jadeTosca,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Buka kasir aktif untuk input penjualan, scan barang & cetak struk',
+                        style: GoogleFonts.lexend(
+                          fontSize: 11.5,
+                          color: AppTheme.textMutedDark,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkCardSurfaceElevated,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.darkCardBorder),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: AppTheme.jadeTosca,
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Item Grid Kartu Operasi dalam Kategori
+class _OperationGridCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final String badgeText;
   final String route;
 
-  const _OperationTile({
+  const _OperationGridCard({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -147,69 +390,96 @@ class _OperationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        onTap: () => context.push(route),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppTheme.primaryBlue, size: 24),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.lexend(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: AppTheme.accentBlack,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => context.push(route),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.jadeTosca.withValues(alpha: 0.25),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Icon(icon, color: AppTheme.jadeTosca, size: 20),
+                    ),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.darkCardSurfaceElevated,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: GoogleFonts.lexend(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.jadeTosca,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppTheme.lightBlueBg,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
-              ),
-              child: Text(
-                badgeText,
-                style: GoogleFonts.lexend(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryBlue,
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.lexend(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: AppTheme.textPrimaryDark,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.lexend(
+                          fontSize: 10.5,
+                          color: AppTheme.textMutedDark,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              ],
             ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 3),
-          child: Text(
-            subtitle,
-            style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted, height: 1.3),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
-        trailing: const SizedBox(width: 20, child: Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.textMuted, size: 14)),
       ),
     );
   }
