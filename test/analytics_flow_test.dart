@@ -59,26 +59,22 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Halo, Rina Owner'), findsOneWidget);
-      expect(find.text('Total Omset'), findsOneWidget);
+      expect(find.text('Hai, Rina Owner.'), findsOneWidget);
+      expect(find.text('Omzet'), findsOneWidget);
+      expect(find.text('Total omzet pada periode terpilih'), findsOneWidget);
       expect(find.text('Rp 2.500.000'), findsOneWidget);
-      expect(find.text('50'), findsOneWidget); // Transaksi
-      expect(find.textContaining('Rp 50.000'), findsOneWidget); // Basket size
-
-      // Owner melihat estimasi margin (tampil di kartu KPI dan di kartu Laba Hari Ini)
-      expect(find.textContaining('Estimasi Margin (60%)'), findsOneWidget);
-      expect(find.text('Rp 1.500.000'), findsNWidgets(2));
+      expect(find.text('50'), findsNWidgets(2)); // Transaksi & Skala Sumbu Y Grafik
 
       // Verifikasi Dropdown Cabang & Dropdown Periode Hari
       expect(find.text('Semua Cabang'), findsOneWidget);
       expect(find.text('Hari Ini'), findsOneWidget);
 
-      // Verifikasi Kartu Komparasi Laba Harian (Hari Ini vs Kemarin)
-      expect(find.text('Komparasi Laba Harian'), findsOneWidget);
-      expect(find.text('Hari Ini vs Hari Kemarin (Seluruh Cabang)'), findsOneWidget);
-      expect(find.text('Laba Hari Ini'), findsOneWidget);
-      expect(find.text('Laba Kemarin'), findsOneWidget);
-      expect(find.textContaining('Perbedaan Laba:'), findsOneWidget);
+      // Verifikasi Seluruh Section Baru Dashboard Owner
+      expect(find.text('Target omzet bulanan'), findsOneWidget);
+      expect(find.text('Tren Penjualan'), findsOneWidget);
+      expect(find.text('Produk Terlaris'), findsOneWidget);
+      expect(find.text('Peringatan Stok'), findsOneWidget);
+      expect(find.text('ARUS Insight'), findsOneWidget);
     });
 
     testWidgets('DashboardScreen memungkinkan Owner memilih cabang dan filter hari', (tester) async {
@@ -198,8 +194,8 @@ void main() {
       await tester.tap(find.textContaining('Kopi Arus - Cabang Sangat Panjang').last);
       await tester.pumpAndSettle();
 
-      // Tidak ada overflow dan kartu komparasi tetap ter-render
-      expect(find.text('Komparasi Laba Harian'), findsOneWidget);
+      // Tidak ada overflow dan kartu utama tetap ter-render
+      expect(find.text('Omzet'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

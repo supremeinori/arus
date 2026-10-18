@@ -22,6 +22,9 @@ final selectedOutletFilterProvider = StateProvider<String?>((ref) => null);
 /// Filter hari/periode dashboard: default "Hari Ini"
 final selectedDateFilterProvider = StateProvider<DashboardDateFilter>((ref) => DashboardDateFilter.today);
 
+/// Filter tanggal kustom spesifik (jika pengguna memilih tanggal via date picker)
+final selectedCustomDateProvider = StateProvider<DateTime?>((ref) => null);
+
 /// Model komparasi laba dan omset hari kemarin vs hari sekarang
 class DailyProfitComparisonModel {
   final AnalyticsOverviewModel today;
@@ -83,17 +86,23 @@ final analyticsOverviewProvider = FutureProvider.autoDispose<AnalyticsOverviewMo
   final repo = ref.watch(analyticsRepositoryProvider);
   final outletId = ref.watch(selectedOutletFilterProvider);
   final dateFilter = ref.watch(selectedDateFilterProvider);
+  final customDate = ref.watch(selectedCustomDateProvider);
 
   final now = DateTime.now();
   String? fromStr;
   String? toStr;
 
-  switch (dateFilter) {
-    case DashboardDateFilter.today:
-      final d = DateFormat('yyyy-MM-dd').format(now);
-      fromStr = d;
-      toStr = d;
-      break;
+  if (customDate != null) {
+    final d = DateFormat('yyyy-MM-dd').format(customDate);
+    fromStr = d;
+    toStr = d;
+  } else {
+    switch (dateFilter) {
+      case DashboardDateFilter.today:
+        final d = DateFormat('yyyy-MM-dd').format(now);
+        fromStr = d;
+        toStr = d;
+        break;
     case DashboardDateFilter.yesterday:
       final d = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 1)));
       fromStr = d;
@@ -111,6 +120,7 @@ final analyticsOverviewProvider = FutureProvider.autoDispose<AnalyticsOverviewMo
       fromStr = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month, 1));
       toStr = DateFormat('yyyy-MM-dd').format(now);
       break;
+    }
   }
 
   return repo.getOverview(outletId: outletId, from: fromStr, to: toStr);

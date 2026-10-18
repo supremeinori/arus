@@ -123,8 +123,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // "Beranda" ada di AppBar dan di BottomNav label
-      expect(find.text('Beranda'), findsNWidgets(2));
+      // "Beranda" ada di BottomNav label (judul Beranda berulang dihilangkan sesuai spesifikasi Anti-AI-Slop)
+      expect(find.text('Beranda'), findsOneWidget);
       expect(find.text('Operasi'), findsOneWidget);
       expect(find.text('Analitik'), findsOneWidget);
       expect(find.text('Lainnya'), findsOneWidget);
