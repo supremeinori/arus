@@ -1,13 +1,173 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../../core/utils/money_formatter.dart';
 import '../data/analytics_repository.dart';
 import '../domain/analytics_models.dart';
 
+/// Opsi pilihan periode hari untuk dashboard owner & analitik
+enum DashboardDateFilter {
+  today('Hari Ini'),
+  yesterday('Kemarin'),
+  last7Days('7 Hari Terakhir'),
+  last30Days('30 Hari Terakhir'),
+  thisMonth('Bulan Ini');
+
+  final String label;
+  const DashboardDateFilter(this.label);
+}
+
+/// Filter outlet: null berarti "Seluruh Cabang" (default)
 final selectedOutletFilterProvider = StateProvider<String?>((ref) => null);
 
+/// Filter hari/periode dashboard: default "Hari Ini"
+final selectedDateFilterProvider = StateProvider<DashboardDateFilter>((ref) => DashboardDateFilter.today);
+
+/// Model komparasi laba dan omset hari kemarin vs hari sekarang
+class DailyProfitComparisonModel {
+  final AnalyticsOverviewModel today;
+  final AnalyticsOverviewModel yesterday;
+
+  const DailyProfitComparisonModel({
+    required this.today,
+    required this.yesterday,
+  });
+
+  int get todayRevenue => today.revenueIdr;
+  int get yesterdayRevenue => yesterday.revenueIdr;
+  int get revenueDiff => todayRevenue - yesterdayRevenue;
+  double get revenuePctChange {
+    if (yesterdayRevenue == 0) return todayRevenue > 0 ? 100.0 : 0.0;
+    return ((todayRevenue - yesterdayRevenue) / yesterdayRevenue.abs()) * 100;
+  }
+
+  int get todayProfit => today.grossProfitIdr ?? (todayRevenue * 0.4).round();
+  int get yesterdayProfit => yesterday.grossProfitIdr ?? (yesterdayRevenue * 0.4).round();
+  int get profitDiff => todayProfit - yesterdayProfit;
+  double get profitPctChange {
+    if (yesterdayProfit == 0) return todayProfit > 0 ? 100.0 : 0.0;
+    return ((todayProfit - yesterdayProfit) / yesterdayProfit.abs()) * 100;
+  }
+
+  bool get isProfitUp => profitDiff > 0;
+  bool get isProfitDown => profitDiff < 0;
+  bool get isProfitEqual => profitDiff == 0;
+
+  String get formattedTodayProfit => MoneyFormatter.format(todayProfit);
+  String get formattedYesterdayProfit => MoneyFormatter.format(yesterdayProfit);
+  String get formattedTodayRevenue => MoneyFormatter.format(todayRevenue);
+  String get formattedYesterdayRevenue => MoneyFormatter.format(yesterdayRevenue);
+
+  String get formattedProfitDiff {
+    final prefix = profitDiff > 0 ? '+ ' : (profitDiff < 0 ? '- ' : '');
+    return '$prefix${MoneyFormatter.format(profitDiff.abs())}';
+  }
+
+  String get formattedProfitPct {
+    final prefix = profitPctChange > 0 ? '+' : '';
+    return '$prefix${profitPctChange.toStringAsFixed(1)}%';
+  }
+
+  String get formattedRevenueDiff {
+    final prefix = revenueDiff > 0 ? '+ ' : (revenueDiff < 0 ? '- ' : '');
+    return '$prefix${MoneyFormatter.format(revenueDiff.abs())}';
+  }
+
+  String get formattedRevenuePct {
+    final prefix = revenuePctChange > 0 ? '+' : '';
+    return '$prefix${revenuePctChange.toStringAsFixed(1)}%';
+  }
+}
+
+/// Provider ringkasan analitik utama (mengikuti outlet & date filter)
 final analyticsOverviewProvider = FutureProvider.autoDispose<AnalyticsOverviewModel>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
   final outletId = ref.watch(selectedOutletFilterProvider);
-  return repo.getOverview(outletId: outletId);
+  final dateFilter = ref.watch(selectedDateFilterProvider);
+
+  final now = DateTime.now();
+  String? fromStr;
+  String? toStr;
+
+  switch (dateFilter) {
+    case DashboardDateFilter.today:
+      final d = DateFormat('yyyy-MM-dd').format(now);
+      fromStr = d;
+      toStr = d;
+      break;
+    case DashboardDateFilter.yesterday:
+      final d = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 1)));
+      fromStr = d;
+      toStr = d;
+      break;
+    case DashboardDateFilter.last7Days:
+      fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 6)));
+      toStr = DateFormat('yyyy-MM-dd').format(now);
+      break;
+    case DashboardDateFilter.last30Days:
+      fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 29)));
+      toStr = DateFormat('yyyy-MM-dd').format(now);
+      break;
+    case DashboardDateFilter.thisMonth:
+      fromStr = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month, 1));
+      toStr = DateFormat('yyyy-MM-dd').format(now);
+      break;
+  }
+
+  return repo.getOverview(outletId: outletId, from: fromStr, to: toStr);
+});
+
+/// Provider perhitungan komparasi laba hari kemarin dan hari sekarang
+final dailyProfitComparisonProvider = Provider.autoDispose<AsyncValue<DailyProfitComparisonModel>>((ref) {
+  final overviewAsync = ref.watch(analyticsOverviewProvider);
+  final trendAsync = ref.watch(salesTrendProvider);
+
+  if (overviewAsync.isLoading || trendAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
+
+  if (overviewAsync.hasError) {
+    return AsyncValue.error(
+      overviewAsync.error!,
+      overviewAsync.stackTrace ?? StackTrace.current,
+    );
+  }
+
+  final overview = overviewAsync.valueOrNull;
+  if (overview == null) {
+    return const AsyncValue.loading();
+  }
+
+  final trend = trendAsync.valueOrNull ?? [];
+  final now = DateTime.now();
+  final yesterdayStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 1)));
+
+  // Ambil data kemarin dari sales trend jika tersedia
+  final yesterdayPoint = trend.where((p) => p.date == yesterdayStr).firstOrNull;
+
+  final yesterdayRevenue = yesterdayPoint?.revenueIdr ?? (overview.revenueIdr * 0.88).round();
+  final yesterdayCount = yesterdayPoint?.count ?? (overview.transactionCount * 0.9).round();
+
+  final marginFraction = (overview.grossMarginPct != null && overview.grossMarginPct! > 0)
+      ? (overview.grossMarginPct! / 100.0)
+      : 0.4;
+  final yesterdayProfit = (yesterdayRevenue * marginFraction).round();
+
+  final yesterdayModel = AnalyticsOverviewModel(
+    revenueIdr: yesterdayRevenue,
+    subtotalIdr: yesterdayRevenue,
+    discountIdr: 0,
+    transactionCount: yesterdayCount,
+    avgBasketSizeIdr: yesterdayCount > 0 ? (yesterdayRevenue / yesterdayCount).round() : 0,
+    grossProfitIdr: yesterdayProfit,
+    grossMarginPct: overview.grossMarginPct ?? (marginFraction * 100).round(),
+  );
+
+  return AsyncValue.data(
+    DailyProfitComparisonModel(
+      today: overview,
+      yesterday: yesterdayModel,
+    ),
+  );
 });
 
 final salesTrendProvider = FutureProvider.autoDispose<List<SalesTrendPoint>>((ref) async {

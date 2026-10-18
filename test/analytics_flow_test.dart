@@ -27,6 +27,13 @@ void main() {
     ];
 
     testWidgets('DashboardScreen menampilkan kartu metrik KPI dan estimasi margin untuk Owner', (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       const ownerUser = UserModel(
         id: 'u-owner',
         name: 'Rina Owner',
@@ -54,13 +61,93 @@ void main() {
 
       expect(find.text('Halo, Rina Owner'), findsOneWidget);
       expect(find.text('Total Omset'), findsOneWidget);
-      expect(find.textContaining('Rp 2.500.000'), findsOneWidget);
+      expect(find.text('Rp 2.500.000'), findsOneWidget);
       expect(find.text('50'), findsOneWidget); // Transaksi
       expect(find.textContaining('Rp 50.000'), findsOneWidget); // Basket size
 
-      // Owner melihat estimasi margin
+      // Owner melihat estimasi margin (tampil di kartu KPI dan di kartu Laba Hari Ini)
       expect(find.textContaining('Estimasi Margin (60%)'), findsOneWidget);
-      expect(find.textContaining('Rp 1.500.000'), findsOneWidget);
+      expect(find.text('Rp 1.500.000'), findsNWidgets(2));
+
+      // Verifikasi Dropdown Cabang & Dropdown Periode Hari
+      expect(find.text('Semua Cabang'), findsOneWidget);
+      expect(find.text('Hari Ini'), findsOneWidget);
+
+      // Verifikasi Kartu Komparasi Laba Harian (Hari Ini vs Kemarin)
+      expect(find.text('Komparasi Laba Harian'), findsOneWidget);
+      expect(find.text('Hari Ini vs Hari Kemarin (Seluruh Cabang)'), findsOneWidget);
+      expect(find.text('Laba Hari Ini'), findsOneWidget);
+      expect(find.text('Laba Kemarin'), findsOneWidget);
+      expect(find.textContaining('Perbedaan Laba:'), findsOneWidget);
+    });
+
+    testWidgets('DashboardScreen memungkinkan Owner memilih cabang dan filter hari', (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      const multiOutletOwner = UserModel(
+        id: 'u-owner-multi',
+        name: 'Pak Budi',
+        email: 'budi@arus.demo',
+        role: UserRole.owner,
+        outlets: [
+          OutletSummary(id: 'out-1', name: 'Kopi Arus - Sudirman', timezone: 'Asia/Jakarta'),
+          OutletSummary(id: 'out-2', name: 'Kopi Arus - Senopati', timezone: 'Asia/Jakarta'),
+        ],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith((ref) => AuthNotifierMock(AuthState.authenticated(multiOutletOwner))),
+          analyticsOverviewProvider.overrideWith((ref) async => sampleKpi),
+          salesTrendProvider.overrideWith((ref) async => sampleTrend),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: DashboardScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Dropdown cabang default 'Semua Cabang'
+      expect(find.text('Semua Cabang'), findsOneWidget);
+      expect(container.read(selectedOutletFilterProvider), isNull);
+
+      // Buka dropdown cabang dan pilih Cabang Senopati
+      await tester.tap(find.text('Semua Cabang'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kopi Arus - Senopati').last, findsOneWidget);
+      await tester.tap(find.text('Kopi Arus - Senopati').last);
+      await tester.pumpAndSettle();
+
+      // State provider outlet berubah
+      expect(container.read(selectedOutletFilterProvider), 'out-2');
+
+      // Dropdown hari default 'Hari Ini'
+      expect(find.text('Hari Ini'), findsOneWidget);
+      expect(container.read(selectedDateFilterProvider), DashboardDateFilter.today);
+
+      // Buka dropdown hari dan pilih 'Kemarin'
+      await tester.tap(find.text('Hari Ini'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kemarin').last, findsOneWidget);
+      await tester.tap(find.text('Kemarin').last);
+      await tester.pumpAndSettle();
+
+      expect(container.read(selectedDateFilterProvider), DashboardDateFilter.yesterday);
     });
   });
 }
