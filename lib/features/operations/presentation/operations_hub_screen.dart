@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,7 +29,7 @@ class OperationsHubScreen extends ConsumerWidget {
         ),
         title: Text(
           'Pusat Operasi',
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 17,
             color: AppTheme.textPrimaryDark,
@@ -49,7 +49,7 @@ class OperationsHubScreen extends ConsumerWidget {
               backgroundColor: const Color(0xFFEF4444),
               label: Text(
                 '$unreadCount',
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 10,
                   color: Colors.white,
@@ -191,7 +191,7 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
             color: AppTheme.textPrimaryDark,
@@ -210,7 +210,7 @@ class _SectionHeader extends StatelessWidget {
           ),
           child: Text(
             countBadge,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: AppTheme.textMutedDark,
@@ -277,7 +277,7 @@ class _PosHeroCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               'Mesin Kasir (POS)',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.textPrimaryDark,
@@ -292,7 +292,7 @@ class _PosHeroCard extends StatelessWidget {
                             foregroundColor: AppTheme.jadeTosca,
                             child: Text(
                               'Kasir Utama',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -303,7 +303,7 @@ class _PosHeroCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Buka kasir aktif untuk input penjualan, scan barang & cetak struk',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 11.5,
                           color: AppTheme.textMutedDark,
                           height: 1.3,
@@ -384,7 +384,7 @@ class _OperationGridCard extends StatelessWidget {
                   child: ShadBadge.outline(
                     child: Text(
                       badgeText,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.jadeTosca,
@@ -404,7 +404,7 @@ class _OperationGridCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: AppTheme.textPrimaryDark,
@@ -416,7 +416,7 @@ class _OperationGridCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 10.5,
                       color: AppTheme.textMutedDark,
                       height: 1.25,

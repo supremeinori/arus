@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -162,7 +162,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               children: [
                 Text(
                   'Pembayaran & Checkout',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17, color: AppTheme.textPrimaryDark),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: AppTheme.textPrimaryDark),
@@ -179,11 +179,11 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               children: [
                 Text(
                   'Subtotal (${cartState.totalItemsCount} item)',
-                  style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.textMutedDark),
+                  style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textMutedDark),
                 ),
                 Text(
                   MoneyFormatter.format(subtotal),
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
                 ),
               ],
             ),
@@ -194,7 +194,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               children: [
                 Text(
                   'Diskon:',
-                  style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.textMutedDark),
+                  style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textMutedDark),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -218,11 +218,11 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               children: [
                 Text(
                   'Total Tagihan',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark),
                 ),
                 Text(
                   MoneyFormatter.format(total),
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.jadeTosca),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.jadeTosca),
                 ),
               ],
             ),
@@ -231,7 +231,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
             // Pilihan Metode Pembayaran
             Text(
               'Metode Pembayaran:',
-              style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.textPrimaryDark),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.textPrimaryDark),
             ),
             const SizedBox(height: 10),
             Row(
@@ -263,13 +263,13 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                           ? 'Scan QR untuk membayar ${MoneyFormatter.format(total)}'
                           : 'Gesek kartu EDC sebesar ${MoneyFormatter.format(total)}',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMuted),
+                      style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMuted),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Simulasi — tekan "Konfirmasi Pembayaran Diterima" setelah pelanggan membayar.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMuted),
+                      style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMuted),
                     ),
                   ],
                 ),
@@ -297,7 +297,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 spacing: 8,
                 children: [
                   ActionChip(
-                    label: Text('Uang Pas', style: GoogleFonts.lexend(fontSize: 12)),
+                    label: Text('Uang Pas', style: GoogleFonts.inter(fontSize: 12)),
                     backgroundColor: AppTheme.darkCardSurface,
                     side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -305,7 +305,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   ),
                   if (total <= 50000)
                     ActionChip(
-                      label: Text('Rp 50.000', style: GoogleFonts.lexend(fontSize: 12)),
+                      label: Text('Rp 50.000', style: GoogleFonts.inter(fontSize: 12)),
                       backgroundColor: AppTheme.darkCardSurface,
                       side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -313,7 +313,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                     ),
                   if (total <= 100000)
                     ActionChip(
-                      label: Text('Rp 100.000', style: GoogleFonts.lexend(fontSize: 12)),
+                      label: Text('Rp 100.000', style: GoogleFonts.inter(fontSize: 12)),
                       backgroundColor: AppTheme.darkCardSurface,
                       side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -328,11 +328,11 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 children: [
                   Text(
                     'Kembalian:',
-                    style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark),
                   ),
                   Text(
                     MoneyFormatter.format(change),
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
                       color: currentPaid >= total ? AppTheme.textPrimaryDark : const Color(0xFF94A3B8),
@@ -353,7 +353,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 ),
                 child: Text(
                   _errorMessage!,
-                  style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
+                  style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12),
                 ),
               ),
             ],
@@ -402,7 +402,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
               const SizedBox(height: 4),
               Text(
                 label,
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                   fontSize: 11.5,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected ? AppTheme.jadeTosca : AppTheme.textPrimaryDark,

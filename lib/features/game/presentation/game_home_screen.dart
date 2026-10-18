@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -237,7 +237,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
           _gameState == GameState.playing
               ? (_selectedMode == 'guess_name' ? 'Tebak Nama Menu' : 'Tebak Harga Jual')
               : 'Guess the Menu',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -345,7 +345,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'Mini Game POS',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           color: Colors.white70,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -356,7 +356,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Guess the Menu! 🎯',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -365,7 +365,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'Asah ingatan kasir terhadap visual menu & harga jual resmi outlet secara interaktif.',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 13,
                       height: 1.4,
@@ -382,7 +382,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
               children: [
                 Text(
                   'Rekor Terbaik Anda',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 if (_isLoadingStats)
                   const SizedBox(
@@ -419,7 +419,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             // Pilihan Mode Permainan
             Text(
               'Pilih Mode Permainan',
-              style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
 
@@ -449,7 +449,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             if (_userStats != null && _userStats!.recentSessions.isNotEmpty) ...[
               Text(
                 'Riwayat Permainan Terakhir',
-                style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
               // List kecil & tetap (<=5 item): render langsung tanpa ListView
@@ -486,7 +486,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                                 isName ? 'Tebak Nama Menu' : 'Tebak Harga Jual',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
@@ -504,7 +504,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                           '${s.score} Poin',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             color: AppTheme.primary,
                             fontSize: 14,
@@ -546,7 +546,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     'Soal ${_currentQuestionIndex + 1} dari ${_questions.length}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                       color: Colors.grey.shade800,
@@ -560,7 +560,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                         '$_currentScore Poin',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
                           color: AppTheme.primary,
@@ -588,7 +588,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 alignment: Alignment.centerRight,
                 child: Text(
                   '⏱️ Sisa Waktu: $_remainingSeconds detik',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: _remainingSeconds <= 3 ? AppTheme.error : Colors.grey.shade700,
@@ -616,7 +616,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     currentQ.categoryName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       color: AppTheme.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -664,7 +664,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   textAlign: TextAlign.center,
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: _selectedMode == 'guess_price' ? 18 : 15,
                     color: Colors.black87,
@@ -742,7 +742,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   const SizedBox(width: 4),
                   Text(
                     'REKOR SKOR BARU! 🏆',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       color: Colors.amber.shade900,
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
@@ -756,7 +756,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
 
           Text(
             'Permainan Selesai!',
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
@@ -766,7 +766,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             badgeTitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: badgeColor,
@@ -798,7 +798,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 const SizedBox(height: 6),
                 Text(
                   '$_currentScore',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
                     color: AppTheme.primary,
@@ -837,7 +837,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             onPressed: () => _startGame(_selectedMode),
             child: Text(
               'Main Lagi 🔁',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: Colors.white,
@@ -855,7 +855,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             onPressed: () => setState(() => _gameState = GameState.lobby),
             child: Text(
               'Kembali ke Menu Game',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
                 color: AppTheme.primary,
@@ -914,7 +914,7 @@ class _GameStatCard extends StatelessWidget {
                   '$score Poin',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
                     color: Colors.black87,
@@ -985,7 +985,7 @@ class _GameModeCard extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
@@ -1008,7 +1008,7 @@ class _GameModeCard extends StatelessWidget {
                       badgeText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         color: color,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -1087,7 +1087,7 @@ class _GameOptionButton extends StatelessWidget {
               ),
               child: Text(
                 opt.key.replaceAll('opt_', '').toUpperCase(),
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -1099,7 +1099,7 @@ class _GameOptionButton extends StatelessWidget {
                 opt.label,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                   color: textColor,
@@ -1138,7 +1138,7 @@ class _GameResultMetric extends StatelessWidget {
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),

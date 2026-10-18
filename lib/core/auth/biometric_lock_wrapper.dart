@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
@@ -129,7 +129,7 @@ class _BiometricLockWrapperState extends ConsumerState<BiometricLockWrapper> wit
                         const SizedBox(height: 24),
                         Text(
                           'Aplikasi Terkunci',
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.accentBlack,
@@ -139,7 +139,7 @@ class _BiometricLockWrapperState extends ConsumerState<BiometricLockWrapper> wit
                         Text(
                           'Sesi Anda terkunci otomatis demi keamanan karena aplikasi di-minimize lebih dari 5 menit.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 13.5,
                             color: const Color(0xFF64748B),
                             height: 1.45,
@@ -158,7 +158,7 @@ class _BiometricLockWrapperState extends ConsumerState<BiometricLockWrapper> wit
                           icon: const Icon(Icons.fingerprint_rounded, color: Colors.white, size: 24),
                           label: Text(
                             'Buka dengan Biometrik',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
@@ -171,7 +171,7 @@ class _BiometricLockWrapperState extends ConsumerState<BiometricLockWrapper> wit
                           icon: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.textMuted),
                           label: Text(
                             'Masuk dengan Email & Password',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               color: AppTheme.textMuted,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,

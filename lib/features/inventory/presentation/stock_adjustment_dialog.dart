@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -82,7 +82,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Penyesuaian stok bahan baku berhasil disimpan.', style: GoogleFonts.lexend()),
+            content: Text('Penyesuaian stok bahan baku berhasil disimpan.', style: GoogleFonts.inter()),
             backgroundColor: AppTheme.jadeTosca,
           ),
         );
@@ -109,14 +109,14 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
         children: [
           Text(
             'Penyesuaian Stok Bahan Baku',
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
           ),
           const SizedBox(height: 3),
           Text(
             '$_name • $_outletName',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
           ),
         ],
       ),
@@ -145,14 +145,14 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                         'Stok Saat Ini:',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textPrimaryDark),
+                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textPrimaryDark),
                       ),
                     ),
                     Text(
                       '$_currentStock $_unit',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
                     ),
                   ],
                 ),
@@ -176,7 +176,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                           _errorMessage!,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFFF87171)),
+                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFF87171)),
                         ),
                       ),
                     ],
@@ -185,7 +185,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 const SizedBox(height: 14),
               ],
 
-              Text('Jenis Mutasi:', style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark)),
+              Text('Jenis Mutasi:', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
                 initialValue: _movementType,
@@ -193,9 +193,9 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 isDense: true,
                 decoration: const InputDecoration(border: OutlineInputBorder()),
                 items: [
-                  DropdownMenuItem(value: 'restock', child: Text('Restock Masuk (+)', style: GoogleFonts.lexend(fontSize: 13))),
-                  DropdownMenuItem(value: 'correction', child: Text('Koreksi Opname (+/-)', style: GoogleFonts.lexend(fontSize: 13))),
-                  DropdownMenuItem(value: 'waste', child: Text('Bahan Basi / Rusak (-)', style: GoogleFonts.lexend(fontSize: 13))),
+                  DropdownMenuItem(value: 'restock', child: Text('Restock Masuk (+)', style: GoogleFonts.inter(fontSize: 13))),
+                  DropdownMenuItem(value: 'correction', child: Text('Koreksi Opname (+/-)', style: GoogleFonts.inter(fontSize: 13))),
+                  DropdownMenuItem(value: 'waste', child: Text('Bahan Basi / Rusak (-)', style: GoogleFonts.inter(fontSize: 13))),
                 ],
                 onChanged: (val) {
                   if (val != null) setState(() => _movementType = val);
@@ -230,14 +230,14 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       'Estimasi stok akhir:',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                     ),
                   ),
                   Text(
                     '$projectedQty $_unit',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: projectedQty < 0 ? AppTheme.dangerRed : AppTheme.textPrimaryDark,
@@ -264,7 +264,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
+          child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMutedDark)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -274,7 +274,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
           onPressed: _isLoading ? null : _submit,
           child: _isLoading
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : Text('Simpan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600)),
+              : Text('Simpan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       ],
     );

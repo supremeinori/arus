@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -33,7 +33,7 @@ class AnalyticsScreen extends ConsumerWidget {
         ),
         title: Text(
           'Analitik Performa',
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
             color: AppTheme.textPrimaryDark,
@@ -77,7 +77,7 @@ class AnalyticsScreen extends ConsumerWidget {
             // Distribusi Jam Ramai (Peak Hours)
             Text(
               'Distribusi Jam Ramai Transaksi (Peak Hours)',
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: AppTheme.textPrimaryDark,
@@ -88,7 +88,7 @@ class AnalyticsScreen extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               'Gunakan data ini untuk penyesuaian jadwal kasir & persiapan persediaan bahan.',
-              style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -132,14 +132,14 @@ class _OverviewCard extends StatelessWidget {
         children: [
           Text(
             'Total Pendapatan Terakumulasi',
-            style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 12),
+            style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 12),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 6),
           Text(
             kpi.formattedRevenue,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w800,
               fontSize: 24,
               color: AppTheme.textPrimaryDark,
@@ -176,14 +176,14 @@ class _MiniStat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMutedDark),
+          style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
         Text(
           value,
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -230,7 +230,7 @@ class _PeakHoursList extends StatelessWidget {
                   child: Center(
                     child: Text(
                       h.label.split(':')[0],
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w800,
                         color: AppTheme.jadeTosca,
                         fontSize: 14,
@@ -247,7 +247,7 @@ class _PeakHoursList extends StatelessWidget {
                   children: [
                     Text(
                       'Pukul ${h.label}',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                         color: AppTheme.textPrimaryDark,
@@ -257,7 +257,7 @@ class _PeakHoursList extends StatelessWidget {
                     ),
                     Text(
                       '${h.transactionCount} transaksi selesai',
-                      style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+                      style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -267,7 +267,7 @@ class _PeakHoursList extends StatelessWidget {
               Flexible(
                 child: Text(
                   MoneyFormatter.format(h.totalRevenueIdr),
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     color: AppTheme.jadeTosca,
                     fontSize: 13.5,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -70,7 +70,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
       appBar: AppBar(
         title: Text(
           'Pencarian Global',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -127,7 +127,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                             if (_matchingProducts.isNotEmpty) ...[
                               Text(
                                 'Katalog Produk (${_matchingProducts.length})',
-                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -139,7 +139,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                             if (_matchingOutlets.isNotEmpty) ...[
                               Text(
                                 'Cabang Outlet (${_matchingOutlets.length})',
-                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -173,13 +173,13 @@ class _ProductResultCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
-        title: Text(p.name, style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text('${p.sku} • ${p.categoryName ?? "Umum"}', style: GoogleFonts.lexend(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(p.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text('${p.sku} • ${p.categoryName ?? "Umum"}', style: GoogleFonts.inter(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: SizedBox(
           width: 100,
           child: Text(
             p.formattedPrice,
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
@@ -209,8 +209,8 @@ class _OutletResultCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: const Icon(Icons.storefront_rounded, color: Color(0xFF16A34A)),
-        title: Text(o.name, style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text(o.address, style: GoogleFonts.lexend(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(o.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(o.address, style: GoogleFonts.inter(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const SizedBox(
           width: 24,
           child: Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),

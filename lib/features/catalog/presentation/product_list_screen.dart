@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -220,7 +220,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                         prod.name,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.lexend(
+                                        style: GoogleFonts.inter(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
                                           color: AppTheme.textPrimaryDark,
@@ -243,7 +243,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               prod.sku,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.lexend(
+                                              style: GoogleFonts.inter(
                                                 fontSize: 11,
                                                 color: AppTheme.textMutedDark,
                                               ),
@@ -256,7 +256,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                                 '• ${prod.categoryName}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.lexend(
+                                                style: GoogleFonts.inter(
                                                   fontSize: 12,
                                                   color: AppTheme.textMutedDark,
                                                 ),
@@ -276,7 +276,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               prod.formattedPrice,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.lexend(
+                                              style: GoogleFonts.inter(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold,
                                                 color: AppTheme.jadeTosca,
@@ -300,7 +300,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                                 'HPP: ${prod.formattedCost}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.lexend(
+                                                style: GoogleFonts.inter(
                                                   fontSize: 11,
                                                   color: const Color(0xFFF59E0B),
                                                   fontWeight: FontWeight.w500,
@@ -326,7 +326,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                           prod.estimatedPortions > 0
                                               ? 'Estimasi: ${prod.estimatedPortions} Porsi'
                                               : 'Habis (Bahan Baku Kurang)',
-                                          style: GoogleFonts.lexend(
+                                          style: GoogleFonts.inter(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
                                             color: prod.estimatedPortions > 0 ? AppTheme.jadeTosca : const Color(0xFFEF4444),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -172,7 +172,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               widget.productId == null
                   ? 'Produk & resep berhasil disimpan!'
                   : 'Produk & resep berhasil diperbarui!',
-              style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
             ),
           ),
         );
@@ -202,7 +202,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         appBar: AppBar(
           title: Text(
             'Edit Menu / Produk',
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
           ),
         ),
         body: AsyncStateView(
@@ -326,7 +326,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                         widget.errorMessage!,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12.5),
+                        style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12.5),
                       ),
                     ),
                   ],
@@ -338,7 +338,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
             // Nama Produk
             TextFormField(
               controller: widget.nameController,
-              style: GoogleFonts.lexend(fontSize: 14),
+              style: GoogleFonts.inter(fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Nama Menu / Produk *',
                 hintText: 'Contoh: Es Kopi Susu Aren',
@@ -363,7 +363,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                   flex: 2,
                   child: TextFormField(
                     controller: widget.skuController,
-                    style: GoogleFonts.lexend(fontSize: 14),
+                    style: GoogleFonts.inter(fontSize: 14),
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
                       labelText: 'SKU *',
@@ -386,7 +386,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                   flex: 1,
                   child: TextFormField(
                     controller: widget.unitController,
-                    style: GoogleFonts.lexend(fontSize: 14),
+                    style: GoogleFonts.inter(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Satuan',
                       hintText: 'cup',
@@ -447,7 +447,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                           entry.value,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 14),
+                          style: GoogleFonts.inter(fontSize: 14),
                         ),
                       );
                     }),
@@ -461,7 +461,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
             // URL Foto / Gambar Produk
             TextFormField(
               controller: widget.imageUrlController,
-              style: GoogleFonts.lexend(fontSize: 14),
+              style: GoogleFonts.inter(fontSize: 14),
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
                 labelText: 'URL Gambar Menu (Unsplash / Web)',
@@ -487,7 +487,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                     controller: widget.priceController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: GoogleFonts.lexend(fontSize: 14),
+                    style: GoogleFonts.inter(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Harga Jual (Rp) *',
                       hintText: '22000',
@@ -510,7 +510,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                     controller: widget.costController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: GoogleFonts.lexend(fontSize: 14),
+                    style: GoogleFonts.inter(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'HPP Manual (Opsional)',
                       hintText: 'Otomatis dari resep',
@@ -553,7 +553,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                               'Komposisi Resep Menu',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.textPrimaryDark,
@@ -564,7 +564,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                               'Takaran bahan baku per 1 porsi pesanan',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+                              style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                             ),
                           ],
                         ),
@@ -578,7 +578,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                           foregroundColor: AppTheme.jadeTosca,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          textStyle: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600),
+                          textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                             side: const BorderSide(color: AppTheme.jadeTosca, width: 1),
@@ -597,7 +597,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                           'Belum ada takaran resep. Klik "+ Bahan" untuk menambahkan bahan baku.',
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -662,7 +662,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                                   value: ing.id,
                                                   child: Text(
                                                     '${ing.name} (${ing.unit})',
-                                                    style: GoogleFonts.lexend(fontSize: 12.5),
+                                                    style: GoogleFonts.inter(fontSize: 12.5),
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
                                                 );
@@ -684,7 +684,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                             controller: row.amountController,
                                             keyboardType: TextInputType.number,
                                             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                            style: GoogleFonts.lexend(fontSize: 12.5),
+                                            style: GoogleFonts.inter(fontSize: 12.5),
                                             decoration: InputDecoration(
                                               labelText: 'Takaran',
                                               hintText: '18',
@@ -744,7 +744,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                     )
                   : Text(
                       widget.isEditing ? 'Simpan Perubahan Menu' : 'Simpan Menu Baru',
-                      style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
             ),
           ],
@@ -757,7 +757,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
       appBar: AppBar(
         title: Text(
           widget.isEditing ? 'Edit Menu / Produk' : 'Tambah Menu / Produk',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
       body: form,

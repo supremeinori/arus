@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -178,7 +178,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
             backgroundColor: AppTheme.textPrimaryDark,
             content: Text(
               'Menu baru + resep tersimpan!',
-              style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
             ),
           ),
         );
@@ -202,7 +202,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
       appBar: AppBar(
         title: Text(
           'Tambah Menu Baru',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
       body: SingleChildScrollView(
@@ -224,7 +224,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                     _error!,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(color: const Color(0xFFF87171), fontSize: 12.5),
+                    style: GoogleFonts.inter(color: const Color(0xFFF87171), fontSize: 12.5),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -232,11 +232,11 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
 
               // ---------- Step 1: Info dasar ----------
               Text('Step 1 — Info Dasar',
-                  style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700)),
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _nameCtrl,
-                style: GoogleFonts.lexend(fontSize: 14),
+                style: GoogleFonts.inter(fontSize: 14),
                 decoration: const InputDecoration(
                   labelText: 'Nama Menu *',
                   hintText: 'Contoh: Es Kopi Susu Aren',
@@ -248,7 +248,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _skuCtrl,
-                style: GoogleFonts.lexend(fontSize: 14),
+                style: GoogleFonts.inter(fontSize: 14),
                 textCapitalization: TextCapitalization.characters,
                 decoration: const InputDecoration(
                   labelText: 'SKU *',
@@ -275,7 +275,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               c.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(fontSize: 14),
+                              style: GoogleFonts.inter(fontSize: 14),
                             ),
                           ))
                       .toList(),
@@ -289,7 +289,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Step 2 — Resep',
-                      style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700)),
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700)),
                   TextButton.icon(
                     onPressed: () => setState(() => _rows.add(_RecipeRow())),
                     icon: const Icon(Icons.add, size: 16),
@@ -299,7 +299,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
               ),
               Text(
                 'Takaran bahan baku per 1 porsi pesanan',
-                style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMuted),
               ),
               const SizedBox(height: 8),
               AsyncStateView(
@@ -346,7 +346,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                               child: Text(
                                                 '${g.name} (${MoneyFormatter.format(g.costPerUnit)}/${g.unit})',
                                                 overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.lexend(fontSize: 12.5),
+                                                style: GoogleFonts.inter(fontSize: 12.5),
                                               ),
                                             ))
                                         .toList(),
@@ -364,7 +364,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                     keyboardType: TextInputType.number,
                                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                     onChanged: (_) => setState(() {}),
-                                    style: GoogleFonts.lexend(fontSize: 12.5),
+                                    style: GoogleFonts.inter(fontSize: 12.5),
                                     decoration: InputDecoration(
                                       labelText: 'Takaran',
                                       hintText: '18',
@@ -418,7 +418,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 'Step 3 — Total Modal (HPP)',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -428,7 +428,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               MoneyFormatter.format(hpp),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: AppTheme.jadeTosca,
@@ -441,7 +441,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
 
                       Text(
                         'Step 4 — Rekomendasi Harga Jual',
-                        style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 8),
 
@@ -472,7 +472,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               : const Icon(Icons.auto_awesome_rounded, size: 18),
                           label: Text(
                             '✨ Rekomendasi Harga AI',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -503,7 +503,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                     'Rekomendasi AI (${_aiMarginPercentage ?? 50}% Margin)',
-                                    style: GoogleFonts.lexend(
+                                    style: GoogleFonts.inter(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                       color: AppTheme.jadeTosca,
@@ -523,7 +523,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 ),
                                 label: Text(
                                   'Gunakan Harga ${MoneyFormatter.format(_aiRecommendedPrice!)}',
-                                  style: GoogleFonts.lexend(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -539,7 +539,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               // b) Teks reasoning sebagai caption
                               Text(
                                 _aiReasoning ?? 'Rekomendasi optimal berdasarkan analisis pasar F&B.',
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                   fontSize: 12,
                                   color: AppTheme.textSecondaryDark,
                                   height: 1.4,
@@ -557,7 +557,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 icon: const Icon(Icons.forum_outlined, size: 16),
                                 label: Text(
                                   '🤖 Lanjutkan ke Arus AI',
-                                  style: GoogleFonts.lexend(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -571,7 +571,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'Rekomendasi Cepat (Margin Statis):',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.textMuted,
@@ -596,7 +596,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               child: Text(
                                 '${m == 30 ? "Rendah" : m == 50 ? "Sedang" : "Tinggi"} $m%\n${MoneyFormatter.format(_priceFor(hpp, m))}',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.lexend(fontSize: 11),
+                                style: GoogleFonts.inter(fontSize: 11),
                               ),
                             ),
                         ],
@@ -606,7 +606,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         controller: _priceCtrl,
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        style: GoogleFonts.lexend(fontSize: 14),
+                        style: GoogleFonts.inter(fontSize: 14),
                         decoration: const InputDecoration(
                           labelText: 'Harga Jual (price_idr) *',
                           hintText: 'Klik rekomendasi atau ketik sendiri',
@@ -647,7 +647,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                       )
                     : Text(
                         'Simpan Menu + Resep',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white),

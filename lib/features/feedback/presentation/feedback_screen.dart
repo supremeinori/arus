@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -85,7 +85,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
         SnackBar(
           content: Text(
             'Harap lengkapi kolom Kesan dan Saran.',
-            style: GoogleFonts.lexend(fontSize: 13),
+            style: GoogleFonts.inter(fontSize: 13),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -132,7 +132,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             sentToBackend
                 ? 'Terima kasih! Kesan & saran PAM berhasil tersimpan di database online & lokal.'
                 : 'Tersimpan di penyimpanan lokal perangkat (akan disinkronkan saat online).',
-            style: GoogleFonts.lexend(fontSize: 13),
+            style: GoogleFonts.inter(fontSize: 13),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -150,7 +150,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       appBar: AppBar(
         title: Text(
           'Saran & Kesan Kuliah PAM',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -184,7 +184,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     children: [
                       Text(
                         'Praktikum Aplikasi Mobile (PAM)',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimaryDark,
@@ -195,7 +195,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                       const SizedBox(height: 2),
                       Text(
                         'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir (Phase 1)',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: AppTheme.textMutedDark,
                         ),
@@ -216,7 +216,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                           ),
                           child: Text(
                             'Status: $_savedAt',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF16A34A),
@@ -238,7 +238,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           // Form Field 1: Kesan
           Text(
             'Kesan Perkuliahan *',
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimaryDark,
@@ -251,10 +251,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           TextField(
             controller: _kesanController,
             maxLines: 5,
-            style: GoogleFonts.lexend(fontSize: 13),
+            style: GoogleFonts.inter(fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Tuliskan kesan Anda di sini...',
-              hintStyle: GoogleFonts.lexend(
+              hintStyle: GoogleFonts.inter(
                 fontSize: 12.5,
                 color: const Color(0xFF94A3B8),
               ),
@@ -283,7 +283,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           // Form Field 2: Saran
           Text(
             'Saran Perkuliahan *',
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimaryDark,
@@ -295,10 +295,10 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           TextField(
             controller: _saranController,
             maxLines: 5,
-            style: GoogleFonts.lexend(fontSize: 13),
+            style: GoogleFonts.inter(fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Tuliskan saran Anda di sini',
-              hintStyle: GoogleFonts.lexend(
+              hintStyle: GoogleFonts.inter(
                 fontSize: 12.5,
                 color: const Color(0xFF94A3B8),
               ),

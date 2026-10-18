@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -82,23 +82,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Aktifkan Login Biometrik?',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
             ),
             description: Text(
               'Aktifkan login biometrik untuk akses lebih cepat dan aman.',
-              style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark, height: 1.4),
+              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark, height: 1.4),
             ),
             actions: [
               ShadButton.ghost(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text('Nanti Saja', style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontWeight: FontWeight.w600)),
+                child: Text('Nanti Saja', style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontWeight: FontWeight.w600)),
               ),
               ShadButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: Text('Ya, Aktifkan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700)),
+                child: Text('Ya, Aktifkan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -124,7 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         'Login biometrik berhasil diaktifkan!',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -199,7 +199,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimaryDark,
@@ -209,7 +209,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Decision Support System Multi-Cabang',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       color: AppTheme.textMutedDark,
                     ),
@@ -234,7 +234,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               authState.errorMessage!,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFFEF4444)),
+                              style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFFEF4444)),
                             ),
                           ),
                         ],
@@ -307,7 +307,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       'Masuk dengan Biometrik (Sidik Jari)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                      style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
                     ),
                     style: OutlinedButton.styleFrom(
                       backgroundColor: AppTheme.darkCardSurfaceElevated,
@@ -325,7 +325,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Pilih Akun Demo (Garis Cepat):',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -335,7 +335,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       ActionChip(
                         avatar: const Icon(Icons.star, size: 16, color: AppTheme.jadeTosca),
-                        label: Text('Owner', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
+                        label: Text('Owner', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
                         backgroundColor: AppTheme.darkCardSurfaceElevated,
                         side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -343,7 +343,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.storefront, size: 16, color: AppTheme.jadeTosca),
-                        label: Text('Manager', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
+                        label: Text('Manager', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
                         backgroundColor: AppTheme.darkCardSurfaceElevated,
                         side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -351,7 +351,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
-                        label: Text('Kasir', style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
+                        label: Text('Kasir', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
                         backgroundColor: AppTheme.darkCardSurfaceElevated,
                         side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -377,7 +377,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               child: Text(
                                 'Server: ${AppEnv.apiBaseUrl}',
                                 maxLines: 1,
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                   fontSize: 11.5,
                                   color: AppTheme.textMutedDark,
                                   decoration: TextDecoration.underline,
@@ -415,7 +415,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   'Alamat Web Service',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -424,12 +424,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark),
+            style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
           ),
           actions: [
             ShadButton.outline(
               onPressed: () => Navigator.pop(dialogCtx),
-              child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
+              child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMutedDark)),
             ),
             ShadButton(
               onPressed: () {
@@ -446,13 +446,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         'URL Server diubah ke: ${AppEnv.apiBaseUrl}',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textPrimaryDark),
+                        style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textPrimaryDark),
                       ),
                     ),
                   );
                 }
               },
-              child: Text('Simpan & Hubungkan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600)),
+              child: Text('Simpan & Hubungkan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ],
           child: Padding(

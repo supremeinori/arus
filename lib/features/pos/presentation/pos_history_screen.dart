@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -42,7 +42,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
         title: Text('Void ${tx.receiptNo}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15)),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15)),
         // Batasi lebar dialog + field standar (aturan C15).
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -81,7 +81,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.green.shade700,
           content: Text('Transaksi ${tx.receiptNo} dibatalkan, stok dikembalikan.',
-              style: GoogleFonts.lexend(color: Colors.white, fontSize: 13)),
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
         ));
       }
     } catch (e) {
@@ -89,7 +89,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: AppTheme.dangerRed,
           content: Text(e.toString().replaceAll('Exception: ', ''),
-              style: GoogleFonts.lexend(color: Colors.white, fontSize: 13)),
+              style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
         ));
       }
     } finally {
@@ -105,7 +105,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
         title: Text('Riwayat Transaksi Hari Ini',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16)),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -178,7 +178,7 @@ class _HistoryCard extends StatelessWidget {
                 child: Text(tx.receiptNo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700, fontSize: 13)),
               ),
               const SizedBox(width: 8),
@@ -194,7 +194,7 @@ class _HistoryCard extends StatelessWidget {
                   voided ? 'VOID' : '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: voided
@@ -209,7 +209,7 @@ class _HistoryCard extends StatelessWidget {
             '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${MoneyFormatter.format(tx.totalIdr)}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
           ),
           if (!voided && canVoid) ...[
             const SizedBox(height: 8),
@@ -220,7 +220,7 @@ class _HistoryCard extends StatelessWidget {
                 icon: const Icon(Icons.undo_rounded,
                     size: 16, color: AppTheme.dangerRed),
                 label: Text('Void',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                         fontSize: 12, color: AppTheme.dangerRed)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppTheme.dangerRed),

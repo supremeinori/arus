@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -41,7 +41,7 @@ class DashboardScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     'Guncangan terdeteksi! Memperbarui data metrik & stok...',
-                    style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -88,7 +88,7 @@ class DashboardScreen extends ConsumerWidget {
         ),
         title: Text(
           'Beranda',
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
             color: AppTheme.textPrimaryDark,
@@ -116,7 +116,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   Text(
                     currentCurrency,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.jadeTosca,
@@ -149,7 +149,7 @@ class DashboardScreen extends ConsumerWidget {
                   : currentTimezone.contains('Makassar')
                       ? 'WITA'
                       : 'WIT',
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textMutedDark,
@@ -165,7 +165,7 @@ class DashboardScreen extends ConsumerWidget {
               backgroundColor: AppTheme.dangerRed,
               label: Text(
                 '$unreadCount',
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 10,
                   color: Colors.white,
@@ -255,7 +255,7 @@ class DashboardScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'Ringkasan Metrik (${selectedDateFilter.label})',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: AppTheme.textPrimaryDark,
@@ -268,7 +268,7 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       'Cabang Terfilter',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppTheme.jadeTosca,
                         fontWeight: FontWeight.w600,
@@ -365,7 +365,7 @@ class _ExecutiveHeaderCard extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               (user?.name.isNotEmpty == true ? user!.name[0] : 'U').toUpperCase(),
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
                 fontSize: 19,
@@ -379,7 +379,7 @@ class _ExecutiveHeaderCard extends StatelessWidget {
               children: [
                 Text(
                   'Halo, ${user?.name ?? ""}',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimaryDark,
@@ -390,7 +390,7 @@ class _ExecutiveHeaderCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   '$selectedOutletName • ${user?.role.toDisplayString() ?? ""}',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textMutedDark,
                     fontWeight: FontWeight.w500,
@@ -416,7 +416,7 @@ class _ExecutiveHeaderCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   'Chain Valid',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF059669),
@@ -486,7 +486,7 @@ class _DashboardFilterBar extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Semua Cabang',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppTheme.textPrimaryDark,
@@ -508,7 +508,7 @@ class _DashboardFilterBar extends StatelessWidget {
                           Expanded(
                             child: Text(
                               outlet.name,
-                              style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textPrimaryDark),
+                              style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textPrimaryDark),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -546,7 +546,7 @@ class _DashboardFilterBar extends StatelessWidget {
                         Expanded(
                           child: Text(
                             filter.label,
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppTheme.textPrimaryDark,
@@ -660,7 +660,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                         children: [
                           Text(
                             'Komparasi Laba Harian',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimaryDark,
@@ -670,7 +670,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                           ),
                           Text(
                             'Hari Ini vs Hari Kemarin ($selectedOutletName)',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
                               color: AppTheme.textMutedDark,
                             ),
@@ -698,7 +698,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       statusText,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: statusColor,
@@ -743,7 +743,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Laba Hari Ini',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textMutedDark,
@@ -757,7 +757,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         comparison.formattedTodayProfit,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textPrimaryDark,
@@ -768,7 +768,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Omset: ${comparison.formattedTodayRevenue}',
-                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedDark),
+                        style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -804,7 +804,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Laba Kemarin',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
                                 color: AppTheme.textMutedDark,
@@ -818,7 +818,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         comparison.formattedYesterdayProfit,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textSecondaryDark,
@@ -829,7 +829,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Omset: ${comparison.formattedYesterdayRevenue}',
-                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedDark),
+                        style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -857,19 +857,19 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                 Expanded(
                   child: Text.rich(
                     TextSpan(
-                      style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textPrimaryDark),
+                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textPrimaryDark),
                       children: [
                         const TextSpan(text: 'Perbedaan Laba: '),
                         TextSpan(
                           text: comparison.formattedProfitDiff,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             color: statusColor,
                           ),
                         ),
                         TextSpan(
                           text: ' (${comparison.formattedProfitPct}) dibanding kemarin',
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             color: AppTheme.textMutedDark,
                             fontSize: 11.5,
                           ),
@@ -982,7 +982,7 @@ class _BentoCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textMutedDark,
                     fontWeight: FontWeight.w500,
@@ -996,7 +996,7 @@ class _BentoCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: AppTheme.textPrimaryDark,
@@ -1050,7 +1050,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Integritas Blockchain',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textMutedDark,
                     fontWeight: FontWeight.w500,
@@ -1069,7 +1069,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Terverifikasi',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF059669),
@@ -1095,7 +1095,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
                 children: [
                   Text(
                     'Estimasi Margin (${kpi.grossMarginPct ?? 0}%)',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       color: AppTheme.textMutedDark,
                     ),
@@ -1105,7 +1105,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     kpi.formattedGrossProfit,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimaryDark,
@@ -1158,7 +1158,7 @@ class _OperationalTrendsCard extends StatelessWidget {
                   children: [
                     Text(
                       'Operasional & Tren Omset',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textPrimaryDark,
@@ -1169,7 +1169,7 @@ class _OperationalTrendsCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Puncak: Rp ${(maxRevenue / 1000).toStringAsFixed(0)}k • Tilt/Shake aktif',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppTheme.textMutedDark,
                       ),
@@ -1212,7 +1212,7 @@ class _OperationalTrendsCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   'Belum ada data tren omset.',
-                  style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13),
+                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 13),
                 ),
               ),
             )
@@ -1233,7 +1233,7 @@ class _OperationalTrendsCard extends StatelessWidget {
                   child: Text(
                     dateLabel,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 10.5,
                       color: AppTheme.textMutedDark,
                       fontWeight: FontWeight.w500,
@@ -1275,7 +1275,7 @@ class _PeriodPill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected ? Colors.white : AppTheme.textMutedDark,
@@ -1322,7 +1322,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         'Stok Bahan Baku Kritis',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimaryDark,
@@ -1346,7 +1346,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (_, _) => Text(
               'Gagal memuat status bahan baku.',
-              style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.dangerRed),
+              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.dangerRed),
             ),
             data: (ingredients) {
               final critical = ingredients.where((i) => i.isLowStock || i.isOutOfStock).take(3).toList();
@@ -1365,7 +1365,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           'Seluruh stok bahan baku dalam batas aman.',
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF065F46),
@@ -1414,7 +1414,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                               children: [
                                 Text(
                                   ing.name,
-                                  style: GoogleFonts.lexend(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
                                     color: AppTheme.textPrimaryDark,
@@ -1424,7 +1424,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                                 ),
                                 Text(
                                   'Sisa: ${ing.stockQty} ${ing.unit} (Min: ${ing.reorderLevel})',
-                                  style: GoogleFonts.lexend(
+                                  style: GoogleFonts.inter(
                                     fontSize: 11,
                                     color: AppTheme.textMutedDark,
                                   ),
@@ -1442,7 +1442,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                             ),
                             child: Text(
                               isOut ? 'Habis' : 'Menipis',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -1487,7 +1487,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Kesehatan Stok & Gudang',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimaryDark,
@@ -1508,7 +1508,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
               if (ingredients.isEmpty) {
                 return Text(
                   'Data inventaris belum terisi.',
-                  style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                  style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                 );
               }
               final safeCount = ingredients.where((i) => !i.isLowStock && !i.isOutOfStock).length;
@@ -1524,7 +1524,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           'Rasio Bahan Baku Siap Pakai',
-                          style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+                          style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1532,7 +1532,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Text(
                         '${(safePct * 100).toStringAsFixed(0)}% Sehat',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.jadeTosca,
@@ -1553,7 +1553,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$safeCount dari $totalCount bahan baku dalam kuantitas aman',
-                    style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedDark),
+                    style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
                   ),
                 ],
               );
@@ -1689,7 +1689,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'Rekomendasi Keputusan AI',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textPrimaryDark,
@@ -1712,7 +1712,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                   children: [
                     Text(
                       'Buka Modul DSS',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.jadeTosca,
@@ -1743,7 +1743,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                     children: [
                       Text(
                         'Decision Support System Siaga',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimaryDark,
@@ -1754,7 +1754,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Ketuk untuk melihat analisis Rule Engine, anomali stok, dan proyeksi.',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 11.5,
                           color: AppTheme.textMutedDark,
                         ),
@@ -1796,7 +1796,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                         children: [
                           Text(
                             'Sistem DSS Berjalan Optimal',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimaryDark,
@@ -1807,7 +1807,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             'Tidak terdeteksi anomali kritis atau penumpukan bahan baku.',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 11.5,
                               color: AppTheme.textMutedDark,
                             ),
@@ -1855,7 +1855,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                                   foregroundColor: badgeColor,
                                   child: Text(
                                     isCrit ? 'Kritis' : (isWarn ? 'Peringatan' : 'Rekomendasi'),
-                                    style: GoogleFonts.lexend(
+                                    style: GoogleFonts.inter(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -1865,7 +1865,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                                 Expanded(
                                   child: Text(
                                     item.title,
-                                    style: GoogleFonts.lexend(
+                                    style: GoogleFonts.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
                                       color: AppTheme.textPrimaryDark,
@@ -1884,7 +1884,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                             const SizedBox(height: 6),
                             Text(
                               item.message,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 color: AppTheme.textMutedDark,
                                 height: 1.35,
@@ -1915,7 +1915,7 @@ class _AiRecommendationsSection extends ConsumerWidget {
                                     Expanded(
                                       child: Text(
                                         item.recommendation,
-                                        style: GoogleFonts.lexend(
+                                        style: GoogleFonts.inter(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                           color: AppTheme.jadeTosca,

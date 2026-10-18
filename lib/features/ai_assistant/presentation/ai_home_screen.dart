@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -166,14 +166,14 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           children: [
             Text(
               _isVoiceMode ? 'ARUS Voice Mode' : 'Asisten AI Bisnis',
-              style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             if (outlets.isNotEmpty)
               Text(
                 'Cabang: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
-                style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMutedDark),
+                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -211,7 +211,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                         Expanded(
                           child: Text(
                             chatState.errorMessage!,
-                            style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12),
+                            style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12),
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -261,20 +261,20 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           const SizedBox(height: 16),
           Text(
             'ARUS AI Decision Support',
-            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
           ),
           const SizedBox(height: 8),
           Text(
             'Asisten analitik cerdas berbasis data riil (Anti-Halusinasi). Tanyakan omset, status stok, jam ramai, hingga performa gerai cabang.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13, height: 1.4),
+            style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 28),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Rekomendasi Pertanyaan Cepat:',
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimaryDark,
                 fontSize: 12,
@@ -302,7 +302,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     icon: const Icon(Icons.help_outline_rounded, size: 16, color: AppTheme.jadeTosca),
                     label: Text(
                       prompt,
-                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimaryDark),
+                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimaryDark),
                     ),
                     onPressed: () => _handleSend(prompt),
                   ),
@@ -380,7 +380,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 children: [
                   Text(
                     message.content,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       color: isUser ? Colors.white : AppTheme.textPrimaryDark,
                       fontSize: 13.5,
                       height: 1.45,
@@ -402,7 +402,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                           const SizedBox(width: 4),
                           Text(
                             'Grounded Fact: ${message.factsUsed.length} fakta database',
-                            style: GoogleFonts.lexend(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
+                            style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
                           ),
                         ],
                       ),
@@ -425,7 +425,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                           Expanded(
                             child: Text(
                               message.suggestion!,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 fontStyle: FontStyle.italic,
                                 color: AppTheme.textSecondaryDark,
@@ -489,7 +489,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 const SizedBox(width: 10),
                 Text(
                   'ARUS AI menganalisis data...',
-                  style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark),
+                  style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
                 ),
               ],
             ),
@@ -523,12 +523,12 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 textInputAction: TextInputAction.send,
                 onSubmitted: isLoading ? null : (_) => _handleSend(),
                 enabled: !isLoading,
-                style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.textPrimaryDark),
+                style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textPrimaryDark),
                 decoration: InputDecoration(
                   hintText: _isDictating
                       ? 'Mendengarkan suara Anda...'
                       : 'Tanyakan sesuatu tentang bisnis...',
-                  hintStyle: GoogleFonts.lexend(
+                  hintStyle: GoogleFonts.inter(
                     fontSize: 13,
                     color: _isDictating ? jadeTosca : AppTheme.textMutedDark,
                   ),
@@ -657,7 +657,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     const SizedBox(width: 6),
                     Text(
                       statusTitle,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: statusColor,
@@ -745,7 +745,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                                     ? voiceState.lastAiSpokenText!
                                     : 'Tahan tombol di bawah untuk berbicara dengan Gadis (ARUS Voice)...',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: voiceState.liveTranscript.isNotEmpty || voiceState.lastAiSpokenText != null
                               ? FontWeight.w600
@@ -762,7 +762,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                         const SizedBox(height: 8),
                         Text(
                           voiceState.errorMessage!,
-                          style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFFEF4444)),
+                          style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFEF4444)),
                         ),
                       ],
                     ],
@@ -829,7 +829,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                       : voiceState.sessionState == VoiceSessionState.speakingResult
                           ? 'Sentuh tombol untuk memotong (Auto-Cut)'
                           : 'Tahan untuk bicara, lepas untuk kirim',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textMutedDark,

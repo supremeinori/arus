@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../core/theme/app_theme.dart';
@@ -40,7 +40,7 @@ class EmptyStateView extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textMutedDark,
               ),

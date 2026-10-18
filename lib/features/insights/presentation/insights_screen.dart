@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -20,7 +20,7 @@ class InsightsScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               status == 'acknowledged' ? 'Rekomendasi diterima.' : 'Rekomendasi diabaikan.',
-              style: GoogleFonts.lexend(fontSize: 13),
+              style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -32,7 +32,7 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengubah status: $e', style: GoogleFonts.lexend(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+            content: Text('Gagal mengubah status: $e', style: GoogleFonts.inter(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -49,7 +49,7 @@ class InsightsScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               'Rule engine selesai mengevaluasi inventaris & transaksi!',
-              style: GoogleFonts.lexend(fontSize: 13),
+              style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -61,7 +61,7 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menjalankan rule engine: $e', style: GoogleFonts.lexend(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+            content: Text('Gagal menjalankan rule engine: $e', style: GoogleFonts.inter(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -79,7 +79,7 @@ class InsightsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'Rekomendasi Keputusan (AI/DSS)',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -154,7 +154,7 @@ class _SeverityFilters extends ConsumerWidget {
       return ChoiceChip(
         label: Text(
           label,
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontSize: 12.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
@@ -229,7 +229,7 @@ class _InsightCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 14.5,
                     color: AppTheme.textPrimaryDark,
@@ -250,7 +250,7 @@ class _InsightCard extends StatelessWidget {
                 ),
                 child: Text(
                   item.ruleCode,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: isCritical ? AppTheme.dangerRed : AppTheme.jadeTosca,
@@ -264,7 +264,7 @@ class _InsightCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             item.message,
-            style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textSecondaryDark, height: 1.35),
+            style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textSecondaryDark, height: 1.35),
           ),
           const SizedBox(height: 10),
 
@@ -284,7 +284,7 @@ class _InsightCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Rekomendasi: ${item.recommendation}',
-                    style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -302,7 +302,7 @@ class _InsightCard extends StatelessWidget {
                 onPressed: onDismiss,
                 child: Text(
                   'Abaikan',
-                  style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 12.5, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -320,7 +320,7 @@ class _InsightCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Tindak Lanjuti',
-                  style: GoogleFonts.lexend(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

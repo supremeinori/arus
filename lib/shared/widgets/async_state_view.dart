@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -46,7 +46,7 @@ class AsyncStateView<T> extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13),
+                style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 13),
               ),
             ],
           ),
@@ -78,7 +78,7 @@ class AsyncStateView<T> extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 5,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimaryDark,
@@ -89,7 +89,7 @@ class AsyncStateView<T> extends StatelessWidget {
                     'Kode: $code',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+                    style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                   ),
                   if (onRetry != null) ...[
                     const SizedBox(height: 16),

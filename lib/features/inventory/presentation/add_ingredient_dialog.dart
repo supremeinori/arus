@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -91,7 +91,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
             backgroundColor: AppTheme.jadeTosca,
             content: Text(
               isEditing ? 'Bahan baku berhasil diperbarui.' : 'Bahan baku baru berhasil ditambahkan.',
-              style: GoogleFonts.lexend(color: Colors.white),
+              style: GoogleFonts.inter(color: Colors.white),
             ),
           ),
         );
@@ -116,14 +116,14 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
         children: [
           Text(
             isEditing ? 'Edit Bahan Baku' : 'Tambah Bahan Baku Baru',
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
           ),
           const SizedBox(height: 4),
           Text(
             'Cabang: ${widget.outletName}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
           ),
         ],
       ),
@@ -154,7 +154,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                           _errorMessage!,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFFF87171)),
+                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFF87171)),
                         ),
                       ),
                     ],
@@ -238,7 +238,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
+          child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMutedDark)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -248,7 +248,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
           onPressed: _isLoading ? null : _submit,
           child: _isLoading
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : Text(isEditing ? 'Simpan Perubahan' : 'Tambah Bahan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600)),
+              : Text(isEditing ? 'Simpan Perubahan' : 'Tambah Bahan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       ],
     );

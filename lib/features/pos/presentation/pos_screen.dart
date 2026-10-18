@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -93,7 +93,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 Expanded(
                   child: Text(
                     'Guncangan terdeteksi! Memperbarui katalog POS...',
-                    style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                    style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -140,7 +140,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             const SizedBox(width: 10),
             Text(
               'Kasir POS',
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 16.5,
                 color: AppTheme.textPrimaryDark,
@@ -274,13 +274,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: TextField(
             controller: _searchController,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               color: AppTheme.textPrimaryDark,
               fontSize: 13.5,
             ),
             decoration: InputDecoration(
               hintText: 'Cari menu, kopi, atau SKU...',
-              hintStyle: GoogleFonts.lexend(
+              hintStyle: GoogleFonts.inter(
                 color: AppTheme.textMutedDark,
                 fontSize: 13,
               ),
@@ -335,7 +335,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ChoiceChip(
                     label: Text(
                       'Semua',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: _selectedCategoryId == null
                             ? FontWeight.w700
@@ -373,7 +373,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       child: ChoiceChip(
                         label: Text(
                           cat.name,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: isSelected
                                 ? FontWeight.w700
@@ -431,7 +431,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       error: (err, _) => Center(
         child: Text(
           'Gagal memuat produk: $err',
-          style: GoogleFonts.lexend(color: AppTheme.dangerRed),
+          style: GoogleFonts.inter(color: AppTheme.dangerRed),
         ),
       ),
       data: (catalogItems) {
@@ -472,7 +472,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     catalogItems.isEmpty
                         ? 'Katalog Masih Kosong'
                         : 'Tidak Ada Menu Sesuai',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimaryDark,
@@ -484,7 +484,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         ? 'Tambahkan produk baru ke katalog untuk mulai transaksi kasir.'
                         : 'Coba ubah kata kunci atau pilih kategori lain.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 12.5,
                       color: AppTheme.textMutedDark,
                     ),
@@ -499,7 +499,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     ),
                     label: Text(
                       'Tambah Menu Baru',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -623,7 +623,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         : '${cartState.totalItemsCount} Item Terpilih',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       color: AppTheme.textMutedDark,
                       fontWeight: FontWeight.w500,
@@ -631,7 +631,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ),
                   MoneyText(
                     cartState.totalIdr,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: cartState.items.isEmpty
@@ -796,7 +796,7 @@ class _RedesignedProductCard extends StatelessWidget {
                         ),
                         child: Text(
                           '$inCartQty di Pesanan',
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -816,7 +816,7 @@ class _RedesignedProductCard extends StatelessWidget {
                 children: [
                   Text(
                     product.name,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: isOutOfStock
@@ -831,7 +831,7 @@ class _RedesignedProductCard extends StatelessWidget {
                     product.categoryName ?? 'Umum',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       color: AppTheme.textMutedDark,
                     ),
@@ -855,7 +855,7 @@ class _RedesignedProductCard extends StatelessWidget {
                               : 'Estimasi: $maxPortions Porsi'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
                         color: isOutOfStock
@@ -876,7 +876,7 @@ class _RedesignedProductCard extends StatelessWidget {
                           product.formattedPrice,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             color: isOutOfStock
                                 ? AppTheme.textMutedDark
@@ -909,7 +909,7 @@ class _RedesignedProductCard extends StatelessWidget {
                               const SizedBox(width: 3),
                               Text(
                                 'ADD',
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 10.5,
@@ -962,7 +962,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       'Daftar Pesanan',
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: AppTheme.textPrimaryDark,
@@ -978,7 +978,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                   ),
                   child: Text(
                     '${cartState.totalItemsCount} item',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.jadeTosca,
@@ -1007,7 +1007,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                           const SizedBox(height: 10),
                           Text(
                             'Keranjang masih kosong',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppTheme.textMutedDark,
@@ -1017,7 +1017,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                           Text(
                             'Klik menu pada katalog untuk menambahkan ke pesanan.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 11.5,
                               color: AppTheme.textMutedDark,
                             ),
@@ -1040,7 +1040,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                               children: [
                                 Text(
                                   item.productName,
-                                  style: GoogleFonts.lexend(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12.5,
                                     color: AppTheme.textPrimaryDark,
@@ -1051,7 +1051,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   MoneyFormatter.format(item.unitPriceIdr),
-                                  style: GoogleFonts.lexend(
+                                  style: GoogleFonts.inter(
                                     fontSize: 11,
                                     color: AppTheme.textMutedDark,
                                   ),
@@ -1068,7 +1068,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                           ),
                           Text(
                             '${item.quantity}',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                               color: AppTheme.textPrimaryDark,
@@ -1091,7 +1091,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                             child: Text(
                               MoneyFormatter.format(item.lineTotalIdr),
                               textAlign: TextAlign.right,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                                 color: AppTheme.textPrimaryDark,
@@ -1120,10 +1120,10 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Subtotal', style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark)),
+                    Text('Subtotal', style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark)),
                     MoneyText(
                       cartState.subtotalIdr,
-                      style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12.5),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5),
                     ),
                   ],
                 ),
@@ -1132,10 +1132,10 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Diskon', style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.dangerRed)),
+                      Text('Diskon', style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.dangerRed)),
                       Text(
                         '- ${MoneyFormatter.format(cartState.discountIdr)}',
-                        style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.dangerRed, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.dangerRed, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -1148,11 +1148,11 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                   children: [
                     Text(
                       'Total Bayar',
-                      style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
                     ),
                     MoneyText(
                       cartState.totalIdr,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
                         color: AppTheme.jadeTosca,
@@ -1173,7 +1173,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    textStyle: GoogleFonts.lexend(
+                    textStyle: GoogleFonts.inter(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                     ),

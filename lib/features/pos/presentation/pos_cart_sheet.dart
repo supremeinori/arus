@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -39,7 +39,7 @@ class PosCartSheet extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Keranjang (${cart.totalItemsCount} item)',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark)),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark)),
               IconButton(
                 icon: const Icon(Icons.close_rounded, color: AppTheme.textPrimaryDark),
                 onPressed: () => Navigator.of(context).pop(),
@@ -52,7 +52,7 @@ class PosCartSheet extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text('Keranjang kosong.',
-                    style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
+                    style: GoogleFonts.inter(color: AppTheme.textMutedDark)),
               ),
             )
           else
@@ -72,12 +72,12 @@ class PosCartSheet extends ConsumerWidget {
                             Text(item.productName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimaryDark)),
                             Text(MoneyFormatter.format(item.unitPriceIdr),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                     fontSize: 11.5, color: AppTheme.textMutedDark)),
                           ],
                         ),
@@ -88,7 +88,7 @@ class PosCartSheet extends ConsumerWidget {
                         tooltip: 'Kurangi',
                       ),
                       Text('${item.quantity}',
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                               fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark)),
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline,
@@ -108,7 +108,7 @@ class PosCartSheet extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimaryDark)),
                       ),
                     ],
@@ -118,22 +118,22 @@ class PosCartSheet extends ConsumerWidget {
             ),
           const Divider(color: AppTheme.darkCardBorder, thickness: 1.0),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark)),
+            Text('Subtotal', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark)),
             MoneyText(cart.subtotalIdr,
-                style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimaryDark)),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimaryDark)),
           ]),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Diskon', style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark)),
+            Text('Diskon', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark)),
             Text('- ${MoneyFormatter.format(cart.discountIdr)}',
-                style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.dangerRed)),
+                style: GoogleFonts.inter(fontSize: 13, color: AppTheme.dangerRed)),
           ]),
           const SizedBox(height: 6),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('Total Tagihan',
-                style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark)),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark)),
             MoneyText(cart.totalIdr,
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
                     color: AppTheme.jadeTosca)),

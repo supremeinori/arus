@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,7 +33,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
         ),
         title: Text(
           'Ringkasan Shift Saya',
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
             color: AppTheme.textPrimaryDark,
@@ -80,7 +80,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 user?.name ?? 'Kasir',
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 17,
                                   color: AppTheme.textPrimaryDark,
@@ -91,7 +91,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
                               const SizedBox(height: 2),
                               Text(
                                 'Outlet: ${user?.outlets.isNotEmpty == true ? user!.outlets.first.name : "Utama"}',
-                                style: GoogleFonts.lexend(
+                                style: GoogleFonts.inter(
                                   color: AppTheme.textMutedDark,
                                   fontSize: 12.5,
                                 ),
@@ -121,7 +121,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
                       leading: const Icon(Icons.point_of_sale_rounded, size: 18),
                       child: Text(
                         'Buka Mesin Kasir Sekarang',
-                        style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -137,7 +137,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             'Pastikan jumlah uang tunai di laci kasir cocok dengan total kas di atas saat serah terima shift.',
-                            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                             maxLines: 4,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -251,7 +251,7 @@ class _ShiftMetricTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: isPrimary ? 13 : 11,
                     color: AppTheme.textMutedDark,
                     fontWeight: isPrimary ? FontWeight.w600 : FontWeight.normal,
@@ -265,7 +265,7 @@ class _ShiftMetricTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontSize: isPrimary ? 22 : 16,
               fontWeight: FontWeight.w800,
               color: isPrimary ? AppTheme.jadeTosca : AppTheme.textPrimaryDark,

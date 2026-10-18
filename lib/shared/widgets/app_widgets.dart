@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
@@ -178,7 +178,7 @@ class KpiCard extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                    style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                   ),
                 ),
               ],
@@ -188,7 +188,7 @@ class KpiCard extends StatelessWidget {
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textPrimaryDark,
@@ -224,7 +224,7 @@ class MoneyText extends StatelessWidget {
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
       style: style ??
-          GoogleFonts.lexend(
+          GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             color: AppTheme.accentBlack,
           ),

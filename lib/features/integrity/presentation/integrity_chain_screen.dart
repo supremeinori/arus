@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -56,7 +56,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
       appBar: AppBar(
         title: Text(
           'Ledger Transaksi & Blockchain',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -195,7 +195,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
           constraints: const BoxConstraints(maxWidth: 400),
           child: Text(
             'Sistem akan sengaja mengubah nominal transaksi blok #$blockIndex menjadi Rp 99.999.999 di database. Ini untuk mendemonstrasikan bahwa sistem ARUS mendeteksi kecurangan (TAMPERED).',
-            style: GoogleFonts.lexend(fontSize: 13),
+            style: GoogleFonts.inter(fontSize: 13),
           ),
         ),
         actions: [
@@ -330,7 +330,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                             : 'Peringatan: Manipulasi Data Terdeteksi!',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 14.5,
                           color: statusColor,
@@ -341,7 +341,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                         '${validation.status} · ${validation.message}',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 12,
                           color: statusColor,
                         ),
@@ -362,7 +362,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                 side: const BorderSide(color: AppTheme.darkCardBorder),
                 label: Text(
                   '${overview.blockCount} Blok Transaksi',
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimaryDark,
@@ -401,7 +401,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
             children: [
               Text(
                 'Rantai Transaksi · ${outlet.name}',
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
@@ -409,7 +409,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
               const Spacer(),
               Text(
                 'SHA-256 Per-Cabang',
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: AppTheme.textMuted,
                   fontWeight: FontWeight.w500,
@@ -516,7 +516,7 @@ class _TransactionBlockCard extends StatelessWidget {
                     isGenesis
                         ? 'BLOK #${block.index} (GENESIS)'
                         : 'BLOK #${block.index}',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: badgeColor,
@@ -538,7 +538,7 @@ class _TransactionBlockCard extends StatelessWidget {
                   ),
                   child: Text(
                     isSale ? 'SALE' : block.eventType.toUpperCase(),
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: isSale
@@ -550,7 +550,7 @@ class _TransactionBlockCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   MoneyFormatter.format(block.totalAmount),
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: isTampered ? AppTheme.dangerRed : AppTheme.textPrimaryDark,
@@ -576,7 +576,7 @@ class _TransactionBlockCard extends StatelessWidget {
                     block.receiptNo.isNotEmpty
                         ? 'Struk: ${block.receiptNo}'
                         : 'Event ID: ${block.eventId}',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimaryDark,
@@ -587,7 +587,7 @@ class _TransactionBlockCard extends StatelessWidget {
                 ),
                 Text(
                   formattedDate,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     color: AppTheme.textMutedDark,
                   ),
@@ -669,7 +669,7 @@ class _HashLine extends StatelessWidget {
           width: 75,
           child: Text(
             '$label:',
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: AppTheme.textMutedDark,
@@ -725,7 +725,7 @@ class _ChainConnector extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'Terkunci SHA-256 (Blok #$sourceIndex ➔ Blok #$targetIndex)',
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 10,
                 color: AppTheme.jadeTosca,
                 fontWeight: FontWeight.w600,

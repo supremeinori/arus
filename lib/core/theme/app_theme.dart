@@ -51,7 +51,7 @@ class AppTheme {
   static const warningAmber = Color(0xFFF59E0B); // Status Amber
 
   static ThemeData get lightTheme {
-    final baseTextTheme = GoogleFonts.lexendTextTheme();
+    final baseTextTheme = GoogleFonts.interTextTheme();
 
     final textTheme = baseTextTheme.copyWith(
       displayLarge: baseTextTheme.displayLarge?.copyWith(
@@ -129,7 +129,7 @@ class AppTheme {
         shape: const Border(
           bottom: BorderSide(color: lightCardBorder, width: 1.0),
         ),
-        titleTextStyle: GoogleFonts.lexend(
+        titleTextStyle: GoogleFonts.inter(
           color: textPrimaryLight,
           fontSize: 16.5,
           fontWeight: FontWeight.w700,
@@ -155,7 +155,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: GoogleFonts.lexend(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
@@ -171,7 +171,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: GoogleFonts.lexend(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -180,7 +180,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: jadeTosca,
-          textStyle: GoogleFonts.lexend(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -199,8 +199,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: jadeTosca, width: 1.5),
         ),
-        labelStyle: GoogleFonts.lexend(color: textMutedLight, fontSize: 13),
-        hintStyle: GoogleFonts.lexend(color: textMutedLight, fontSize: 13),
+        labelStyle: GoogleFonts.inter(color: textMutedLight, fontSize: 13),
+        hintStyle: GoogleFonts.inter(color: textMutedLight, fontSize: 13),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: lightCardSurface,
@@ -209,12 +209,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: lightCardBorder, width: 1.0),
         ),
-        titleTextStyle: GoogleFonts.lexend(
+        titleTextStyle: GoogleFonts.inter(
           color: textPrimaryLight,
           fontSize: 17,
           fontWeight: FontWeight.w700,
         ),
-        contentTextStyle: GoogleFonts.lexend(
+        contentTextStyle: GoogleFonts.inter(
           color: textSecondaryLight,
           fontSize: 13.5,
         ),
@@ -229,7 +229,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: textPrimaryLight,
-        contentTextStyle: GoogleFonts.lexend(color: pureWhite),
+        contentTextStyle: GoogleFonts.inter(color: pureWhite),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -246,8 +246,8 @@ class AppTheme {
         selectedColor: jadeTosca,
         secondarySelectedColor: jadeTosca,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        labelStyle: GoogleFonts.lexend(fontSize: 12, color: textPrimaryLight),
-        secondaryLabelStyle: GoogleFonts.lexend(fontSize: 12, color: pureWhite),
+        labelStyle: GoogleFonts.inter(fontSize: 12, color: textPrimaryLight),
+        secondaryLabelStyle: GoogleFonts.inter(fontSize: 12, color: pureWhite),
         brightness: Brightness.light,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -263,7 +263,7 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    final baseTextTheme = GoogleFonts.lexendTextTheme();
+    final baseTextTheme = GoogleFonts.interTextTheme();
 
     final textTheme = baseTextTheme.copyWith(
       displayLarge: baseTextTheme.displayLarge?.copyWith(
@@ -341,7 +341,7 @@ class AppTheme {
         shape: const Border(
           bottom: BorderSide(color: darkCardBorder, width: 1.0),
         ),
-        titleTextStyle: GoogleFonts.lexend(
+        titleTextStyle: GoogleFonts.inter(
           color: textPrimaryDark,
           fontSize: 16.5,
           fontWeight: FontWeight.w700,
@@ -367,7 +367,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: GoogleFonts.lexend(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
@@ -383,7 +383,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: GoogleFonts.lexend(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -392,7 +392,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: jadeTosca,
-          textStyle: GoogleFonts.lexend(fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -411,8 +411,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: jadeTosca, width: 1.5),
         ),
-        labelStyle: GoogleFonts.lexend(color: textMutedDark, fontSize: 13),
-        hintStyle: GoogleFonts.lexend(color: textMutedDark, fontSize: 13),
+        labelStyle: GoogleFonts.inter(color: textMutedDark, fontSize: 13),
+        hintStyle: GoogleFonts.inter(color: textMutedDark, fontSize: 13),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: darkCardSurface,
@@ -421,12 +421,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: darkCardBorder, width: 1.0),
         ),
-        titleTextStyle: GoogleFonts.lexend(
+        titleTextStyle: GoogleFonts.inter(
           color: textPrimaryDark,
           fontSize: 17,
           fontWeight: FontWeight.w700,
         ),
-        contentTextStyle: GoogleFonts.lexend(
+        contentTextStyle: GoogleFonts.inter(
           color: textSecondaryDark,
           fontSize: 13.5,
         ),
@@ -441,7 +441,7 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: darkCardSurfaceElevated,
-        contentTextStyle: GoogleFonts.lexend(color: textPrimaryDark),
+        contentTextStyle: GoogleFonts.inter(color: textPrimaryDark),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: const BorderSide(color: darkCardBorder, width: 1.0),
@@ -459,8 +459,8 @@ class AppTheme {
         selectedColor: jadeTosca.withValues(alpha: 0.25),
         secondarySelectedColor: jadeTosca,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        labelStyle: GoogleFonts.lexend(fontSize: 12, color: textPrimaryDark),
-        secondaryLabelStyle: GoogleFonts.lexend(fontSize: 12, color: textPrimaryDark),
+        labelStyle: GoogleFonts.inter(fontSize: 12, color: textPrimaryDark),
+        secondaryLabelStyle: GoogleFonts.inter(fontSize: 12, color: textPrimaryDark),
         brightness: Brightness.dark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -482,6 +482,7 @@ class AppTheme {
       destructive: dangerRed,
     ),
     radius: const BorderRadius.all(Radius.circular(8)),
+    textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
   );
 
   static ShadThemeData get shadcnThemeDark => ShadThemeData(
@@ -491,6 +492,7 @@ class AppTheme {
       destructive: dangerRed,
     ),
     radius: const BorderRadius.all(Radius.circular(8)),
+    textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
   );
 }
 

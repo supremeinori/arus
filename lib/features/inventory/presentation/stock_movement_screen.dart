@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -22,7 +22,7 @@ class StockMovementScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        title: Text('Riwayat Mutasi Stok', style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17)),
+        title: Text('Riwayat Mutasi Stok', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -82,14 +82,14 @@ class StockMovementScreen extends ConsumerWidget {
                               item.productName,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textPrimaryDark),
+                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textPrimaryDark),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${item.typeLabel} • ${item.outletName}',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(color: AppTheme.textSecondaryDark, fontSize: 12),
+                              style: GoogleFonts.inter(color: AppTheme.textSecondaryDark, fontSize: 12),
                             ),
                             if (item.note != null && item.note!.isNotEmpty) ...[
                               const SizedBox(height: 4),
@@ -97,7 +97,7 @@ class StockMovementScreen extends ConsumerWidget {
                                 'Catatan: ${item.note}',
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.lexend(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.textMutedDark),
+                                style: GoogleFonts.inter(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.textMutedDark),
                               ),
                             ],
                             const SizedBox(height: 4),
@@ -105,7 +105,7 @@ class StockMovementScreen extends ConsumerWidget {
                               'Oleh: ${item.creatorName} • ${_movementDateFormat.format(item.createdAt)}',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 11),
+                              style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 11),
                             ),
                           ],
                         ),
@@ -121,7 +121,7 @@ class StockMovementScreen extends ConsumerWidget {
                               '${isPositive ? '+' : ''}${item.quantityDelta} ${item.unit}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                                 color: isPositive ? const Color(0xFF34D399) : const Color(0xFFF87171),
@@ -132,7 +132,7 @@ class StockMovementScreen extends ConsumerWidget {
                               'Sisa: ${item.quantityAfter}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 12),
+                              style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 12),
                             ),
                           ],
                         ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -62,7 +62,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Hapus Bahan Baku?', style: GoogleFonts.lexend(fontWeight: FontWeight.w700)),
+        title: Text('Hapus Bahan Baku?', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
         // C15: konten dialog dibatasi + scroll agar tidak overflow.
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -75,7 +75,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   'Apakah Anda yakin ingin menghapus bahan baku “${item.name}” dari cabang ini? Riwayat mutasi dan resep yang bersinggungan akan terpengaruh.',
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: 13),
                 ),
               ],
             ),
@@ -84,12 +84,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMuted)),
+            child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Hapus', style: GoogleFonts.lexend(color: Colors.white)),
+            child: Text('Hapus', style: GoogleFonts.inter(color: Colors.white)),
           ),
         ],
       ),
@@ -104,7 +104,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.textPrimaryDark,
-            content: Text('Bahan baku “${item.name}” telah dihapus.', style: GoogleFonts.lexend()),
+            content: Text('Bahan baku “${item.name}” telah dihapus.', style: GoogleFonts.inter()),
           ),
         );
       }
@@ -127,7 +127,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Guncangan terdeteksi! Memperbarui data bahan baku...',
-                  style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
                 ),
               ],
             ),
@@ -154,7 +154,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       appBar: AppBar(
         title: Text(
           isStaff ? 'Stok & Estimasi Porsi' : 'Bahan Baku & Inventaris',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
           if (!isStaff)
@@ -184,7 +184,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           ? FloatingActionButton.extended(
               backgroundColor: AppTheme.jadeTosca,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: Text('Tambah Bahan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600)),
+              label: Text('Tambah Bahan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
               onPressed: () {
                 final outletName = outletsAsync.value?.firstWhere(
                   (o) => o.id == selectedOutletId,
@@ -222,7 +222,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       'Tidak ada cabang yang ditugaskan.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
+                      style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
                     );
                   }
 
@@ -243,7 +243,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'Pilih Cabang:',
-                        style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -257,7 +257,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                                 value: o.id,
                                 child: Text(
                                   o.name,
-                                  style: GoogleFonts.lexend(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                                  style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               );
@@ -289,7 +289,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 children: [
                   TextField(
                     controller: _searchController,
-                    style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.textPrimaryDark),
+                    style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textPrimaryDark),
                     decoration: InputDecoration(
                       hintText: 'Cari bahan baku (kopi, susu, air)...',
                       prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMutedDark),
@@ -409,7 +409,7 @@ class _InventoryFilterChip extends ConsumerWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.lexend(
+        style: GoogleFonts.inter(
           fontSize: 12.5,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         ),
@@ -493,7 +493,7 @@ class _IngredientCard extends ConsumerWidget {
                       item.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: AppTheme.textPrimaryDark,
@@ -504,7 +504,7 @@ class _IngredientCard extends ConsumerWidget {
                       'Modal: ${item.formattedCost} • Reorder: ${item.reorderLevel} ${item.unit}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 11.5),
+                      style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 11.5),
                     ),
                   ],
                 ),
@@ -521,7 +521,7 @@ class _IngredientCard extends ConsumerWidget {
                   badgeText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     color: badgeColor,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -539,20 +539,20 @@ class _IngredientCard extends ConsumerWidget {
                         'Bahan Baku Habis!',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.dangerRed),
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.dangerRed),
                       )
                     : item.isLowStock
                         ? Text(
                             'Stok Menipis (Batas: ${item.reorderLevel})',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFFBBF24)),
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFFBBF24)),
                           )
                         : Text(
                             'Stok Aman',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF10B981)),
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF10B981)),
                           ),
               ),
               IconButton(
@@ -568,7 +568,7 @@ class _IngredientCard extends ConsumerWidget {
               const SizedBox(width: 4),
               ElevatedButton.icon(
                 icon: const Icon(Icons.tune_rounded, size: 15, color: Colors.white),
-                label: Text('Sesuaikan', style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                label: Text('Sesuaikan', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.jadeTosca,
                   minimumSize: const Size(90, 34),
@@ -657,7 +657,7 @@ class _StaffPortionView extends ConsumerWidget {
                           p.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                             color: AppTheme.textPrimaryDark,
@@ -668,7 +668,7 @@ class _StaffPortionView extends ConsumerWidget {
                           '${p.formattedPrice} • SKU: ${p.sku}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                         ),
                       ],
                     ),
@@ -689,7 +689,7 @@ class _StaffPortionView extends ConsumerWidget {
                           isZero ? 'Habis' : '${p.estimatedPortions} Porsi',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: isZero ? AppTheme.dangerRed : AppTheme.jadeTosca,
@@ -699,7 +699,7 @@ class _StaffPortionView extends ConsumerWidget {
                           isZero ? 'Bahan Kurang' : 'Estimasi',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 10,
                             color: isZero ? AppTheme.dangerRed : AppTheme.textMutedDark,
                           ),

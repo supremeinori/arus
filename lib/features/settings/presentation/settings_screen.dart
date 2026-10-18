@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -159,7 +159,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         title: Text(
           'Pengaturan Kurs & Waktu',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
       body: SingleChildScrollView(
@@ -172,7 +172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Mata Uang Tampilan (Multi-Currency)',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: AppTheme.textPrimaryDark,
@@ -183,7 +183,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Pilih mata uang untuk menampilkan seluruh laporan omzet dan harga produk.',
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppTheme.textMutedDark,
               ),
@@ -214,7 +214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Rupiah Indonesia (IDR)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -224,7 +224,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Format standar: Rp 2.500.000',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -251,7 +251,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Dolar Amerika Serikat (USD)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -261,7 +261,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Format internasional: \$155.00',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -288,7 +288,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Euro Uni Eropa (EUR)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -298,7 +298,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Format ekspansi Eropa: € 145.00',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -346,7 +346,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               'Pratinjau Omzet Toko (Contoh Rp 2.500.000):',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 color: AppTheme.textMutedDark,
                               ),
@@ -354,7 +354,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             const SizedBox(height: 2),
                             MoneyText(
                               sampleOmzetIdr,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.jadeTosca,
@@ -364,7 +364,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               convertedPreview,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textSecondaryDark,
@@ -389,7 +389,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Kalkulator Konversi Nominal',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                     color: AppTheme.textPrimaryDark,
@@ -419,7 +419,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 4),
                       Text(
                         ratesAsync.isLoading ? 'Memuat...' : 'Live Rate API',
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.jadeTosca,
@@ -435,7 +435,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Masukkan jumlah uang yang ingin dikonversi secara fleksibel ke berbagai mata uang.',
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppTheme.textMutedDark,
               ),
@@ -456,7 +456,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'Nominal Uang yang Ingin Dikonversi',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimaryDark,
@@ -530,7 +530,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           children: [
                             Text(
                               'Dari',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 color: AppTheme.textMutedDark,
                               ),
@@ -544,7 +544,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       value: c,
                                       child: Text(
                                         c,
-                                        style: GoogleFonts.lexend(
+                                        style: GoogleFonts.inter(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -580,7 +580,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           children: [
                             Text(
                               'Ke',
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 color: AppTheme.textMutedDark,
                               ),
@@ -594,7 +594,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       value: c,
                                       child: Text(
                                         c,
-                                        style: GoogleFonts.lexend(
+                                        style: GoogleFonts.inter(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -657,7 +657,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               'Hasil Konversi:',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
                                 color: AppTheme.textMutedDark,
@@ -668,7 +668,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               formattedResult,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 color: AppTheme.jadeTosca,
@@ -679,7 +679,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               'Nilai Tukar: 1 $_fromCurrency = $singleUnitFormatted',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 color: AppTheme.textSecondaryDark,
                               ),
@@ -700,7 +700,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Zona Waktu Operasional',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: AppTheme.textPrimaryDark,
@@ -711,7 +711,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Menyesuaikan jam buka, laporan shift kasir, dan penutupan harian per cabang.',
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppTheme.textMutedDark,
               ),
@@ -742,7 +742,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'WIB — Waktu Indonesia Barat',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -752,7 +752,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Asia/Jakarta (UTC+7: Jakarta, Jogja, Solo, Surabaya)',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -779,7 +779,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'WITA — Waktu Indonesia Tengah',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -789,7 +789,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Asia/Makassar (UTC+8: Bali, Lombok, Makassar)',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -816,7 +816,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'WIT — Waktu Indonesia Timur',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -826,7 +826,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Asia/Jayapura (UTC+9: Maluku, Papua)',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -853,7 +853,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'BST/GMT — London United Kingdom',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppTheme.textPrimaryDark,
@@ -863,7 +863,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Europe/London (UTC+1: Oxford St, London)',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textMutedDark,
                       ),
@@ -896,7 +896,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: [
                         Text(
                           'Jam Operasional Saat Ini di Zona Terpilih:',
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 11.5,
                             color: AppTheme.textMutedDark,
                           ),
@@ -906,7 +906,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           timePreview,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.jadeTosca,
@@ -925,7 +925,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Gerakan & Sensor (Shake to Refresh)',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: AppTheme.textPrimaryDark,
@@ -936,7 +936,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Atur sensitivitas guncangan ponsel untuk menyegarkan data secara otomatis.',
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppTheme.textMutedDark,
               ),
@@ -961,7 +961,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Sensitivitas Guncangan (Shake)',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
                     color: AppTheme.textPrimaryDark,
@@ -971,7 +971,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Ambang batas: ${shakeThreshold.toStringAsFixed(1)} m/s²',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textMutedDark,
                   ),
@@ -1002,7 +1002,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             : 'Sangat Kuat',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.jadeTosca,
@@ -1027,7 +1027,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Keamanan & Akses Cepat',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
                 color: AppTheme.textPrimaryDark,
@@ -1038,7 +1038,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'Kelola autentikasi sidik jari/wajah dan kunci layar otomatis setelah 5 menit di background.',
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppTheme.textMutedDark,
               ),
@@ -1075,7 +1075,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Login Biometrik',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
                     color: AppTheme.textPrimaryDark,
@@ -1085,7 +1085,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Buka kunci dengan sidik jari/wajah & kunci otomatis 5 menit.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 12,
                     color: AppTheme.textMutedDark,
                   ),
@@ -1107,7 +1107,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               'Sensor biometrik tidak tersedia atau belum didaftarkan di perangkat ini.',
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(color: Colors.white),
+                              style: GoogleFonts.inter(color: Colors.white),
                             ),
                           ),
                         );
@@ -1130,7 +1130,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             'Login biometrik berhasil diaktifkan.',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(color: Colors.white),
+                            style: GoogleFonts.inter(color: Colors.white),
                           ),
                         ),
                       );
@@ -1147,7 +1147,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             'Login biometrik dinonaktifkan.',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(color: Colors.white),
+                            style: GoogleFonts.inter(color: Colors.white),
                           ),
                         ),
                       );
@@ -1198,7 +1198,7 @@ class _AmountChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.lexend(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+        style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
       ),
       backgroundColor: AppTheme.darkCardSurfaceElevated,
       side: const BorderSide(color: AppTheme.darkCardBorder),

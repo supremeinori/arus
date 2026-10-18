@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,7 +25,7 @@ class ProductDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'Detail Produk',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
           if (canManage)
@@ -62,7 +62,7 @@ class ProductDetailScreen extends ConsumerWidget {
                 sliver: SliverToBoxAdapter(
                   child: Text(
                     'Ketersediaan Stok per Outlet',
-                    style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                   ),
                 ),
               ),
@@ -79,7 +79,7 @@ class ProductDetailScreen extends ConsumerWidget {
                       ),
                       child: Text(
                         'Belum ada data stok yang terhubung.',
-                        style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13),
+                        style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 13),
                       ),
                     ),
                   ),
@@ -144,7 +144,7 @@ class _ProductHeaderCard extends StatelessWidget {
                   prod.isActive ? 'AKTIF' : 'NONAKTIF',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     color: prod.isActive ? AppTheme.jadeTosca : const Color(0xFFEF4444),
@@ -158,7 +158,7 @@ class _ProductHeaderCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textMutedDark,
                     fontSize: 12,
@@ -172,7 +172,7 @@ class _ProductHeaderCard extends StatelessWidget {
             prod.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
           ),
           if (prod.categoryName != null) ...[
             const SizedBox(height: 4),
@@ -180,7 +180,7 @@ class _ProductHeaderCard extends StatelessWidget {
               'Kategori: ${prod.categoryName}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
+              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
             ),
           ],
           const Divider(height: 24, color: AppTheme.darkCardBorder, thickness: 1.0),
@@ -195,14 +195,14 @@ class _ProductHeaderCard extends StatelessWidget {
                       'Harga Jual / ${prod.unit}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+                      style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       prod.formattedPrice,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.jadeTosca,
@@ -220,14 +220,14 @@ class _ProductHeaderCard extends StatelessWidget {
                         'HPP (Modal)',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+                        style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         prod.formattedCost!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textPrimaryDark,
@@ -270,7 +270,7 @@ class _ProductRecipeCard extends StatelessWidget {
                   'Estimasi Ketersediaan Menu',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                 ),
               ),
               const SizedBox(width: 8),
@@ -289,7 +289,7 @@ class _ProductRecipeCard extends StatelessWidget {
                       : 'Habis (Bahan Kurang)',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                     color: prod.estimatedPortions > 0 ? AppTheme.jadeTosca : const Color(0xFFEF4444),
@@ -303,7 +303,7 @@ class _ProductRecipeCard extends StatelessWidget {
             'Komposisi Resep (Bahan Baku per Porsi):',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
+            style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
           ),
           const SizedBox(height: 8),
           if (prod.recipes.isEmpty)
@@ -311,7 +311,7 @@ class _ProductRecipeCard extends StatelessWidget {
               'Belum ada komposisi resep yang dikonfigurasi.',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
             )
           else
             ...prod.recipes.map(
@@ -325,7 +325,7 @@ class _ProductRecipeCard extends StatelessWidget {
                         '• ${r.ingredientName ?? 'Bahan'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textPrimaryDark),
+                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textPrimaryDark),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -333,7 +333,7 @@ class _ProductRecipeCard extends StatelessWidget {
                       '${r.amountNeeded} ${r.ingredientUnit ?? ''}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
+                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
                     ),
                   ],
                 ),
@@ -375,13 +375,13 @@ class _OutletStockCard extends StatelessWidget {
           stock.outletName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
         ),
         subtitle: Text(
           'Batas minimum restock: ${stock.reorderLevel} ${prod.unit}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
         ),
         trailing: SizedBox(
           width: 110,
@@ -400,7 +400,7 @@ class _OutletStockCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: GoogleFonts.lexend(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 12.5,
                 color: statusColor,

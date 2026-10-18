@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,7 +25,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'Profil & Akun',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
       body: ListView(
@@ -64,7 +64,7 @@ class ProfileScreen extends ConsumerWidget {
                         user?.name ?? 'Pengguna',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimaryDark,
@@ -75,7 +75,7 @@ class ProfileScreen extends ConsumerWidget {
                         user?.email ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           color: AppTheme.textMutedDark,
                         ),
@@ -98,7 +98,7 @@ class ProfileScreen extends ConsumerWidget {
                           user?.role.toDisplayString() ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.jadeTosca,
@@ -118,7 +118,7 @@ class ProfileScreen extends ConsumerWidget {
             'Pengaturan Sistem & Preferensi',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
               fontSize: 13.5,
               color: AppTheme.textPrimaryDark,
@@ -144,7 +144,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Pengaturan Kurs & Waktu',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -153,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Multi-currency (IDR, USD, EUR) & zona waktu toko',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       color: AppTheme.textMutedDark,
                     ),
@@ -181,7 +181,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Diagnostik Sensor & Biometrik',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -190,7 +190,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Pengujian akselerometer, giroskop & sensor sidik jari',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       color: AppTheme.textMutedDark,
                     ),
@@ -218,7 +218,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Login Sidik Jari (Biometrik)',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -227,7 +227,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Buka kunci sesi otomatis dengan sensor biometrik HP',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       color: AppTheme.textMutedDark,
                     ),
@@ -265,7 +265,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Sensitivitas Guncangan (Shake)',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -274,7 +274,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Atur ambang batas getaran refresh (${currentThreshold.toStringAsFixed(1)} m/s²)',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       color: AppTheme.textMutedDark,
                     ),
@@ -305,7 +305,7 @@ class ProfileScreen extends ConsumerWidget {
                               : 'Sangat Kuat',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(
+                          style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.jadeTosca,
@@ -331,7 +331,7 @@ class ProfileScreen extends ConsumerWidget {
             'Administrasi & Aplikasi',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w700,
               fontSize: 13.5,
               color: AppTheme.textPrimaryDark,
@@ -356,7 +356,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Kelola Staf & Akun',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -365,7 +365,7 @@ class ProfileScreen extends ConsumerWidget {
                   //   'Atur hak akses kasir, manager, dan role pengguna',
                   //   maxLines: 2,
                   //   overflow: TextOverflow.ellipsis,
-                  //   style: GoogleFonts.lexend(
+                  //   style: GoogleFonts.inter(
                   //     fontSize: 11.5,
                   //     color: AppTheme.textMutedDark,
                   //   ),
@@ -391,7 +391,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Saran & Kesan Kuliah PAM',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -400,7 +400,7 @@ class ProfileScreen extends ConsumerWidget {
                   //   'Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)',
                   //   maxLines: 2,
                   //   overflow: TextOverflow.ellipsis,
-                  //   style: GoogleFonts.lexend(
+                  //   style: GoogleFonts.inter(
                   //     fontSize: 11.5,
                   //     color: AppTheme.textMutedDark,
                   //   ),
@@ -426,7 +426,7 @@ class ProfileScreen extends ConsumerWidget {
                     'Tentang ARUS',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
                     ),
@@ -435,7 +435,7 @@ class ProfileScreen extends ConsumerWidget {
                   //   'Versi rilis v2.4.0, lisensi, & arsitektur sistem',
                   //   maxLines: 2,
                   //   overflow: TextOverflow.ellipsis,
-                  //   style: GoogleFonts.lexend(
+                  //   style: GoogleFonts.inter(
                   //     fontSize: 11.5,
                   //     color: AppTheme.textMutedDark,
                   //   ),
@@ -468,14 +468,14 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       description: Text(
                         'Apakah Anda yakin ingin keluar dari sesi saat ini?',
-                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
+                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
                       ),
                       actions: [
                         ShadButton.ghost(
                           onPressed: () => Navigator.pop(ctx),
                           child: Text(
                             'Batal',
-                            style: GoogleFonts.lexend(color: AppTheme.textMutedDark),
+                            style: GoogleFonts.inter(color: AppTheme.textMutedDark),
                           ),
                         ),
                         ShadButton.destructive(
@@ -485,7 +485,7 @@ class ProfileScreen extends ConsumerWidget {
                           },
                           child: Text(
                             'Keluar',
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ),
@@ -506,7 +506,7 @@ class ProfileScreen extends ConsumerWidget {
               leading: const Icon(Icons.logout, color: AppTheme.dangerRed, size: 18),
               child: Text(
                 'Keluar Akun',
-                style: GoogleFonts.lexend(
+                style: GoogleFonts.inter(
                   color: AppTheme.dangerRed,
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
@@ -553,7 +553,7 @@ class _LetterAvatar extends StatelessWidget {
           initial,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontSize: 22,
             fontWeight: FontWeight.w800,
             color: AppTheme.jadeTosca,

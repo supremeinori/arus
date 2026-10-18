@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -230,7 +230,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 const SizedBox(height: 24),
                 Text(
                   StringsId.appName,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
@@ -241,7 +241,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 Text(
                   StringsId.appTagline,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.lexend(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppTheme.textMutedDark,
                   ),
@@ -287,7 +287,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             'Status: ${health.status.toUpperCase()} • DB: ${health.db} • v${health.version}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 12,
                               color: AppTheme.textSecondaryDark,
                             ),
@@ -297,7 +297,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             'Waktu Server: ${health.time}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
                               color: AppTheme.textMutedDark,
                             ),
@@ -325,7 +325,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             const SizedBox(width: 10),
                             Text(
                               'Menunggu sensor biometrik...',
-                              style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                              style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
                             ),
                           ],
                         ),
@@ -335,7 +335,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                           icon: const Icon(Icons.password_rounded, size: 16, color: AppTheme.jadeTosca),
                           label: Text(
                             'Batal & Masuk dengan Password',
-                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
                           ),
                           onPressed: () {
                             _goToLogin();

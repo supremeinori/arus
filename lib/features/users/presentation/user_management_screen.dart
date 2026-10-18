@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -47,7 +47,7 @@ class UserManagementScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Manajemen Pengguna & Tim',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -57,7 +57,7 @@ class UserManagementScreen extends StatelessWidget {
         children: [
           Text(
             'Daftar Anggota & Hak Akses Toko',
-            style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
+            style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -91,7 +91,7 @@ class UserManagementScreen extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       u['name'][0],
-                      style: GoogleFonts.lexend(fontWeight: FontWeight.w800, fontSize: 16, color: badgeColor),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 16, color: badgeColor),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -101,13 +101,13 @@ class UserManagementScreen extends StatelessWidget {
                       children: [
                         Text(
                           u['name'],
-                          style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           u['email'],
-                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -122,7 +122,7 @@ class UserManagementScreen extends StatelessWidget {
                               ),
                               child: Text(
                                 u['role'],
-                                style: GoogleFonts.lexend(fontSize: 10.5, fontWeight: FontWeight.w700, color: badgeColor),
+                                style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w700, color: badgeColor),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -131,7 +131,7 @@ class UserManagementScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 '• ${u['outlet']}',
-                                style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF94A3B8)),
+                                style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8)),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),

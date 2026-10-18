@@ -24,7 +24,7 @@ class AboutScreen extends StatelessWidget {
         ),
         title: Text(
           'Tentang Aplikasi ARUS',
-          style: GoogleFonts.lexend(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
             color: AppTheme.textPrimaryDark,
@@ -49,7 +49,7 @@ class AboutScreen extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     'ARUS',
-                    style: GoogleFonts.lexend(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -60,7 +60,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'ARUS Business DSS & POS',
-                  style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -68,7 +68,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Versi 1.0.0 (Final Enterprise Baseline)',
-                  style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark),
+                  style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -86,14 +86,14 @@ class AboutScreen extends StatelessWidget {
               children: [
                 Text(
                   'Deskripsi Sistem',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'ARUS adalah Mobile Business Decision-Support System terintegrasi Point-of-Sale (POS) untuk bisnis ritel dan F&B multi-cabang. Sistem ini mengalirkan data transaksi harian menjadi visualisasi analitik KPI, rekomendasi stok otomatis, dan konsultasi cerdas berbasis AI.',
-                  style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textSecondaryDark, height: 1.5),
+                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondaryDark, height: 1.5),
                 ),
               ],
             ),
@@ -113,7 +113,7 @@ class AboutScreen extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 10),
-                _TechRow(label: 'Frontend', value: 'Flutter 3.x, Riverpod 2.x, shadcn_ui, go_router, Google Fonts (Lexend)'),
+                _TechRow(label: 'Frontend', value: 'Flutter 3.x, Riverpod 2.x, shadcn_ui, go_router, Google Fonts (Inter)'),
                 _TechRow(label: 'Backend', value: 'Node.js, Express, TypeScript, Prisma ORM, Argon2, Pino'),
                 _TechRow(label: 'Database', value: 'PostgreSQL 15+ dengan in-memory fallback offline'),
                 _TechRow(label: 'Keamanan', value: 'SHA-256 Tamper-evident Ledger, JWT Access & Rotating Refresh'),
@@ -126,7 +126,7 @@ class AboutScreen extends StatelessWidget {
           Center(
             child: Text(
               '© 2026 ARUS System • Hak Cipta Dilindungi',
-              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
+              style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -164,7 +164,7 @@ class _TechRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
+              style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -172,7 +172,7 @@ class _TechRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textPrimaryDark),
+              style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textPrimaryDark),
             ),
           ),
         ],
