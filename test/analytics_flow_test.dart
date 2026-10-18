@@ -149,6 +149,59 @@ void main() {
 
       expect(container.read(selectedDateFilterProvider), DashboardDateFilter.yesterday);
     });
+
+    testWidgets('DashboardScreen tidak mengalami RenderFlex overflow pada viewport sempit (mobile)', (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      const longOutletOwner = UserModel(
+        id: 'u-owner-long',
+        name: 'Pak Budi',
+        email: 'budi@arus.demo',
+        role: UserRole.owner,
+        outlets: [
+          OutletSummary(
+            id: 'out-long',
+            name: 'Kopi Arus - Cabang Sangat Panjang Sekali Sudirman HQ Mall Grand Indonesia',
+            timezone: 'Asia/Jakarta',
+          ),
+        ],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith((ref) => AuthNotifierMock(AuthState.authenticated(longOutletOwner))),
+          analyticsOverviewProvider.overrideWith((ref) async => sampleKpi),
+          salesTrendProvider.overrideWith((ref) async => sampleTrend),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: DashboardScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Pilih cabang panjang
+      await tester.tap(find.text('Semua Cabang'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Kopi Arus - Cabang Sangat Panjang').last);
+      await tester.pumpAndSettle();
+
+      // Tidak ada overflow dan kartu komparasi tetap ter-render
+      expect(find.text('Komparasi Laba Harian'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

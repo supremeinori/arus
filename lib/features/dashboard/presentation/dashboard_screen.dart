@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
@@ -187,130 +186,24 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 14),
                   ],
 
-                  // 4. Aksi Cepat (Quick Actions)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => context.push('/pos'),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryBlue,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryBlue.withAlpha(40),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.point_of_sale_rounded, color: Colors.white, size: 22),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Kasir POS',
-                                  style: GoogleFonts.lexend(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => context.push('/catalog/new'),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.add_circle_outline_rounded, color: AppTheme.primaryBlue, size: 22),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Tambah Produk',
-                                  style: GoogleFonts.lexend(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.accentBlack,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => context.push('/inventory'),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.warehouse_outlined, color: Color(0xFF64748B), size: 22),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Cek Stok',
-                                  style: GoogleFonts.lexend(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.accentBlack,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // 5. KPI Overview Cards (sesuai periode dropdown yang dipilih)
+                  // 4. KPI Overview Cards (sesuai periode dropdown yang dipilih)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Ringkasan Metrik (${selectedDateFilter.label})',
-                        style: GoogleFonts.lexend(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: AppTheme.accentBlack,
+                      Expanded(
+                        child: Text(
+                          'Ringkasan Metrik (${selectedDateFilter.label})',
+                          style: GoogleFonts.lexend(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppTheme.accentBlack,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      if (selectedOutletId != null)
+                      if (selectedOutletId != null) ...[
+                        const SizedBox(width: 8),
                         Text(
                           'Cabang Terfilter',
                           style: GoogleFonts.lexend(
@@ -319,6 +212,7 @@ class DashboardScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -620,43 +514,48 @@ class _DailyProfitComparisonCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.lightBlueBg,
-                      borderRadius: BorderRadius.circular(8),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.lightBlueBg,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.auto_graph_rounded, color: AppTheme.primaryBlue, size: 18),
                     ),
-                    child: const Icon(Icons.auto_graph_rounded, color: AppTheme.primaryBlue, size: 18),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Komparasi Laba Harian',
-                        style: GoogleFonts.lexend(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.accentBlack,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Komparasi Laba Harian',
+                            style: GoogleFonts.lexend(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.accentBlack,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Hari Ini vs Hari Kemarin ($selectedOutletName)',
+                            style: GoogleFonts.lexend(
+                              fontSize: 11,
+                              color: const Color(0xFF64748B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Hari Ini vs Hari Kemarin ($selectedOutletName)',
-                        style: GoogleFonts.lexend(
-                          fontSize: 11,
-                          color: const Color(0xFF64748B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -713,12 +612,16 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Laba Hari Ini',
-                            style: GoogleFonts.lexend(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF64748B),
+                          Expanded(
+                            child: Text(
+                              'Laba Hari Ini',
+                              style: GoogleFonts.lexend(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -770,12 +673,16 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Laba Kemarin',
-                            style: GoogleFonts.lexend(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF64748B),
+                          Expanded(
+                            child: Text(
+                              'Laba Kemarin',
+                              style: GoogleFonts.lexend(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
