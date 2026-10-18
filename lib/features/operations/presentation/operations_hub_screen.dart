@@ -134,7 +134,7 @@ class OperationsHubScreen extends ConsumerWidget {
               const _SectionHeader(
                 icon: Icons.tune_rounded,
                 title: 'Utilitas',
-                countBadge: '5 Alat',
+                countBadge: '3 Alat',
               ),
               const SizedBox(height: 12),
               GridView.count(
@@ -145,20 +145,6 @@ class OperationsHubScreen extends ConsumerWidget {
                 crossAxisSpacing: 12,
                 childAspectRatio: childAspectRatio,
                 children: const [
-                  _OperationGridCard(
-                    icon: Icons.lightbulb_outline_rounded,
-                    title: 'Rekomendasi AI',
-                    subtitle: 'Evaluasi Rule Engine DSS & anomali stok',
-                    badgeText: 'AI DSS',
-                    route: '/insights',
-                  ),
-                  _OperationGridCard(
-                    icon: Icons.notifications_active_outlined,
-                    title: 'Pusat Notifikasi',
-                    subtitle: 'Peringatan stok kritis & evaluasi target',
-                    badgeText: 'Peringatan',
-                    route: '/notifications',
-                  ),
                   _OperationGridCard(
                     icon: Icons.currency_exchange_rounded,
                     title: 'Pengaturan Kurs',

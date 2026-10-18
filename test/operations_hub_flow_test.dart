@@ -33,14 +33,13 @@ void main() {
       expect(find.text('Cabang & LBS'), findsOneWidget);
       expect(find.text('Integritas Ledger'), findsOneWidget);
 
-      // Memastikan Kategori Utilitas dan Modulnya
+      // Memastikan Kategori Utilitas dan Modulnya (tanpa redundansi Rekomendasi AI dan kartu notifikasi)
       expect(find.text('Utilitas'), findsOneWidget);
-      expect(find.text('5 Alat'), findsOneWidget);
-      expect(find.text('Rekomendasi AI'), findsOneWidget);
-      expect(find.text('Pusat Notifikasi'), findsWidgets);
+      expect(find.text('3 Alat'), findsOneWidget);
       expect(find.text('Pengaturan Kurs'), findsOneWidget);
       expect(find.text('Sensor & Biometrik'), findsOneWidget);
       expect(find.text('Mini-Game Menu'), findsOneWidget);
+      expect(find.text('Rekomendasi AI'), findsNothing);
 
       // Memastikan tidak ada render overflow exception
       expect(tester.takeException(), isNull);

@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:shadcn_ui/shadcn_ui.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../analytics/presentation/analytics_provider.dart';
+import '../../insights/presentation/insights_provider.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
@@ -26,6 +29,7 @@ class DashboardScreen extends ConsumerWidget {
         ref.invalidate(salesTrendProvider);
         ref.invalidate(dailyProfitComparisonProvider);
         ref.invalidate(ingredientsListProvider);
+        ref.invalidate(insightsListProvider);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -73,7 +77,7 @@ class DashboardScreen extends ConsumerWidget {
             ? outlets.firstWhere((o) => o.id == selectedOutletId).name
             : 'Cabang');
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.darkCardSurface,
@@ -186,6 +190,7 @@ class DashboardScreen extends ConsumerWidget {
               ref.invalidate(salesTrendProvider);
               ref.invalidate(dailyProfitComparisonProvider);
               ref.invalidate(ingredientsListProvider);
+              ref.invalidate(insightsListProvider);
             },
           ),
           const SizedBox(width: 6),
@@ -199,6 +204,7 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(salesTrendProvider);
           ref.invalidate(dailyProfitComparisonProvider);
           ref.invalidate(ingredientsListProvider);
+          ref.invalidate(insightsListProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -305,65 +311,22 @@ class DashboardScreen extends ConsumerWidget {
 
               const SizedBox(height: 16),
 
-              // 8. Decision Support Siaga Banner
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.darkCardSurface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.jadeTosca.withValues(alpha: 0.35),
-                    width: 1.0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.jadeTosca.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.bolt_rounded, color: AppTheme.jadeTosca, size: 28),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Decision Support System Siaga',
-                            style: GoogleFonts.lexend(
-                              color: AppTheme.textPrimaryDark,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Gunakan tab AI Assistant untuk analisis proyeksi omset, rekomendasi stok, atau audit rantai integritas.',
-                            style: GoogleFonts.lexend(
-                              color: AppTheme.textMutedDark,
-                              fontSize: 12,
-                              height: 1.35,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // 8. Rekomendasi Keputusan AI (DSS)
+              const _AiRecommendationsSection(),
               const SizedBox(height: 24),
             ],
           ),
         ),
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
   }
 }
 
@@ -425,21 +388,15 @@ class _ExecutiveHeaderCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        '$selectedOutletName • ${user?.role.toDisplayString() ?? ""}',
-                        style: GoogleFonts.lexend(
-                          fontSize: 12,
-                          color: AppTheme.textMutedDark,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                Text(
+                  '$selectedOutletName • ${user?.role.toDisplayString() ?? ""}',
+                  style: GoogleFonts.lexend(
+                    fontSize: 12,
+                    color: AppTheme.textMutedDark,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -1706,5 +1663,282 @@ class _CurvedAreaChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _CurvedAreaChartPainter oldDelegate) {
     return oldDelegate.points != points;
+  }
+}
+
+/// 8. Rekomendasi Keputusan AI (DSS) Widget untuk Dashboard
+class _AiRecommendationsSection extends ConsumerWidget {
+  const _AiRecommendationsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final insightsAsync = ref.watch(insightsListProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline_rounded, color: AppTheme.jadeTosca, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Rekomendasi Keputusan AI',
+                      style: GoogleFonts.lexend(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimaryDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: () => context.push('/insights'),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Buka Modul DSS',
+                      style: GoogleFonts.lexend(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.jadeTosca,
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    const Icon(Icons.arrow_forward_rounded, size: 13, color: AppTheme.jadeTosca),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Body Content
+        insightsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, _) => ShadCard(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                const Icon(Icons.bolt_rounded, color: AppTheme.jadeTosca, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Decision Support System Siaga',
+                        style: GoogleFonts.lexend(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimaryDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Ketuk untuk melihat analisis Rule Engine, anomali stok, dan proyeksi.',
+                        style: GoogleFonts.lexend(
+                          fontSize: 11.5,
+                          color: AppTheme.textMutedDark,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ShadButton.outline(
+                  size: ShadButtonSize.sm,
+                  onPressed: () => context.push('/insights'),
+                  child: const Text('Buka'),
+                ),
+              ],
+            ),
+          ),
+          data: (insights) {
+            final activeInsights = insights.where((i) => i.status != 'dismissed').toList();
+
+            if (activeInsights.isEmpty) {
+              return ShadCard(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.verified_outlined, color: AppTheme.jadeTosca, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sistem DSS Berjalan Optimal',
+                            style: GoogleFonts.lexend(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimaryDark,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Tidak terdeteksi anomali kritis atau penumpukan bahan baku.',
+                            style: GoogleFonts.lexend(
+                              fontSize: 11.5,
+                              color: AppTheme.textMutedDark,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ShadButton.outline(
+                      size: ShadButtonSize.sm,
+                      onPressed: () => context.push('/insights'),
+                      child: const Text('Detail'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final displayList = activeInsights.take(2).toList();
+            return Column(
+              children: [
+                ...displayList.map((item) {
+                  final isCrit = item.isCritical;
+                  final isWarn = item.isWarning;
+                  final badgeColor = isCrit
+                      ? AppTheme.dangerRed
+                      : (isWarn ? const Color(0xFFF59E0B) : AppTheme.jadeTosca);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: InkWell(
+                      onTap: () => context.push('/insights'),
+                      borderRadius: BorderRadius.circular(8),
+                      child: ShadCard(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                ShadBadge.secondary(
+                                  backgroundColor: badgeColor.withValues(alpha: 0.15),
+                                  foregroundColor: badgeColor,
+                                  child: Text(
+                                    isCrit ? 'Kritis' : (isWarn ? 'Peringatan' : 'Rekomendasi'),
+                                    style: GoogleFonts.lexend(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    item.title,
+                                    style: GoogleFonts.lexend(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimaryDark,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 18,
+                                  color: AppTheme.textMutedDark,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item.message,
+                              style: GoogleFonts.lexend(
+                                fontSize: 11.5,
+                                color: AppTheme.textMutedDark,
+                                height: 1.35,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (item.recommendation.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.darkCardSurfaceElevated,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: AppTheme.darkCardBorder,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.lightbulb_rounded,
+                                      size: 13,
+                                      color: AppTheme.jadeTosca,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        item.recommendation,
+                                        style: GoogleFonts.lexend(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.jadeTosca,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            );
+          },
+        ),
+      ],
+    );
   }
 }
