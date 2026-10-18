@@ -113,9 +113,9 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
-          // Keamanan & Sesi Biometrik
+          // Keamanan & Preferensi Sesi
           Text(
-            'Keamanan & Preferensi Sesi',
+            'Pengaturan Sistem & Preferensi',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.lexend(
@@ -134,6 +134,81 @@ class ProfileScreen extends ConsumerWidget {
             ),
             child: Column(
               children: [
+                // 1. Pengaturan Kurs & Waktu
+                ListTile(
+                  leading: const Icon(
+                    Icons.currency_exchange_rounded,
+                    color: AppTheme.jadeTosca,
+                  ),
+                  title: Text(
+                    'Pengaturan Kurs & Waktu',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Multi-currency (IDR, USD, EUR) & zona waktu toko',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                      fontSize: 11.5,
+                      color: AppTheme.textMutedDark,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppTheme.textMutedDark,
+                  ),
+                  onTap: () => context.push('/settings'),
+                ),
+                const Divider(
+                  height: 1,
+                  indent: 56,
+                  color: AppTheme.darkCardBorder,
+                ),
+
+                // 2. Diagnostik Sensor Hardware
+                ListTile(
+                  leading: const Icon(
+                    Icons.sensors_rounded,
+                    color: AppTheme.jadeTosca,
+                  ),
+                  title: Text(
+                    'Diagnostik Sensor & Biometrik',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Pengujian akselerometer, giroskop & sensor sidik jari',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(
+                      fontSize: 11.5,
+                      color: AppTheme.textMutedDark,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppTheme.textMutedDark,
+                  ),
+                  onTap: () => context.push('/sensors'),
+                ),
+                const Divider(
+                  height: 1,
+                  indent: 56,
+                  color: AppTheme.darkCardBorder,
+                ),
+
+                // 3. Login Sidik Jari (Biometrik)
                 SwitchListTile(
                   secondary: const Icon(
                     Icons.fingerprint_rounded,
@@ -179,6 +254,8 @@ class ProfileScreen extends ConsumerWidget {
                   indent: 56,
                   color: AppTheme.darkCardBorder,
                 ),
+
+                // 4. Sensitivitas Guncangan (Shake)
                 ListTile(
                   leading: const Icon(
                     Icons.vibration_rounded,
@@ -249,63 +326,6 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Outlet Scopes List
-          if (user != null && user.outlets.isNotEmpty) ...[
-            Text(
-              'Akses Outlet Cabang (${user.outlets.length}):',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(
-                fontWeight: FontWeight.w700,
-                fontSize: 13.5,
-                color: AppTheme.textPrimaryDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // List outlet kecil milik user: dirender langsung via ...map di
-            // body ListView (aturan A4) — bukan ListView bersarang.
-            ...user.outlets.map(
-              (o) => Card(
-                elevation: 0,
-                color: AppTheme.darkCardSurface,
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(
-                    color: AppTheme.darkCardBorder,
-                    width: 1.0,
-                  ),
-                ),
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.storefront_outlined,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    o.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${o.timezone} • ${o.address ?? "-"}',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(
-                      fontSize: 12,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ),
-                  dense: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
 
           Text(
             'Administrasi & Aplikasi',

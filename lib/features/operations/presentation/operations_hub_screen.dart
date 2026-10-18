@@ -130,11 +130,11 @@ class OperationsHubScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // 3. Kategori: Utilitas
+              // 3. Kategori: Fitur Tambahan
               const _SectionHeader(
-                icon: Icons.tune_rounded,
-                title: 'Utilitas',
-                countBadge: '3 Alat',
+                icon: Icons.sports_esports_rounded,
+                title: 'Fitur Tambahan',
+                countBadge: '1 Modul',
               ),
               const SizedBox(height: 12),
               GridView.count(
@@ -145,20 +145,6 @@ class OperationsHubScreen extends ConsumerWidget {
                 crossAxisSpacing: 12,
                 childAspectRatio: childAspectRatio,
                 children: const [
-                  _OperationGridCard(
-                    icon: Icons.currency_exchange_rounded,
-                    title: 'Pengaturan Kurs',
-                    subtitle: 'Multi-currency IDR/USD/EUR & zona waktu',
-                    badgeText: 'Kurs & Jam',
-                    route: '/settings',
-                  ),
-                  _OperationGridCard(
-                    icon: Icons.sensors_rounded,
-                    title: 'Sensor & Biometrik',
-                    subtitle: 'Simulasi biometrik & akselerometer hardware',
-                    badgeText: 'Sensor',
-                    route: '/sensors',
-                  ),
                   _OperationGridCard(
                     icon: Icons.sports_esports_rounded,
                     title: 'Mini-Game Menu',
