@@ -3,10 +3,21 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Brand Colors - Modern Professional Toska / Teal Palette
-  static const primaryToska = Color(0xFF0D9488); // Modern Toska Enterprise (Teal 600)
+  static const jadeTosca = Color(0xFF00A896); // Main Accent: Jade Tosca
+  static const jadeToscaGlow = Color(0x6600A896); // rgba(0, 168, 150, 0.4) for chart gradient
+  static const primaryToska = jadeTosca; // Modern Toska Enterprise (Jade Tosca)
   static const primaryToskaHover = Color(0xFF0F766E); // Deeper Toska (Teal 700)
   static const lightToskaBg = Color(0xFFF0FDFA); // Soft Toska Surface (Teal 50)
   static const darkToska = Color(0xFF115E59); // Deep Forest Toska (Teal 800)
+
+  // Shadcn Dark Mode Standard Palette
+  static const darkBackground = Color(0xFF090D16); // Slate-950
+  static const darkCardSurface = Color(0xFF111827); // Slate-900
+  static const darkCardSurfaceElevated = Color(0xFF1F2937); // Slate-800
+  static const darkCardBorder = Color(0x14FFFFFF); // 1px solid rgba(255, 255, 255, 0.08)
+  static const textPrimaryDark = Color(0xFFF9FAFB); // Slate-50
+  static const textSecondaryDark = Color(0xFFCBD5E1); // Slate-300
+  static const textMutedDark = Color(0xFF9CA3AF); // Muted label text (Slate-400)
 
   // Backward compatible aliases
   static const primaryBlue = primaryToska;

@@ -108,30 +108,40 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final cartState = ref.watch(posCartProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        backgroundColor: AppTheme.darkBackground,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shape: const Border(
+          bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        ),
         leading: Navigator.of(context).canPop()
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppTheme.accentBlack),
+                icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimaryDark),
                 tooltip: 'Kembali',
                 onPressed: () => Navigator.of(context).pop(),
               )
             : null,
         title: Text(
           'Kasir POS',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.lexend(
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            color: AppTheme.textPrimaryDark,
+          ),
         ),
         actions: [
           IconButton(
             icon: const Icon(
               Icons.receipt_long_outlined,
-              color: AppTheme.primaryBlue,
+              color: AppTheme.jadeTosca,
             ),
             tooltip: 'Riwayat Transaksi Hari Ini',
             onPressed: () => context.push('/pos/history'),
           ),
           IconButton(
-            icon: const Icon(Icons.sync_rounded, color: AppTheme.primaryBlue),
+            icon: const Icon(Icons.sync_rounded, color: AppTheme.jadeTosca),
             tooltip: 'Sinkronisasi Transaksi Offline',
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
@@ -158,14 +168,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               }
             },
           ),
-          // IconButton(
-          //   icon: const Icon(
-          //     Icons.add_business_outlined,
-          //     color: AppTheme.primaryBlue,
-          //   ),
-          //   tooltip: 'Tambah Produk Baru',
-          //   onPressed: () => context.push('/catalog/new'),
-          // ),
           IconButton(
             // SELALU di-layout (tanpa guard `if items.isNotEmpty`): tombol
             // yang disisipkan kondisional di frame yang sama dengan tap
@@ -175,8 +177,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             icon: Icon(
               Icons.delete_sweep_outlined,
               color: cartState.items.isEmpty
-                  ? AppTheme.textMuted.withValues(alpha: 0.4)
-                  : AppTheme.accentBlack,
+                  ? AppTheme.textMutedDark.withValues(alpha: 0.4)
+                  : AppTheme.textPrimaryDark,
             ),
             tooltip: 'Kosongkan Keranjang',
             onPressed: cartState.items.isEmpty
@@ -192,11 +194,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               controller: _searchController,
+              style: GoogleFonts.lexend(
+                color: AppTheme.textPrimaryDark,
+                fontSize: 13.5,
+              ),
               decoration: InputDecoration(
                 hintText: 'Cari produk atau SKU...',
+                hintStyle: GoogleFonts.lexend(
+                  color: AppTheme.textMutedDark,
+                  fontSize: 13,
+                ),
+                filled: true,
+                fillColor: AppTheme.darkCardSurface,
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: AppTheme.textMuted,
+                  color: AppTheme.textMutedDark,
                 ),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
@@ -206,21 +218,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     width: 1.0,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     width: 1.0,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     width: 1.5,
                   ),
                 ),
@@ -251,10 +263,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         ),
                       ),
                       selected: _selectedCategoryId == null,
-                      selectedColor: AppTheme.primaryBlue,
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(
-                        color: AppTheme.borderOutline,
+                      selectedColor: AppTheme.jadeTosca,
+                      backgroundColor: AppTheme.darkCardSurface,
+                      side: BorderSide(
+                        color: _selectedCategoryId == null
+                            ? AppTheme.jadeTosca
+                            : AppTheme.darkCardBorder,
                         width: 1.0,
                       ),
                       shape: RoundedRectangleBorder(
@@ -263,7 +277,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       labelStyle: TextStyle(
                         color: _selectedCategoryId == null
                             ? Colors.white
-                            : AppTheme.accentBlack,
+                            : AppTheme.textMutedDark,
                       ),
                       onSelected: (selected) {
                         if (selected) {
@@ -287,10 +301,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             ),
                           ),
                           selected: isSelected,
-                          selectedColor: AppTheme.primaryBlue,
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(
-                            color: AppTheme.borderOutline,
+                          selectedColor: AppTheme.jadeTosca,
+                          backgroundColor: AppTheme.darkCardSurface,
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppTheme.jadeTosca
+                                : AppTheme.darkCardBorder,
                             width: 1.0,
                           ),
                           shape: RoundedRectangleBorder(
@@ -299,7 +315,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           labelStyle: TextStyle(
                             color: isSelected
                                 ? Colors.white
-                                : AppTheme.accentBlack,
+                                : AppTheme.textMutedDark,
                           ),
                           onSelected: (selected) {
                             setState(
@@ -316,7 +332,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               );
             },
           ),
-          const Divider(height: 16),
+          const Divider(height: 16, color: AppTheme.darkCardBorder),
 
           // Product Grid
           Expanded(
@@ -354,14 +370,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(16),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEFF6FF),
+                            decoration: BoxDecoration(
+                              color: AppTheme.jadeTosca.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.inventory_2_outlined,
                               size: 36,
-                              color: AppTheme.primaryBlue,
+                              color: AppTheme.jadeTosca,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -372,7 +388,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             style: GoogleFonts.lexend(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.accentBlack,
+                              color: AppTheme.textPrimaryDark,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -383,7 +399,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             textAlign: TextAlign.center,
                             style: GoogleFonts.lexend(
                               fontSize: 12.5,
-                              color: const Color(0xFF64748B),
+                              color: AppTheme.textMutedDark,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -403,7 +419,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryBlue,
+                              backgroundColor: AppTheme.jadeTosca,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 18,
@@ -453,7 +469,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         ? (cartItem.quantity as int)
                         : 0;
                     final remainingPortions = (maxPortions - inCartQty).clamp(
-                      0,
+                       0,
                       maxPortions > 0 ? maxPortions : 0,
                     );
 
@@ -495,17 +511,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: isOutOfStock
-                              ? const Color(0xFFFEF2F2).withValues(alpha: 0.6)
+                              ? const Color(0x26DC2626)
                               : (inCart
-                                    ? const Color(0xFFEFF6FF)
-                                    : Colors.white),
+                                    ? const Color(0x2400A896)
+                                    : AppTheme.darkCardSurface),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isOutOfStock
-                                ? const Color(0xFFFCA5A5)
+                                ? const Color(0x4DDC2626)
                                 : (inCart
-                                      ? AppTheme.primaryBlue
-                                      : AppTheme.borderOutline),
+                                      ? AppTheme.jadeTosca
+                                      : AppTheme.darkCardBorder),
                             width: inCart ? 1.5 : 1.0,
                           ),
                         ),
@@ -526,8 +542,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5,
                                           color: isOutOfStock
-                                              ? const Color(0xFF991B1B)
-                                              : AppTheme.accentBlack,
+                                              ? const Color(0xFFF87171)
+                                              : AppTheme.textPrimaryDark,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -539,7 +555,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.lexend(
                                           fontSize: 11,
-                                          color: AppTheme.textMuted,
+                                          color: AppTheme.textMutedDark,
                                         ),
                                       ),
                                     ],
@@ -560,13 +576,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: isOutOfStock
-                                    ? const Color(0xFFFEE2E2)
-                                    : const Color(0xFFEFF6FF),
+                                    ? const Color(0x33DC2626)
+                                    : AppTheme.darkCardSurfaceElevated,
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                   color: isOutOfStock
-                                      ? const Color(0xFFFCA5A5)
-                                      : const Color(0xFFBFDBFE),
+                                      ? const Color(0x4DDC2626)
+                                      : AppTheme.darkCardBorder,
                                 ),
                               ),
                               child: Text(
@@ -581,8 +597,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: isOutOfStock
-                                      ? AppTheme.dangerRed
-                                      : AppTheme.primaryBlue,
+                                      ? const Color(0xFFEF4444)
+                                      : AppTheme.jadeTosca,
                                 ),
                               ),
                             ),
@@ -598,8 +614,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                     style: GoogleFonts.lexend(
                                       fontWeight: FontWeight.w700,
                                       color: isOutOfStock
-                                          ? AppTheme.textMuted
-                                          : AppTheme.primaryBlue,
+                                          ? AppTheme.textMutedDark
+                                          : AppTheme.jadeTosca,
                                       fontSize: 13,
                                     ),
                                   ),
@@ -608,10 +624,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
                                     color: isOutOfStock
-                                        ? Colors.grey.shade300
+                                        ? AppTheme.darkCardSurfaceElevated
                                         : (inCart
-                                              ? AppTheme.primaryBlue
-                                              : const Color(0xFFEFF6FF)),
+                                              ? AppTheme.jadeTosca
+                                              : const Color(0x2600A896)),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
@@ -619,10 +635,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         ? Icons.block_rounded
                                         : Icons.add,
                                     color: isOutOfStock
-                                        ? Colors.grey.shade600
+                                        ? AppTheme.textMutedDark
                                         : (inCart
                                               ? Colors.white
-                                              : AppTheme.primaryBlue),
+                                              : AppTheme.jadeTosca),
                                     size: 16,
                                   ),
                                 ),
@@ -650,9 +666,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.darkCardSurface,
               border: Border(
-                top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
               ),
             ),
             child: SafeArea(
@@ -673,7 +689,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(
                             fontSize: 11.5,
-                            color: const Color(0xFF64748B),
+                            color: AppTheme.textMutedDark,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -683,8 +699,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: cartState.items.isEmpty
-                                ? const Color(0xFF94A3B8)
-                                : AppTheme.accentBlack,
+                                ? AppTheme.textMutedDark
+                                : AppTheme.textPrimaryDark,
                           ),
                         ),
                       ],
@@ -709,8 +725,12 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryBlue,
-                        side: const BorderSide(color: AppTheme.primaryBlue),
+                        foregroundColor: AppTheme.jadeTosca,
+                        side: BorderSide(
+                          color: cartState.items.isEmpty
+                              ? AppTheme.darkCardBorder
+                              : AppTheme.jadeTosca,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -733,7 +753,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: cartState.items.isEmpty
+                          ? AppTheme.darkCardSurfaceElevated
+                          : AppTheme.jadeTosca,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       minimumSize: const Size(0, 44),

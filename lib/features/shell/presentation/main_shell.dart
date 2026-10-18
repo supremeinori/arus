@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/domain/user_model.dart';
@@ -25,38 +26,37 @@ void showAiCompanionBottomSheet(BuildContext context, WidgetRef ref, {String? in
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => Container(
-      height: MediaQuery.of(context).size.height * 0.82,
-      decoration: const BoxDecoration(
-        color: AppTheme.backgroundWhite,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        border: Border(
-          top: BorderSide(color: AppTheme.borderOutline, width: 2),
-          left: BorderSide(color: AppTheme.borderOutline, width: 2),
-          right: BorderSide(color: AppTheme.borderOutline, width: 2),
+    builder: (context) => BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.82,
+        decoration: BoxDecoration(
+          color: AppTheme.darkCardSurface.withValues(alpha: 0.92),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
         ),
-      ),
-      child: Column(
-        children: [
-          // Drag handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.borderOutline,
-                borderRadius: BorderRadius.circular(2),
+        child: Column(
+          children: [
+            // Drag handle bar
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.darkCardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              child: AiHomeScreen(),
+            const Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                child: AiHomeScreen(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
@@ -147,8 +147,12 @@ class _MainShellState extends ConsumerState<MainShell> {
       ),
       // Global Floating Action Button untuk AI Companion (Selalu ada di mana pun)
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        elevation: 4,
+        backgroundColor: AppTheme.darkCardSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        ),
         tooltip: 'ARUS AI Companion',
         onPressed: () => showAiCompanionBottomSheet(context, ref),
         child: ClipOval(
@@ -160,28 +164,28 @@ class _MainShellState extends ConsumerState<MainShell> {
             errorBuilder: (_, _, _) => const Icon(
               Icons.auto_awesome_rounded,
               size: 26,
-              color: AppTheme.primaryBlue,
+              color: AppTheme.jadeTosca,
             ),
           ),
         ),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.darkCardSurface,
           border: Border(
-            top: BorderSide(color: AppTheme.borderOutline, width: 1.0),
+            top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
           ),
         ),
         child: BottomNavigationBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.darkCardSurface,
           elevation: 0,
           currentIndex: safeIndex,
           onTap: (index) {
             ref.read(shellTabIndexProvider.notifier).state = index;
           },
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppTheme.primaryBlue,
-          unselectedItemColor: AppTheme.textMuted,
+          selectedItemColor: AppTheme.jadeTosca,
+          unselectedItemColor: AppTheme.textMutedDark,
           selectedFontSize: 11.5,
           unselectedFontSize: 11.5,
           items: navItems,
