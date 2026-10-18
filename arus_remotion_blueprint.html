@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARUS Product Showcase - Remotion Composed Blueprint</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            // ARUS Official Design Tokens
+            primary: '#00A896',        // Primary Jade Tosca
+            primaryDark: '#028090',    // Darker Tosca Accent
+            primaryLight: '#E6F6F4',   // Subtle Tosca Tint for Badges
+            surfaceBg: '#F8FAFC',      // Clean Light Background
+            cardBg: '#FFFFFF',         // Crisp White Card
+            borderSubtle: '#E2E8F0',   // Neutral 1px Border
+            textTitle: '#0F172A',      // High-contrast slate heading
+            textBody: '#334155',       // Readable dark slate body
+            textMuted: '#64748B',      // Secondary caption slate
+            success: '#059669',        // Validated blockchain / online
+            danger: '#DC2626'          // Tamper alert / out of stock
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts: Lexend (ARUS Core Typography) & JetBrains Mono (Ledger/Code) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    body {
+      background-color: #F1F5F9;
+      color: #0F172A;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fixed Smartphone Frame (390 x 844 viewport standards) */
+    .phone-viewport {
+      width: 390px;
+      height: 844px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 40px;
+      background: #FFFFFF;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 0 0 8px #E2E8F0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Standard 16:9 Remotion Video Sequence Canvas (1280x720 scaled) */
+    .remotion-sequence-canvas {
+      width: 100%;
+      max-width: 1200px;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      overflow: hidden;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Subdued scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #F8FAFC; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  </style>
+</head>
+<body class="p-6 md:p-12">
+
+  <!-- TOP BAR & REMOTION DOCUMENTATION -->
+  <header class="max-w-7xl mx-auto mb-12 border-b border-borderSubtle pb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="px-2.5 py-1 bg-primaryLight text-primary text-xs font-semibold rounded-md">ARUS POS & Inventory</span>
+          <span class="text-xs text-textMuted font-mono">1920x1080 • 60 FPS • Remotion Composed Blueprint</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-textTitle">ARUS Product Motion Blueprint</h1>
+        <p class="text-sm text-textMuted mt-1">Spesifikasi visual & komponen terisolasi berdasar Flutter codebase asli (Anti-Slop, Strict Tokens, Google Fonts Lexend).</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="#remotion-timeline" class="px-3.5 py-2 bg-white border border-borderSubtle rounded-lg text-xs font-medium text-textTitle hover:bg-slate-50 transition">Spesifikasi Timeline</a>
+        <a href="#composed-sequences" class="px-3.5 py-2 bg-primary text-white rounded-lg text-xs font-medium shadow-sm hover:bg-primaryDark transition">5 Composed Sequences</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto space-y-20">
+
+    <!-- BAGIAN A: ISOLATED REMOTION COMPONENTS -->
+    <section>
+      <div class="mb-6">
+        <h2 class="text-xl font-bold text-textTitle flex items-center gap-2">
+          <span class="w-2 h-5 bg-primary rounded-sm inline-block"></span>
+          Bagian A: Isolated Remotion Components (Ready to Port)
+        </h2>
+        <p class="text-xs text-textMuted mt-1">Struktur DOM modular dengan dimensi eksak dan styling clean tanpa dekorasi berlebihan.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- 1. PhoneMockupFrame -->
+        <div data-remotion-comp="PhoneMockupFrame" class="bg-cardBg p-5 rounded-xl border border-borderSubtle flex flex-col items-center">
+          <div class="w-full flex justify-between items-center mb-3">
+            <span class="text-xs font-semibold text-primary font-mono">1. PhoneMockupFrame</span>
+            <span class="text-[11px] text-textMuted font-mono">390x844 px</span>
+          </div>
+          <!-- Scaled Viewport Preview -->
+          <div class="phone-viewport scale-[0.68] origin-top border border-slate-200">
+            <!-- Mobile App Status Bar -->
+            <div class="h-11 bg-white px-6 flex justify-between items-center text-xs font-medium border-b border-borderSubtle text-textTitle">
+              <span>09:41</span>
+              <div class="w-20 h-4 bg-slate-900 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2"></div>
+              <span>100%</span>
+            </div>
+            <!-- Shell Body -->
+            <div class="flex-1 bg-surfaceBg p-4 flex flex-col justify-between">
+              <div class="p-4 bg-white rounded-xl border border-borderSubtle">
+                <span class="text-xs text-textMuted">Outlet Terpilih</span>
+                <h4 class="text-sm font-semibold text-textTitle mt-0.5">ARUS Coffee & Bakery (SCBD)</h4>
+              </div>
+              <!-- Floating AI Button Indicator -->
+              <div class="flex justify-end p-2">
+                <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                  AI
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. KpiCardGrid -->
+        <div data-remotion-comp="KpiCardGrid" class="bg-cardBg p-5 rounded-xl border border-borderSubtle flex flex-col justify-between">
+          <div>
+            <div class="w-full flex justify-between items-center mb-3">
+              <span class="text-xs font-semibold text-primary font-mono">2. KpiCardGrid</span>
+              <span class="text-[11px] text-textMuted font-mono">Dashboard KPI</span>
+            </div>
+            <div class="space-y-3">
+              <div class="p-4 bg-surfaceBg rounded-xl border border-borderSubtle">
+                <div class="flex justify-between items-start">
+                  <span class="text-xs text-textMuted font-medium">Omset Penjualan Hari Ini</span>
+                  <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded">IDR</span>
+                </div>
+                <div class="text-xl font-bold font-mono text-textTitle mt-1">Rp 4.850.000</div>
+                <div class="text-[11px] text-emerald-700 mt-1">↑ +18.4% vs kemarin</div>
+              </div>
+              <div class="p-4 bg-surfaceBg rounded-xl border border-borderSubtle">
+                <div class="flex justify-between items-start">
+                  <span class="text-xs text-textMuted font-medium">Transaksi Kasir</span>
+                  <span class="px-2 py-0.5 bg-primaryLight text-primary text-[10px] font-semibold rounded font-mono">Shift Pagi</span>
+                </div>
+                <div class="text-xl font-bold font-mono text-textTitle mt-1">142 Struk</div>
+                <div class="text-[11px] text-textMuted mt-1">ATV: Rp 34.154</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-borderSubtle text-[11px] text-textMuted font-mono flex justify-between">
+            <span>Timezone: Asia/Jakarta</span>
+            <span>Real-time Sync ✓</span>
+          </div>
+        </div>
+
+        <!-- 3. PosProductCard -->
+        <div data-remotion-comp="PosProductCard" class="bg-cardBg p-5 rounded-xl border border-borderSubtle flex flex-col justify-between">
+          <div>
+            <div class="w-full flex justify-between items-center mb-3">
+              <span class="text-xs font-semibold text-primary font-mono">3. PosProductCard</span>
+              <span class="text-[11px] text-textMuted font-mono">Menu & Stock Guard</span>
+            </div>
+            <div class="p-4 bg-surfaceBg rounded-xl border border-borderSubtle">
+              <div class="flex items-start gap-3">
+                <div class="w-12 h-12 bg-white border border-borderSubtle rounded-lg flex items-center justify-center text-primary font-bold text-base">
+                  ☕
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-baseline">
+                    <h4 class="text-sm font-semibold text-textTitle truncate">Kopi Susu Gula Aren</h4>
+                    <span class="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded">Ready</span>
+                  </div>
+                  <div class="text-xs font-mono font-semibold text-primary mt-0.5">Rp 24.000</div>
+                  <div class="mt-2 text-[11px] text-textMuted">
+                    Sisa Bahan Baku: <span class="font-mono font-semibold text-textTitle">35 Porsi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-borderSubtle text-[11px] text-textMuted">
+            Proteksi POS: Keranjang dibatasi otomatis sesuai stok resep aktif.
+          </div>
+        </div>
+
+        <!-- 4. AiSmartPricingBox -->
+        <div data-remotion-comp="AiSmartPricingBox" class="bg-cardBg p-5 rounded-xl border border-borderSubtle flex flex-col justify-between">
+          <div>
+            <div class="w-full flex justify-between items-center mb-3">
+              <span class="text-xs font-semibold text-primary font-mono">4. AiSmartPricingBox</span>
+              <span class="text-[11px] text-textMuted font-mono">Live HPP & AI Margin</span>
+            </div>
+            <div class="p-4 bg-surfaceBg rounded-xl border border-borderSubtle space-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-textMuted">HPP Live (Kalkulasi Resep):</span>
+                <span class="font-mono font-bold text-textTitle">Rp 12.500</span>
+              </div>
+              <div class="p-3 bg-white rounded-lg border border-primary/30">
+                <div class="text-[10px] uppercase font-bold text-primary tracking-wider">Rekomendasi Harga AI</div>
+                <div class="text-lg font-bold font-mono text-textTitle mt-0.5">
+                  Rp 25.000 <span class="text-xs font-normal text-emerald-700 font-sans">(Margin 100%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button class="flex-1 py-2 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primaryDark transition">Terapkan Harga</button>
+            <button class="px-3 py-2 bg-white border border-borderSubtle text-textTitle text-xs font-medium rounded-lg hover:bg-slate-50 transition">Konsultasi AI</button>
+          </div>
+        </div>
+
+        <!-- 5. AiCompanionSheet -->
+        <div data-remotion-comp="AiCompanionSheet" class="bg-cardBg p-5 rounded-xl border border-borderSubtle flex flex-col justify-between">
+          <div>
+            <div class="w-full flex justify-between items-center mb-3">
+              <span class="text-xs font-semibold text-primary font-mono">5. AiCompanionSheet</span>
+              <span class="text-[11px] text-textMuted font-mono">Screen-Aware Overlay</span>
+            </div>
+            <div class="p-4 bg-surfaceBg rounded-xl border border-borderSubtle space-y-3">
+              <div class="flex items-center gap-2 border-b border-borderSubtle pb-2">
+                <div class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold">AI</div>
+                <div class="text-xs font-semibold text-textTitle">ARUS AI Assistant</div>
+              </div>
+              <p class="text-xs text-textBody leading-relaxed">
+                "HPP terdeteksi Rp 12.500. Harga Rp 25.000 memberikan margin 50% net profit, sangat ideal untuk gerai SCBD."
+              </p>
+              <div class="text-[10px] text-textMuted font-mono bg-white p-2 rounded border border-borderSubtle">
+                Konteks: Form Tambah Menu (Kopi Susu Aren)
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-borderSubtle text-[11px] text-textMuted">
+            Overlay Bottom Sheet menjaga state form di belakang tetap aman tanpa ter-reset.
+          </div>
+        </div>
+
+        <!-- 6. ArusVoiceOverlay & 7. BlockchainHashChain -->
+        <div data-remotion-comp="ArusVoiceOverlay" class="bg-cardBg p-5 rounded-xl border border-borderSubtle flex flex-col justify-between">
+          <div>
+            <div class="w-full flex justify-between items-center mb-3">
+              <span class="text-xs font-semibold text-primary font-mono">6. ArusVoice & 7. Blockchain</span>
+              <span class="text-[11px] text-textMuted font-mono">Voice & Security</span>
+            </div>
+            <!-- Voice preview -->
+            <div class="p-3 bg-surfaceBg rounded-xl border border-borderSubtle mb-3 flex items-center justify-between">
+              <div class="flex items-center gap-1.5 h-6">
+                <span class="w-1 bg-primary h-3 rounded-full animate-pulse"></span>
+                <span class="w-1 bg-primary h-5 rounded-full animate-pulse"></span>
+                <span class="w-1 bg-emerald-600 h-6 rounded-full animate-pulse"></span>
+                <span class="w-1 bg-primary h-4 rounded-full animate-pulse"></span>
+                <span class="w-1 bg-primary h-2 rounded-full animate-pulse"></span>
+              </div>
+              <span class="text-xs text-textMuted italic">"Cek stok biji kopi..."</span>
+            </div>
+            <!-- Blockchain preview -->
+            <div class="p-3 bg-surfaceBg rounded-xl border border-borderSubtle space-y-1 font-mono text-[11px]">
+              <div class="flex justify-between text-emerald-700 font-semibold">
+                <span>Block #1490</span>
+                <span>VALID ✓</span>
+              </div>
+              <div class="text-textMuted truncate">Hash: 0x8a92e10f3c...</div>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-borderSubtle text-[11px] text-textMuted">
+            Push-to-Talk Auto-Cut + SHA-256 Ledger Tersegel Atomik.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- BAGIAN B: 5 COMPOSED SEQUENCES -->
+    <section id="composed-sequences">
+      <div class="mb-6">
+        <h2 class="text-xl font-bold text-textTitle flex items-center gap-2">
+          <span class="w-2 h-5 bg-primary rounded-sm inline-block"></span>
+          Bagian B: 5 Composed Sequences (Kanvas 16:9 Remotion Video)
+        </h2>
+        <p class="text-xs text-textMuted mt-1">Acuan render video Remotion 1080p 60fps dengan layout responsif tanpa overflow.</p>
+      </div>
+
+      <div class="space-y-10">
+
+        <!-- Sequence 1 -->
+        <div class="bg-cardBg p-6 rounded-xl border border-borderSubtle space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary">SEQUENCE 1</span>
+              <h3 class="text-base font-bold text-textTitle">POS Checkout & Real-Time Inventory Deduction</h3>
+            </div>
+            <span class="text-xs text-textMuted font-mono">Frame 0 - 180 (3.0s @ 60fps)</span>
+          </div>
+          <div class="remotion-sequence-canvas p-6 md:p-10 flex items-center justify-center">
+            <div class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="md:col-span-2 bg-surfaceBg p-5 rounded-xl border border-borderSubtle space-y-3">
+                <div class="flex justify-between items-center border-b border-borderSubtle pb-2">
+                  <h4 class="text-xs font-bold text-textTitle uppercase tracking-wide">POS Kasir • SCBD</h4>
+                  <span class="text-[11px] text-textMuted font-mono">Order #892</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="p-3 bg-white rounded-lg border border-primary">
+                    <div class="text-xs font-semibold text-textTitle">Kopi Susu Aren</div>
+                    <div class="text-xs font-mono font-bold text-primary mt-1">Rp 24.000</div>
+                  </div>
+                  <div class="p-3 bg-white rounded-lg border border-borderSubtle opacity-70">
+                    <div class="text-xs font-semibold text-textTitle">Croissant</div>
+                    <div class="text-xs font-mono text-textMuted mt-1">Rp 28.000</div>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-surfaceBg p-5 rounded-xl border border-borderSubtle flex flex-col justify-between">
+                <div>
+                  <h4 class="text-xs font-bold text-textTitle uppercase tracking-wide">Stok Terpotong</h4>
+                  <div class="mt-3 space-y-1.5 font-mono text-xs">
+                    <div class="flex justify-between text-danger"><span>Biji Kopi</span><span>-18g</span></div>
+                    <div class="flex justify-between text-danger"><span>Susu UHT</span><span>-150ml</span></div>
+                    <div class="flex justify-between text-danger"><span>Gula Aren</span><span>-20g</span></div>
+                  </div>
+                </div>
+                <div class="mt-4 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold text-center rounded">
+                  Blockchain Sealed ✓
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sequence 2 -->
+        <div class="bg-cardBg p-6 rounded-xl border border-borderSubtle space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary">SEQUENCE 2</span>
+              <h3 class="text-base font-bold text-textTitle">AI Smart Pricing Wizard & HPP Live Calculation</h3>
+            </div>
+            <span class="text-xs text-textMuted font-mono">Frame 180 - 360 (3.0s @ 60fps)</span>
+          </div>
+          <div class="remotion-sequence-canvas p-6 md:p-10 flex items-center justify-center">
+            <div class="w-full max-w-xl bg-surfaceBg p-6 rounded-xl border border-borderSubtle space-y-5">
+              <div class="flex justify-between items-center border-b border-borderSubtle pb-3">
+                <h4 class="text-sm font-bold text-textTitle">Tambah Menu Baru: Matcha Latte Artisan</h4>
+                <span class="px-2 py-0.5 bg-primaryLight text-primary text-xs font-semibold rounded">Langkah 3/4</span>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-white rounded-xl border border-borderSubtle">
+                  <span class="text-xs text-textMuted block">HPP Live</span>
+                  <span class="text-lg font-bold font-mono text-textTitle mt-1 block">Rp 14.200</span>
+                </div>
+                <div class="p-4 bg-white rounded-xl border border-primary/40">
+                  <span class="text-xs text-primary font-semibold block">Harga AI (Margin 50%)</span>
+                  <span class="text-lg font-bold font-mono text-textTitle mt-1 block">Rp 28.500</span>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button class="px-4 py-2 bg-primary text-white text-xs font-medium rounded-lg shadow-sm">Gunakan Harga AI</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sequence 3 -->
+        <div class="bg-cardBg p-6 rounded-xl border border-borderSubtle space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-xs font-mono font-bold text-primary">SEQUENCE 3</span>
+              <h3 class="text-base font-bold text-textTitle">Global AI Companion Bottom Sheet Overlay</h3>
+            </div>
+            <span class="text-xs text-textMuted font-mono">Frame 360 - 540 (3.0s @ 60fps)</span>
+          </div>
+          <div class="remotion-sequence-canvas p-6 md:p-10 flex items-center justify-center relative">
+            <!-- Simulated Form behind sheet -->
+            <div class="w-full max-w-lg bg-surfaceBg p-6 rounded-xl border border-borderSubtle opacity-40">
+              <h4 class="text-sm font-bold text-textTitle mb-2">Form Tambah Menu (Latar Belakang)</h4>
+              <div class="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+            </div>
+            <!-- Bottom Sheet Overlay -->
+            <div class="absolute bottom-0 left-10 right-10 md:left-28 md:right-28 bg-white border-t-2 border-x-2 border-primary rounded-t-2xl p-5 shadow-lg space-y-3">
+              <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">AI</div>
+                <div>
+                  <h4 class="text-xs font-bold text-textTitle">ARUS AI Assistant</h4>
+                  <p class="text-[10px] text-emerald-700">● Menganalisis form aktif</p>
+                </div>
+              </div>
+              <p class="text-xs text-textBody bg-surfaceBg p-3 rounded-lg border border-borderSubtle leading-relaxed">
+                "Margin 50% sangat aman untuk menutupi biaya operasional dan promosi gerai."
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sequence 4 & 5 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div class="bg-cardBg p-6 rounded-xl border border-borderSubtle space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="text-xs font-mono font-bold text-primary">SEQUENCE 4</span>
+                <h3 class="text-sm font-bold text-textTitle">ARUS Voice: Push-to-Talk</h3>
+              </div>
+              <span class="text-xs text-textMuted font-mono">Frame 540 - 720</span>
+            </div>
+            <div class="p-8 bg-surfaceBg rounded-xl border border-borderSubtle flex flex-col items-center justify-center space-y-4">
+              <div class="flex items-center gap-1.5 h-10">
+                <span class="w-1.5 bg-primary h-4 rounded-full animate-pulse"></span>
+                <span class="w-1.5 bg-primary h-8 rounded-full animate-pulse"></span>
+                <span class="w-1.5 bg-emerald-600 h-10 rounded-full animate-pulse"></span>
+                <span class="w-1.5 bg-primary h-6 rounded-full animate-pulse"></span>
+                <span class="w-1.5 bg-primary h-3 rounded-full animate-pulse"></span>
+              </div>
+              <div class="text-center">
+                <div class="text-xs font-semibold text-textTitle">"Cek omset shift pagi"</div>
+                <div class="text-[11px] text-textMuted mt-0.5">Push-to-Talk Auto-Cut • 250ms</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-cardBg p-6 rounded-xl border border-borderSubtle space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="text-xs font-mono font-bold text-primary">SEQUENCE 5</span>
+                <h3 class="text-sm font-bold text-textTitle">Blockchain Audit & Sensors</h3>
+              </div>
+              <span class="text-xs text-textMuted font-mono">Frame 720 - 900</span>
+            </div>
+            <div class="p-6 bg-surfaceBg rounded-xl border border-borderSubtle space-y-3 font-mono text-xs">
+              <div class="p-3 bg-white rounded-lg border border-emerald-200 flex justify-between items-center">
+                <div>
+                  <span class="text-emerald-700 font-bold block">BLOCK #1490</span>
+                  <span class="text-[10px] text-textMuted">Hash: 0x3a1...c8e</span>
+                </div>
+                <span class="text-emerald-700 font-semibold text-[11px]">VALID ✓</span>
+              </div>
+              <div class="p-3 bg-white rounded-lg border border-borderSubtle flex justify-between items-center">
+                <span class="text-textTitle font-semibold">Shake Detection</span>
+                <span class="text-primary font-semibold">Aktif</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- BAGIAN C: REMOTION TIMELINE SPECIFICATION TABLE -->
+    <section id="remotion-timeline" class="space-y-6">
+      <div class="mb-4">
+        <h2 class="text-xl font-bold text-textTitle flex items-center gap-2">
+          <span class="w-2 h-5 bg-primary rounded-sm inline-block"></span>
+          Bagian C: Remotion Timeline Specification (Frame-by-Frame @ 60fps)
+        </h2>
+        <p class="text-xs text-textMuted mt-1">Panduan interpolasi dan spring timing untuk diimplementasikan langsung ke kode Remotion.</p>
+      </div>
+
+      <div class="bg-cardBg rounded-xl border border-borderSubtle overflow-x-auto shadow-sm">
+        <table class="w-full text-left border-collapse text-xs min-w-[700px]">
+          <thead>
+            <tr class="bg-surfaceBg border-b border-borderSubtle text-textMuted uppercase font-mono text-[11px]">
+              <th class="p-4">Sequence & Durasi</th>
+              <th class="p-4">Rentang Frame</th>
+              <th class="p-4">Remotion Animation Props & Spring Config</th>
+              <th class="p-4">Deskripsi Visual</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-borderSubtle text-textBody">
+            <tr>
+              <td class="p-4 font-bold text-textTitle font-mono">Seq 1: POS & Inventory</td>
+              <td class="p-4 font-mono text-primary font-semibold">0 - 180 (3.0s)</td>
+              <td class="p-4 font-mono text-[11px]">spring({ damping: 14 }), opacity: 0->1</td>
+              <td class="p-4">Katalog POS muncul, checkout terjadi, stok bahan baku langsung terpotong.</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-bold text-textTitle font-mono">Seq 2: Smart Pricing</td>
+              <td class="p-4 font-mono text-primary font-semibold">180 - 360 (3.0s)</td>
+              <td class="p-4 font-mono text-[11px]">scale: 0.95->1, translateY: 15->0</td>
+              <td class="p-4">Form Tambah Menu menghitung HPP live dan memunculkan rekomendasi AI.</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-bold text-textTitle font-mono">Seq 3: AI Companion Sheet</td>
+              <td class="p-4 font-mono text-primary font-semibold">360 - 540 (3.0s)</td>
+              <td class="p-4 font-mono text-[11px]">translateY(100% -> 0%), damping: 12</td>
+              <td class="p-4">Bottom sheet AI meluncur naik tanpa mereset form di baliknya.</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-bold text-textTitle font-mono">Seq 4: ARUS Voice</td>
+              <td class="p-4 font-mono text-primary font-semibold">540 - 720 (3.0s)</td>
+              <td class="p-4 font-mono text-[11px]">waveform scale heights, latency indicator</td>
+              <td class="p-4">Push-to-talk merespons suara user dengan waveform berdenyut real-time.</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-bold text-textTitle font-mono">Seq 5: Blockchain Audit</td>
+              <td class="p-4 font-mono text-primary font-semibold">720 - 900 (3.0s)</td>
+              <td class="p-4 font-mono text-[11px]">hash chain transition, valid badge spring</td>
+              <td class="p-4">Audit rantai blok SHA-256 menampilkan status immutable dan sensor hardware.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-7xl mx-auto mt-20 pt-8 border-t border-borderSubtle text-center text-xs text-textMuted font-mono">
+    ARUS POS & Inventory • Remotion Motion Blueprint • Anti-Slop Clean Design System
+  </footer>
+
+</body>
+</html>
