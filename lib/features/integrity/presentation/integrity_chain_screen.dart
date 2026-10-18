@@ -285,10 +285,11 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
     final tamperedIdx = validation.tamperedBlockIndex;
 
     final statusColor = validation.isValid
-        ? const Color(0xFF15803D)
+        ? AppTheme.jadeTosca
         : AppTheme.dangerRed;
 
     return RefreshIndicator(
+      color: AppTheme.jadeTosca,
       onRefresh: () async =>
           ref.refresh(integrityChainProvider(outlet.id).future),
       child: ListView(
@@ -299,14 +300,14 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: validation.isValid
-                  ? const Color(0xFFF0FDF4)
-                  : const Color(0xFFFEF2F2),
+                  ? const Color(0x1810B981)
+                  : const Color(0x18EF4444),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: validation.isValid
-                    ? const Color(0xFFBBF7D0)
-                    : const Color(0xFFFECACA),
-                width: 1.2,
+                    ? const Color(0x3310B981)
+                    : const Color(0x33EF4444),
+                width: 1.0,
               ),
             ),
             child: Row(
@@ -357,13 +358,14 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
           Row(
             children: [
               Chip(
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: AppTheme.borderOutline),
+                backgroundColor: AppTheme.darkCardSurfaceElevated,
+                side: const BorderSide(color: AppTheme.darkCardBorder),
                 label: Text(
                   '${overview.blockCount} Blok Transaksi',
                   style: GoogleFonts.lexend(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimaryDark,
                   ),
                 ),
               ),
@@ -373,6 +375,8 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                 child: OutlinedButton.icon(
                   onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
                   style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.jadeTosca,
+                    side: const BorderSide(color: AppTheme.jadeTosca),
                     minimumSize: const Size(0, 38),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.compact,
@@ -382,7 +386,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                       ? const SizedBox(
                           width: 14,
                           height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.jadeTosca),
                         )
                       : const Icon(Icons.shield_outlined, size: 16),
                   label: const Text('Uji Integritas'),
@@ -473,23 +477,23 @@ class _TransactionBlockCard extends StatelessWidget {
         ? AppTheme.dangerRed
         : isGenesis
             ? const Color(0xFFF59E0B)
-            : AppTheme.borderOutline;
+            : AppTheme.darkCardBorder;
 
     final badgeColor = isTampered
         ? AppTheme.dangerRed
         : isGenesis
-            ? const Color(0xFFD97706)
-            : AppTheme.primaryBlue;
+            ? const Color(0xFFF59E0B)
+            : AppTheme.jadeTosca;
 
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
-      color: isTampered ? const Color(0xFFFEF2F2) : Colors.white,
+      color: isTampered ? const Color(0x18EF4444) : AppTheme.darkCardSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: borderColor,
-          width: isTampered ? 1.8 : 1.0,
+          width: isTampered ? 1.5 : 1.0,
         ),
       ),
       child: Padding(
@@ -525,9 +529,12 @@ class _TransactionBlockCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: isSale
-                        ? const Color(0xFFDCFCE7)
-                        : const Color(0xFFFEE2E2),
+                        ? const Color(0x2210B981)
+                        : const Color(0x22EF4444),
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSale ? const Color(0x3310B981) : const Color(0x33EF4444),
+                    ),
                   ),
                   child: Text(
                     isSale ? 'SALE' : block.eventType.toUpperCase(),
@@ -535,7 +542,7 @@ class _TransactionBlockCard extends StatelessWidget {
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: isSale
-                          ? const Color(0xFF15803D)
+                          ? const Color(0xFF34D399)
                           : AppTheme.dangerRed,
                     ),
                   ),
@@ -546,7 +553,7 @@ class _TransactionBlockCard extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isTampered ? AppTheme.dangerRed : AppTheme.accentBlack,
+                    color: isTampered ? AppTheme.dangerRed : AppTheme.textPrimaryDark,
                   ),
                 ),
               ],
@@ -561,7 +568,7 @@ class _TransactionBlockCard extends StatelessWidget {
                       ? Icons.receipt_long_outlined
                       : Icons.swap_horiz_rounded,
                   size: 16,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.jadeTosca,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -572,6 +579,7 @@ class _TransactionBlockCard extends StatelessWidget {
                     style: GoogleFonts.lexend(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimaryDark,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -581,12 +589,12 @@ class _TransactionBlockCard extends StatelessWidget {
                   formattedDate,
                   style: GoogleFonts.lexend(
                     fontSize: 11,
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedDark,
                   ),
                 ),
               ],
             ),
-            const Divider(height: 18),
+            const Divider(height: 18, color: AppTheme.darkCardBorder),
 
             // Baris 3: Data Hash Kriptografis
             _HashLine(label: 'Block Hash', value: block.hash, isPrimary: true),
@@ -605,7 +613,7 @@ class _TransactionBlockCard extends StatelessWidget {
                 if (isTampered) ...[
                   FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF15803D),
+                      backgroundColor: AppTheme.jadeTosca,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
@@ -664,7 +672,7 @@ class _HashLine extends StatelessWidget {
             style: GoogleFonts.lexend(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textMuted,
+              color: AppTheme.textMutedDark,
             ),
           ),
         ),
@@ -677,7 +685,7 @@ class _HashLine extends StatelessWidget {
               fontFamily: 'monospace',
               fontSize: 10,
               fontWeight: isPrimary ? FontWeight.w600 : FontWeight.normal,
-              color: isPrimary ? AppTheme.accentBlack : AppTheme.textMuted,
+              color: isPrimary ? AppTheme.textPrimaryDark : AppTheme.textMutedDark,
             ),
           ),
         ),
@@ -706,20 +714,20 @@ class _ChainConnector extends StatelessWidget {
             Container(
               width: 1.5,
               height: 18,
-              color: AppTheme.primaryBlue.withAlpha(120),
+              color: AppTheme.jadeTosca.withAlpha(120),
             ),
             const SizedBox(width: 6),
             Icon(
               Icons.link_rounded,
               size: 16,
-              color: AppTheme.primaryBlue.withAlpha(200),
+              color: AppTheme.jadeTosca,
             ),
             const SizedBox(width: 6),
             Text(
               'Terkunci SHA-256 (Blok #$sourceIndex ➔ Blok #$targetIndex)',
               style: GoogleFonts.lexend(
                 fontSize: 10,
-                color: AppTheme.primaryBlue,
+                color: AppTheme.jadeTosca,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -727,7 +735,7 @@ class _ChainConnector extends StatelessWidget {
             Container(
               width: 1.5,
               height: 18,
-              color: AppTheme.primaryBlue.withAlpha(120),
+              color: AppTheme.jadeTosca.withAlpha(120),
             ),
           ],
         ),

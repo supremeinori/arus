@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/app_theme.dart';
 
 class EmptyStateView extends StatelessWidget {
   final String message;
@@ -22,16 +24,24 @@ class EmptyStateView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 64, color: Colors.grey.shade400),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.darkCardSurfaceElevated,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+              ),
+              child: Icon(icon, size: 40, color: AppTheme.textMutedDark),
+            ),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade600,
+              style: GoogleFonts.lexend(
+                fontSize: 14,
+                color: AppTheme.textMutedDark,
               ),
             ),
             if (ctaText != null && onCtaPressed != null) ...[

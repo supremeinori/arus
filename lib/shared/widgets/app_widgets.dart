@@ -82,6 +82,7 @@ class AppDropdown<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<T>(
       initialValue: value,
+      dropdownColor: AppTheme.darkCardSurface,
       hint: hintText != null ? Text(hintText!, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
       decoration: InputDecoration(labelText: labelText),
       items: items,

@@ -53,7 +53,7 @@ class InsightsScreen extends ConsumerWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: AppTheme.jadeTosca,
           ),
         );
       }
@@ -75,7 +75,7 @@ class InsightsScreen extends ConsumerWidget {
     final selectedSeverity = ref.watch(selectedSeverityFilterProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Rekomendasi Keputusan (AI/DSS)',
@@ -85,12 +85,12 @@ class InsightsScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bolt_rounded, color: AppTheme.primaryBlue),
+            icon: const Icon(Icons.bolt_rounded, color: AppTheme.jadeTosca),
             tooltip: 'Evaluasi Rule Engine Sekarang',
             onPressed: () => _triggerGeneration(context, ref),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Segarkan',
             onPressed: () => ref.invalidate(insightsListProvider),
           ),
@@ -100,7 +100,7 @@ class InsightsScreen extends ConsumerWidget {
         children: [
           // Filter Chips
           _SeverityFilters(selectedSeverity: selectedSeverity),
-          const Divider(height: 1),
+          const Divider(height: 1, color: AppTheme.darkCardBorder),
 
           // List Insights
           Expanded(
@@ -116,7 +116,7 @@ class InsightsScreen extends ConsumerWidget {
                 }
 
                 return RefreshIndicator(
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.jadeTosca,
                   onRefresh: () async => ref.invalidate(insightsListProvider),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
@@ -163,10 +163,10 @@ class _SeverityFilters extends ConsumerWidget {
         ),
         selected: selected,
         selectedColor: selectedColor,
-        backgroundColor: Colors.white,
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+        backgroundColor: AppTheme.darkCardSurface,
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        labelStyle: TextStyle(color: selected ? Colors.white : AppTheme.accentBlack),
+        labelStyle: TextStyle(color: selected ? Colors.white : AppTheme.textSecondaryDark),
         onSelected: (isSelected) {
           ref.read(selectedSeverityFilterProvider.notifier).state =
               isSelected ? value : null;
@@ -178,18 +178,16 @@ class _SeverityFilters extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          chip('Semua', null, AppTheme.primaryBlue),
+          chip('Semua', null, AppTheme.jadeTosca),
           const SizedBox(width: 8),
           chip('Kritis', 'critical', AppTheme.dangerRed),
           const SizedBox(width: 8),
-          chip('Peringatan', 'warning', AppTheme.warningAmber),
+          chip('Peringatan', 'warning', const Color(0xFFF59E0B)),
         ],
       ),
     );
   }
 }
-
-
 
 /// Kartu satu insight — widget class top-level (aturan E23).
 class _InsightCard extends StatelessWidget {
@@ -210,10 +208,10 @@ class _InsightCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isCritical ? const Color(0xFFFEF2F2) : Colors.white,
+        color: isCritical ? const Color(0x18EF4444) : AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCritical ? const Color(0xFFFCA5A5) : AppTheme.borderOutline,
+          color: isCritical ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
           width: 1.0,
         ),
       ),
@@ -225,7 +223,7 @@ class _InsightCard extends StatelessWidget {
               Icon(
                 isCritical ? Icons.warning_rounded : Icons.info_outline_rounded,
                 size: 20,
-                color: isCritical ? AppTheme.dangerRed : AppTheme.primaryBlue,
+                color: isCritical ? AppTheme.dangerRed : AppTheme.jadeTosca,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -234,7 +232,7 @@ class _InsightCard extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w700,
                     fontSize: 14.5,
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.textPrimaryDark,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -243,10 +241,10 @@ class _InsightCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isCritical ? const Color(0xFFFEE2E2) : AppTheme.lightBlueBg,
+                  color: isCritical ? const Color(0x22EF4444) : AppTheme.darkCardSurfaceElevated,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isCritical ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                    color: isCritical ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
                     width: 1.0,
                   ),
                 ),
@@ -255,7 +253,7 @@ class _InsightCard extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: isCritical ? AppTheme.dangerRed : AppTheme.primaryBlue,
+                    color: isCritical ? AppTheme.dangerRed : AppTheme.jadeTosca,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -266,7 +264,7 @@ class _InsightCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             item.message,
-            style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF334155), height: 1.35),
+            style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textSecondaryDark, height: 1.35),
           ),
           const SizedBox(height: 10),
 
@@ -274,19 +272,19 @@ class _InsightCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: AppTheme.primaryBlue, width: 1),
+              color: AppTheme.darkCardSurfaceElevated,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.jadeTosca.withAlpha(100), width: 1),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.tips_and_updates_outlined, size: 16, color: AppTheme.primaryBlue),
+                const Icon(Icons.tips_and_updates_outlined, size: 16, color: AppTheme.jadeTosca),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Rekomendasi: ${item.recommendation}',
-                    style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                    style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -304,7 +302,7 @@ class _InsightCard extends StatelessWidget {
                 onPressed: onDismiss,
                 child: Text(
                   'Abaikan',
-                  style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 12.5, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -313,12 +311,11 @@ class _InsightCard extends StatelessWidget {
               ElevatedButton(
                 onPressed: onAcknowledge,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
+                  backgroundColor: AppTheme.jadeTosca,
                   minimumSize: const Size(110, 36),
                   visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    side: const BorderSide(color: AppTheme.borderOutline, width: 1.2),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
                 child: Text(

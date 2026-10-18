@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -79,8 +80,6 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ),
 
           // Horizontal Category Filter Chips
-          // E24: render lewat AsyncStateView; loading/error tampil sebagai strip
-          // setinggi chips agar tidak menggeser layout (tanpa mengubah teks).
           AsyncStateView(
             value: categoriesState,
             dataBuilder: (categories) => SizedBox(
@@ -94,12 +93,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     child: FilterChip(
                       label: const Text('Semua'),
                       selected: selectedCategory == null,
-                      selectedColor: AppTheme.primaryBlue,
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      selectedColor: AppTheme.jadeTosca,
+                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
-                        color: selectedCategory == null ? Colors.white : AppTheme.accentBlack,
+                        color: selectedCategory == null ? Colors.white : AppTheme.textPrimaryDark,
                         fontWeight: selectedCategory == null ? FontWeight.w700 : FontWeight.w500,
                       ),
                       onSelected: (_) {
@@ -117,12 +116,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         selected: selectedCategory == cat.id,
-                        selectedColor: AppTheme.primaryBlue,
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        selectedColor: AppTheme.jadeTosca,
+                        backgroundColor: AppTheme.darkCardSurfaceElevated,
+                        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         labelStyle: TextStyle(
-                          color: selectedCategory == cat.id ? Colors.white : AppTheme.accentBlack,
+                          color: selectedCategory == cat.id ? Colors.white : AppTheme.textPrimaryDark,
                           fontWeight: selectedCategory == cat.id ? FontWeight.w700 : FontWeight.w500,
                         ),
                         onSelected: (_) {
@@ -136,11 +135,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               ),
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: AppTheme.darkCardBorder),
 
           // Product List
           Expanded(
             child: RefreshIndicator(
+              color: AppTheme.jadeTosca,
               onRefresh: () async {
                 ref.invalidate(productListProvider);
                 ref.invalidate(categoriesProvider);
@@ -165,9 +165,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
                       return Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.darkCardSurface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                         ),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
@@ -184,9 +184,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                   width: 44,
                                   height: 44,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEFF6FF),
+                                    color: AppTheme.darkCardSurfaceElevated,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                                    border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                                   ),
                                   clipBehavior: Clip.antiAlias,
                                   child: (prod.imageUrl != null && prod.imageUrl!.isNotEmpty)
@@ -196,7 +196,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                           errorBuilder: (context, error, stackTrace) => const Center(
                                             child: Icon(
                                               Icons.coffee_rounded,
-                                              color: AppTheme.primaryBlue,
+                                              color: AppTheme.jadeTosca,
                                               size: 24,
                                             ),
                                           ),
@@ -204,7 +204,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                       : const Center(
                                           child: Icon(
                                             Icons.coffee_rounded,
-                                            color: AppTheme.primaryBlue,
+                                            color: AppTheme.jadeTosca,
                                             size: 24,
                                           ),
                                         ),
@@ -220,9 +220,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                         prod.name,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: GoogleFonts.lexend(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
+                                          color: AppTheme.textPrimaryDark,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -234,17 +235,17 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.grey.shade100,
+                                              color: AppTheme.darkCardSurfaceElevated,
                                               borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: AppTheme.darkCardBorder),
                                             ),
                                             child: Text(
                                               prod.sku,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
+                                              style: GoogleFonts.lexend(
                                                 fontSize: 11,
-                                                fontFamily: 'monospace',
-                                                color: Colors.grey.shade800,
+                                                color: AppTheme.textMutedDark,
                                               ),
                                             ),
                                           ),
@@ -255,9 +256,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                                 '• ${prod.categoryName}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
+                                                style: GoogleFonts.lexend(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  color: AppTheme.textMutedDark,
                                                 ),
                                               ),
                                             ),
@@ -275,10 +276,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               prod.formattedPrice,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
+                                              style: GoogleFonts.lexend(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold,
-                                                color: AppTheme.primaryBlue,
+                                                color: AppTheme.jadeTosca,
                                               ),
                                             ),
                                           ),
@@ -289,19 +290,19 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                                 vertical: 2,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: Colors.amber.shade50,
+                                                color: const Color(0x26F59E0B),
                                                 borderRadius: BorderRadius.circular(4),
                                                 border: Border.all(
-                                                  color: Colors.amber.shade200,
+                                                  color: const Color(0x40F59E0B),
                                                 ),
                                               ),
                                               child: Text(
                                                 'HPP: ${prod.formattedCost}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
+                                                style: GoogleFonts.lexend(
                                                   fontSize: 11,
-                                                  color: Colors.amber.shade900,
+                                                  color: const Color(0xFFF59E0B),
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -314,10 +315,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: prod.estimatedPortions > 0 ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2),
+                                          color: prod.estimatedPortions > 0 ? const Color(0x1F00A896) : const Color(0x26EF4444),
                                           borderRadius: BorderRadius.circular(6),
                                           border: Border.all(
-                                            color: prod.estimatedPortions > 0 ? const Color(0xFF93C5FD) : const Color(0xFFFCA5A5),
+                                            color: prod.estimatedPortions > 0 ? const Color(0x4000A896) : const Color(0x40EF4444),
                                             width: 1,
                                           ),
                                         ),
@@ -325,10 +326,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                           prod.estimatedPortions > 0
                                               ? 'Estimasi: ${prod.estimatedPortions} Porsi'
                                               : 'Habis (Bahan Baku Kurang)',
-                                          style: TextStyle(
+                                          style: GoogleFonts.lexend(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
-                                            color: prod.estimatedPortions > 0 ? AppTheme.primaryBlue : AppTheme.dangerRed,
+                                            color: prod.estimatedPortions > 0 ? AppTheme.jadeTosca : const Color(0xFFEF4444),
                                           ),
                                         ),
                                       ),
@@ -353,11 +354,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               onPressed: () {
                 context.push('/catalog/new');
               },
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.jadeTosca,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-                side: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                borderRadius: BorderRadius.circular(10),
+                side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
               ),
               icon: const Icon(Icons.add),
               label: const Text('Tambah Produk'),

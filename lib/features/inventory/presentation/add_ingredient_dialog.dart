@@ -88,7 +88,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: AppTheme.jadeTosca,
             content: Text(
               isEditing ? 'Bahan baku berhasil diperbarui.' : 'Bahan baku baru berhasil ditambahkan.',
               style: GoogleFonts.lexend(color: Colors.white),
@@ -123,7 +123,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
             'Cabang: ${widget.outletName}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+            style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
           ),
         ],
       ),
@@ -141,9 +141,9 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
+                    color: const Color(0x22EF4444),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFCA5A5)),
+                    border: Border.all(color: const Color(0x33EF4444)),
                   ),
                   child: Row(
                     children: [
@@ -154,7 +154,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                           _errorMessage!,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.dangerRed),
+                          style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFFF87171)),
                         ),
                       ),
                     ],
@@ -238,11 +238,11 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMuted)),
+          child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: AppTheme.jadeTosca,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           onPressed: _isLoading ? null : _submit,

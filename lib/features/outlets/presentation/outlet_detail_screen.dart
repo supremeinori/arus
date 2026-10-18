@@ -73,10 +73,11 @@ class _DetailContent extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Card(
+          color: AppTheme.darkCardSurface,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+            side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -89,15 +90,16 @@ class _DetailContent extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: outlet.isActive ? Colors.green.shade50 : Colors.red.shade50,
+                        color: outlet.isActive ? const Color(0x2210B981) : const Color(0x22EF4444),
                         borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: outlet.isActive ? const Color(0x3310B981) : const Color(0x33EF4444)),
                       ),
                       child: Text(
                         outlet.isActive ? 'Operasional Aktif' : 'Nonaktif',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: outlet.isActive ? Colors.green.shade800 : Colors.red.shade800,
+                          color: outlet.isActive ? const Color(0xFF34D399) : const Color(0xFFF87171),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -109,7 +111,7 @@ class _DetailContent extends StatelessWidget {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.jadeTosca,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -121,7 +123,7 @@ class _DetailContent extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   outlet.name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -129,12 +131,12 @@ class _DetailContent extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.location_on_outlined, size: 18, color: Colors.grey.shade600),
+                    const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.textMutedDark),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         outlet.address,
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondaryDark),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -145,18 +147,18 @@ class _DetailContent extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: AppTheme.darkCardBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.gps_fixed_rounded, size: 16, color: Colors.teal),
+                      const Icon(Icons.gps_fixed_rounded, size: 16, color: AppTheme.jadeTosca),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Koordinat GPS: ${outlet.latitude.toStringAsFixed(4)}, ${outlet.longitude.toStringAsFixed(4)}',
-                          style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                          style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppTheme.textMutedDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -176,7 +178,7 @@ class _DetailContent extends StatelessWidget {
                 label: 'Total Stok SKU',
                 value: '${outlet.inventoryCount} Produk',
                 icon: Icons.inventory_2_outlined,
-                color: Colors.blue,
+                color: AppTheme.jadeTosca,
               ),
             ),
             const SizedBox(width: 12),
@@ -185,7 +187,7 @@ class _DetailContent extends StatelessWidget {
                 label: 'Staf Bertugas',
                 value: '${outlet.assignedUsersCount} Orang',
                 icon: Icons.badge_outlined,
-                color: Colors.orange,
+                color: const Color(0xFFF59E0B),
               ),
             ),
           ],
@@ -193,14 +195,14 @@ class _DetailContent extends StatelessWidget {
         const SizedBox(height: 20),
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          tileColor: Colors.white,
+          tileColor: AppTheme.darkCardSurface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+            side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
           ),
-          leading: const Icon(Icons.warehouse_outlined, color: Colors.teal),
-          title: const Text('Lihat Inventaris Cabang Ini', maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right)),
+          leading: const Icon(Icons.warehouse_outlined, color: AppTheme.jadeTosca),
+          title: const Text('Lihat Inventaris Cabang Ini', style: TextStyle(color: AppTheme.textPrimaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, color: AppTheme.textMutedDark)),
           onTap: () => context.push('/inventory?outlet_id=${outlet.id}'),
         ),
       ],
@@ -228,9 +230,9 @@ class _MetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.darkCardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,14 +241,14 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

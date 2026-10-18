@@ -535,9 +535,9 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.darkCardSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,7 +556,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                               style: GoogleFonts.lexend(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.accentBlack,
+                                color: AppTheme.textPrimaryDark,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -564,7 +564,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                               'Takaran bahan baku per 1 porsi pesanan',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
                             ),
                           ],
                         ),
@@ -574,20 +574,20 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                         icon: const Icon(Icons.add, size: 16),
                         label: const Text('Bahan'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.lightBlueBg,
-                          foregroundColor: AppTheme.primaryBlue,
+                          backgroundColor: AppTheme.darkCardSurfaceElevated,
+                          foregroundColor: AppTheme.jadeTosca,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           textStyle: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: AppTheme.primaryBlue, width: 1),
+                            side: const BorderSide(color: AppTheme.jadeTosca, width: 1),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const Divider(height: 20, color: AppTheme.borderOutline),
+                  const Divider(height: 20, color: AppTheme.darkCardBorder),
 
                   if (widget.recipeRows.isEmpty)
                     Padding(
@@ -597,7 +597,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                           'Belum ada takaran resep. Klik "+ Bahan" untuk menambahkan bahan baku.',
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -632,9 +632,9 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                   return Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF8FAFC),
+                                      color: AppTheme.darkCardSurfaceElevated,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: AppTheme.borderOutline),
+                                      border: Border.all(color: AppTheme.darkCardBorder),
                                     ),
                                     child: Row(
                                       children: [
@@ -643,6 +643,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                           flex: 3,
                                           child: DropdownButtonFormField<String?>(
                                             isExpanded: true,
+                                            dropdownColor: AppTheme.darkCardSurface,
                                             initialValue: effectiveVal,
                                             decoration: InputDecoration(
                                               labelText: 'Pilih Bahan Baku',
@@ -654,7 +655,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                             items: [
                                               const DropdownMenuItem<String?>(
                                                 value: null,
-                                                child: Text('-- Pilih Bahan --', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                                                child: Text('-- Pilih Bahan --', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
                                               ),
                                               ...ingredientsList.map((ing) {
                                                 return DropdownMenuItem<String?>(
@@ -725,7 +726,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
             ElevatedButton(
               onPressed: widget.isLoading ? null : widget.onSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: AppTheme.jadeTosca,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

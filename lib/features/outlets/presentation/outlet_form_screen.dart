@@ -120,7 +120,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.jadeTosca,
         ),
       );
     } else {
@@ -128,7 +128,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal menyimpan: $err', maxLines: 3, overflow: TextOverflow.ellipsis),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.dangerRed,
         ),
       );
     }
@@ -148,6 +148,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           isEditing ? 'Edit Informasi Cabang' : 'Tambah Cabang Baru',
@@ -217,7 +218,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             const SizedBox(height: 12),
             const Text(
               'Preset Koordinat Cepat:',
-              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 12, color: AppTheme.textMutedDark, fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -227,22 +228,30 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
               child: Row(
                 children: [
                   ActionChip(
-                    label: const Text('Jakarta'),
+                    backgroundColor: AppTheme.darkCardSurfaceElevated,
+                    side: const BorderSide(color: AppTheme.darkCardBorder),
+                    label: const Text('Jakarta', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('Jakarta', -6.2088, 106.8456, 'Asia/Jakarta'),
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
-                    label: const Text('Jogja'),
+                    backgroundColor: AppTheme.darkCardSurfaceElevated,
+                    side: const BorderSide(color: AppTheme.darkCardBorder),
+                    label: const Text('Jogja', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('Jogja', -7.7828, 110.3670, 'Asia/Jakarta'),
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
-                    label: const Text('Bali'),
+                    backgroundColor: AppTheme.darkCardSurfaceElevated,
+                    side: const BorderSide(color: AppTheme.darkCardBorder),
+                    label: const Text('Bali', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('Bali', -8.6705, 115.2126, 'Asia/Makassar'),
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
-                    label: const Text('London'),
+                    backgroundColor: AppTheme.darkCardSurfaceElevated,
+                    side: const BorderSide(color: AppTheme.darkCardBorder),
+                    label: const Text('London', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('London', 51.5074, -0.1278, 'Europe/London'),
                   ),
                 ],
@@ -262,6 +271,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             if (isEditing) ...[
               const SizedBox(height: 16),
               SwitchListTile(
+                activeThumbColor: AppTheme.jadeTosca,
                 title: const Text('Status Operasional Aktif', maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: const Text('Cabang aktif dapat bertransaksi dan menerima pesanan kasir', maxLines: 2, overflow: TextOverflow.ellipsis),
                 value: _isActive,
@@ -271,7 +281,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
             const SizedBox(height: 28),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: AppTheme.jadeTosca,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

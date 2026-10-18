@@ -216,15 +216,15 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
+                    color: const Color(0x22EF4444),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
+                    border: Border.all(color: const Color(0xFFEF4444), width: 1.0),
                   ),
                   child: Text(
                     _error!,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lexend(color: const Color(0xFFDC2626), fontSize: 12.5),
+                    style: GoogleFonts.lexend(color: const Color(0xFFF87171), fontSize: 12.5),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -263,6 +263,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 value: categoriesState,
                 dataBuilder: (categories) => DropdownButtonFormField<String>(
                   initialValue: _categoryId,
+                  dropdownColor: AppTheme.darkCardSurface,
                   decoration: const InputDecoration(
                     labelText: 'Kategori (opsional)',
                     border: OutlineInputBorder(),
@@ -319,15 +320,16 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                           return Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
+                              color: AppTheme.darkCardSurfaceElevated,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppTheme.borderOutline),
+                              border: Border.all(color: AppTheme.darkCardBorder),
                             ),
                             child: Row(
                               children: [
                                 Expanded(
                                   flex: 3,
                                   child: DropdownButtonFormField<String>(
+                                    dropdownColor: AppTheme.darkCardSurface,
                                     isExpanded: true,
                                     initialValue: row.ingredientId != null &&
                                             ingredients.any((e) => e.id == row.ingredientId)
@@ -404,9 +406,9 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: AppTheme.darkCardSurfaceElevated,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.borderOutline),
+                          border: Border.all(color: AppTheme.darkCardBorder),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -429,7 +431,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               style: GoogleFonts.lexend(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.primaryBlue,
+                                color: AppTheme.jadeTosca,
                               ),
                             ),
                           ],
@@ -448,7 +450,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryBlue,
+                            backgroundColor: AppTheme.jadeTosca,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -484,9 +486,9 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF0FDFA),
+                            color: AppTheme.darkCardSurfaceElevated,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.primaryBlue.withAlpha(100)),
+                            border: Border.all(color: AppTheme.jadeTosca.withAlpha(120)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +497,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 children: [
                                   const Icon(
                                     Icons.lightbulb_outline_rounded,
-                                    color: AppTheme.primaryBlue,
+                                    color: AppTheme.jadeTosca,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
@@ -504,7 +506,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                     style: GoogleFonts.lexend(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: AppTheme.primaryBlue,
+                                      color: AppTheme.jadeTosca,
                                     ),
                                   ),
                                 ],
@@ -512,7 +514,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               const SizedBox(height: 8),
                               // a) Action Chip/Button harga untuk mengisi price_idr
                               ActionChip(
-                                backgroundColor: AppTheme.primaryBlue,
+                                backgroundColor: AppTheme.jadeTosca,
                                 side: BorderSide.none,
                                 avatar: const Icon(
                                   Icons.check_circle_outline_rounded,
@@ -539,7 +541,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 _aiReasoning ?? 'Rekomendasi optimal berdasarkan analisis pasar F&B.',
                                 style: GoogleFonts.lexend(
                                   fontSize: 12,
-                                  color: AppTheme.accentBlack,
+                                  color: AppTheme.textSecondaryDark,
                                   height: 1.4,
                                 ),
                               ),
@@ -547,8 +549,8 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                               // c) Tombol sekunder "🤖 Lanjutkan ke Arus AI"
                               OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppTheme.primaryBlue,
-                                  side: const BorderSide(color: AppTheme.primaryBlue, width: 1.2),
+                                  foregroundColor: AppTheme.jadeTosca,
+                                  side: const BorderSide(color: AppTheme.jadeTosca, width: 1.2),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),
                                 onPressed: () => _navigateToAiChat(hpp),
@@ -582,6 +584,11 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         children: [
                           for (final m in [30, 50, 100])
                             OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppTheme.jadeTosca,
+                                side: const BorderSide(color: AppTheme.darkCardBorder),
+                                backgroundColor: AppTheme.darkCardSurfaceElevated,
+                              ),
                               onPressed: hpp <= 0
                                   ? null
                                   : () => setState(() =>
@@ -624,7 +631,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
+                  backgroundColor: AppTheme.jadeTosca,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(

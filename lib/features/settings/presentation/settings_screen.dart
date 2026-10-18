@@ -191,11 +191,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             Card(
               elevation: 0,
-              color: Colors.white,
+              color: AppTheme.darkCardSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: const BorderSide(
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                   width: 1.0,
                 ),
               ),
@@ -207,8 +207,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentCurrency == 'IDR'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'Rupiah Indonesia (IDR)',
@@ -217,6 +217,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -225,7 +226,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -243,8 +244,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentCurrency == 'USD'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'Dolar Amerika Serikat (USD)',
@@ -253,6 +254,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -261,7 +263,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -270,7 +272,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Divider(
                     height: 1,
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     thickness: 1,
                   ),
                   ListTile(
@@ -279,8 +281,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentCurrency == 'EUR'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'Euro Uni Eropa (EUR)',
@@ -289,6 +291,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -297,7 +300,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -324,15 +327,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 return Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
+                    color: AppTheme.darkCardSurfaceElevated,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.jadeTosca.withAlpha(120), width: 1.0),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.currency_exchange_rounded,
-                        color: AppTheme.primaryBlue,
+                        color: AppTheme.jadeTosca,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -345,7 +348,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
-                                color: const Color(0xFF475569),
+                                color: AppTheme.textMutedDark,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -354,7 +357,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               style: GoogleFonts.lexend(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.primaryBlue,
+                                color: AppTheme.jadeTosca,
                               ),
                             ),
                             Text(
@@ -364,7 +367,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               style: GoogleFonts.lexend(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF475569),
+                                color: AppTheme.textSecondaryDark,
                               ),
                             ),
                           ],
@@ -389,7 +392,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.textPrimaryDark,
                   ),
                 ),
                 Container(
@@ -398,10 +401,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: const Color(0xFFBFDBFE),
+                      color: AppTheme.darkCardBorder,
                       width: 1.0,
                     ),
                   ),
@@ -411,7 +414,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const Icon(
                         Icons.sync_alt_rounded,
                         size: 14,
-                        color: AppTheme.primaryBlue,
+                        color: AppTheme.jadeTosca,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -419,7 +422,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: GoogleFonts.lexend(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.jadeTosca,
                         ),
                       ),
                     ],
@@ -434,7 +437,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.lexend(
                 fontSize: 12,
-                color: const Color(0xFF64748B),
+                color: AppTheme.textMutedDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -442,9 +445,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.darkCardSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +532,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               'Dari',
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
-                                color: const Color(0xFF64748B),
+                                color: AppTheme.textMutedDark,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -565,8 +568,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onPressed: _swapCurrencies,
                           tooltip: 'Tukar Posisi',
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xFFEFF6FF),
-                            foregroundColor: AppTheme.primaryBlue,
+                            backgroundColor: AppTheme.darkCardSurfaceElevated,
+                            foregroundColor: AppTheme.jadeTosca,
                           ),
                           icon: const Icon(Icons.swap_horiz_rounded, size: 22),
                         ),
@@ -579,7 +582,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               'Ke',
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
-                                color: const Color(0xFF64748B),
+                                color: AppTheme.textMutedDark,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -640,10 +643,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: AppTheme.darkCardSurfaceElevated,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFFBFDBFE),
+                            color: AppTheme.darkCardBorder,
                             width: 1.0,
                           ),
                         ),
@@ -657,7 +660,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
-                                color: const Color(0xFF475569),
+                                color: AppTheme.textMutedDark,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -668,7 +671,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               style: GoogleFonts.lexend(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.primaryBlue,
+                                color: AppTheme.jadeTosca,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -678,7 +681,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
-                                color: const Color(0xFF64748B),
+                                color: AppTheme.textSecondaryDark,
                               ),
                             ),
                           ],
@@ -716,11 +719,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             Card(
               elevation: 0,
-              color: Colors.white,
+              color: AppTheme.darkCardSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: const BorderSide(
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                   width: 1.0,
                 ),
               ),
@@ -732,8 +735,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentTimezone == 'Asia/Jakarta'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'WIB — Waktu Indonesia Barat',
@@ -742,6 +745,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -750,7 +754,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -759,7 +763,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Divider(
                     height: 1,
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     thickness: 1,
                   ),
                   ListTile(
@@ -768,8 +772,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentTimezone == 'Asia/Makassar'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'WITA — Waktu Indonesia Tengah',
@@ -778,6 +782,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -786,7 +791,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -795,7 +800,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Divider(
                     height: 1,
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     thickness: 1,
                   ),
                   ListTile(
@@ -804,8 +809,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentTimezone == 'Asia/Jayapura'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'WIT — Waktu Indonesia Timur',
@@ -814,6 +819,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -822,7 +828,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -831,7 +837,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Divider(
                     height: 1,
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     thickness: 1,
                   ),
                   ListTile(
@@ -840,8 +846,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: currentTimezone == 'Europe/London'
-                          ? AppTheme.primaryBlue
-                          : const Color(0xFF94A3B8),
+                          ? AppTheme.jadeTosca
+                          : AppTheme.textMutedDark,
                     ),
                     title: Text(
                       'BST/GMT — London United Kingdom',
@@ -850,6 +856,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     subtitle: Text(
@@ -858,7 +865,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.lexend(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: AppTheme.textMutedDark,
                       ),
                     ),
                     onTap: () =>
@@ -872,15 +879,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
+                color: AppTheme.darkCardSurfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.jadeTosca.withAlpha(120), width: 1.0),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.access_time_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -891,7 +898,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           'Jam Operasional Saat Ini di Zona Terpilih:',
                           style: GoogleFonts.lexend(
                             fontSize: 11.5,
-                            color: const Color(0xFF475569),
+                            color: AppTheme.textMutedDark,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -902,7 +909,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           style: GoogleFonts.lexend(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.jadeTosca,
                           ),
                         ),
                       ],
@@ -937,18 +944,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             Card(
               elevation: 0,
-              color: Colors.white,
+              color: AppTheme.darkCardSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: const BorderSide(
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                   width: 1.0,
                 ),
               ),
               child: ListTile(
                 leading: const Icon(
                   Icons.vibration_rounded,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.jadeTosca,
                 ),
                 title: Text(
                   'Sensitivitas Guncangan (Shake)',
@@ -957,6 +964,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
+                    color: AppTheme.textPrimaryDark,
                   ),
                 ),
                 subtitle: Text(
@@ -965,7 +973,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.lexend(
                     fontSize: 12,
-                    color: const Color(0xFF64748B),
+                    color: AppTheme.textMutedDark,
                   ),
                 ),
                 trailing: Row(
@@ -977,10 +985,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.lightBlueBg,
+                        color: AppTheme.darkCardSurfaceElevated,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: const Color(0xFFBFDBFE),
+                          color: AppTheme.darkCardBorder,
                           width: 1.0,
                         ),
                       ),
@@ -997,7 +1005,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: GoogleFonts.lexend(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.jadeTosca,
                         ),
                       ),
                     ),
@@ -1005,7 +1013,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
-                      color: Color(0xFF94A3B8),
+                      color: AppTheme.textMutedDark,
                     ),
                   ],
                 ),
@@ -1022,7 +1030,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
               ),
             ),
             const SizedBox(height: 4),
@@ -1032,17 +1040,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.lexend(
                 fontSize: 12,
-                color: const Color(0xFF64748B),
+                color: AppTheme.textMutedDark,
               ),
             ),
             const SizedBox(height: 12),
             Card(
               elevation: 0,
-              color: Colors.white,
+              color: AppTheme.darkCardSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: const BorderSide(
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                   width: 1.0,
                 ),
               ),
@@ -1054,12 +1062,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 secondary: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.lightBlueBg,
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
                     Icons.fingerprint_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     size: 24,
                   ),
                 ),
@@ -1070,6 +1078,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
+                    color: AppTheme.textPrimaryDark,
                   ),
                 ),
                 subtitle: Text(
@@ -1078,10 +1087,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.lexend(
                     fontSize: 12,
-                    color: const Color(0xFF64748B),
+                    color: AppTheme.textMutedDark,
                   ),
                 ),
-                activeThumbColor: AppTheme.primaryBlue,
+                activeThumbColor: AppTheme.jadeTosca,
                 value:
                     ref.watch(authProvider).user?.settings.biometricEnabled ??
                     false,
@@ -1116,7 +1125,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          backgroundColor: AppTheme.successGreen,
+                          backgroundColor: AppTheme.jadeTosca,
                           content: Text(
                             'Login biometrik berhasil diaktifkan.',
                             maxLines: 2,
@@ -1133,7 +1142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          backgroundColor: AppTheme.accentBlack,
+                          backgroundColor: AppTheme.darkCardSurfaceElevated,
                           content: Text(
                             'Login biometrik dinonaktifkan.',
                             maxLines: 2,
@@ -1189,10 +1198,10 @@ class _AmountChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.lexend(fontSize: 11.5, fontWeight: FontWeight.w600),
+        style: GoogleFonts.lexend(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
       ),
-      backgroundColor: const Color(0xFFF1F5F9),
-      side: const BorderSide(color: AppTheme.borderOutline),
+      backgroundColor: AppTheme.darkCardSurfaceElevated,
+      side: const BorderSide(color: AppTheme.darkCardBorder),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       onPressed: () => onSelect(value, customCurrency),
     );

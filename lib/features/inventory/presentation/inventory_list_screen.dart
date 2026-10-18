@@ -182,7 +182,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       ),
       floatingActionButton: (!isStaff && selectedOutletId != null)
           ? FloatingActionButton.extended(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.jadeTosca,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
               label: Text('Tambah Bahan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600)),
               onPressed: () {
@@ -201,7 +201,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.white,
+              decoration: const BoxDecoration(
+                color: AppTheme.darkCardSurface,
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                ),
+              ),
               child: AsyncStateView(
                 value: outletsAsync,
                 dataBuilder: (allOutlets) {
@@ -217,7 +222,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       'Tidak ada cabang yang ditugaskan.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 13),
+                      style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
                     );
                   }
 
@@ -234,16 +239,17 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
 
                   return Row(
                     children: [
-                      const Icon(Icons.storefront_rounded, size: 20, color: AppTheme.primaryBlue),
+                      const Icon(Icons.storefront_rounded, size: 20, color: AppTheme.jadeTosca),
                       const SizedBox(width: 8),
                       Text(
                         'Pilih Cabang:',
-                        style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            dropdownColor: AppTheme.darkCardSurface,
                             isExpanded: true,
                             value: currentOutletId,
                             items: availableOutlets.map((o) {
@@ -251,7 +257,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                                 value: o.id,
                                 child: Text(
                                   o.name,
-                                  style: GoogleFonts.lexend(fontSize: 13.5, fontWeight: FontWeight.w700),
+                                  style: GoogleFonts.lexend(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               );
@@ -283,13 +289,13 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 children: [
                   TextField(
                     controller: _searchController,
-                    style: GoogleFonts.lexend(fontSize: 13.5),
+                    style: GoogleFonts.lexend(fontSize: 13.5, color: AppTheme.textPrimaryDark),
                     decoration: InputDecoration(
                       hintText: 'Cari bahan baku (kopi, susu, air)...',
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.accentBlack),
+                      prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMutedDark),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, color: AppTheme.accentBlack),
+                              icon: const Icon(Icons.clear_rounded, color: AppTheme.textMutedDark),
                               onPressed: () {
                                 _searchController.clear();
                                 ref.read(inventoryFilterProvider.notifier).state =
@@ -314,9 +320,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                         const SizedBox(width: 8),
                         _InventoryFilterChip(label: 'Stok Aman', value: 'ok', isSelected: filterState.status == 'ok'),
                         const SizedBox(width: 8),
-                        _InventoryFilterChip(label: 'Stok Menipis', value: 'low', isSelected: filterState.status == 'low', icon: Icons.warning_amber_rounded, color: AppTheme.dangerRed),
+                        _InventoryFilterChip(label: 'Stok Menipis', value: 'low', isSelected: filterState.status == 'low', icon: Icons.warning_amber_rounded, color: const Color(0xFFF59E0B)),
                         const SizedBox(width: 8),
-                        _InventoryFilterChip(label: 'Stok Habis', value: 'out', isSelected: filterState.status == 'out', icon: Icons.cancel_outlined, color: const Color(0xFF991B1B)),
+                        _InventoryFilterChip(label: 'Stok Habis', value: 'out', isSelected: filterState.status == 'out', icon: Icons.cancel_outlined, color: AppTheme.dangerRed),
                       ],
                     ),
                   ),
@@ -409,12 +415,12 @@ class _InventoryFilterChip extends ConsumerWidget {
         ),
       ),
       selected: isSelected,
-      selectedColor: color ?? AppTheme.primaryBlue,
-      backgroundColor: Colors.white,
-      side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+      selectedColor: color ?? AppTheme.jadeTosca,
+      backgroundColor: AppTheme.darkCardSurface,
+      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : (color ?? AppTheme.accentBlack),
+        color: isSelected ? Colors.white : (color ?? AppTheme.textSecondaryDark),
       ),
       onSelected: (selected) {
         if (selected) {
@@ -442,27 +448,27 @@ class _IngredientCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Color cardBorder = AppTheme.borderOutline;
-    Color badgeBg = AppTheme.lightBlueBg;
-    Color badgeColor = AppTheme.primaryBlue;
+    Color cardBorder = AppTheme.darkCardBorder;
+    Color badgeBg = AppTheme.darkCardSurfaceElevated;
+    Color badgeColor = AppTheme.jadeTosca;
     String badgeText = item.formattedStock;
 
     if (item.isOutOfStock) {
-      cardBorder = const Color(0xFFFCA5A5);
-      badgeBg = const Color(0xFFFEE2E2);
-      badgeColor = AppTheme.dangerRed;
+      cardBorder = const Color(0x33EF4444);
+      badgeBg = const Color(0x22EF4444);
+      badgeColor = const Color(0xFFF87171);
     } else if (item.isLowStock) {
-      cardBorder = const Color(0xFFFED7AA);
-      badgeBg = const Color(0xFFFFEDD5);
-      badgeColor = const Color(0xFFC2410C);
+      cardBorder = const Color(0x33F59E0B);
+      badgeBg = const Color(0x22F59E0B);
+      badgeColor = const Color(0xFFFBBF24);
     }
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cardBorder, width: 1.2),
+        border: Border.all(color: cardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,10 +479,10 @@ class _IngredientCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightBlueBg,
+                  color: AppTheme.darkCardSurfaceElevated,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.egg_alt_outlined, color: AppTheme.primaryBlue, size: 22),
+                child: const Icon(Icons.egg_alt_outlined, color: AppTheme.jadeTosca, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -490,7 +496,7 @@ class _IngredientCard extends ConsumerWidget {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -498,7 +504,7 @@ class _IngredientCard extends ConsumerWidget {
                       'Modal: ${item.formattedCost} • Reorder: ${item.reorderLevel} ${item.unit}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 11.5),
+                      style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 11.5),
                     ),
                   ],
                 ),
@@ -540,17 +546,17 @@ class _IngredientCard extends ConsumerWidget {
                             'Stok Menipis (Batas: ${item.reorderLevel})',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFC2410C)),
+                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFFBBF24)),
                           )
                         : Text(
                             'Stok Aman',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF16A34A)),
+                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF10B981)),
                           ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMuted),
+                icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMutedDark),
                 tooltip: 'Edit Bahan',
                 onPressed: onEdit,
               ),
@@ -564,7 +570,7 @@ class _IngredientCard extends ConsumerWidget {
                 icon: const Icon(Icons.tune_rounded, size: 15, color: Colors.white),
                 label: Text('Sesuaikan', style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
+                  backgroundColor: AppTheme.jadeTosca,
                   minimumSize: const Size(90, 34),
                   visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -612,10 +618,10 @@ class _StaffPortionView extends ConsumerWidget {
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.darkCardSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isZero ? const Color(0xFFFCA5A5) : AppTheme.borderOutline,
+                  color: isZero ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
                 ),
               ),
               child: Row(
@@ -631,15 +637,15 @@ class _StaffPortionView extends ConsumerWidget {
                             errorBuilder: (_, _, _) => Container(
                               width: 52,
                               height: 52,
-                              color: AppTheme.lightBlueBg,
-                              child: const Icon(Icons.coffee_rounded, color: AppTheme.primaryBlue),
+                              color: AppTheme.darkCardSurfaceElevated,
+                              child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
                             ),
                           )
                         : Container(
                             width: 52,
                             height: 52,
-                            color: AppTheme.lightBlueBg,
-                            child: const Icon(Icons.coffee_rounded, color: AppTheme.primaryBlue),
+                            color: AppTheme.darkCardSurfaceElevated,
+                            child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
                           ),
                   ),
                   const SizedBox(width: 12),
@@ -651,14 +657,18 @@ class _StaffPortionView extends ConsumerWidget {
                           p.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14),
+                          style: GoogleFonts.lexend(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: AppTheme.textPrimaryDark,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${p.formattedPrice} • SKU: ${p.sku}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
                         ),
                       ],
                     ),
@@ -667,10 +677,10 @@ class _StaffPortionView extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isZero ? const Color(0xFFFEE2E2) : AppTheme.lightBlueBg,
+                      color: isZero ? const Color(0x22EF4444) : AppTheme.darkCardSurfaceElevated,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isZero ? const Color(0xFFFCA5A5) : const Color(0xFFBFDBFE),
+                        color: isZero ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
                       ),
                     ),
                     child: Column(
@@ -682,7 +692,7 @@ class _StaffPortionView extends ConsumerWidget {
                           style: GoogleFonts.lexend(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isZero ? AppTheme.dangerRed : AppTheme.primaryBlue,
+                            color: isZero ? AppTheme.dangerRed : AppTheme.jadeTosca,
                           ),
                         ),
                         Text(
@@ -691,7 +701,7 @@ class _StaffPortionView extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lexend(
                             fontSize: 10,
-                            color: isZero ? AppTheme.dangerRed : AppTheme.textMuted,
+                            color: isZero ? AppTheme.dangerRed : AppTheme.textMutedDark,
                           ),
                         ),
                       ],

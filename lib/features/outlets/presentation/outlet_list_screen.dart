@@ -65,7 +65,7 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
       ),
       floatingActionButton: isOwner
           ? FloatingActionButton.extended(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.jadeTosca,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add_location_alt_rounded),
               label: const Text('Tambah Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -132,22 +132,23 @@ class _OutletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor = Colors.green;
+    Color statusColor = AppTheme.jadeTosca;
     String statusText = 'Optimal';
     if (perf?.performanceStatus == 'critical') {
-      statusColor = Colors.red;
+      statusColor = AppTheme.dangerRed;
       statusText = 'Kritis';
     } else if (perf?.performanceStatus == 'warning') {
-      statusColor = Colors.orange;
+      statusColor = const Color(0xFFF59E0B);
       statusText = 'Perhatian';
     }
 
     return Card(
+      color: AppTheme.darkCardSurface,
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -166,6 +167,7 @@ class _OutletCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimaryDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -176,6 +178,7 @@ class _OutletCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: statusColor.withAlpha(25),
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: statusColor.withAlpha(60)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -200,19 +203,19 @@ class _OutletCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 outlet.address,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                style: const TextStyle(color: AppTheme.textSecondaryDark, fontSize: 13),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade600),
+                  const Icon(Icons.access_time_rounded, size: 14, color: AppTheme.textMutedDark),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       outlet.timezone,
-                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -222,13 +225,13 @@ class _OutletCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.jadeTosca,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+                  const Icon(Icons.chevron_right, size: 18, color: AppTheme.textMutedDark),
                 ],
               ),
             ],
@@ -268,8 +271,11 @@ class _LbsTab extends ConsumerWidget {
         // Location simulation selector
         Card(
           elevation: 0,
-          color: Colors.deepPurple.shade50,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: AppTheme.darkCardSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -277,7 +283,7 @@ class _LbsTab extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.my_location_rounded, size: 18, color: Colors.deepPurple),
+                    const Icon(Icons.my_location_rounded, size: 18, color: AppTheme.jadeTosca),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -285,7 +291,7 @@ class _LbsTab extends ConsumerWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
-                          color: Colors.deepPurple,
+                          color: AppTheme.textPrimaryDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -296,34 +302,43 @@ class _LbsTab extends ConsumerWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Koordinat saat ini: ${currentCoord.$1.toStringAsFixed(4)}, ${currentCoord.$2.toStringAsFixed(4)}',
-                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
+                  runSpacing: 8,
                   children: [
                     ActionChip(
-                      label: const Text('Malioboro Jogja'),
+                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      side: const BorderSide(color: AppTheme.darkCardBorder),
+                      label: const Text('Malioboro Jogja', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                       onPressed: () {
                         ref.read(userCoordinatesProvider.notifier).state = (-7.7828, 110.3670);
                       },
                     ),
                     ActionChip(
-                      label: const Text('Surakarta Solo'),
+                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      side: const BorderSide(color: AppTheme.darkCardBorder),
+                      label: const Text('Surakarta Solo', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                       onPressed: () {
                         ref.read(userCoordinatesProvider.notifier).state = (-7.5561, 110.8316);
                       },
                     ),
                     ActionChip(
-                      label: const Text('Kuta Bali'),
+                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      side: const BorderSide(color: AppTheme.darkCardBorder),
+                      label: const Text('Kuta Bali', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                       onPressed: () {
                         ref.read(userCoordinatesProvider.notifier).state = (-8.6705, 115.2126);
                       },
                     ),
                     ActionChip(
-                      label: const Text('London UK'),
+                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      side: const BorderSide(color: AppTheme.darkCardBorder),
+                      label: const Text('London UK', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                       onPressed: () {
                         ref.read(userCoordinatesProvider.notifier).state = (51.5074, -0.1278);
                       },
@@ -354,19 +369,9 @@ class _LbsTab extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.teal.shade700, Colors.teal.shade900],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.teal.withAlpha(50),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    border: Border.all(color: AppTheme.jadeTosca.withAlpha(120), width: 1.0),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,19 +382,20 @@ class _LbsTab extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(40),
+                              color: AppTheme.darkCardSurface,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.darkCardBorder),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+                                const Icon(Icons.stars_rounded, color: AppTheme.jadeTosca, size: 16),
                                 const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
                                     'CABANG TERDEKAT (LBS)',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: AppTheme.jadeTosca,
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -403,7 +409,7 @@ class _LbsTab extends ConsumerWidget {
                           Text(
                             '${nearest.distanceKm.toStringAsFixed(1)} km',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.jadeTosca,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -416,7 +422,7 @@ class _LbsTab extends ConsumerWidget {
                       Text(
                         nearest.name,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.textPrimaryDark,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -426,15 +432,15 @@ class _LbsTab extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         nearest.address,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        style: const TextStyle(color: AppTheme.textSecondaryDark, fontSize: 13),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 14),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.teal.shade900,
+                          backgroundColor: AppTheme.jadeTosca,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -449,7 +455,7 @@ class _LbsTab extends ConsumerWidget {
                 const SizedBox(height: 24),
                 const Text(
                   'Seluruh Cabang Terurut Berdasarkan Jarak:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -459,20 +465,21 @@ class _LbsTab extends ConsumerWidget {
                   final localTime = lbsLocalTimeDisplay(item.timezone);
 
                   return Card(
+                    color: AppTheme.darkCardSurface,
                     margin: const EdgeInsets.only(bottom: 8),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Colors.grey.shade200),
+                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                     ),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.teal.shade50,
-                        child: const Icon(Icons.location_on, color: Colors.teal, size: 20),
+                        backgroundColor: AppTheme.darkCardSurfaceElevated,
+                        child: const Icon(Icons.location_on, color: AppTheme.jadeTosca, size: 20),
                       ),
-                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime', maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, size: 18)),
+                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime', style: const TextStyle(color: AppTheme.textMutedDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, size: 18, color: AppTheme.textMutedDark)),
                       onTap: () => context.push('/outlets/${item.id}'),
                     ),
                   );

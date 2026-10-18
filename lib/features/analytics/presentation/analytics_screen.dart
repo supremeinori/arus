@@ -103,16 +103,16 @@ class _OverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Total Pendapatan Terakumulasi',
-            style: GoogleFonts.lexend(color: const Color(0xFF64748B), fontSize: 12),
+            style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 12),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -122,12 +122,12 @@ class _OverviewCard extends StatelessWidget {
             style: GoogleFonts.lexend(
               fontWeight: FontWeight.w800,
               fontSize: 24,
-              color: AppTheme.accentBlack,
+              color: AppTheme.textPrimaryDark,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.2),
+          const Divider(height: 24, color: AppTheme.darkCardBorder, thickness: 1.0),
           Row(
             children: [
               Expanded(child: _MiniStat(label: 'Transaksi', value: '${kpi.transactionCount} kali')),
@@ -156,14 +156,14 @@ class _MiniStat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
+          style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMutedDark),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 2),
         Text(
           value,
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -197,9 +197,9 @@ class _PeakHoursList extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+            color: AppTheme.darkCardSurface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
           ),
           child: Row(
             children: [
@@ -207,16 +207,16 @@ class _PeakHoursList extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppTheme.primaryBlue, width: 1.5),
+                  color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.jadeTosca.withValues(alpha: 0.3), width: 1.0),
                 ),
                 child: Center(
                   child: Text(
                     h.label.split(':')[0],
                     style: GoogleFonts.lexend(
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.jadeTosca,
                       fontSize: 14,
                     ),
                     maxLines: 1,
@@ -234,14 +234,14 @@ class _PeakHoursList extends StatelessWidget {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.textPrimaryDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       '${h.transactionCount} transaksi selesai',
-                      style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF64748B)),
+                      style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -253,7 +253,7 @@ class _PeakHoursList extends StatelessWidget {
                   MoneyFormatter.format(h.totalRevenueIdr),
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     fontSize: 13.5,
                   ),
                   maxLines: 1,

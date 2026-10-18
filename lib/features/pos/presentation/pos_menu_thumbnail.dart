@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Thumbnail menu 36x36 yang SELALU punya size (gambar atau placeholder).
-///
-/// Koreksi: teori lama ("SizedBox.shrink 0x0 memicu hit-test crash") SALAH —
-/// box 0x0 tetap punya size (hasSize=true). Error "with no size" berarti
-/// size==null (belum pernah layout), bukan 0x0. Widget ini dipertahankan
-/// murni sebagai hygiene layout (mencegah Image.network takterbatas dari
-/// path relatif seeder '/images/...'), BUKAN sebagai fix crash tersebut.
+/// Thumbnail menu yang SELALU punya size pasti (gambar atau placeholder)
+/// untuk mencegah hit-test crash dan RenderBox unbounded height.
 class PosMenuThumbnail extends StatelessWidget {
   final String? imageUrl;
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
 
-  const PosMenuThumbnail({super.key, this.imageUrl});
+  const PosMenuThumbnail({
+    super.key,
+    this.imageUrl,
+    this.width = 36,
+    this.height = 36,
+    this.borderRadius,
+  });
 
   /// Hanya http(s) dengan host yang dianggap URL gambar jaringan valid.
-  /// Path relatif seeder ('/images/...') dan string kosong -> placeholder.
   static bool isNetworkUrl(String? url) {
     if (url == null || url.trim().isEmpty) return false;
     final uri = Uri.tryParse(url.trim());
@@ -24,11 +27,12 @@ class PosMenuThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveRadius = borderRadius ?? BorderRadius.circular(6);
     return SizedBox(
-      width: 36,
-      height: 36,
+      width: width,
+      height: height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: effectiveRadius,
         child: isNetworkUrl(imageUrl)
             ? Image.network(
                 imageUrl!,
@@ -45,7 +49,7 @@ class PosMenuThumbnail extends StatelessWidget {
     return Container(
       color: const Color(0xFFF1F5F9),
       alignment: Alignment.center,
-      child: Icon(icon, size: 20, color: const Color(0xFF94A3B8)),
+      child: Icon(icon, size: (height != null && height! > 50) ? 32 : 20, color: const Color(0xFF94A3B8)),
     );
   }
 }

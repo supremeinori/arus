@@ -29,6 +29,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     final isProcessing = ref.watch(notificationActionProvider);
 
     return Scaffold(
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +38,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             if (unreadCount > 0)
               Text(
                 '$unreadCount pesan belum dibaca',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -134,6 +135,12 @@ class _FilterChips extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
+              backgroundColor: AppTheme.darkCardSurface,
+              selectedColor: AppTheme.jadeTosca,
+              side: const BorderSide(color: AppTheme.darkCardBorder),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.textSecondaryDark,
+              ),
               label: Text(f['label']!, maxLines: 1, overflow: TextOverflow.ellipsis),
               selected: isSelected,
               onSelected: (_) => onSelected(f['val']),
@@ -172,28 +179,28 @@ class _NotificationCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     IconData icon = Icons.info_outline;
-    Color color = AppTheme.primaryToska;
+    Color color = AppTheme.jadeTosca;
 
     if (item.type == 'low_stock') {
       icon = Icons.warning_amber_rounded;
-      color = Colors.red;
+      color = AppTheme.dangerRed;
     } else if (item.type == 'target_achieved') {
       icon = Icons.emoji_events_outlined;
-      color = Colors.green;
+      color = const Color(0xFF10B981);
     } else if (item.type == 'sales_change') {
       icon = Icons.trending_up_rounded;
-      color = Colors.orange;
+      color = const Color(0xFFF59E0B);
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
-      color: item.isRead ? Colors.white : AppTheme.lightToskaBg,
+      color: item.isRead ? AppTheme.darkCardSurface : AppTheme.darkCardSurfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: item.isRead ? Colors.grey.shade200 : AppTheme.primaryBlue.withAlpha(50),
-          width: item.isRead ? 1 : 1.5,
+          color: item.isRead ? AppTheme.darkCardBorder : AppTheme.jadeTosca.withAlpha(120),
+          width: 1.0,
         ),
       ),
       child: InkWell(
@@ -237,7 +244,7 @@ class _NotificationCard extends ConsumerWidget {
                             style: TextStyle(
                               fontWeight: item.isRead ? FontWeight.w600 : FontWeight.bold,
                               fontSize: 14,
-                              color: Colors.black87,
+                              color: AppTheme.textPrimaryDark,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -248,7 +255,7 @@ class _NotificationCard extends ConsumerWidget {
                             width: 8,
                             height: 8,
                             decoration: const BoxDecoration(
-                              color: AppTheme.primaryBlue,
+                              color: AppTheme.jadeTosca,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -257,14 +264,14 @@ class _NotificationCard extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       item.body,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.3),
+                      style: const TextStyle(fontSize: 13, color: AppTheme.textSecondaryDark, height: 1.3),
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       notifDateFormatter.format(item.createdAt),
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textMutedDark),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

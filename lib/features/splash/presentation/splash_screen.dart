@@ -209,11 +209,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   width: 88,
                   height: 88,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                        color: AppTheme.jadeTosca.withValues(alpha: 0.35),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -228,27 +228,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   StringsId.appName,
-                  style: TextStyle(
+                  style: GoogleFonts.lexend(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
-                    color: Color(0xFF1E293B),
+                    color: AppTheme.textPrimaryDark,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   StringsId.appTagline,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.lexend(
                     fontSize: 14,
-                    color: Colors.grey.shade600,
+                    color: AppTheme.textMutedDark,
                   ),
                 ),
                 const Spacer(),
                 // Health Check Status Block (Milestone 1 Core Verification)
                 Card(
+                  color: AppTheme.darkCardSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: AsyncStateView(
@@ -282,9 +287,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             'Status: ${health.status.toUpperCase()} • DB: ${health.db} • v${health.version}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: GoogleFonts.lexend(
                               fontSize: 12,
-                              color: Colors.grey.shade700,
+                              color: AppTheme.textSecondaryDark,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -292,9 +297,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                             'Waktu Server: ${health.time}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: GoogleFonts.lexend(
                               fontSize: 11,
-                              color: Colors.grey.shade500,
+                              color: AppTheme.textMutedDark,
                             ),
                           ),
                         ],
@@ -307,33 +312,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.darkCardSurfaceElevated,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 2)),
-                      ],
+                      border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                     ),
                     child: Column(
                       children: [
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.fingerprint_rounded, size: 28, color: AppTheme.primaryBlue),
+                            const Icon(Icons.fingerprint_rounded, size: 28, color: AppTheme.jadeTosca),
                             const SizedBox(width: 10),
                             Text(
                               'Menunggu sensor biometrik...',
-                              style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF334155)),
+                              style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         TextButton.icon(
                           style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                          icon: const Icon(Icons.password_rounded, size: 16, color: AppTheme.primaryBlue),
+                          icon: const Icon(Icons.password_rounded, size: 16, color: AppTheme.jadeTosca),
                           label: Text(
                             'Batal & Masuk dengan Password',
-                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
+                            style: GoogleFonts.lexend(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
                           ),
                           onPressed: () {
                             _goToLogin();

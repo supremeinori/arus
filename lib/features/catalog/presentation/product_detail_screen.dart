@@ -73,13 +73,13 @@ class ProductDetailScreen extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.all(16.0),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.darkCardSurface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                       child: Text(
                         'Belum ada data stok yang terhubung.',
-                        style: GoogleFonts.lexend(color: AppTheme.textMuted, fontSize: 13),
+                        style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13),
                       ),
                     ),
                   ),
@@ -120,9 +120,9 @@ class _ProductHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,10 +133,10 @@ class _ProductHeaderCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: prod.isActive ? AppTheme.lightBlueBg : const Color(0xFFFEF2F2),
+                  color: prod.isActive ? const Color(0x1F00A896) : const Color(0x26EF4444),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: prod.isActive ? const Color(0xFFBFDBFE) : const Color(0xFFFCA5A5),
+                    color: prod.isActive ? const Color(0x4000A896) : const Color(0x40EF4444),
                     width: 1.0,
                   ),
                 ),
@@ -147,7 +147,7 @@ class _ProductHeaderCard extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: prod.isActive ? AppTheme.primaryBlue : AppTheme.dangerRed,
+                    color: prod.isActive ? AppTheme.jadeTosca : const Color(0xFFEF4444),
                   ),
                 ),
               ),
@@ -160,7 +160,7 @@ class _ProductHeaderCard extends StatelessWidget {
                   textAlign: TextAlign.end,
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedDark,
                     fontSize: 12,
                   ),
                 ),
@@ -172,7 +172,7 @@ class _ProductHeaderCard extends StatelessWidget {
             prod.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.accentBlack),
+            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
           ),
           if (prod.categoryName != null) ...[
             const SizedBox(height: 4),
@@ -180,10 +180,10 @@ class _ProductHeaderCard extends StatelessWidget {
               'Kategori: ${prod.categoryName}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMuted),
+              style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
             ),
           ],
-          const Divider(height: 24, color: AppTheme.borderOutline, thickness: 1.0),
+          const Divider(height: 24, color: AppTheme.darkCardBorder, thickness: 1.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -195,7 +195,7 @@ class _ProductHeaderCard extends StatelessWidget {
                       'Harga Jual / ${prod.unit}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                      style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -205,7 +205,7 @@ class _ProductHeaderCard extends StatelessWidget {
                       style: GoogleFonts.lexend(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.primaryBlue,
+                        color: AppTheme.jadeTosca,
                       ),
                     ),
                   ],
@@ -220,7 +220,7 @@ class _ProductHeaderCard extends StatelessWidget {
                         'HPP (Modal)',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMuted),
+                        style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -230,7 +230,7 @@ class _ProductHeaderCard extends StatelessWidget {
                         style: GoogleFonts.lexend(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.textPrimaryDark,
                         ),
                       ),
                     ],
@@ -255,9 +255,9 @@ class _ProductRecipeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,17 +270,17 @@ class _ProductRecipeCard extends StatelessWidget {
                   'Estimasi Ketersediaan Menu',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                  style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: prod.estimatedPortions > 0 ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2),
+                  color: prod.estimatedPortions > 0 ? const Color(0x1F00A896) : const Color(0x26EF4444),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: prod.estimatedPortions > 0 ? const Color(0xFF93C5FD) : const Color(0xFFFCA5A5),
+                    color: prod.estimatedPortions > 0 ? const Color(0x4000A896) : const Color(0x40EF4444),
                   ),
                 ),
                 child: Text(
@@ -292,18 +292,18 @@ class _ProductRecipeCard extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
-                    color: prod.estimatedPortions > 0 ? AppTheme.primaryBlue : AppTheme.dangerRed,
+                    color: prod.estimatedPortions > 0 ? AppTheme.jadeTosca : const Color(0xFFEF4444),
                   ),
                 ),
               ),
             ],
           ),
-          const Divider(height: 20, color: AppTheme.borderOutline),
+          const Divider(height: 20, color: AppTheme.darkCardBorder),
           Text(
             'Komposisi Resep (Bahan Baku per Porsi):',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF475569)),
+            style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
           ),
           const SizedBox(height: 8),
           if (prod.recipes.isEmpty)
@@ -311,7 +311,7 @@ class _ProductRecipeCard extends StatelessWidget {
               'Belum ada komposisi resep yang dikonfigurasi.',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMuted),
+              style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
             )
           else
             ...prod.recipes.map(
@@ -325,7 +325,7 @@ class _ProductRecipeCard extends StatelessWidget {
                         '• ${r.ingredientName ?? 'Bahan'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.accentBlack),
+                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textPrimaryDark),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -333,7 +333,7 @@ class _ProductRecipeCard extends StatelessWidget {
                       '${r.amountNeeded} ${r.ingredientUnit ?? ''}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.primaryBlue),
+                      style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
                     ),
                   ],
                 ),
@@ -354,47 +354,44 @@ class _OutletStockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLow = stock.quantity <= stock.reorderLevel;
+    final statusColor = isLow ? const Color(0xFFEF4444) : AppTheme.jadeTosca;
+    final statusBg = isLow ? const Color(0x26EF4444) : const Color(0x1F00A896);
+
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: AppTheme.darkCardSurface,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: ListTile(
         leading: Icon(
           Icons.storefront_rounded,
-          color: stock.quantity <= stock.reorderLevel
-              ? AppTheme.dangerRed
-              : AppTheme.primaryBlue,
+          color: statusColor,
         ),
         title: Text(
           stock.outletName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14),
+          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
         ),
         subtitle: Text(
           'Batas minimum restock: ${stock.reorderLevel} ${prod.unit}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
         ),
-        // B9: trailing ListTile dibatasi lebarnya agar tidak unbounded width.
         trailing: SizedBox(
           width: 110,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: stock.quantity <= stock.reorderLevel
-                  ? const Color(0xFFFEF2F2)
-                  : const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(4),
+              color: statusBg,
+              borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: stock.quantity <= stock.reorderLevel
-                    ? AppTheme.dangerRed
-                    : AppTheme.primaryBlue,
+                color: statusColor.withValues(alpha: 0.4),
                 width: 1,
               ),
             ),
@@ -406,9 +403,7 @@ class _OutletStockCard extends StatelessWidget {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 12.5,
-                color: stock.quantity <= stock.reorderLevel
-                    ? AppTheme.dangerRed
-                    : AppTheme.primaryBlue,
+                color: statusColor,
               ),
             ),
           ),
