@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
@@ -32,8 +33,11 @@ class ShakeSettingsSheet extends ConsumerWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        border: Border(
+          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        ),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -47,7 +51,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: AppTheme.darkCardBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -59,12 +63,12 @@ class ShakeSettingsSheet extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withAlpha(25),
+                    color: AppTheme.jadeTosca.withAlpha(25),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.vibration_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     size: 24,
                   ),
                 ),
@@ -80,7 +84,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                         style: GoogleFonts.lexend(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.textPrimaryDark,
                         ),
                       ),
                       Text(
@@ -134,7 +138,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     color: AppTheme.textMuted,
                   ),
                 ),
-                activeThumbColor: AppTheme.primaryBlue,
+                activeThumbColor: AppTheme.jadeTosca,
                 value: settings.shakeRefreshEnabled,
                 onChanged: (val) {
                   ref
@@ -174,12 +178,12 @@ class ShakeSettingsSheet extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppTheme.primaryBlue
+                              ? AppTheme.jadeTosca
                               : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected
-                                ? AppTheme.primaryBlue
+                                ? AppTheme.jadeTosca
                                 : Colors.grey.shade300,
                             width: isSelected ? 1.5 : 1,
                           ),
@@ -193,7 +197,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                                 fontWeight: FontWeight.w700,
                                 color: isSelected
                                     ? Colors.white
-                                    : AppTheme.accentBlack,
+                                    : AppTheme.textPrimaryDark,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -235,7 +239,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withAlpha(20),
+                    color: AppTheme.jadeTosca.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -245,7 +249,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                     style: GoogleFonts.lexend(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.jadeTosca,
                     ),
                   ),
                 ),
@@ -256,7 +260,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
               min: 3.0,
               max: 16.0,
               divisions: 26,
-              activeColor: AppTheme.primaryBlue,
+              activeColor: AppTheme.jadeTosca,
               label: '${threshold.toStringAsFixed(1)} m/s²',
               onChanged: (val) {
                 ref.read(shakeThresholdProvider.notifier).setThreshold(val);
@@ -299,7 +303,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                       const Icon(
                         Icons.speed_rounded,
                         size: 18,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.textPrimaryDark,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -352,7 +356,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                           fontWeight: FontWeight.w700,
                           color: liveForce >= threshold
                               ? Colors.green.shade700
-                              : AppTheme.accentBlack,
+                              : AppTheme.textPrimaryDark,
                         ),
                       ),
                       if (liveForce > 0)
@@ -396,41 +400,27 @@ class ShakeSettingsSheet extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.touch_app_rounded, size: 16),
-                    label: Text(
-                      'Tes Getar',
-                      style: GoogleFonts.lexend(fontSize: 12.5),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: AppTheme.borderOutline),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                  child: ShadButton.outline(
                     onPressed: () {
                       ref.read(shakeEventProvider.notifier).triggerShake();
                     },
+                    leading: const Icon(Icons.touch_app_rounded, size: 16),
+                    child: Text(
+                      'Tes Getar',
+                      style: GoogleFonts.lexend(fontSize: 12.5),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                  child: ShadButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(
                       'Simpan & Tutup',
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
+                        color: Colors.white,
                       ),
                     ),
                   ),

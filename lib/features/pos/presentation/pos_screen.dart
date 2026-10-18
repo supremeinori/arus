@@ -81,7 +81,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.textPrimaryLight,
+            backgroundColor: AppTheme.textPrimaryDark,
             content: Row(
               children: [
                 const Icon(
@@ -112,17 +112,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final cartState = ref.watch(posCartProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        backgroundColor: AppTheme.lightCardSurface,
+        backgroundColor: AppTheme.darkCardSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         shape: const Border(
-          bottom: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+          bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
         ),
         leading: Navigator.of(context).canPop()
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimaryLight),
+                icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimaryDark),
                 tooltip: 'Kembali',
                 onPressed: () => Navigator.of(context).pop(),
               )
@@ -143,7 +143,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 16.5,
-                color: AppTheme.textPrimaryLight,
+                color: AppTheme.textPrimaryDark,
               ),
             ),
           ],
@@ -189,7 +189,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             icon: Icon(
               Icons.delete_sweep_outlined,
               color: cartState.items.isEmpty
-                  ? AppTheme.textMutedLight.withValues(alpha: 0.4)
+                  ? AppTheme.textMutedDark.withValues(alpha: 0.4)
                   : AppTheme.dangerRed,
             ),
             tooltip: 'Kosongkan Keranjang',
@@ -230,7 +230,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 ),
 
                 // Hairline Divider
-                const VerticalDivider(width: 1, color: AppTheme.lightCardBorder),
+                const VerticalDivider(width: 1, color: AppTheme.darkCardBorder),
 
                 // Sisi Kanan: Panel Keranjang Permanen
                 SizedBox(
@@ -275,20 +275,20 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           child: TextField(
             controller: _searchController,
             style: GoogleFonts.lexend(
-              color: AppTheme.textPrimaryLight,
+              color: AppTheme.textPrimaryDark,
               fontSize: 13.5,
             ),
             decoration: InputDecoration(
               hintText: 'Cari menu, kopi, atau SKU...',
               hintStyle: GoogleFonts.lexend(
-                color: AppTheme.textMutedLight,
+                color: AppTheme.textMutedDark,
                 fontSize: 13,
               ),
               filled: true,
-              fillColor: AppTheme.lightCardSurface,
+              fillColor: AppTheme.darkCardSurface,
               prefixIcon: const Icon(
                 Icons.search_rounded,
-                color: AppTheme.textMutedLight,
+                color: AppTheme.textMutedDark,
               ),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(
@@ -298,14 +298,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(
-                  color: AppTheme.lightCardBorder,
+                  color: AppTheme.darkCardBorder,
                   width: 1.0,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(
-                  color: AppTheme.lightCardBorder,
+                  color: AppTheme.darkCardBorder,
                   width: 1.0,
                 ),
               ),
@@ -344,11 +344,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     ),
                     selected: _selectedCategoryId == null,
                     selectedColor: AppTheme.jadeTosca,
-                    backgroundColor: AppTheme.lightCardSurface,
+                    backgroundColor: AppTheme.darkCardSurface,
                     side: BorderSide(
                       color: _selectedCategoryId == null
                           ? AppTheme.jadeTosca
-                          : AppTheme.lightCardBorder,
+                          : AppTheme.darkCardBorder,
                       width: 1.0,
                     ),
                     shape: RoundedRectangleBorder(
@@ -357,7 +357,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     labelStyle: TextStyle(
                       color: _selectedCategoryId == null
                           ? Colors.white
-                          : AppTheme.textMutedLight,
+                          : AppTheme.textMutedDark,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -382,11 +382,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         ),
                         selected: isSelected,
                         selectedColor: AppTheme.jadeTosca,
-                        backgroundColor: AppTheme.lightCardSurface,
+                        backgroundColor: AppTheme.darkCardSurface,
                         side: BorderSide(
                           color: isSelected
                               ? AppTheme.jadeTosca
-                              : AppTheme.lightCardBorder,
+                              : AppTheme.darkCardBorder,
                           width: 1.0,
                         ),
                         shape: RoundedRectangleBorder(
@@ -395,7 +395,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         labelStyle: TextStyle(
                           color: isSelected
                               ? Colors.white
-                              : AppTheme.textMutedLight,
+                              : AppTheme.textMutedDark,
                         ),
                         onSelected: (selected) {
                           setState(
@@ -412,7 +412,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             );
           },
         ),
-        const Divider(height: 14, color: AppTheme.lightCardBorder),
+        const Divider(height: 14, color: AppTheme.darkCardBorder),
       ],
     );
   }
@@ -475,7 +475,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     style: GoogleFonts.lexend(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimaryLight,
+                      color: AppTheme.textPrimaryDark,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -486,7 +486,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.lexend(
                       fontSize: 12.5,
-                      color: AppTheme.textMutedLight,
+                      color: AppTheme.textMutedDark,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -604,9 +604,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         border: Border(
-          top: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
         ),
       ),
       child: SafeArea(
@@ -625,7 +625,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 11.5,
-                      color: AppTheme.textMutedLight,
+                      color: AppTheme.textMutedDark,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -635,8 +635,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: cartState.items.isEmpty
-                          ? AppTheme.textMutedLight
-                          : AppTheme.textPrimaryLight,
+                          ? AppTheme.textMutedDark
+                          : AppTheme.textPrimaryDark,
                     ),
                   ),
                 ],
@@ -664,7 +664,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   foregroundColor: AppTheme.jadeTosca,
                   side: BorderSide(
                     color: cartState.items.isEmpty
-                        ? AppTheme.lightCardBorder
+                        ? AppTheme.darkCardBorder
                         : AppTheme.jadeTosca,
                   ),
                   shape: RoundedRectangleBorder(
@@ -690,7 +690,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: cartState.items.isEmpty
-                    ? AppTheme.lightCardSurfaceElevated
+                    ? AppTheme.darkCardSurfaceElevated
                     : AppTheme.jadeTosca,
                 foregroundColor: Colors.white,
                 elevation: 0,
@@ -747,14 +747,14 @@ class _RedesignedProductCard extends StatelessWidget {
               ? const Color(0xFFFEF2F2)
               : (inCart
                   ? const Color(0xFFF0FDFA)
-                  : AppTheme.lightCardSurface),
+                  : AppTheme.darkCardSurface),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isOutOfStock
                 ? const Color(0xFFFCA5A5)
                 : (inCart
                     ? AppTheme.jadeTosca
-                    : AppTheme.lightCardBorder),
+                    : AppTheme.darkCardBorder),
             width: inCart ? 1.5 : 1.0,
           ),
         ),
@@ -821,7 +821,7 @@ class _RedesignedProductCard extends StatelessWidget {
                       fontSize: 13,
                       color: isOutOfStock
                           ? const Color(0xFFB91C1C)
-                          : AppTheme.textPrimaryLight,
+                          : AppTheme.textPrimaryDark,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -833,7 +833,7 @@ class _RedesignedProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 11,
-                      color: AppTheme.textMutedLight,
+                      color: AppTheme.textMutedDark,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -879,7 +879,7 @@ class _RedesignedProductCard extends StatelessWidget {
                           style: GoogleFonts.lexend(
                             fontWeight: FontWeight.w800,
                             color: isOutOfStock
-                                ? AppTheme.textMutedLight
+                                ? AppTheme.textMutedDark
                                 : AppTheme.jadeTosca,
                             fontSize: 13.5,
                           ),
@@ -889,7 +889,7 @@ class _RedesignedProductCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: isOutOfStock
-                              ? AppTheme.lightCardSurfaceElevated
+                              ? AppTheme.darkCardSurfaceElevated
                               : AppTheme.jadeTosca,
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -901,7 +901,7 @@ class _RedesignedProductCard extends StatelessWidget {
                                   ? Icons.block_rounded
                                   : Icons.add,
                               color: isOutOfStock
-                                  ? AppTheme.textMutedLight
+                                  ? AppTheme.textMutedDark
                                   : Colors.white,
                               size: 14,
                             ),
@@ -946,7 +946,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
     final notifier = ref.read(posCartProvider.notifier);
 
     return Container(
-      color: AppTheme.lightCardSurface,
+      color: AppTheme.darkCardSurface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -965,7 +965,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: AppTheme.textPrimaryLight,
+                        color: AppTheme.textPrimaryDark,
                       ),
                     ),
                   ],
@@ -973,7 +973,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppTheme.lightCardSurfaceElevated,
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -988,7 +988,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.lightCardBorder),
+          const Divider(height: 1, color: AppTheme.darkCardBorder),
 
           // Items List
           Expanded(
@@ -1002,7 +1002,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                           Icon(
                             Icons.remove_shopping_cart_outlined,
                             size: 40,
-                            color: AppTheme.textMutedLight.withValues(alpha: 0.5),
+                            color: AppTheme.textMutedDark.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 10),
                           Text(
@@ -1010,7 +1010,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                             style: GoogleFonts.lexend(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textMutedLight,
+                              color: AppTheme.textMutedDark,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1019,7 +1019,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                             textAlign: TextAlign.center,
                             style: GoogleFonts.lexend(
                               fontSize: 11.5,
-                              color: AppTheme.textMutedLight,
+                              color: AppTheme.textMutedDark,
                             ),
                           ),
                         ],
@@ -1029,7 +1029,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     itemCount: cartState.items.length,
-                    separatorBuilder: (_, _) => const Divider(height: 12, color: AppTheme.lightCardBorder),
+                    separatorBuilder: (_, _) => const Divider(height: 12, color: AppTheme.darkCardBorder),
                     itemBuilder: (context, i) {
                       final item = cartState.items[i];
                       return Row(
@@ -1043,7 +1043,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                                   style: GoogleFonts.lexend(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12.5,
-                                    color: AppTheme.textPrimaryLight,
+                                    color: AppTheme.textPrimaryDark,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1053,7 +1053,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                                   MoneyFormatter.format(item.unitPriceIdr),
                                   style: GoogleFonts.lexend(
                                     fontSize: 11,
-                                    color: AppTheme.textMutedLight,
+                                    color: AppTheme.textMutedDark,
                                   ),
                                 ),
                               ],
@@ -1061,7 +1061,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                           ),
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline, size: 18),
-                            color: AppTheme.textMutedLight,
+                            color: AppTheme.textMutedDark,
                             onPressed: () => notifier.decrementProduct(item.productId),
                             tooltip: 'Kurangi',
                             visualDensity: VisualDensity.compact,
@@ -1071,7 +1071,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                             style: GoogleFonts.lexend(
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
-                              color: AppTheme.textPrimaryLight,
+                              color: AppTheme.textPrimaryDark,
                             ),
                           ),
                           IconButton(
@@ -1094,7 +1094,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                               style: GoogleFonts.lexend(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
-                                color: AppTheme.textPrimaryLight,
+                                color: AppTheme.textPrimaryDark,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1110,9 +1110,9 @@ class _PosCartDesktopPanel extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: AppTheme.lightCardSurfaceElevated,
+              color: AppTheme.darkCardSurfaceElevated,
               border: Border(
-                top: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
               ),
             ),
             child: Column(
@@ -1120,7 +1120,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Subtotal', style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedLight)),
+                    Text('Subtotal', style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark)),
                     MoneyText(
                       cartState.subtotalIdr,
                       style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 12.5),
@@ -1141,7 +1141,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 8),
-                const Divider(height: 1, color: AppTheme.lightCardBorder),
+                const Divider(height: 1, color: AppTheme.darkCardBorder),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

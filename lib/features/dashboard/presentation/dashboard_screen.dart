@@ -29,7 +29,7 @@ class DashboardScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.textPrimaryLight,
+            backgroundColor: AppTheme.textPrimaryDark,
             content: Row(
               children: [
                 const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
@@ -74,20 +74,20 @@ class DashboardScreen extends ConsumerWidget {
             : 'Cabang');
 
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        backgroundColor: AppTheme.lightCardSurface,
+        backgroundColor: AppTheme.darkCardSurface,
         scrolledUnderElevation: 0,
         elevation: 0,
         shape: const Border(
-          bottom: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+          bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
         ),
         title: Text(
           'Beranda',
           style: GoogleFonts.lexend(
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
-            color: AppTheme.textPrimaryLight,
+            color: AppTheme.textPrimaryDark,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -103,9 +103,9 @@ class DashboardScreen extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.lightCardSurfaceElevated,
+                color: AppTheme.darkCardSurfaceElevated,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.lightCardBorder),
+                border: Border.all(color: AppTheme.darkCardBorder),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -135,9 +135,9 @@ class DashboardScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
             decoration: BoxDecoration(
-              color: AppTheme.lightCardSurfaceElevated,
+              color: AppTheme.darkCardSurfaceElevated,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.lightCardBorder),
+              border: Border.all(color: AppTheme.darkCardBorder),
             ),
             child: Text(
               currentTimezone.contains('Jakarta')
@@ -148,7 +148,7 @@ class DashboardScreen extends ConsumerWidget {
               style: GoogleFonts.lexend(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textMutedLight,
+                color: AppTheme.textMutedDark,
               ),
             ),
           ),
@@ -169,7 +169,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
               child: const Icon(
                 Icons.notifications_outlined,
-                color: AppTheme.textPrimaryLight,
+                color: AppTheme.textPrimaryDark,
                 size: 21,
               ),
             ),
@@ -179,7 +179,7 @@ class DashboardScreen extends ConsumerWidget {
 
           // Refresh Button
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryLight, size: 21),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryDark, size: 21),
             tooltip: 'Segarkan Data',
             onPressed: () {
               ref.invalidate(analyticsOverviewProvider);
@@ -193,7 +193,7 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         color: AppTheme.jadeTosca,
-        backgroundColor: AppTheme.lightCardSurface,
+        backgroundColor: AppTheme.darkCardSurface,
         onRefresh: () async {
           ref.invalidate(analyticsOverviewProvider);
           ref.invalidate(salesTrendProvider);
@@ -252,7 +252,7 @@ class DashboardScreen extends ConsumerWidget {
                       style: GoogleFonts.lexend(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: AppTheme.textPrimaryLight,
+                        color: AppTheme.textPrimaryDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -309,7 +309,7 @@ class DashboardScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightCardSurface,
+                  color: AppTheme.darkCardSurface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: AppTheme.jadeTosca.withValues(alpha: 0.35),
@@ -334,7 +334,7 @@ class DashboardScreen extends ConsumerWidget {
                           Text(
                             'Decision Support System Siaga',
                             style: GoogleFonts.lexend(
-                              color: AppTheme.textPrimaryLight,
+                              color: AppTheme.textPrimaryDark,
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
                             ),
@@ -345,7 +345,7 @@ class DashboardScreen extends ConsumerWidget {
                           Text(
                             'Gunakan tab AI Assistant untuk analisis proyeksi omset, rekomendasi stok, atau audit rantai integritas.',
                             style: GoogleFonts.lexend(
-                              color: AppTheme.textMutedLight,
+                              color: AppTheme.textMutedDark,
                               fontSize: 12,
                               height: 1.35,
                             ),
@@ -382,9 +382,9 @@ class _ExecutiveHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Row(
         children: [
@@ -419,7 +419,7 @@ class _ExecutiveHeaderCard extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimaryLight,
+                    color: AppTheme.textPrimaryDark,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -432,7 +432,7 @@ class _ExecutiveHeaderCard extends StatelessWidget {
                         '$selectedOutletName • ${user?.role.toDisplayString() ?? ""}',
                         style: GoogleFonts.lexend(
                           fontSize: 12,
-                          color: AppTheme.textMutedLight,
+                          color: AppTheme.textMutedDark,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -495,9 +495,9 @@ class _DashboardFilterBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -509,15 +509,15 @@ class _DashboardFilterBar extends StatelessWidget {
           final outletDropdown = Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             decoration: BoxDecoration(
-              color: AppTheme.lightCardSurfaceElevated,
+              color: AppTheme.darkCardSurfaceElevated,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String?>(
                 value: effectiveOutletValue,
                 isExpanded: true,
-                dropdownColor: AppTheme.lightCardSurface,
+                dropdownColor: AppTheme.darkCardSurface,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppTheme.jadeTosca),
                 items: [
                   DropdownMenuItem<String?>(
@@ -532,7 +532,7 @@ class _DashboardFilterBar extends StatelessWidget {
                             style: GoogleFonts.lexend(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimaryLight,
+                              color: AppTheme.textPrimaryDark,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -546,12 +546,12 @@ class _DashboardFilterBar extends StatelessWidget {
                       value: outlet.id,
                       child: Row(
                         children: [
-                          const Icon(Icons.store_rounded, size: 16, color: AppTheme.textMutedLight),
+                          const Icon(Icons.store_rounded, size: 16, color: AppTheme.textMutedDark),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               outlet.name,
-                              style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textPrimaryLight),
+                              style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textPrimaryDark),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -569,15 +569,15 @@ class _DashboardFilterBar extends StatelessWidget {
           final dateDropdown = Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             decoration: BoxDecoration(
-              color: AppTheme.lightCardSurfaceElevated,
+              color: AppTheme.darkCardSurfaceElevated,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<DashboardDateFilter>(
                 value: selectedDateFilter,
                 isExpanded: true,
-                dropdownColor: AppTheme.lightCardSurface,
+                dropdownColor: AppTheme.darkCardSurface,
                 icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppTheme.jadeTosca),
                 items: DashboardDateFilter.values.map((filter) {
                   return DropdownMenuItem<DashboardDateFilter>(
@@ -592,7 +592,7 @@ class _DashboardFilterBar extends StatelessWidget {
                             style: GoogleFonts.lexend(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimaryLight,
+                              color: AppTheme.textPrimaryDark,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -675,9 +675,9 @@ class _DailyProfitComparisonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -706,7 +706,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                             style: GoogleFonts.lexend(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimaryLight,
+                              color: AppTheme.textPrimaryDark,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -715,7 +715,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                             'Hari Ini vs Hari Kemarin ($selectedOutletName)',
                             style: GoogleFonts.lexend(
                               fontSize: 11,
-                              color: AppTheme.textMutedLight,
+                              color: AppTheme.textMutedDark,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -754,7 +754,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 14),
-          const Divider(height: 1, color: AppTheme.lightCardBorder),
+          const Divider(height: 1, color: AppTheme.darkCardBorder),
           const SizedBox(height: 14),
 
           // Nilai Laba Hari Ini vs Kemarin
@@ -765,9 +765,9 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.lightCardSurfaceElevated,
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+                    border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,7 +789,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textMutedLight,
+                                color: AppTheme.textMutedDark,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -803,7 +803,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                         style: GoogleFonts.lexend(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimaryLight,
+                          color: AppTheme.textPrimaryDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -811,7 +811,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Omset: ${comparison.formattedTodayRevenue}',
-                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedLight),
+                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -826,9 +826,9 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.lightCardSurfaceElevated,
+                    color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+                    border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +850,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                               style: GoogleFonts.lexend(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textMutedLight,
+                                color: AppTheme.textMutedDark,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -864,7 +864,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                         style: GoogleFonts.lexend(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textSecondaryLight,
+                          color: AppTheme.textSecondaryDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -872,7 +872,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Omset: ${comparison.formattedYesterdayRevenue}',
-                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedLight),
+                        style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -889,9 +889,9 @@ class _DailyProfitComparisonCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.lightCardSurfaceElevated,
+              color: AppTheme.darkCardSurfaceElevated,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
             ),
             child: Row(
               children: [
@@ -900,7 +900,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                 Expanded(
                   child: Text.rich(
                     TextSpan(
-                      style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textPrimaryLight),
+                      style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textPrimaryDark),
                       children: [
                         const TextSpan(text: 'Perbedaan Laba: '),
                         TextSpan(
@@ -913,7 +913,7 @@ class _DailyProfitComparisonCard extends StatelessWidget {
                         TextSpan(
                           text: ' (${comparison.formattedProfitPct}) dibanding kemarin',
                           style: GoogleFonts.lexend(
-                            color: AppTheme.textMutedLight,
+                            color: AppTheme.textMutedDark,
                             fontSize: 11.5,
                           ),
                         ),
@@ -1004,9 +1004,9 @@ class _BentoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1027,7 +1027,7 @@ class _BentoCard extends StatelessWidget {
                   title,
                   style: GoogleFonts.lexend(
                     fontSize: 12,
-                    color: AppTheme.textMutedLight,
+                    color: AppTheme.textMutedDark,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -1042,7 +1042,7 @@ class _BentoCard extends StatelessWidget {
             style: GoogleFonts.lexend(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimaryLight,
+              color: AppTheme.textPrimaryDark,
               letterSpacing: -0.5,
             ),
             maxLines: 1,
@@ -1068,9 +1068,9 @@ class _BlockchainIntegrityCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1095,7 +1095,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
                   'Integritas Blockchain',
                   style: GoogleFonts.lexend(
                     fontSize: 12,
-                    color: AppTheme.textMutedLight,
+                    color: AppTheme.textMutedDark,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -1128,9 +1128,9 @@ class _BlockchainIntegrityCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: AppTheme.lightCardSurfaceElevated,
+                color: AppTheme.darkCardSurfaceElevated,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.lightCardBorder),
+                border: Border.all(color: AppTheme.darkCardBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1140,7 +1140,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
                     'Estimasi Margin (${kpi.grossMarginPct ?? 0}%)',
                     style: GoogleFonts.lexend(
                       fontSize: 10,
-                      color: AppTheme.textMutedLight,
+                      color: AppTheme.textMutedDark,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1151,7 +1151,7 @@ class _BlockchainIntegrityCard extends StatelessWidget {
                     style: GoogleFonts.lexend(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimaryLight,
+                      color: AppTheme.textPrimaryDark,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1185,9 +1185,9 @@ class _OperationalTrendsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1204,7 +1204,7 @@ class _OperationalTrendsCard extends StatelessWidget {
                       style: GoogleFonts.lexend(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimaryLight,
+                        color: AppTheme.textPrimaryDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1214,7 +1214,7 @@ class _OperationalTrendsCard extends StatelessWidget {
                       'Puncak: Rp ${(maxRevenue / 1000).toStringAsFixed(0)}k • Tilt/Shake aktif',
                       style: GoogleFonts.lexend(
                         fontSize: 11,
-                        color: AppTheme.textMutedLight,
+                        color: AppTheme.textMutedDark,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1226,9 +1226,9 @@ class _OperationalTrendsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightCardSurfaceElevated,
+                  color: AppTheme.darkCardSurfaceElevated,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.lightCardBorder),
+                  border: Border.all(color: AppTheme.darkCardBorder),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1255,7 +1255,7 @@ class _OperationalTrendsCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   'Belum ada data tren omset.',
-                  style: GoogleFonts.lexend(color: AppTheme.textMutedLight, fontSize: 13),
+                  style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13),
                 ),
               ),
             )
@@ -1278,7 +1278,7 @@ class _OperationalTrendsCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.lexend(
                       fontSize: 10.5,
-                      color: AppTheme.textMutedLight,
+                      color: AppTheme.textMutedDark,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -1321,7 +1321,7 @@ class _PeriodPill extends StatelessWidget {
           style: GoogleFonts.lexend(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : AppTheme.textMutedLight,
+            color: isSelected ? Colors.white : AppTheme.textMutedDark,
           ),
         ),
       ),
@@ -1340,9 +1340,9 @@ class _CriticalStockActionCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1368,7 +1368,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                         style: GoogleFonts.lexend(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimaryLight,
+                          color: AppTheme.textPrimaryDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1428,10 +1428,10 @@ class _CriticalStockActionCard extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: AppTheme.lightCardSurfaceElevated,
+                        color: AppTheme.darkCardSurfaceElevated,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isOut ? const Color(0xFFFCA5A5) : AppTheme.lightCardBorder,
+                          color: isOut ? const Color(0xFFFCA5A5) : AppTheme.darkCardBorder,
                         ),
                       ),
                       child: Row(
@@ -1460,7 +1460,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                                   style: GoogleFonts.lexend(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimaryLight,
+                                    color: AppTheme.textPrimaryDark,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1469,7 +1469,7 @@ class _CriticalStockActionCard extends ConsumerWidget {
                                   'Sisa: ${ing.stockQty} ${ing.unit} (Min: ${ing.reorderLevel})',
                                   style: GoogleFonts.lexend(
                                     fontSize: 11,
-                                    color: AppTheme.textMutedLight,
+                                    color: AppTheme.textMutedDark,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1517,9 +1517,9 @@ class _PerformanceStorageRow extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.lightCardSurface,
+        color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1533,7 +1533,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimaryLight,
+                    color: AppTheme.textPrimaryDark,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1551,7 +1551,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
               if (ingredients.isEmpty) {
                 return Text(
                   'Data inventaris belum terisi.',
-                  style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedLight),
+                  style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
                 );
               }
               final safeCount = ingredients.where((i) => !i.isLowStock && !i.isOutOfStock).length;
@@ -1567,7 +1567,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           'Rasio Bahan Baku Siap Pakai',
-                          style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedLight),
+                          style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1596,7 +1596,7 @@ class _PerformanceStorageRow extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     '$safeCount dari $totalCount bahan baku dalam kuantitas aman',
-                    style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedLight),
+                    style: GoogleFonts.lexend(fontSize: 10.5, color: AppTheme.textMutedDark),
                   ),
                 ],
               );

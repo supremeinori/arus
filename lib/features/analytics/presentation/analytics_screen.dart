@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/async_state_view.dart';
@@ -16,18 +17,33 @@ class AnalyticsScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(analyticsOverviewProvider);
     final peakHoursAsync = ref.watch(peakHoursProvider);
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+    final scaffold = Scaffold(
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        backgroundColor: AppTheme.darkBackground,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1.0),
+          child: Divider(
+            height: 1.0,
+            thickness: 1.0,
+            color: AppTheme.darkCardBorder,
+          ),
+        ),
         title: Text(
           'Analitik Performa',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.lexend(
+            fontWeight: FontWeight.w700,
+            fontSize: 16.5,
+            color: AppTheme.textPrimaryDark,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryDark),
             tooltip: 'Segarkan',
             onPressed: () {
               ref.invalidate(analyticsOverviewProvider);
@@ -37,7 +53,8 @@ class AnalyticsScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        color: AppTheme.primaryBlue,
+        color: AppTheme.jadeTosca,
+        backgroundColor: AppTheme.darkCardSurfaceElevated,
         onRefresh: () async {
           ref.invalidate(analyticsOverviewProvider);
           ref.invalidate(peakHoursProvider);
@@ -63,7 +80,7 @@ class AnalyticsScreen extends ConsumerWidget {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -71,7 +88,7 @@ class AnalyticsScreen extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               'Gunakan data ini untuk penyesuaian jadwal kasir & persiapan persediaan bahan.',
-              style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+              style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -89,10 +106,18 @@ class AnalyticsScreen extends ConsumerWidget {
         ),
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
   }
 }
 
-/// Kartu ringkasan analitik — widget class top-level (aturan E23).
+/// Kartu ringkasan analitik — memakai ShadCard
 class _OverviewCard extends StatelessWidget {
   final AnalyticsOverviewModel kpi;
 
@@ -100,13 +125,8 @@ class _OverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ShadCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.darkCardSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -193,37 +213,33 @@ class _PeakHoursList extends StatelessWidget {
     // List kecil dan tetap (maks 6 item) — render inline tanpa scroll bersarang (aturan A4).
     return Column(
       children: busiestHours.take(6).map((h) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppTheme.darkCardSurface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.jadeTosca.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.jadeTosca.withValues(alpha: 0.3), width: 1.0),
-                ),
-                child: Center(
-                  child: Text(
-                    h.label.split(':')[0],
-                    style: GoogleFonts.lexend(
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.jadeTosca,
-                      fontSize: 14,
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: ShadCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.jadeTosca.withValues(alpha: 0.3), width: 1.0),
+                  ),
+                  child: Center(
+                    child: Text(
+                      h.label.split(':')[0],
+                      style: GoogleFonts.lexend(
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.jadeTosca,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -263,8 +279,9 @@ class _PeakHoursList extends StatelessWidget {
               ),
             ],
           ),
-        );
-      }).toList(),
-    );
+        ),
+      );
+    }).toList(),
+  );
   }
 }

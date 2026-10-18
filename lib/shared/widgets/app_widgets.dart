@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 
@@ -92,7 +93,7 @@ class AppDropdown<T> extends StatelessWidget {
   }
 }
 
-/// Tombol utama ARUS — memakai elevatedButtonTheme global (F27).
+/// Tombol utama ARUS — memakai ShadButton dengan aksen Jade Tosca
 class PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -109,20 +110,30 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
+    final button = ShadButton(
+      width: double.infinity,
       onPressed: isLoading ? null : onPressed,
-      icon: isLoading
+      leading: isLoading
           ? const SizedBox(
-              width: 18, height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
             )
-          : (icon != null ? Icon(icon, size: 18) : const SizedBox.shrink()),
-      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          : (icon != null ? Icon(icon, size: 16) : null),
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeLight,
+        child: button,
+      );
+    }
+    return button;
   }
 }
 
-/// Kartu KPI standar — dipakai dashboard/analytics/shift/reports (ganti helper _buildX).
+/// Kartu KPI standar — memakai ShadCard dengan border tipis dan aksen Jade Tosca
 class KpiCard extends StatelessWidget {
   final String title;
   final String value;
@@ -141,53 +152,60 @@ class KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = accentColor ?? AppTheme.primaryBlue;
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, size: 20, color: accent),
+    final accent = accentColor ?? AppTheme.jadeTosca;
+    final card = InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: ShadCard(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.lexend(
-                  fontSize: 20, fontWeight: FontWeight.w800,
-                  color: AppTheme.accentBlack,
+                  child: Icon(icon, size: 20, color: accent),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.lexend(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimaryDark,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeLight,
+        child: card,
+      );
+    }
+    return card;
   }
 }
 

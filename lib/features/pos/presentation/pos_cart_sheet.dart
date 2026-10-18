@@ -25,8 +25,11 @@ class PosCartSheet extends ConsumerWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        border: Border(
+          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -36,20 +39,20 @@ class PosCartSheet extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Keranjang (${cart.totalItemsCount} item)',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16)),
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark)),
               IconButton(
-                icon: const Icon(Icons.close_rounded),
+                icon: const Icon(Icons.close_rounded, color: AppTheme.textPrimaryDark),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
           ),
-          const Divider(),
+          const Divider(color: AppTheme.darkCardBorder, thickness: 1.0),
           if (cart.items.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text('Keranjang kosong.',
-                    style: GoogleFonts.lexend(color: AppTheme.textMuted)),
+                    style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
               ),
             )
           else
@@ -60,7 +63,7 @@ class PosCartSheet extends ConsumerWidget {
                 separatorBuilder: (context, index) => const Divider(height: 12),
                 itemBuilder: (_, i) {
                   final item = cart.items[i];
-                  return Row(
+                    return Row(
                     children: [
                       Expanded(
                         child: Column(
@@ -70,26 +73,26 @@ class PosCartSheet extends ConsumerWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.lexend(
-                                    fontWeight: FontWeight.w600, fontSize: 13)),
+                                    fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimaryDark)),
                             Text(MoneyFormatter.format(item.unitPriceIdr),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.lexend(
-                                    fontSize: 11.5, color: AppTheme.textMuted)),
+                                    fontSize: 11.5, color: AppTheme.textMutedDark)),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.remove_circle_outline, size: 20),
+                        icon: const Icon(Icons.remove_circle_outline, size: 20, color: AppTheme.textMutedDark),
                         onPressed: () => notifier.decrementProduct(item.productId),
                         tooltip: 'Kurangi',
                       ),
                       Text('${item.quantity}',
                           style: GoogleFonts.lexend(
-                              fontWeight: FontWeight.w700, fontSize: 14)),
+                              fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark)),
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline,
-                            size: 20, color: AppTheme.primaryBlue),
+                            size: 20, color: AppTheme.jadeTosca),
                         onPressed: () => notifier.addProductById(item.productId),
                         tooltip: 'Tambah',
                       ),
@@ -106,34 +109,34 @@ class PosCartSheet extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
                             style: GoogleFonts.lexend(
-                                fontWeight: FontWeight.w700, fontSize: 13)),
+                                fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textPrimaryDark)),
                       ),
                     ],
                   );
                 },
               ),
             ),
-          const Divider(),
+          const Divider(color: AppTheme.darkCardBorder, thickness: 1.0),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13)),
+            Text('Subtotal', style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark)),
             MoneyText(cart.subtotalIdr,
-                style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13)),
+                style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimaryDark)),
           ]),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('Diskon', style: GoogleFonts.lexend(fontSize: 13)),
+            Text('Diskon', style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark)),
             Text('- ${MoneyFormatter.format(cart.discountIdr)}',
-                style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFFDC2626))),
+                style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.dangerRed)),
           ]),
           const SizedBox(height: 6),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('Total Tagihan',
-                style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15)),
+                style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark)),
             MoneyText(cart.totalIdr,
                 style: GoogleFonts.lexend(
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
-                    color: AppTheme.primaryBlue)),
+                    color: AppTheme.jadeTosca)),
           ]),
         ],
       ),

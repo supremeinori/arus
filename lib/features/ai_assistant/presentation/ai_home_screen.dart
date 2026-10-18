@@ -142,7 +142,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(8),
@@ -154,7 +154,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => const Icon(
                 Icons.smart_toy_outlined,
-                color: AppTheme.primaryBlue,
+                color: AppTheme.jadeTosca,
                 size: 20,
               ),
             ),
@@ -173,7 +173,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
             if (outlets.isNotEmpty)
               Text(
                 'Cabang: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
-                style: GoogleFonts.lexend(fontSize: 11, color: const Color(0xFF64748B)),
+                style: GoogleFonts.lexend(fontSize: 11, color: AppTheme.textMutedDark),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -182,7 +182,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
         actions: [
           if (!_isVoiceMode)
             IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
+              icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryDark),
               tooltip: 'Mulai Percakapan Baru',
               onPressed: () {
                 ref.read(aiChatProvider.notifier).startNewChat();
@@ -201,7 +201,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     decoration: const BoxDecoration(
                       color: Color(0xFFFEF2F2),
                       border: Border(
-                        bottom: BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                        bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.5),
                       ),
                     ),
                     child: Row(
@@ -241,7 +241,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.5),
+              border: Border.all(color: AppTheme.darkCardBorder, width: 1.5),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(6),
@@ -253,7 +253,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.analytics_outlined,
                   size: 42,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.jadeTosca,
                 ),
               ),
             ),
@@ -261,13 +261,13 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           const SizedBox(height: 16),
           Text(
             'ARUS AI Decision Support',
-            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+            style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
           ),
           const SizedBox(height: 8),
           Text(
             'Asisten analitik cerdas berbasis data riil (Anti-Halusinasi). Tanyakan omset, status stok, jam ramai, hingga performa gerai cabang.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.lexend(color: const Color(0xFF475569), fontSize: 13, height: 1.4),
+            style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 28),
           Align(
@@ -276,7 +276,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
               'Rekomendasi Pertanyaan Cepat:',
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
                 fontSize: 12,
               ),
             ),

@@ -43,7 +43,7 @@ class UserManagementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Manajemen Pengguna & Tim',
@@ -57,7 +57,7 @@ class UserManagementScreen extends StatelessWidget {
         children: [
           Text(
             'Daftar Anggota & Hak Akses Toko',
-            style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF64748B)),
+            style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -77,7 +77,7 @@ class UserManagementScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+                border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
               ),
               child: Row(
                 children: [
@@ -101,13 +101,13 @@ class UserManagementScreen extends StatelessWidget {
                       children: [
                         Text(
                           u['name'],
-                          style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                          style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           u['email'],
-                          style: GoogleFonts.lexend(fontSize: 12, color: const Color(0xFF64748B)),
+                          style: GoogleFonts.lexend(fontSize: 12, color: AppTheme.textMutedDark),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

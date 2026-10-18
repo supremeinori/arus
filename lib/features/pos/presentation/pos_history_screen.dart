@@ -100,7 +100,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text('Riwayat Transaksi Hari Ini',
             maxLines: 1,
@@ -167,7 +167,7 @@ class _HistoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: voided ? const Color(0xFFF8FAFC) : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.borderOutline),
+        border: Border.all(color: AppTheme.darkCardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

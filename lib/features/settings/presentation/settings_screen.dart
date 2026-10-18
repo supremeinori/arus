@@ -155,7 +155,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final timePreview = TimezoneConverter.formatTime(nowUtc, currentTimezone);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Pengaturan Kurs & Waktu',
@@ -175,7 +175,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
               ),
             ),
             const SizedBox(height: 4),
@@ -185,7 +185,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.lexend(
                 fontSize: 12,
-                color: const Color(0xFF64748B),
+                color: AppTheme.textMutedDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -235,7 +235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Divider(
                     height: 1,
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     thickness: 1,
                   ),
                   ListTile(
@@ -459,7 +459,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: GoogleFonts.lexend(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.accentBlack,
+                      color: AppTheme.textPrimaryDark,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -703,7 +703,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
               ),
             ),
             const SizedBox(height: 4),
@@ -713,7 +713,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.lexend(
                 fontSize: 12,
-                color: const Color(0xFF64748B),
+                color: AppTheme.textMutedDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -928,7 +928,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
               ),
             ),
             const SizedBox(height: 4),
@@ -938,7 +938,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.lexend(
                 fontSize: 12,
-                color: const Color(0xFF64748B),
+                color: AppTheme.textMutedDark,
               ),
             ),
             const SizedBox(height: 12),

@@ -103,7 +103,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.accentBlack,
+            backgroundColor: AppTheme.textPrimaryDark,
             content: Text('Bahan baku “${item.name}” telah dihapus.', style: GoogleFonts.lexend()),
           ),
         );
@@ -120,7 +120,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.accentBlack,
+            backgroundColor: AppTheme.textPrimaryDark,
             content: Row(
               children: [
                 const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
@@ -150,7 +150,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final outletsAsync = ref.watch(outletsListProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           isStaff ? 'Stok & Estimasi Porsi' : 'Bahan Baku & Inventaris',
@@ -159,7 +159,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         actions: [
           if (!isStaff)
             IconButton(
-              icon: const Icon(Icons.history_rounded, color: AppTheme.accentBlack),
+              icon: const Icon(Icons.history_rounded, color: AppTheme.textPrimaryDark),
               tooltip: 'Riwayat Mutasi',
               onPressed: () {
                 Navigator.of(context).push(
@@ -170,7 +170,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppTheme.accentBlack),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryDark),
             tooltip: 'Segarkan',
             onPressed: () {
               ref.invalidate(ingredientsListProvider);
@@ -358,7 +358,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   }
 
                   return RefreshIndicator(
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     onRefresh: () async => ref.invalidate(ingredientsListProvider),
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),

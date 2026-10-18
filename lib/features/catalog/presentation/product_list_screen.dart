@@ -62,15 +62,15 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.5),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.5),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: AppTheme.primaryBlue, width: 2),
+                  borderSide: const BorderSide(color: AppTheme.jadeTosca, width: 2),
                 ),
               ),
               onChanged: (val) {

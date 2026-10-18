@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/config/env.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/l10n/strings_id.dart';
@@ -64,17 +65,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final shouldEnable = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          builder: (ctx) => ShadDialog(
             title: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.lightBlueBg,
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppTheme.jadeTosca.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.fingerprint_rounded, color: AppTheme.primaryBlue, size: 28),
+                  child: const Icon(Icons.fingerprint_rounded, color: AppTheme.jadeTosca, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -87,32 +87,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ],
             ),
-            content: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
-              child: Text(
-                'Aktifkan login biometrik untuk akses lebih cepat?',
-                style: GoogleFonts.lexend(fontSize: 13.5, color: const Color(0xFF475569), height: 1.4),
-              ),
+            description: Text(
+              'Aktifkan login biometrik untuk akses lebih cepat dan aman.',
+              style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark, height: 1.4),
             ),
             actions: [
-              TextButton(
+              ShadButton.ghost(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text(
-                  'Nanti Saja',
-                  style: GoogleFonts.lexend(color: AppTheme.textMuted, fontWeight: FontWeight.w600),
-                ),
+                child: Text('Nanti Saja', style: GoogleFonts.lexend(color: AppTheme.textMutedDark, fontWeight: FontWeight.w600)),
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                ),
+              ShadButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: Text(
-                  'Ya, Aktifkan',
-                  style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700),
-                ),
+                child: Text('Ya, Aktifkan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -419,59 +405,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        return AlertDialog(
-          backgroundColor: AppTheme.darkCardSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppTheme.darkCardBorder),
-          ),
+        return ShadDialog(
           title: Row(
             children: [
-              const Icon(Icons.settings_ethernet_rounded, color: AppTheme.jadeTosca, size: 24),
+              const Icon(Icons.settings_ethernet_rounded, color: AppTheme.jadeTosca, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Alamat Web Service',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.lexend(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark),
-                ),
-                const SizedBox(height: 14),
-                AppTextField(
-                  controller: _serverController,
-                  labelText: 'URL Server Backend',
-                  hintText: 'http://10.3.25.69:5000/api',
-                  prefixIcon: Icons.link,
-                ),
-              ],
-            ),
+          description: Text(
+            'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark),
           ),
           actions: [
-            TextButton(
+            ShadButton.outline(
               onPressed: () => Navigator.pop(dialogCtx),
               child: Text('Batal', style: GoogleFonts.lexend(color: AppTheme.textMutedDark)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.jadeTosca,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
+            ShadButton(
               onPressed: () {
                 final newUrl = _serverController.text.trim();
                 if (newUrl.isNotEmpty) {
@@ -492,9 +452,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   );
                 }
               },
-              child: Text('Simpan & Hubungkan', style: GoogleFonts.lexend(fontWeight: FontWeight.w600)),
+              child: Text('Simpan & Hubungkan', style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: AppTextField(
+              controller: _serverController,
+              labelText: 'URL Server Backend',
+              hintText: 'http://10.3.25.69:5000/api',
+              prefixIcon: Icons.link,
+            ),
+          ),
         );
       },
     );

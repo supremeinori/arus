@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../core/theme/app_theme.dart';
 
 class EmptyStateView extends StatelessWidget {
@@ -18,7 +19,7 @@ class EmptyStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final view = Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -46,7 +47,7 @@ class EmptyStateView extends StatelessWidget {
             ),
             if (ctaText != null && onCtaPressed != null) ...[
               const SizedBox(height: 20),
-              OutlinedButton(
+              ShadButton.outline(
                 onPressed: onCtaPressed,
                 child: Text(ctaText!),
               ),
@@ -55,5 +56,13 @@ class EmptyStateView extends StatelessWidget {
         ),
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeLight,
+        child: view,
+      );
+    }
+    return view;
   }
 }

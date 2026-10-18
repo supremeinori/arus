@@ -24,7 +24,7 @@ class InsightsScreen extends ConsumerWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            backgroundColor: AppTheme.accentBlack,
+            backgroundColor: AppTheme.textPrimaryDark,
           ),
         );
       }

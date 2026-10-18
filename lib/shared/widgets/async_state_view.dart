@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../core/network/app_exception.dart';
 import '../../core/l10n/strings_id.dart';
 import '../../core/theme/app_theme.dart';
@@ -55,26 +56,21 @@ class AsyncStateView<T> extends StatelessWidget {
         final message = err is AppException ? err.message : err.toString();
         final code = err is AppException ? err.code : 'ERROR';
 
-        return Center(
+        final content = Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Container(
+            child: ShadCard(
               padding: const EdgeInsets.all(20.0),
-              decoration: BoxDecoration(
-                color: AppTheme.darkCardSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0x33EF4444), width: 1.0),
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                      color: Color(0x26EF4444),
+                    decoration: BoxDecoration(
+                      color: AppTheme.dangerRed.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 32),
+                    child: const Icon(Icons.error_outline_rounded, color: AppTheme.dangerRed, size: 32),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -97,15 +93,10 @@ class AsyncStateView<T> extends StatelessWidget {
                   ),
                   if (onRetry != null) ...[
                     const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        foregroundColor: AppTheme.textPrimaryDark,
-                        side: const BorderSide(color: AppTheme.darkCardBorder),
-                      ),
+                    ShadButton.outline(
                       onPressed: onRetry,
-                      icon: const Icon(Icons.refresh_rounded, size: 16, color: AppTheme.jadeTosca),
-                      label: const Text(StringsId.retry),
+                      leading: const Icon(Icons.refresh_rounded, size: 16, color: AppTheme.jadeTosca),
+                      child: const Text(StringsId.retry),
                     ),
                   ],
                 ],
@@ -113,6 +104,14 @@ class AsyncStateView<T> extends StatelessWidget {
             ),
           ),
         );
+
+        if (ShadTheme.maybeOf(context) == null) {
+          return ShadTheme(
+            data: AppTheme.shadcnThemeLight,
+            child: content,
+          );
+        }
+        return content;
       },
     );
   }

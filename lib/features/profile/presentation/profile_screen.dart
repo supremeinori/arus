@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
@@ -19,8 +20,8 @@ class ProfileScreen extends ConsumerWidget {
     final user = authState.user;
     final currentThreshold = ref.watch(shakeThresholdProvider);
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+    final scaffold = Scaffold(
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Profil & Akun',
@@ -34,9 +35,9 @@ class ProfileScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.darkCardSurface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
+              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
             ),
             child: Row(
               children: [
@@ -66,7 +67,7 @@ class ProfileScreen extends ConsumerWidget {
                         style: GoogleFonts.lexend(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.textPrimaryDark,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -76,7 +77,7 @@ class ProfileScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lexend(
                           fontSize: 13,
-                          color: AppTheme.textMuted,
+                          color: AppTheme.textMutedDark,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -86,10 +87,10 @@ class ProfileScreen extends ConsumerWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.lightBlueBg,
+                          color: AppTheme.darkCardSurfaceElevated,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFBFDBFE),
+                            color: AppTheme.darkCardBorder,
                             width: 1.0,
                           ),
                         ),
@@ -100,7 +101,7 @@ class ProfileScreen extends ConsumerWidget {
                           style: GoogleFonts.lexend(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.jadeTosca,
                           ),
                         ),
                       ),
@@ -120,23 +121,23 @@ class ProfileScreen extends ConsumerWidget {
             style: GoogleFonts.lexend(
               fontWeight: FontWeight.w700,
               fontSize: 13.5,
-              color: AppTheme.accentBlack,
+              color: AppTheme.textPrimaryDark,
             ),
           ),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
-            color: Colors.white,
+            color: AppTheme.darkCardSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+              side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
             ),
             child: Column(
               children: [
                 SwitchListTile(
                   secondary: const Icon(
                     Icons.fingerprint_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   title: Text(
                     'Login Sidik Jari (Biometrik)',
@@ -153,10 +154,10 @@ class ProfileScreen extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 11.5,
-                      color: AppTheme.textMuted,
+                      color: AppTheme.textMutedDark,
                     ),
                   ),
-                  activeThumbColor: AppTheme.primaryBlue,
+                  activeThumbColor: AppTheme.jadeTosca,
                   value: user?.settings.biometricEnabled ?? false,
                   onChanged: (val) async {
                     if (val) {
@@ -176,12 +177,12 @@ class ProfileScreen extends ConsumerWidget {
                 const Divider(
                   height: 1,
                   indent: 56,
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                 ),
                 ListTile(
                   leading: const Icon(
                     Icons.vibration_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   title: Text(
                     'Sensitivitas Guncangan (Shake)',
@@ -198,7 +199,7 @@ class ProfileScreen extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 11.5,
-                      color: AppTheme.textMuted,
+                      color: AppTheme.textMutedDark,
                     ),
                   ),
                   trailing: Row(
@@ -210,10 +211,10 @@ class ProfileScreen extends ConsumerWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.lightBlueBg,
+                          color: AppTheme.darkCardSurfaceElevated,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFBFDBFE),
+                            color: AppTheme.darkCardBorder,
                             width: 1.0,
                           ),
                         ),
@@ -230,7 +231,7 @@ class ProfileScreen extends ConsumerWidget {
                           style: GoogleFonts.lexend(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.jadeTosca,
                           ),
                         ),
                       ),
@@ -238,7 +239,7 @@ class ProfileScreen extends ConsumerWidget {
                       const Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 14,
-                        color: AppTheme.textMuted,
+                        color: AppTheme.textMutedDark,
                       ),
                     ],
                   ),
@@ -258,7 +259,7 @@ class ProfileScreen extends ConsumerWidget {
               style: GoogleFonts.lexend(
                 fontWeight: FontWeight.w700,
                 fontSize: 13.5,
-                color: AppTheme.accentBlack,
+                color: AppTheme.textPrimaryDark,
               ),
             ),
             const SizedBox(height: 8),
@@ -267,19 +268,19 @@ class ProfileScreen extends ConsumerWidget {
             ...user.outlets.map(
               (o) => Card(
                 elevation: 0,
-                color: Colors.white,
+                color: AppTheme.darkCardSurface,
                 margin: const EdgeInsets.only(bottom: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: const BorderSide(
-                    color: AppTheme.borderOutline,
+                    color: AppTheme.darkCardBorder,
                     width: 1.0,
                   ),
                 ),
                 child: ListTile(
                   leading: const Icon(
                     Icons.storefront_outlined,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   title: Text(
                     o.name,
@@ -296,7 +297,7 @@ class ProfileScreen extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lexend(
                       fontSize: 12,
-                      color: AppTheme.textMuted,
+                      color: AppTheme.textMutedDark,
                     ),
                   ),
                   dense: true,
@@ -313,23 +314,23 @@ class ProfileScreen extends ConsumerWidget {
             style: GoogleFonts.lexend(
               fontWeight: FontWeight.w700,
               fontSize: 13.5,
-              color: AppTheme.accentBlack,
+              color: AppTheme.textPrimaryDark,
             ),
           ),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
-            color: Colors.white,
+            color: AppTheme.darkCardSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+              side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
             ),
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(
                     Icons.people_outline_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   title: Text(
                     'Kelola Staf & Akun',
@@ -346,25 +347,25 @@ class ProfileScreen extends ConsumerWidget {
                   //   overflow: TextOverflow.ellipsis,
                   //   style: GoogleFonts.lexend(
                   //     fontSize: 11.5,
-                  //     color: AppTheme.textMuted,
+                  //     color: AppTheme.textMutedDark,
                   //   ),
                   // ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedDark,
                   ),
                   onTap: () => context.push('/users'),
                 ),
                 const Divider(
                   height: 1,
                   indent: 56,
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                 ),
                 ListTile(
                   leading: const Icon(
                     Icons.rate_review_outlined,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   title: Text(
                     'Saran & Kesan Kuliah PAM',
@@ -381,25 +382,25 @@ class ProfileScreen extends ConsumerWidget {
                   //   overflow: TextOverflow.ellipsis,
                   //   style: GoogleFonts.lexend(
                   //     fontSize: 11.5,
-                  //     color: AppTheme.textMuted,
+                  //     color: AppTheme.textMutedDark,
                   //   ),
                   // ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedDark,
                   ),
                   onTap: () => context.push('/feedback'),
                 ),
                 const Divider(
                   height: 1,
                   indent: 56,
-                  color: AppTheme.borderOutline,
+                  color: AppTheme.darkCardBorder,
                 ),
                 ListTile(
                   leading: const Icon(
                     Icons.info_outline_rounded,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                   ),
                   title: Text(
                     'Tentang ARUS',
@@ -416,13 +417,13 @@ class ProfileScreen extends ConsumerWidget {
                   //   overflow: TextOverflow.ellipsis,
                   //   style: GoogleFonts.lexend(
                   //     fontSize: 11.5,
-                  //     color: AppTheme.textMuted,
+                  //     color: AppTheme.textMutedDark,
                   //   ),
                   // ),
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: AppTheme.textMuted,
+                    color: AppTheme.textMutedDark,
                   ),
                   onTap: () => context.push('/about'),
                 ),
@@ -432,87 +433,78 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Logout Button
-          OutlinedButton.icon(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    side: const BorderSide(
-                      color: AppTheme.borderOutline,
-                      width: 1.5,
-                    ),
-                  ),
-                  title: const Text(
-                    'Keluar dari Akun?',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  content: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 320),
-                    child: Text(
-                      'Apakah Anda yakin ingin keluar dari sesi saat ini?',
-                      style: GoogleFonts.lexend(fontSize: 13.5),
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(
-                        'Batal',
-                        style: GoogleFonts.lexend(
-                          color: const Color(0xFF64748B),
-                        ),
+          SizedBox(
+            width: double.infinity,
+            child: ShadButton.outline(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) {
+                    final dialog = ShadDialog(
+                      title: const Text(
+                        'Keluar dari Akun?',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.dangerRed,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                          side: const BorderSide(
-                            color: AppTheme.borderOutline,
-                            width: 1,
+                      description: Text(
+                        'Apakah Anda yakin ingin keluar dari sesi saat ini?',
+                        style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textMutedDark),
+                      ),
+                      actions: [
+                        ShadButton.ghost(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text(
+                            'Batal',
+                            style: GoogleFonts.lexend(color: AppTheme.textMutedDark),
                           ),
                         ),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        ref.read(authProvider.notifier).logout();
-                      },
-                      child: Text(
-                        'Keluar',
-                        style: GoogleFonts.lexend(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
+                        ShadButton.destructive(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ref.read(authProvider.notifier).logout();
+                          },
+                          child: Text(
+                            'Keluar',
+                            style: GoogleFonts.lexend(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                    if (ShadTheme.maybeOf(ctx) == null) {
+                      return ShadTheme(
+                        data: AppTheme.shadcnThemeDark,
+                        child: dialog,
+                      );
+                    }
+                    return dialog;
+                  },
+                );
+              },
+              leading: const Icon(Icons.logout, color: AppTheme.dangerRed, size: 18),
+              child: Text(
+                'Keluar Akun',
+                style: GoogleFonts.lexend(
+                  color: AppTheme.dangerRed,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
                 ),
-              );
-            },
-            icon: const Icon(Icons.logout, color: AppTheme.dangerRed, size: 18),
-            label: Text(
-              'Keluar Akun',
-              style: GoogleFonts.lexend(
-                color: AppTheme.dangerRed,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
               ),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppTheme.dangerRed, width: 1.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         ],
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
   }
 }
 
@@ -532,9 +524,9 @@ class _LetterAvatar extends StatelessWidget {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppTheme.darkCardSurfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.0),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Center(
         child: Text(
@@ -544,7 +536,7 @@ class _LetterAvatar extends StatelessWidget {
           style: GoogleFonts.lexend(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: AppTheme.primaryBlue,
+            color: AppTheme.jadeTosca,
           ),
         ),
       ),

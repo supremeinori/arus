@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/network/api_client.dart';
@@ -144,8 +145,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+    final scaffold = Scaffold(
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Saran & Kesan Kuliah PAM',
@@ -158,26 +159,21 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           // Header Card Info Kuliah
-          Container(
+          ShadCard(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderOutline),
-            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                    color: AppTheme.jadeTosca.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.darkCardBorder),
                   ),
                   child: const Icon(
                     Icons.school_outlined,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.jadeTosca,
                     size: 28,
                   ),
                 ),
@@ -191,7 +187,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                         style: GoogleFonts.lexend(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.textPrimaryDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -201,7 +197,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                         'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir (Phase 1)',
                         style: GoogleFonts.lexend(
                           fontSize: 12,
-                          color: const Color(0xFF64748B),
+                          color: AppTheme.textMutedDark,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -214,9 +210,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF0FDF4),
+                            color: AppTheme.darkCardSurfaceElevated,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                            border: Border.all(color: AppTheme.darkCardBorder),
                           ),
                           child: Text(
                             'Status: $_savedAt',
@@ -245,7 +241,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             style: GoogleFonts.lexend(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
-              color: AppTheme.accentBlack,
+              color: AppTheme.textPrimaryDark,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -263,19 +259,19 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 color: const Color(0xFF94A3B8),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppTheme.darkCardSurface,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.borderOutline),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppTheme.darkCardBorder),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.borderOutline),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppTheme.darkCardBorder),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.jadeTosca,
                   width: 1.5,
                 ),
               ),
@@ -290,7 +286,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             style: GoogleFonts.lexend(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
-              color: AppTheme.accentBlack,
+              color: AppTheme.textPrimaryDark,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -307,19 +303,19 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 color: const Color(0xFF94A3B8),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppTheme.darkCardSurface,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.borderOutline),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppTheme.darkCardBorder),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppTheme.borderOutline),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppTheme.darkCardBorder),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.jadeTosca,
                   width: 1.5,
                 ),
               ),
@@ -329,51 +325,33 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
           const SizedBox(height: 24),
 
           // Submit Button
-          ElevatedButton(
-            onPressed: _isSending ? null : _submitFeedback,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+          SizedBox(
+            width: double.infinity,
+            child: ShadButton(
+              onPressed: _isSending ? null : _submitFeedback,
+              leading: _isSending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.send_rounded, size: 18),
+              child: const Text('Simpan & Kirim Masukan'),
             ),
-            child: _isSending
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'Simpan & Kirim Masukan',
-                          style: GoogleFonts.lexend(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
           ),
         ],
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
   }
 }

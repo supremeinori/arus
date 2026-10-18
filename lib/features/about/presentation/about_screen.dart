@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -7,12 +8,27 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+    final scaffold = Scaffold(
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        backgroundColor: AppTheme.darkBackground,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1.0),
+          child: Divider(
+            height: 1.0,
+            thickness: 1.0,
+            color: AppTheme.darkCardBorder,
+          ),
+        ),
         title: Text(
           'Tentang Aplikasi ARUS',
-          style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.lexend(
+            fontWeight: FontWeight.w700,
+            fontSize: 16.5,
+            color: AppTheme.textPrimaryDark,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -27,12 +43,8 @@ class AboutScreen extends StatelessWidget {
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppTheme.jadeTosca,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -48,7 +60,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'ARUS Business DSS & POS',
-                  style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.accentBlack),
+                  style: GoogleFonts.lexend(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -56,7 +68,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Versi 1.0.0 (Final Enterprise Baseline)',
-                  style: GoogleFonts.lexend(fontSize: 12.5, color: const Color(0xFF64748B)),
+                  style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textMutedDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -67,26 +79,21 @@ class AboutScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          Container(
+          ShadCard(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Deskripsi Sistem',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'ARUS adalah Mobile Business Decision-Support System terintegrasi Point-of-Sale (POS) untuk bisnis ritel dan F&B multi-cabang. Sistem ini mengalirkan data transaksi harian menjadi visualisasi analitik KPI, rekomendasi stok otomatis, dan konsultasi cerdas berbasis AI.',
-                  style: GoogleFonts.lexend(fontSize: 13, color: const Color(0xFF334155), height: 1.5),
+                  style: GoogleFonts.lexend(fontSize: 13, color: AppTheme.textSecondaryDark, height: 1.5),
                 ),
               ],
             ),
@@ -94,28 +101,23 @@ class AboutScreen extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.borderOutline, width: 1.0),
-            ),
+          const ShadCard(
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Teknologi yang Digunakan',
-                  style: GoogleFonts.lexend(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.accentBlack),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 10),
-                const _TechRow(label: 'Frontend', value: 'Flutter 3.x, Riverpod 2.x, go_router, Google Fonts (Lexend)'),
-                const _TechRow(label: 'Backend', value: 'Node.js, Express, TypeScript, Prisma ORM, Argon2, Pino'),
-                const _TechRow(label: 'Database', value: 'PostgreSQL 15+ dengan in-memory fallback offline'),
-                const _TechRow(label: 'Keamanan', value: 'SHA-256 Tamper-evident Ledger, JWT Access & Rotating Refresh'),
-                const _TechRow(label: 'Decision Support', value: 'AI Assistant (Gemini/LLM) + Rule Engine (8 Rules)'),
+                SizedBox(height: 10),
+                _TechRow(label: 'Frontend', value: 'Flutter 3.x, Riverpod 2.x, shadcn_ui, go_router, Google Fonts (Lexend)'),
+                _TechRow(label: 'Backend', value: 'Node.js, Express, TypeScript, Prisma ORM, Argon2, Pino'),
+                _TechRow(label: 'Database', value: 'PostgreSQL 15+ dengan in-memory fallback offline'),
+                _TechRow(label: 'Keamanan', value: 'SHA-256 Tamper-evident Ledger, JWT Access & Rotating Refresh'),
+                _TechRow(label: 'Decision Support', value: 'AI Assistant (Gemini/LLM) + Rule Engine (8 Rules)'),
               ],
             ),
           ),
@@ -124,7 +126,7 @@ class AboutScreen extends StatelessWidget {
           Center(
             child: Text(
               '© 2026 ARUS System • Hak Cipta Dilindungi',
-              style: GoogleFonts.lexend(fontSize: 11.5, color: const Color(0xFF94A3B8)),
+              style: GoogleFonts.lexend(fontSize: 11.5, color: AppTheme.textMutedDark),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -133,11 +135,18 @@ class AboutScreen extends StatelessWidget {
         ],
       ),
     );
-  }
 
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
+  }
 }
 
-/// Baris teknologi — widget class top-level const (aturan E23).
+/// Baris teknologi — widget class top-level const
 class _TechRow extends StatelessWidget {
   final String label;
   final String value;
@@ -155,7 +164,7 @@ class _TechRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+              style: GoogleFonts.lexend(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -163,7 +172,7 @@ class _TechRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.accentBlack),
+              style: GoogleFonts.lexend(fontSize: 12.5, color: AppTheme.textPrimaryDark),
             ),
           ),
         ],

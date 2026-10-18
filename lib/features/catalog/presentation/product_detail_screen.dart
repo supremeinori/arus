@@ -21,7 +21,7 @@ class ProductDetailScreen extends ConsumerWidget {
     final productState = ref.watch(productDetailProvider(productId));
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Detail Produk',
@@ -30,7 +30,7 @@ class ProductDetailScreen extends ConsumerWidget {
         actions: [
           if (canManage)
             IconButton(
-              icon: const Icon(Icons.edit_outlined, color: AppTheme.accentBlack),
+              icon: const Icon(Icons.edit_outlined, color: AppTheme.textPrimaryDark),
               onPressed: () {
                 context.push('/catalog/$productId/edit');
               },
@@ -62,7 +62,7 @@ class ProductDetailScreen extends ConsumerWidget {
                 sliver: SliverToBoxAdapter(
                   child: Text(
                     'Ketersediaan Stok per Outlet',
-                    style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                    style: GoogleFonts.lexend(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                   ),
                 ),
               ),

@@ -167,7 +167,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.accentBlack,
+            backgroundColor: AppTheme.textPrimaryDark,
             content: Text(
               widget.productId == null
                   ? 'Produk & resep berhasil disimpan!'
@@ -198,7 +198,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       // (satu AppBar saja, anti judul ganda). Mode data memakai Scaffold-less
       // body agar tidak ada Scaffold bertumpuk.
       return Scaffold(
-        backgroundColor: AppTheme.backgroundWhite,
+        backgroundColor: AppTheme.darkBackground,
         appBar: AppBar(
           title: Text(
             'Edit Menu / Produk',
@@ -344,11 +344,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                 hintText: 'Contoh: Es Kopi Susu Aren',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                 ),
               ),
               validator: (val) =>
@@ -370,11 +370,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: 'KOP-03',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                     ),
                     validator: (val) =>
@@ -392,11 +392,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: 'cup',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                     ),
                   ),
@@ -428,17 +428,17 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                     hintText: 'Pilih Kategori Produk',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                      borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                     ),
                   ),
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('Tanpa Kategori', style: TextStyle(color: Color(0xFF64748B))),
+                      child: Text('Tanpa Kategori', style: TextStyle(color: AppTheme.textMutedDark)),
                     ),
                     ...uniqueCategories.entries.map((entry) {
                       return DropdownMenuItem<String?>(
@@ -466,14 +466,14 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
               decoration: InputDecoration(
                 labelText: 'URL Gambar Menu (Unsplash / Web)',
                 hintText: 'https://images.unsplash.com/...',
-                prefixIcon: const Icon(Icons.image_outlined, color: AppTheme.primaryBlue, size: 20),
+                prefixIcon: const Icon(Icons.image_outlined, color: AppTheme.jadeTosca, size: 20),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                 ),
               ),
             ),
@@ -493,11 +493,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: '22000',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                     ),
                     validator: (val) =>
@@ -516,11 +516,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: 'Otomatis dari resep',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       ),
                     ),
                   ),
@@ -753,7 +753,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
 
     if (!widget.showScaffold) return form;
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           widget.isEditing ? 'Edit Menu / Produk' : 'Tambah Menu / Produk',

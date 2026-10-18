@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 
@@ -12,7 +13,7 @@ class OperationsHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.darkBackground,
@@ -187,6 +188,14 @@ class OperationsHubScreen extends ConsumerWidget {
         },
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
   }
 }
 
@@ -258,16 +267,16 @@ class _PosHeroCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: AppTheme.jadeTosca.withValues(alpha: 0.35),
-          width: 1.2,
+          width: 1.0,
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
           onTap: () => context.push('/pos'),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -278,14 +287,7 @@ class _PosHeroCard extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: AppTheme.jadeTosca,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.jadeTosca.withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
                     Icons.point_of_sale_rounded,
@@ -313,24 +315,15 @@ class _PosHeroCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.jadeTosca.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: AppTheme.jadeTosca.withValues(alpha: 0.4),
-                              ),
-                            ),
+                          ShadBadge.secondary(
+                            backgroundColor: AppTheme.jadeTosca.withValues(alpha: 0.15),
+                            foregroundColor: AppTheme.jadeTosca,
                             child: Text(
                               'Kasir Utama',
                               style: GoogleFonts.lexend(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.jadeTosca,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -390,95 +383,79 @@ class _OperationGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.darkCardSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => context.push(route),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => context.push(route),
+      child: ShadCard(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppTheme.jadeTosca.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppTheme.jadeTosca.withValues(alpha: 0.25),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Icon(icon, color: AppTheme.jadeTosca, size: 20),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppTheme.jadeTosca.withValues(alpha: 0.25),
+                      width: 1.0,
                     ),
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.darkCardSurfaceElevated,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-                        ),
-                        child: Text(
-                          badgeText,
-                          style: GoogleFonts.lexend(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.jadeTosca,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                  child: Icon(icon, color: AppTheme.jadeTosca, size: 20),
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.lexend(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: AppTheme.textPrimaryDark,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                Flexible(
+                  child: ShadBadge.outline(
+                    child: Text(
+                      badgeText,
+                      style: GoogleFonts.lexend(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.jadeTosca,
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.lexend(
-                          fontSize: 10.5,
-                          color: AppTheme.textMutedDark,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.lexend(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: AppTheme.textPrimaryDark,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.lexend(
+                      fontSize: 10.5,
+                      color: AppTheme.textMutedDark,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

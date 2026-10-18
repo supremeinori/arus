@@ -66,7 +66,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Pencarian Global',
@@ -106,7 +106,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(20),
-              child: Center(child: CircularProgressIndicator(color: AppTheme.primaryBlue)),
+              child: Center(child: CircularProgressIndicator(color: AppTheme.jadeTosca)),
             )
           else
             Expanded(
@@ -127,7 +127,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                             if (_matchingProducts.isNotEmpty) ...[
                               Text(
                                 'Katalog Produk (${_matchingProducts.length})',
-                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -139,7 +139,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                             if (_matchingOutlets.isNotEmpty) ...[
                               Text(
                                 'Cabang Outlet (${_matchingOutlets.length})',
-                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accentBlack),
+                                style: GoogleFonts.lexend(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -169,17 +169,17 @@ class _ProductResultCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: ListTile(
-        leading: const Icon(Icons.coffee_rounded, color: AppTheme.primaryBlue),
+        leading: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
         title: Text(p.name, style: GoogleFonts.lexend(fontWeight: FontWeight.w600, fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text('${p.sku} • ${p.categoryName ?? "Umum"}', style: GoogleFonts.lexend(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: SizedBox(
           width: 100,
           child: Text(
             p.formattedPrice,
-            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, color: AppTheme.primaryBlue),
+            style: GoogleFonts.lexend(fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
@@ -205,7 +205,7 @@ class _OutletResultCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.borderOutline, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: ListTile(
         leading: const Icon(Icons.storefront_rounded, color: Color(0xFF16A34A)),

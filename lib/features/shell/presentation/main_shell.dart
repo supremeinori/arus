@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
@@ -140,7 +141,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     final safeIndex = currentIndex >= pages.length ? 0 : currentIndex;
 
-    return Scaffold(
+    final scaffold = Scaffold(
       body: IndexedStack(
         index: safeIndex,
         children: pages,
@@ -192,5 +193,13 @@ class _MainShellState extends ConsumerState<MainShell> {
         ),
       ),
     );
+
+    if (ShadTheme.maybeOf(context) == null) {
+      return ShadTheme(
+        data: AppTheme.shadcnThemeDark,
+        child: scaffold,
+      );
+    }
+    return scaffold;
   }
 }

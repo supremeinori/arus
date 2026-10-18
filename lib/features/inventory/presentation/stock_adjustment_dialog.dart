@@ -83,7 +83,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Penyesuaian stok bahan baku berhasil disimpan.', style: GoogleFonts.lexend()),
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: AppTheme.jadeTosca,
           ),
         );
       }

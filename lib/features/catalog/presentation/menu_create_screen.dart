@@ -175,7 +175,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: AppTheme.accentBlack,
+            backgroundColor: AppTheme.textPrimaryDark,
             content: Text(
               'Menu baru + resep tersimpan!',
               style: GoogleFonts.lexend(color: Colors.white, fontSize: 13),
@@ -198,7 +198,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
     final ingredientsState = ref.watch(ingredientsListProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Tambah Menu Baru',

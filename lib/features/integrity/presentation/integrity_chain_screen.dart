@@ -52,7 +52,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
 
     final outletsAsync = ref.watch(outletsListProvider);
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
           'Ledger Transaksi & Blockchain',

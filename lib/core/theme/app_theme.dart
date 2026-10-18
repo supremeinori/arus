@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 class AppTheme {
   // Brand Colors - Modern Professional Jade Tosca / Teal Palette
@@ -473,4 +474,23 @@ class AppTheme {
       ),
     );
   }
+
+  static ShadThemeData get shadcnThemeLight => ShadThemeData(
+    brightness: Brightness.light,
+    colorScheme: const ShadZincColorScheme.light(
+      primary: jadeTosca,
+      destructive: dangerRed,
+    ),
+    radius: const BorderRadius.all(Radius.circular(8)),
+  );
+
+  static ShadThemeData get shadcnThemeDark => ShadThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ShadZincColorScheme.dark(
+      primary: jadeTosca,
+      destructive: dangerRed,
+    ),
+    radius: const BorderRadius.all(Radius.circular(8)),
+  );
 }
+
