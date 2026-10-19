@@ -87,7 +87,7 @@ class OperationsHubScreen extends ConsumerWidget {
               const _SectionHeader(
                 icon: Icons.business_center_outlined,
                 title: 'Manajemen',
-                countBadge: '4 Modul',
+                countBadge: '5 Modul',
               ),
               const SizedBox(height: 12),
               GridView.count(
@@ -111,6 +111,13 @@ class OperationsHubScreen extends ConsumerWidget {
                     subtitle: 'Pantau sisa stok outlet & peringatan tipis',
                     badgeText: 'Stok',
                     route: '/inventory',
+                  ),
+                  _OperationGridCard(
+                    icon: Icons.people_outline_rounded,
+                    title: 'Kelola Staf & Akun',
+                    subtitle: 'Atur akun Manager, Kasir, & hak cabang',
+                    badgeText: 'Tim & Staf',
+                    route: '/users',
                   ),
                   _OperationGridCard(
                     icon: Icons.store_mall_directory_outlined,

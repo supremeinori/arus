@@ -27,9 +27,10 @@ void main() {
 
       // Memastikan Kategori Manajemen dan Modulnya
       expect(find.text('Manajemen'), findsOneWidget);
-      expect(find.text('4 Modul'), findsOneWidget);
+      expect(find.text('5 Modul'), findsOneWidget);
       expect(find.text('Katalog & Kategori'), findsOneWidget);
       expect(find.text('Inventaris & Stok'), findsOneWidget);
+      expect(find.text('Kelola Staf & Akun'), findsOneWidget);
       expect(find.text('Cabang & LBS'), findsOneWidget);
       expect(find.text('Integritas Ledger'), findsOneWidget);
 
