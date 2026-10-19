@@ -55,8 +55,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isAuthenticated = authState.isAuthenticated;
 
-      // Jika user sudah terotentikasi dan masih berada di /splash atau /login, otomatis alihkan ke /shell
+      // Jika user sudah terotentikasi dan masih berada di /splash atau /login, otomatis alihkan ke /shell (tab Dashboard)
       if (isAuthenticated && (isSplash || isLoggingIn)) {
+        ref.read(shellTabIndexProvider.notifier).state = 0;
         return '/shell';
       }
 

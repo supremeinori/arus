@@ -32,9 +32,9 @@ void showAiCompanionBottomSheet(BuildContext context, WidgetRef ref, {String? in
       child: Container(
         height: MediaQuery.of(context).size.height * 0.82,
         decoration: BoxDecoration(
-          color: AppTheme.darkCardSurface.withValues(alpha: 0.92),
+          color: AppTheme.lightCardSurface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+          border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
         ),
         child: Column(
           children: [
@@ -45,7 +45,7 @@ void showAiCompanionBottomSheet(BuildContext context, WidgetRef ref, {String? in
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.darkCardBorder,
+                  color: AppTheme.lightCardBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -71,6 +71,16 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(shellTabIndexProvider.notifier).state = 0;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -148,11 +158,11 @@ class _MainShellState extends ConsumerState<MainShell> {
       ),
       // Global Floating Action Button untuk AI Companion (Selalu ada di mana pun)
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.darkCardSurface,
-        elevation: 0,
+        backgroundColor: AppTheme.lightCardSurface,
+        elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
         ),
         tooltip: 'ARUS AI Companion',
         onPressed: () => showAiCompanionBottomSheet(context, ref),
@@ -172,13 +182,13 @@ class _MainShellState extends ConsumerState<MainShell> {
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: AppTheme.darkCardSurface,
+          color: AppTheme.lightCardSurface,
           border: Border(
-            top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+            top: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
           ),
         ),
         child: BottomNavigationBar(
-          backgroundColor: AppTheme.darkCardSurface,
+          backgroundColor: AppTheme.lightCardSurface,
           elevation: 0,
           currentIndex: safeIndex,
           onTap: (index) {
@@ -186,7 +196,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppTheme.jadeTosca,
-          unselectedItemColor: AppTheme.textMutedDark,
+          unselectedItemColor: AppTheme.textMutedLight,
           selectedFontSize: 11.5,
           unselectedFontSize: 11.5,
           items: navItems,
@@ -196,7 +206,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     if (ShadTheme.maybeOf(context) == null) {
       return ShadTheme(
-        data: AppTheme.shadcnThemeDark,
+        data: AppTheme.shadcnThemeLight,
         child: scaffold,
       );
     }

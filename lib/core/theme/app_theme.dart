@@ -20,14 +20,14 @@ class AppTheme {
   static const textSecondaryLight = Color(0xFF334155); // Slate-700 secondary text
   static const textMutedLight = Color(0xFF64748B); // Slate-500 muted text
 
-  // Dark Mode Palette
-  static const darkBackground = Color(0xFF090D16); // Slate-950
-  static const darkCardSurface = Color(0xFF111827); // Slate-900
-  static const darkCardSurfaceElevated = Color(0xFF1F2937); // Slate-800
-  static const darkCardBorder = Color(0x14FFFFFF); // 1px solid rgba(255, 255, 255, 0.08)
-  static const textPrimaryDark = Color(0xFFF9FAFB); // Slate-50
-  static const textSecondaryDark = Color(0xFFCBD5E1); // Slate-300
-  static const textMutedDark = Color(0xFF9CA3AF); // Muted label text (Slate-400)
+  // Dark Mode Palette - Remapped to Clean Light Mode (100% white/light theme)
+  static const darkBackground = lightBackground; // 0xFFF8FAFC
+  static const darkCardSurface = lightCardSurface; // 0xFFFFFFFF
+  static const darkCardSurfaceElevated = lightCardSurfaceElevated; // 0xFFF1F5F9
+  static const darkCardBorder = lightCardBorder; // 0xFFE2E8F0
+  static const textPrimaryDark = textPrimaryLight; // 0xFF0F172A
+  static const textSecondaryDark = textSecondaryLight; // 0xFF334155
+  static const textMutedDark = textMutedLight; // 0xFF64748B
 
   // Backward compatible aliases mapped to Clean Modern Light Mode
   static const primaryBlue = primaryToska;
@@ -201,6 +201,8 @@ class AppTheme {
         ),
         labelStyle: GoogleFonts.inter(color: textMutedLight, fontSize: 13),
         hintStyle: GoogleFonts.inter(color: textMutedLight, fontSize: 13),
+        prefixIconColor: textMutedLight,
+        suffixIconColor: textMutedLight,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: lightCardSurface,
@@ -262,7 +264,9 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
+  static ThemeData get darkTheme => lightTheme;
+
+  static ThemeData get _legacyDarkTheme {
     final baseTextTheme = GoogleFonts.interTextTheme();
 
     final textTheme = baseTextTheme.copyWith(
@@ -485,14 +489,6 @@ class AppTheme {
     textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
   );
 
-  static ShadThemeData get shadcnThemeDark => ShadThemeData(
-    brightness: Brightness.dark,
-    colorScheme: const ShadZincColorScheme.dark(
-      primary: jadeTosca,
-      destructive: dangerRed,
-    ),
-    radius: const BorderRadius.all(Radius.circular(8)),
-    textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
-  );
+  static ShadThemeData get shadcnThemeDark => shadcnThemeLight;
 }
 

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/auth/biometric_service.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import '../../sensors/presentation/shake_settings_sheet.dart';
+import '../../shell/presentation/main_shell.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -481,6 +482,7 @@ class ProfileScreen extends ConsumerWidget {
                         ShadButton.destructive(
                           onPressed: () {
                             Navigator.pop(ctx);
+                            ref.read(shellTabIndexProvider.notifier).state = 0;
                             ref.read(authProvider.notifier).logout();
                           },
                           child: Text(
@@ -495,7 +497,7 @@ class ProfileScreen extends ConsumerWidget {
                     );
                     if (ShadTheme.maybeOf(ctx) == null) {
                       return ShadTheme(
-                        data: AppTheme.shadcnThemeDark,
+                        data: AppTheme.shadcnThemeLight,
                         child: dialog,
                       );
                     }
@@ -520,7 +522,7 @@ class ProfileScreen extends ConsumerWidget {
 
     if (ShadTheme.maybeOf(context) == null) {
       return ShadTheme(
-        data: AppTheme.shadcnThemeDark,
+        data: AppTheme.shadcnThemeLight,
         child: scaffold,
       );
     }

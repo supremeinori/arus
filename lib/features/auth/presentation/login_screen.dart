@@ -1,14 +1,16 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+
 import '../../../core/config/env.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/l10n/strings_id.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/auth/biometric_service.dart';
 import '../../../shared/widgets/app_widgets.dart';
+import '../../shell/presentation/main_shell.dart';
 import 'auth_provider.dart';
 import 'auth_state.dart';
 
@@ -51,14 +53,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     FocusScope.of(context).unfocus();
-    final success = await ref.read(authProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
+    final success = await ref
+        .read(authProvider.notifier)
+        .login(_emailController.text.trim(), _passwordController.text);
     if (success && mounted) {
       final authState = ref.read(authProvider);
       final user = authState.user;
-      final isBiometricAvailable = await ref.read(biometricServiceProvider).isBiometricAvailable();
+      final isBiometricAvailable = await ref
+          .read(biometricServiceProvider)
+          .isBiometricAvailable();
       final isAlreadyEnabled = user?.settings.biometricEnabled ?? false;
 
       if (isBiometricAvailable && !isAlreadyEnabled && mounted) {
@@ -74,7 +77,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: AppTheme.jadeTosca.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.fingerprint_rounded, color: AppTheme.jadeTosca, size: 24),
+                  child: const Icon(
+                    Icons.fingerprint_rounded,
+                    color: AppTheme.jadeTosca,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -82,32 +89,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'Aktifkan Login Biometrik?',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
             description: Text(
               'Aktifkan login biometrik untuk akses lebih cepat dan aman.',
-              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark, height: 1.4),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppTheme.textMutedLight,
+                height: 1.4,
+              ),
             ),
             actions: [
               ShadButton.ghost(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text('Nanti Saja', style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontWeight: FontWeight.w600)),
+                child: Text(
+                  'Nanti Saja',
+                  style: GoogleFonts.inter(
+                    color: AppTheme.textMutedLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               ShadButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: Text('Ya, Aktifkan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700)),
+                child: Text(
+                  'Ya, Aktifkan',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
         );
 
         if (shouldEnable == true && mounted) {
-          final confirmed = await ref.read(biometricServiceProvider).authenticate(
-            localizedReason: 'Konfirmasi sidik jari atau wajah Anda untuk mengaktifkan login biometrik',
-          );
+          final confirmed = await ref
+              .read(biometricServiceProvider)
+              .authenticate(
+                localizedReason: 'Konfirmasi sidik jari atau wajah Anda untuk mengaktifkan login biometrik',
+              );
 
           if (confirmed && mounted) {
             await ref.read(authProvider.notifier).toggleBiometric(true);
@@ -117,14 +145,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 backgroundColor: AppTheme.successGreen,
                 content: Row(
                   children: [
-                    const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Login biometrik berhasil diaktifkan!',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -137,14 +172,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
 
       if (mounted) {
+        ref.read(shellTabIndexProvider.notifier).state = 0;
         context.go('/shell');
       }
     }
   }
 
   Future<void> _handleBiometricLogin() async {
-    final success = await ref.read(authProvider.notifier).authenticateWithBiometric();
+    final success = await ref
+        .read(authProvider.notifier)
+        .authenticateWithBiometric();
     if (success && mounted) {
+      ref.read(shellTabIndexProvider.notifier).state = 0;
       context.go('/shell');
     }
   }
@@ -155,11 +194,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState.status == AuthStatus.loading;
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: AppTheme.lightBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 24.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 28.0,
+              vertical: 24.0,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -202,7 +244,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimaryDark,
+                      color: AppTheme.textPrimaryLight,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -211,7 +253,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: AppTheme.textMutedDark,
+                      color: AppTheme.textMutedLight,
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -221,20 +263,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0x26EF4444),
+                        color: AppTheme.dangerRed.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0x40EF4444), width: 1.0),
+                        border: Border.all(
+                          color: AppTheme.dangerRed.withValues(alpha: 0.25),
+                          width: 1.0,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppTheme.dangerRed,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               authState.errorMessage!,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFFEF4444)),
+                              style: GoogleFonts.inter(
+                                fontSize: 12.5,
+                                color: AppTheme.dangerRed,
+                              ),
                             ),
                           ),
                         ],
@@ -270,8 +322,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: AppTheme.textMutedDark,
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppTheme.textMutedLight,
                         size: 20,
                       ),
                       onPressed: () {
@@ -302,30 +356,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: isLoading ? null : _handleBiometricLogin,
-                    icon: const Icon(Icons.fingerprint, color: AppTheme.jadeTosca, size: 20),
+                    icon: const Icon(
+                      Icons.fingerprint,
+                      color: AppTheme.jadeTosca,
+                      size: 20,
+                    ),
                     label: Text(
                       'Masuk dengan Biometrik (Sidik Jari)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.jadeTosca,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      backgroundColor: AppTheme.lightCardSurface,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: const BorderSide(
+                        color: AppTheme.lightCardBorder,
+                        width: 1.0,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
                   // Quick Demo Accounts Fill Chips
-                  const Divider(color: AppTheme.darkCardBorder, thickness: 1.0),
+                  const Divider(color: AppTheme.lightCardBorder, thickness: 1.0),
                   const SizedBox(height: 14),
                   Text(
                     'Pilih Akun Demo (Garis Cepat):',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textMutedLight,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -334,28 +405,79 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: WrapAlignment.center,
                     children: [
                       ActionChip(
-                        avatar: const Icon(Icons.star, size: 16, color: AppTheme.jadeTosca),
-                        label: Text('Owner', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
-                        backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('owner@arus.demo', 'Demo1234'),
+                        avatar: const Icon(
+                          Icons.star,
+                          size: 16,
+                          color: AppTheme.jadeTosca,
+                        ),
+                        label: Text(
+                          'Owner',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: AppTheme.textPrimaryLight,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.lightCardSurface,
+                        side: const BorderSide(
+                          color: AppTheme.lightCardBorder,
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        onPressed: () =>
+                            _fillAccount('owner@arus.demo', 'Demo1234'),
                       ),
                       ActionChip(
-                        avatar: const Icon(Icons.storefront, size: 16, color: AppTheme.jadeTosca),
-                        label: Text('Manager', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
-                        backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('manager@arus.demo', 'Demo1234'),
+                        avatar: const Icon(
+                          Icons.storefront,
+                          size: 16,
+                          color: AppTheme.jadeTosca,
+                        ),
+                        label: Text(
+                          'Manager',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: AppTheme.textPrimaryLight,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.lightCardSurface,
+                        side: const BorderSide(
+                          color: AppTheme.lightCardBorder,
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        onPressed: () =>
+                            _fillAccount('manager@arus.demo', 'Demo1234'),
                       ),
                       ActionChip(
-                        avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
-                        label: Text('Kasir', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimaryDark)),
-                        backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('staff@arus.demo', 'Demo1234'),
+                        avatar: const Icon(
+                          Icons.point_of_sale,
+                          size: 16,
+                          color: AppTheme.jadeTosca,
+                        ),
+                        label: Text(
+                          'Kasir',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: AppTheme.textPrimaryLight,
+                          ),
+                        ),
+                        backgroundColor: AppTheme.lightCardSurface,
+                        side: const BorderSide(
+                          color: AppTheme.lightCardBorder,
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        onPressed: () =>
+                            _fillAccount('staff@arus.demo', 'Demo1234'),
                       ),
                     ],
                   ),
@@ -367,11 +489,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onTap: () => _showServerConfigDialog(context),
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 10,
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.dns_outlined, size: 14, color: AppTheme.textMutedDark),
+                            const Icon(
+                              Icons.dns_outlined,
+                              size: 14,
+                              color: AppTheme.textMutedLight,
+                            ),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
@@ -379,7 +508,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 maxLines: 1,
                                 style: GoogleFonts.inter(
                                   fontSize: 11.5,
-                                  color: AppTheme.textMutedDark,
+                                  color: AppTheme.textMutedLight,
                                   decoration: TextDecoration.underline,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -408,14 +537,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return ShadDialog(
           title: Row(
             children: [
-              const Icon(Icons.settings_ethernet_rounded, color: AppTheme.jadeTosca, size: 22),
+              const Icon(
+                Icons.settings_ethernet_rounded,
+                color: AppTheme.jadeTosca,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Alamat Web Service',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimaryLight,
+                  ),
                 ),
               ),
             ],
@@ -424,12 +561,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             'Ubah IP server jika laptop berpindah Wi-Fi/Hotspot (contoh: http://192.168.1.10:5000/api)',
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: AppTheme.textMutedLight,
+            ),
           ),
           actions: [
             ShadButton.outline(
               onPressed: () => Navigator.pop(dialogCtx),
-              child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMutedDark)),
+              child: Text(
+                'Batal',
+                style: GoogleFonts.inter(color: AppTheme.textMutedLight),
+              ),
             ),
             ShadButton(
               onPressed: () {
@@ -441,18 +584,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Navigator.pop(dialogCtx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      backgroundColor: AppTheme.lightCardSurfaceElevated,
                       content: Text(
                         'URL Server diubah ke: ${AppEnv.apiBaseUrl}',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textPrimaryDark),
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: AppTheme.textPrimaryLight,
+                        ),
                       ),
                     ),
                   );
                 }
               },
-              child: Text('Simpan & Hubungkan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Simpan & Hubungkan',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
           child: Padding(

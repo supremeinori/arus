@@ -17,13 +17,11 @@ class ArusApp extends ConsumerWidget {
       title: StringsId.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.shadcnThemeLight,
-      darkTheme: AppTheme.shadcnThemeDark,
-      themeMode: ThemeMode.dark,
+      darkTheme: AppTheme.shadcnThemeLight,
+      themeMode: ThemeMode.light,
       routerConfig: router,
       materialThemeBuilder: (context, theme) {
-        return theme.brightness == Brightness.dark
-            ? AppTheme.darkTheme
-            : AppTheme.lightTheme;
+        return AppTheme.lightTheme;
       },
       builder: (context, child) => BiometricLockWrapper(
         child: child ?? const SizedBox.shrink(),

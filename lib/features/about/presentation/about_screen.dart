@@ -138,7 +138,7 @@ class AboutScreen extends StatelessWidget {
 
     if (ShadTheme.maybeOf(context) == null) {
       return ShadTheme(
-        data: AppTheme.shadcnThemeDark,
+        data: AppTheme.shadcnThemeLight,
         child: scaffold,
       );
     }
