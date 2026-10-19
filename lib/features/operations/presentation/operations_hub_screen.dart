@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../notifications/presentation/notifications_provider.dart';
@@ -15,25 +14,18 @@ class OperationsHubScreen extends ConsumerWidget {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     final scaffold = Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: AppTheme.lightBackground,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: AppTheme.lightBackground,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1.0),
-          child: Divider(
-            height: 1.0,
-            thickness: 1.0,
-            color: AppTheme.darkCardBorder,
-          ),
-        ),
+        centerTitle: true,
         title: Text(
           'Pusat Operasi',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
-            fontSize: 17,
-            color: AppTheme.textPrimaryDark,
+            fontSize: 18,
+            color: AppTheme.textPrimaryLight,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -42,7 +34,7 @@ class OperationsHubScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(
               Icons.search_rounded,
-              color: AppTheme.textPrimaryDark,
+              color: AppTheme.textPrimaryLight,
             ),
             tooltip: 'Pencarian Global',
             onPressed: () => context.push('/search'),
@@ -50,7 +42,7 @@ class OperationsHubScreen extends ConsumerWidget {
           IconButton(
             icon: Badge(
               isLabelVisible: unreadCount > 0,
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppTheme.dangerRed,
               label: Text(
                 '$unreadCount',
                 style: GoogleFonts.inter(
@@ -63,7 +55,7 @@ class OperationsHubScreen extends ConsumerWidget {
               ),
               child: const Icon(
                 Icons.notifications_outlined,
-                color: AppTheme.textPrimaryDark,
+                color: AppTheme.textPrimaryLight,
               ),
             ),
             tooltip: 'Pusat Notifikasi',
@@ -72,349 +64,279 @@ class OperationsHubScreen extends ConsumerWidget {
           const SizedBox(width: 4),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
-          // Hitung aspect ratio dinamis agar tinggi kartu selalu cukup (~146dp) dan bebas RenderFlex overflow
-          final itemWidth =
-              (width - 32 - ((crossAxisCount - 1) * 12)) / crossAxisCount;
-          final childAspectRatio = (itemWidth / 146).clamp(0.95, 1.45);
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: [
+          // 1. Hero Card: Mesin Kasir
+          _buildWideCard(
+            title: 'Mesin Kasir',
+            subtitle: 'Buka kasir aktif untuk input penjualan, scan barang & cetak struk',
+            icon: Icons.point_of_sale_rounded,
+            onTap: () => context.push('/pos'),
+          ),
+          const SizedBox(height: 12),
 
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          // 2. Grid 2x2: Fitur Operasional Inti
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.1,
             children: [
-              // 1. Hero Card: Mesin Kasir (POS)
-              const _PosHeroCard(),
-              const SizedBox(height: 24),
-
-              // 2. Kategori: Manajemen
-              const _SectionHeader(
-                icon: Icons.business_center_outlined,
-                title: 'Manajemen',
-                countBadge: '5 Modul',
+              _buildSquareCard(
+                title: 'Produk',
+                icon: Icons.inventory_2_outlined,
+                onTap: () => context.push('/catalog'),
               ),
-              const SizedBox(height: 12),
-              GridView.count(
-                crossAxisCount: crossAxisCount,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: childAspectRatio,
-                children: const [
-                  _OperationGridCard(
-                    title: 'Produk',
-                    icon: Icons.inventory_2_outlined,
-
-                    route: '/catalog',
-                  ),
-                  _OperationGridCard(
-                    icon: Icons.warehouse_outlined,
-                    title: 'Inventaris & Stok',
-
-                    route: '/inventory',
-                  ),
-                  _OperationGridCard(
-                    icon: Icons.people_outline_rounded,
-                    title: 'Kelola Staf & Akun',
-
-                    route: '/users',
-                  ),
-                  _OperationGridCard(
-                    icon: Icons.store_mall_directory_outlined,
-                    title: 'Cabang & LBS',
-
-                    route: '/outlets',
-                  ),
-                  _OperationGridCard(
-                    icon: Icons.security_rounded,
-                    title: 'Integritas Ledger',
-
-                    route: '/integrity',
-                  ),
-                ],
+              _buildSquareCard(
+                title: 'Inventaris',
+                icon: Icons.warehouse_outlined,
+                onTap: () => context.push('/inventory'),
               ),
-              const SizedBox(height: 24),
-
-              // 3. Kategori: Fitur Tambahan
-              const _SectionHeader(
-                icon: Icons.sports_esports_rounded,
-                title: 'Fitur Tambahan',
-                countBadge: '1 Modul',
+              _buildSquareCard(
+                title: 'Staff',
+                icon: Icons.people_outline_rounded,
+                onTap: () => context.push('/users'),
               ),
-              const SizedBox(height: 12),
-              GridView.count(
-                crossAxisCount: crossAxisCount,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: childAspectRatio,
-                children: const [
-                  _OperationGridCard(
-                    icon: Icons.sports_esports_rounded,
-                    title: 'Mini-Game Menu',
-
-                    route: '/game',
-                  ),
-                ],
+              _buildSquareCard(
+                title: 'Cabang',
+                icon: Icons.storefront_outlined,
+                onTap: () => context.push('/outlets'),
               ),
-              const SizedBox(height: 24),
             ],
-          );
-        },
-      ),
-    );
+          ),
+          const SizedBox(height: 12),
 
-    if (ShadTheme.maybeOf(context) == null) {
-      return ShadTheme(data: AppTheme.shadcnThemeLight, child: scaffold);
-    }
+          // 3. Wide Card: Ledger
+          _buildWideCard(
+            title: 'Ledger',
+            subtitle: 'Integritas blockchain & audit transaksi tersegel SHA-256',
+            icon: Icons.verified_user_outlined,
+            onTap: () => context.push('/integrity'),
+          ),
+          const SizedBox(height: 20),
+
+          // 4. Section: Entertain
+          Text(
+            'Entertain',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textPrimaryLight,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildEntertainCard(
+            onTap: () => context.push('/game'),
+          ),
+          const SizedBox(height: 80), // Padding bawah agar tidak tertutup FAB/Bottom Bar
+        ],
+      ),
+
+      // Floating Component di kanan bawah
+      floatingActionButton: Container(
+        width: 56,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppTheme.textMutedLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      // Placeholder Bottom Navigation Bar (di-handle oleh MainShell)
+    );
     return scaffold;
   }
-}
 
-/// Header Kategori Operasi
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String countBadge;
-
-  const _SectionHeader({
-    required this.icon,
-    required this.title,
-    required this.countBadge,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppTheme.jadeTosca),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimaryDark,
-            letterSpacing: 0.2,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+  // Helper: Wide Card (Mesin Kasir & Ledger)
+  static Widget _buildWideCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: AppTheme.lightCardSurface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: AppTheme.darkCardSurfaceElevated,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          child: Text(
-            countBadge,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textMutedDark,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Hero Action Card untuk Mesin Kasir (POS)
-class _PosHeroCard extends StatelessWidget {
-  const _PosHeroCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.darkCardSurface,
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.jadeTosca.withValues(alpha: 0.14),
-            AppTheme.darkCardSurface,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppTheme.jadeTosca.withValues(alpha: 0.35),
-          width: 1.0,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => context.push('/pos'),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppTheme.jadeTosca,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.point_of_sale_rounded,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Mesin Kasir (POS)',
-                              style: GoogleFonts.inter(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppTheme.textPrimaryDark,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ShadBadge.secondary(
-                            backgroundColor: AppTheme.jadeTosca.withValues(
-                              alpha: 0.15,
-                            ),
-                            foregroundColor: AppTheme.jadeTosca,
-                            child: Text(
-                              'Kasir Utama',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Buka kasir aktif untuk input penjualan, scan barang & cetak struk',
-                        style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          color: AppTheme.textMutedDark,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.darkCardSurfaceElevated,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.darkCardBorder),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: AppTheme.jadeTosca,
-                    size: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Item Grid Kartu Operasi dalam Kategori
-class _OperationGridCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
-  final String route;
-
-  const _OperationGridCard({
-    required this.icon,
-    required this.title,
-    required this.route,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: () => context.push(route),
-      child: ShadCard(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppTheme.jadeTosca.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppTheme.jadeTosca.withValues(alpha: 0.25),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Icon(icon, color: AppTheme.jadeTosca, size: 20),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: AppTheme.textPrimaryDark,
-                      height: 1.25,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  // Text(
-                  //   style: GoogleFonts.inter(
-                  //     fontSize: 10.5,
-                  //     color: AppTheme.textMutedDark,
-                  //     height: 1.25,
-                  //   ),
-                  //   maxLines: 2,
-                  //   overflow: TextOverflow.ellipsis,
-                  // ),
-                ],
+            color: AppTheme.lightCardSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.textPrimaryLight.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimaryLight,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.textMutedLight,
+                        height: 1.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.lightToskaBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 22, color: AppTheme.jadeTosca),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper: Square Card Grid (Produk, Inventaris, Staff, Cabang)
+  static Widget _buildSquareCard({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: AppTheme.lightCardSurface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppTheme.lightCardSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.textPrimaryLight.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimaryLight,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Center(
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppTheme.lightToskaBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, size: 28, color: AppTheme.jadeTosca),
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper: Entertain Large Card (Mini-Game)
+  static Widget _buildEntertainCard({required VoidCallback onTap}) {
+    return Material(
+      color: AppTheme.lightCardSurface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          height: 160,
+          decoration: BoxDecoration(
+            color: AppTheme.lightCardSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.textPrimaryLight.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.sports_esports_outlined,
+                size: 64,
+                color: AppTheme.jadeTosca,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Mini-Game Menu',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimaryLight,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Tebak menu & edukasi resep',
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  color: AppTheme.textMutedLight,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

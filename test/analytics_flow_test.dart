@@ -59,22 +59,23 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Hai, Rina Owner.'), findsOneWidget);
+      expect(find.text('Arus'), findsOneWidget);
       expect(find.text('Omzet'), findsOneWidget);
-      expect(find.text('Total omzet pada periode terpilih'), findsOneWidget);
-      expect(find.text('Rp 2.500.000'), findsOneWidget);
-      expect(find.text('50'), findsNWidgets(2)); // Transaksi & Skala Sumbu Y Grafik
+      expect(find.text('Rp.2.500.000'), findsOneWidget);
+      expect(find.text('Transaksi'), findsOneWidget);
+      expect(find.text('50'), findsOneWidget);
+      expect(find.text('Lihat riwayat'), findsOneWidget);
+      expect(find.text('Masalah'), findsOneWidget);
+      expect(find.text('Lihat Masalah'), findsOneWidget);
 
-      // Verifikasi Dropdown Cabang & Dropdown Periode Hari
-      expect(find.text('Semua Cabang'), findsOneWidget);
-      expect(find.text('Hari Ini'), findsOneWidget);
+      // Verifikasi Teks Dinamis Cabang & Periode Hari
+      expect(find.textContaining('Di "Semua Cabang" pada "Hari Ini".'), findsOneWidget);
 
-      // Verifikasi Seluruh Section Baru Dashboard Owner
-      expect(find.text('Target omzet bulanan'), findsOneWidget);
-      expect(find.text('Tren Penjualan'), findsOneWidget);
-      expect(find.text('Produk Terlaris'), findsOneWidget);
-      expect(find.text('Peringatan Stok'), findsOneWidget);
-      expect(find.text('ARUS Insight'), findsOneWidget);
+      // Verifikasi Seluruh Section Sesuai Wireframe
+      expect(find.text('Terlaris'), findsOneWidget);
+      expect(find.text('Tren'), findsOneWidget);
+      expect(find.text('Peringatan'), findsOneWidget);
+      expect(find.text('Lihat Semua'), findsWidgets);
     });
 
     testWidgets('DashboardScreen memungkinkan Owner memilih cabang dan filter hari', (tester) async {
@@ -116,34 +117,37 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Dropdown cabang default 'Semua Cabang'
-      expect(find.text('Semua Cabang'), findsOneWidget);
+      // Default label text
+      expect(find.textContaining('Di "Semua Cabang" pada "Hari Ini".'), findsOneWidget);
       expect(container.read(selectedOutletFilterProvider), isNull);
 
-      // Buka dropdown cabang dan pilih Cabang Senopati
-      await tester.tap(find.text('Semua Cabang'));
+      // Buka kotak filter via icon filter
+      await tester.tap(find.byIcon(Icons.filter_alt_outlined));
       await tester.pumpAndSettle();
 
+      // Kotak filter terbuka
+      expect(find.text('Kotak Filter Bisnis'), findsOneWidget);
+      expect(find.text('Terapkan Filter'), findsOneWidget);
+
+      // Buka dropdown cabang dan pilih Senopati
+      await tester.tap(find.text('Semua Cabang').last);
+      await tester.pumpAndSettle();
       expect(find.text('Kopi Arus - Senopati').last, findsOneWidget);
       await tester.tap(find.text('Kopi Arus - Senopati').last);
       await tester.pumpAndSettle();
 
-      // State provider outlet berubah
-      expect(container.read(selectedOutletFilterProvider), 'out-2');
-
-      // Dropdown hari default 'Hari Ini'
-      expect(find.text('Hari Ini'), findsOneWidget);
-      expect(container.read(selectedDateFilterProvider), DashboardDateFilter.today);
-
-      // Buka dropdown hari dan pilih 'Kemarin'
-      await tester.tap(find.text('Hari Ini'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Kemarin').last, findsOneWidget);
+      // Pilih hari 'Kemarin'
       await tester.tap(find.text('Kemarin').last);
       await tester.pumpAndSettle();
 
+      // Terapkan filter
+      await tester.tap(find.text('Terapkan Filter'));
+      await tester.pumpAndSettle();
+
+      // State provider outlet dan date filter berubah
+      expect(container.read(selectedOutletFilterProvider), 'out-2');
       expect(container.read(selectedDateFilterProvider), DashboardDateFilter.yesterday);
+      expect(find.textContaining('Di "Kopi Arus - Senopati" pada "Kemarin".'), findsOneWidget);
     });
 
     testWidgets('DashboardScreen tidak mengalami RenderFlex overflow pada viewport sempit (mobile)', (tester) async {
