@@ -115,23 +115,16 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // Keamanan & Preferensi Sesi
-          Text(
-            'Pengaturan Sistem & Preferensi',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700,
-              fontSize: 13.5,
-              color: AppTheme.textPrimaryDark,
-            ),
-          ),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
             color: AppTheme.darkCardSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+              side: const BorderSide(
+                color: AppTheme.darkCardBorder,
+                width: 1.0,
+              ),
             ),
             child: Column(
               children: [
@@ -150,15 +143,7 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Multi-currency (IDR, USD, EUR) & zona waktu toko',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ),
+
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
@@ -187,15 +172,7 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Pengujian akselerometer, giroskop & sensor sidik jari',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ),
+
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
@@ -224,15 +201,7 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Buka kunci sesi otomatis dengan sensor biometrik HP',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ),
+
                   activeThumbColor: AppTheme.jadeTosca,
                   value: user?.settings.biometricEnabled ?? false,
                   onChanged: (val) async {
@@ -271,15 +240,7 @@ class ProfileScreen extends ConsumerWidget {
                       fontSize: 13.5,
                     ),
                   ),
-                  subtitle: Text(
-                    'Atur ambang batas getaran refresh (${currentThreshold.toStringAsFixed(1)} m/s²)',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ),
+
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -326,25 +287,17 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
 
-          Text(
-            'Administrasi & Aplikasi',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700,
-              fontSize: 13.5,
-              color: AppTheme.textPrimaryDark,
-            ),
-          ),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
             color: AppTheme.darkCardSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+              side: const BorderSide(
+                color: AppTheme.darkCardBorder,
+                width: 1.0,
+              ),
             ),
             child: Column(
               children: [
@@ -469,14 +422,19 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       description: Text(
                         'Apakah Anda yakin ingin keluar dari sesi saat ini?',
-                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppTheme.textMutedDark,
+                        ),
                       ),
                       actions: [
                         ShadButton.ghost(
                           onPressed: () => Navigator.pop(ctx),
                           child: Text(
                             'Batal',
-                            style: GoogleFonts.inter(color: AppTheme.textMutedDark),
+                            style: GoogleFonts.inter(
+                              color: AppTheme.textMutedDark,
+                            ),
                           ),
                         ),
                         ShadButton.destructive(
@@ -505,7 +463,11 @@ class ProfileScreen extends ConsumerWidget {
                   },
                 );
               },
-              leading: const Icon(Icons.logout, color: AppTheme.dangerRed, size: 18),
+              leading: const Icon(
+                Icons.logout,
+                color: AppTheme.dangerRed,
+                size: 18,
+              ),
               child: Text(
                 'Keluar Akun',
                 style: GoogleFonts.inter(
@@ -521,10 +483,7 @@ class ProfileScreen extends ConsumerWidget {
     );
 
     if (ShadTheme.maybeOf(context) == null) {
-      return ShadTheme(
-        data: AppTheme.shadcnThemeLight,
-        child: scaffold,
-      );
+      return ShadTheme(data: AppTheme.shadcnThemeLight, child: scaffold);
     }
     return scaffold;
   }

@@ -6,7 +6,6 @@ import 'package:arus/features/auth/presentation/auth_provider.dart';
 import 'package:arus/features/auth/presentation/auth_state.dart';
 import 'package:arus/features/auth/data/auth_repository.dart';
 import 'package:arus/core/storage/secure_store.dart';
-import 'package:arus/features/users/domain/user_management_models.dart';
 import 'package:arus/features/users/data/user_management_repository.dart';
 import 'package:arus/features/users/presentation/user_management_provider.dart';
 import 'package:arus/features/users/presentation/user_management_screen.dart';

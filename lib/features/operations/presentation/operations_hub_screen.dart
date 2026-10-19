@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 
@@ -39,7 +40,10 @@ class OperationsHubScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search_rounded, color: AppTheme.textPrimaryDark),
+            icon: const Icon(
+              Icons.search_rounded,
+              color: AppTheme.textPrimaryDark,
+            ),
             tooltip: 'Pencarian Global',
             onPressed: () => context.push('/search'),
           ),
@@ -73,7 +77,8 @@ class OperationsHubScreen extends ConsumerWidget {
           final width = constraints.maxWidth;
           final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 3 : 2);
           // Hitung aspect ratio dinamis agar tinggi kartu selalu cukup (~146dp) dan bebas RenderFlex overflow
-          final itemWidth = (width - 32 - ((crossAxisCount - 1) * 12)) / crossAxisCount;
+          final itemWidth =
+              (width - 32 - ((crossAxisCount - 1) * 12)) / crossAxisCount;
           final childAspectRatio = (itemWidth / 146).clamp(0.95, 1.45);
 
           return ListView(
@@ -99,38 +104,33 @@ class OperationsHubScreen extends ConsumerWidget {
                 childAspectRatio: childAspectRatio,
                 children: const [
                   _OperationGridCard(
+                    title: 'Produk',
                     icon: Icons.inventory_2_outlined,
-                    title: 'Katalog & Kategori',
-                    subtitle: 'Daftar harga jual, HPP, & tambah produk',
-                    badgeText: 'Katalog',
+
                     route: '/catalog',
                   ),
                   _OperationGridCard(
                     icon: Icons.warehouse_outlined,
                     title: 'Inventaris & Stok',
-                    subtitle: 'Pantau sisa stok outlet & peringatan tipis',
-                    badgeText: 'Stok',
+
                     route: '/inventory',
                   ),
                   _OperationGridCard(
                     icon: Icons.people_outline_rounded,
                     title: 'Kelola Staf & Akun',
-                    subtitle: 'Atur akun Manager, Kasir, & hak cabang',
-                    badgeText: 'Tim & Staf',
+
                     route: '/users',
                   ),
                   _OperationGridCard(
                     icon: Icons.store_mall_directory_outlined,
                     title: 'Cabang & LBS',
-                    subtitle: 'Pemetaan cabang, LBS & jam operasional',
-                    badgeText: 'Cabang',
+
                     route: '/outlets',
                   ),
                   _OperationGridCard(
                     icon: Icons.security_rounded,
                     title: 'Integritas Ledger',
-                    subtitle: 'Audit trail rantai blok SHA-256 anti-tamper',
-                    badgeText: 'Audit Chain',
+
                     route: '/integrity',
                   ),
                 ],
@@ -155,8 +155,7 @@ class OperationsHubScreen extends ConsumerWidget {
                   _OperationGridCard(
                     icon: Icons.sports_esports_rounded,
                     title: 'Mini-Game Menu',
-                    subtitle: 'Uji ketangkasan hafalan menu & harga POS',
-                    badgeText: 'Game',
+
                     route: '/game',
                   ),
                 ],
@@ -169,10 +168,7 @@ class OperationsHubScreen extends ConsumerWidget {
     );
 
     if (ShadTheme.maybeOf(context) == null) {
-      return ShadTheme(
-        data: AppTheme.shadcnThemeLight,
-        child: scaffold,
-      );
+      return ShadTheme(data: AppTheme.shadcnThemeLight, child: scaffold);
     }
     return scaffold;
   }
@@ -295,7 +291,9 @@ class _PosHeroCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           ShadBadge.secondary(
-                            backgroundColor: AppTheme.jadeTosca.withValues(alpha: 0.15),
+                            backgroundColor: AppTheme.jadeTosca.withValues(
+                              alpha: 0.15,
+                            ),
                             foregroundColor: AppTheme.jadeTosca,
                             child: Text(
                               'Kasir Utama',
@@ -348,15 +346,12 @@ class _PosHeroCard extends StatelessWidget {
 class _OperationGridCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
-  final String badgeText;
+
   final String route;
 
   const _OperationGridCard({
     required this.icon,
     required this.title,
-    required this.subtitle,
-    required this.badgeText,
     required this.route,
   });
 
@@ -387,20 +382,6 @@ class _OperationGridCard extends StatelessWidget {
                   ),
                   child: Icon(icon, color: AppTheme.jadeTosca, size: 20),
                 ),
-                Flexible(
-                  child: ShadBadge.outline(
-                    child: Text(
-                      badgeText,
-                      style: GoogleFonts.inter(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.jadeTosca,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -420,17 +401,16 @@ class _OperationGridCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      color: AppTheme.textMutedDark,
-                      height: 1.25,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+
+                  // Text(
+                  //   style: GoogleFonts.inter(
+                  //     fontSize: 10.5,
+                  //     color: AppTheme.textMutedDark,
+                  //     height: 1.25,
+                  //   ),
+                  //   maxLines: 2,
+                  //   overflow: TextOverflow.ellipsis,
+                  // ),
                 ],
               ),
             ),

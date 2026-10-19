@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -247,15 +247,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       color: AppTheme.textPrimaryLight,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Decision Support System Multi-Cabang',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: AppTheme.textMutedLight,
-                    ),
-                  ),
+
                   const SizedBox(height: 28),
 
                   // Error Banner
@@ -362,7 +354,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       size: 20,
                     ),
                     label: Text(
-                      'Masuk dengan Biometrik (Sidik Jari)',
+                      'Masuk Via Biometrik',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
@@ -387,10 +379,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 24),
 
                   // Quick Demo Accounts Fill Chips
-                  const Divider(color: AppTheme.lightCardBorder, thickness: 1.0),
+                  const Divider(
+                    color: AppTheme.lightCardBorder,
+                    thickness: 1.0,
+                  ),
                   const SizedBox(height: 14),
                   Text(
-                    'Pilih Akun Demo (Garis Cepat):',
+                    'Pilih Akun Demo',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 12,

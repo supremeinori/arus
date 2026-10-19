@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,12 +55,19 @@ class DashboardScreen extends ConsumerWidget {
             backgroundColor: _DashboardColors.textPrimary,
             content: Row(
               children: [
-                const Icon(Icons.vibration_rounded, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.vibration_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Guncangan terdeteksi! Memperbarui data metrik & stok...',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -94,11 +102,14 @@ class DashboardScreen extends ConsumerWidget {
     final insightsAsync = ref.watch(insightsListProvider);
 
     // Hitung jumlah masalah operasional dari stok kritis
-    final lowStockIngredients = ingredientsAsync.valueOrNull
+    final lowStockIngredients =
+        ingredientsAsync.valueOrNull
             ?.where((ing) => ing.isLowStock || ing.isOutOfStock)
             .toList() ??
         [];
-    final issuesCount = lowStockIngredients.isNotEmpty ? lowStockIngredients.length : 2;
+    final issuesCount = lowStockIngredients.isNotEmpty
+        ? lowStockIngredients.length
+        : 2;
 
     return Scaffold(
       backgroundColor: _DashboardColors.bg,
@@ -121,10 +132,7 @@ class DashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // A. Header: ARUS Brand, Label BI, Bell Notifikasi, Avatar, & Sapaan Dinamis
-                _OwnerHeader(
-                  user: user,
-                  unreadCount: unreadCount,
-                ),
+                _OwnerHeader(user: user, unreadCount: unreadCount),
                 const SizedBox(height: 16),
 
                 // B. Card Omzet (Filter di dalam card, Nilai Utama, Perubahan %, Target Bulanan & Progress Bar)
@@ -149,7 +157,8 @@ class DashboardScreen extends ConsumerWidget {
 
                 // C. Summary Cards: Total Transaksi & Masalah Operasional berdampingan
                 _SummaryCardsRow(
-                  transactionCount: overviewAsync.valueOrNull?.transactionCount ?? 42,
+                  transactionCount:
+                      overviewAsync.valueOrNull?.transactionCount ?? 42,
                   issuesCount: issuesCount,
                 ),
                 const SizedBox(height: 14),
@@ -183,7 +192,8 @@ class DashboardScreen extends ConsumerWidget {
                   criticalItemName: lowStockIngredients.isNotEmpty
                       ? lowStockIngredients.first.name
                       : 'ayam fillet',
-                  customInsightText: insightsAsync.valueOrNull?.isNotEmpty == true
+                  customInsightText:
+                      insightsAsync.valueOrNull?.isNotEmpty == true
                       ? insightsAsync.valueOrNull!.first.title
                       : null,
                 ),
@@ -204,10 +214,7 @@ class _OwnerHeader extends StatelessWidget {
   final UserModel? user;
   final int unreadCount;
 
-  const _OwnerHeader({
-    required this.user,
-    required this.unreadCount,
-  });
+  const _OwnerHeader({required this.user, required this.unreadCount});
 
   String _getUserInitials(String? name) {
     if (name == null || name.trim().isEmpty) return 'PM';
@@ -246,16 +253,6 @@ class _OwnerHeader extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    'Business Intelligence',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: _DashboardColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 ],
               ),
             ),
@@ -279,53 +276,9 @@ class _OwnerHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _DashboardColors.tealBadge,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _DashboardColors.border, width: 1.0),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: _DashboardColors.teal,
-                    ),
-                  ),
-                ),
               ],
             ),
           ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Sapaan dinamis & Kalimat pendukung (anti-slop: titik terstruktur, tanpa emoji)
-        Text(
-          'Hai, $displayName.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-            color: _DashboardColors.textPrimary,
-            letterSpacing: -0.2,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 3),
-        Text(
-          'Ringkasan kondisi bisnis kamu.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12.5,
-            color: _DashboardColors.textSecondary,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -380,7 +333,9 @@ class _TotalOmzetCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final effectiveOutletValue = (selectedOutletId != null && outlets.any((o) => o.id == selectedOutletId))
+    final effectiveOutletValue =
+        (selectedOutletId != null &&
+            outlets.any((o) => o.id == selectedOutletId))
         ? selectedOutletId
         : null;
 
@@ -391,13 +346,17 @@ class _TotalOmzetCard extends ConsumerWidget {
         : 36000000; // Rp 36 Juta default demo
     final int realisasiJuta = (realisasiOmzetBulanan / 1000000).round();
     const int targetJuta = targetOmzetBulanan ~/ 1000000;
-    final double achievementRatio = (realisasiOmzetBulanan / targetOmzetBulanan).clamp(0.0, 1.0);
+    final double achievementRatio = (realisasiOmzetBulanan / targetOmzetBulanan)
+        .clamp(0.0, 1.0);
     final int achievementPct = (achievementRatio * 100).round();
 
     // Perubahan terhadap periode pembanding
     final double pctChange = comparison?.revenuePctChange ?? 12.4;
     final bool isUp = pctChange >= 0;
-    final String pctChangeStr = pctChange.abs().toStringAsFixed(1).replaceAll('.', ',');
+    final String pctChangeStr = pctChange
+        .abs()
+        .toStringAsFixed(1)
+        .replaceAll('.', ',');
 
     // Label tanggal
     final String dateDisplayLabel = selectedCustomDate != null
@@ -451,7 +410,10 @@ class _TotalOmzetCard extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _DashboardColors.border, width: 1.0),
+                    border: Border.all(
+                      color: _DashboardColors.border,
+                      width: 1.0,
+                    ),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String?>(
@@ -474,16 +436,18 @@ class _TotalOmzetCard extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          ...outlets.map((outlet) => Text(
-                                outlet.name,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: _DashboardColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              )),
+                          ...outlets.map(
+                            (outlet) => Text(
+                              outlet.name,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: _DashboardColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ];
                       },
                       items: [
@@ -500,22 +464,25 @@ class _TotalOmzetCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        ...outlets.map((outlet) => DropdownMenuItem<String?>(
-                              value: outlet.id,
-                              child: Text(
-                                outlet.name,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: _DashboardColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                        ...outlets.map(
+                          (outlet) => DropdownMenuItem<String?>(
+                            value: outlet.id,
+                            child: Text(
+                              outlet.name,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: _DashboardColors.textPrimary,
                               ),
-                            )),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
                       ],
                       onChanged: (val) {
-                        ref.read(selectedOutletFilterProvider.notifier).state = val;
+                        ref.read(selectedOutletFilterProvider.notifier).state =
+                            val;
                       },
                     ),
                   ),
@@ -532,11 +499,16 @@ class _TotalOmzetCard extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _DashboardColors.border, width: 1.0),
+                    border: Border.all(
+                      color: _DashboardColors.border,
+                      width: 1.0,
+                    ),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<DashboardDateFilter>(
-                      value: selectedCustomDate != null ? null : selectedDateFilter,
+                      value: selectedCustomDate != null
+                          ? null
+                          : selectedDateFilter,
                       hint: Row(
                         children: [
                           InkWell(
@@ -676,8 +648,10 @@ class _TotalOmzetCard extends ConsumerWidget {
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          ref.read(selectedCustomDateProvider.notifier).state = null;
-                          ref.read(selectedDateFilterProvider.notifier).state = val;
+                          ref.read(selectedCustomDateProvider.notifier).state =
+                              null;
+                          ref.read(selectedDateFilterProvider.notifier).state =
+                              val;
                         }
                       },
                     ),
@@ -688,7 +662,11 @@ class _TotalOmzetCard extends ConsumerWidget {
           ),
 
           const SizedBox(height: 14),
-          const Divider(height: 1, thickness: 1, color: _DashboardColors.border),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: _DashboardColors.border,
+          ),
           const SizedBox(height: 12),
 
           // 3. Label Omzet pada Periode Terpilih
@@ -719,7 +697,9 @@ class _TotalOmzetCard extends ConsumerWidget {
           Row(
             children: [
               Icon(
-                isUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                isUp
+                    ? Icons.arrow_upward_rounded
+                    : Icons.arrow_downward_rounded,
                 size: 15,
                 color: isUp ? _DashboardColors.teal : const Color(0xFFEF4444),
               ),
@@ -748,7 +728,11 @@ class _TotalOmzetCard extends ConsumerWidget {
           ),
 
           const SizedBox(height: 14),
-          const Divider(height: 1, thickness: 1, color: _DashboardColors.border),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: _DashboardColors.border,
+          ),
           const SizedBox(height: 12),
 
           // 6. Target Omzet Bulanan & Progress Bar
@@ -803,7 +787,9 @@ class _TotalOmzetCard extends ConsumerWidget {
               value: achievementRatio,
               minHeight: 8,
               backgroundColor: _DashboardColors.tealLight,
-              valueColor: const AlwaysStoppedAnimation<Color>(_DashboardColors.teal),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                _DashboardColors.teal,
+              ),
             ),
           ),
         ],
@@ -978,19 +964,37 @@ class _HourlyBarPoint {
 class _SalesTrendHourlyCard extends StatelessWidget {
   final List<SalesTrendPoint> trendPoints;
 
-  const _SalesTrendHourlyCard({
-    required this.trendPoints,
-  });
+  const _SalesTrendHourlyCard({required this.trendPoints});
 
   @override
   Widget build(BuildContext context) {
     // 5 Interval jam sesuai desain: 09.00, 12.00, 15.00, 18.00, 21.00
     const sampleData = [
-      _HourlyBarPoint(label: '09.00', selectedFraction: 0.38, comparisonFraction: 0.25),
-      _HourlyBarPoint(label: '12.00', selectedFraction: 0.75, comparisonFraction: 0.60),
-      _HourlyBarPoint(label: '15.00', selectedFraction: 0.50, comparisonFraction: 0.65),
-      _HourlyBarPoint(label: '18.00', selectedFraction: 0.95, comparisonFraction: 0.75),
-      _HourlyBarPoint(label: '21.00', selectedFraction: 0.38, comparisonFraction: 0.33),
+      _HourlyBarPoint(
+        label: '09.00',
+        selectedFraction: 0.38,
+        comparisonFraction: 0.25,
+      ),
+      _HourlyBarPoint(
+        label: '12.00',
+        selectedFraction: 0.75,
+        comparisonFraction: 0.60,
+      ),
+      _HourlyBarPoint(
+        label: '15.00',
+        selectedFraction: 0.50,
+        comparisonFraction: 0.65,
+      ),
+      _HourlyBarPoint(
+        label: '18.00',
+        selectedFraction: 0.95,
+        comparisonFraction: 0.75,
+      ),
+      _HourlyBarPoint(
+        label: '21.00',
+        selectedFraction: 0.38,
+        comparisonFraction: 0.33,
+      ),
     ];
 
     return Container(
@@ -1210,9 +1214,7 @@ class _YLabel extends StatelessWidget {
 class _VerticalColumnPair extends StatelessWidget {
   final _HourlyBarPoint point;
 
-  const _VerticalColumnPair({
-    required this.point,
-  });
+  const _VerticalColumnPair({required this.point});
 
   @override
   Widget build(BuildContext context) {
@@ -1264,10 +1266,7 @@ class _TopProductsCard extends StatelessWidget {
   final List<ProductModel> products;
   final bool isLoading;
 
-  const _TopProductsCard({
-    required this.products,
-    required this.isLoading,
-  });
+  const _TopProductsCard({required this.products, required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
@@ -1420,7 +1419,11 @@ class _TopProductsCard extends StatelessWidget {
                   ),
                 ),
                 if (!isLast)
-                  const Divider(height: 1, thickness: 1, color: _DashboardColors.chartGrid),
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: _DashboardColors.chartGrid,
+                  ),
               ],
             );
           }),
@@ -1435,10 +1438,7 @@ class _StockAlertCard extends StatelessWidget {
   final List<IngredientModel> ingredients;
   final bool isLoading;
 
-  const _StockAlertCard({
-    required this.ingredients,
-    required this.isLoading,
-  });
+  const _StockAlertCard({required this.ingredients, required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
@@ -1569,7 +1569,11 @@ class _StockAlertCard extends StatelessWidget {
                   ),
                 ),
                 if (!isLast)
-                  const Divider(height: 1, thickness: 1, color: _DashboardColors.chartGrid),
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: _DashboardColors.chartGrid,
+                  ),
               ],
             );
           }),
@@ -1621,7 +1625,8 @@ class _ArusInsightCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final insightText = customInsightText ??
+    final insightText =
+        customInsightText ??
         'Ringkasan perubahan penjualan dan masalah operasional berdasarkan data bisnis.';
 
     return Container(
@@ -1664,8 +1669,7 @@ class _ArusInsightCard extends ConsumerWidget {
               showAiCompanionBottomSheet(
                 context,
                 ref,
-                initialPrompt:
-                    'Bagaimana analisis performa bisnis saat ini dan rekomendasi langkah berikutnya?',
+                initialPrompt: 'Bagaimana analisis performa bisnis saat ini dan rekomendasi langkah berikutnya?',
               );
             },
             child: Row(
@@ -1748,7 +1752,11 @@ class _ErrorCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 18),
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Color(0xFFEF4444),
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1765,7 +1773,10 @@ class _ErrorCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             message,
-            style: GoogleFonts.plusJakartaSans(fontSize: 12, color: _DashboardColors.textSecondary),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: _DashboardColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 10),
           InkWell(
@@ -1773,7 +1784,11 @@ class _ErrorCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.refresh_rounded, size: 14, color: _DashboardColors.teal),
+                const Icon(
+                  Icons.refresh_rounded,
+                  size: 14,
+                  color: _DashboardColors.teal,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Coba lagi',
