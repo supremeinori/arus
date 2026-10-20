@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../outlets/presentation/outlets_provider.dart';
@@ -11,27 +12,33 @@ final availableOutletsProvider = Provider<List<AssignedOutletItem>>((ref) {
   final dynamicOutlets = outletsAsync.valueOrNull;
 
   if (dynamicOutlets != null && dynamicOutlets.isNotEmpty) {
-    return dynamicOutlets.map((o) => AssignedOutletItem(
-      id: o.id,
-      name: o.name,
-      address: o.address,
-    )).toList();
+    return dynamicOutlets
+        .map(
+          (o) => AssignedOutletItem(id: o.id, name: o.name, address: o.address),
+        )
+        .toList();
   }
 
   return defaultAvailableOutlets;
 });
 
 /// Filter state providers
-final userRoleFilterProvider = StateProvider<String>((ref) => 'all'); // 'all' | 'manager' | 'staff'
-final userOutletFilterProvider = StateProvider<String?>((ref) => null); // null = Semua Cabang
+final userRoleFilterProvider = StateProvider<String>(
+  (ref) => 'all',
+); // 'all' | 'manager' | 'staff'
+final userOutletFilterProvider = StateProvider<String?>(
+  (ref) => null,
+); // null = Semua Cabang
 final userSearchQueryProvider = StateProvider<String>((ref) => '');
 
 /// Notifier State untuk Daftar Pengguna
-class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>> {
+class UserManagementNotifier
+    extends StateNotifier<AsyncValue<List<ManagedUser>>> {
   final UserManagementRepository _repo;
   final Ref _ref;
 
-  UserManagementNotifier(this._repo, this._ref) : super(const AsyncValue.loading()) {
+  UserManagementNotifier(this._repo, this._ref)
+    : super(const AsyncValue.loading()) {
     loadUsers();
   }
 
@@ -63,14 +70,22 @@ class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>
     if (authUser.role == UserRole.manager) {
       // Manager HANYA boleh membuat Kasir (Staff)
       if (role != UserRole.staff) {
-        throw Exception('Manager hanya diizinkan untuk membuat akun Kasir (Staff).');
+        throw Exception(
+          'Manager hanya diizinkan untuk membuat akun Kasir (Staff).',
+        );
       }
 
       // Outlet Kasir WAJIB di-assign ke cabang Manager
-      final managerOutletId = authUser.outlets.isNotEmpty ? authUser.outlets.first.id : 'out-sudirman';
-      final managerOutletName = authUser.outlets.isNotEmpty ? authUser.outlets.first.name : 'Kopi Arus - Sudirman (HQ)';
+      final managerOutletId = authUser.outlets.isNotEmpty
+          ? authUser.outlets.first.id
+          : 'out-sudirman';
+      final managerOutletName = authUser.outlets.isNotEmpty
+          ? authUser.outlets.first.name
+          : 'Kopi Arus - Sudirman (HQ)';
       if (outletId != managerOutletId) {
-        throw Exception('Manager hanya dapat menambahkan kasir untuk cabangnya sendiri ($managerOutletName).');
+        throw Exception(
+          'Manager hanya dapat menambahkan kasir untuk cabangnya sendiri ($managerOutletName).',
+        );
       }
     } else if (authUser.role != UserRole.owner) {
       throw Exception('Anda tidak memiliki izin untuk membuat pengguna.');
@@ -88,7 +103,10 @@ class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>
 
     // Refresh state
     final currentList = state.valueOrNull ?? [];
-    state = AsyncValue.data([newUser, ...currentList.where((u) => u.id != newUser.id)]);
+    state = AsyncValue.data([
+      newUser,
+      ...currentList.where((u) => u.id != newUser.id),
+    ]);
     return newUser;
   }
 
@@ -115,11 +133,16 @@ class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>
 
     // Role-based Security Enforcement
     if (authUser.role == UserRole.manager) {
-      final managerOutletId = authUser.outlets.isNotEmpty ? authUser.outlets.first.id : 'out-sudirman';
-      
+      final managerOutletId = authUser.outlets.isNotEmpty
+          ? authUser.outlets.first.id
+          : 'out-sudirman';
+
       // Manager hanya boleh edit Kasir di cabangnya sendiri
-      if (existingUser.role != UserRole.staff || existingUser.outletId != managerOutletId) {
-        throw Exception('Manager hanya dapat mengedit kasir pada cabang yang dikelolanya.');
+      if (existingUser.role != UserRole.staff ||
+          existingUser.outletId != managerOutletId) {
+        throw Exception(
+          'Manager hanya dapat mengedit kasir pada cabang yang dikelolanya.',
+        );
       }
 
       // Manager tidak boleh mengubah role kasir menjadi manager/owner
@@ -129,7 +152,9 @@ class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>
 
       // Manager tidak boleh memindahkan kasir ke cabang lain
       if (outletId != null && outletId != managerOutletId) {
-        throw Exception('Manager tidak dapat memindahkan kasir ke cabang lain.');
+        throw Exception(
+          'Manager tidak dapat memindahkan kasir ke cabang lain.',
+        );
       }
     } else if (authUser.role != UserRole.owner) {
       throw Exception('Anda tidak memiliki izin untuk mengedit pengguna.');
@@ -173,11 +198,16 @@ class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>
 
     // Role-based Security Enforcement
     if (authUser.role == UserRole.manager) {
-      final managerOutletId = authUser.outlets.isNotEmpty ? authUser.outlets.first.id : 'out-sudirman';
+      final managerOutletId = authUser.outlets.isNotEmpty
+          ? authUser.outlets.first.id
+          : 'out-sudirman';
 
       // Manager hanya bisa menghapus Kasir di cabangnya sendiri
-      if (existingUser.role != UserRole.staff || existingUser.outletId != managerOutletId) {
-        throw Exception('Manager hanya dapat menghapus kasir di cabangnya sendiri.');
+      if (existingUser.role != UserRole.staff ||
+          existingUser.outletId != managerOutletId) {
+        throw Exception(
+          'Manager hanya dapat menghapus kasir di cabangnya sendiri.',
+        );
       }
     } else if (authUser.role != UserRole.owner) {
       throw Exception('Anda tidak memiliki izin untuk menghapus pengguna.');
@@ -185,16 +215,18 @@ class UserManagementNotifier extends StateNotifier<AsyncValue<List<ManagedUser>>
 
     await _repo.deleteUser(id);
 
-    state = AsyncValue.data(
-      currentList.where((u) => u.id != id).toList(),
-    );
+    state = AsyncValue.data(currentList.where((u) => u.id != id).toList());
   }
 }
 
-final userManagementProvider = StateNotifierProvider<UserManagementNotifier, AsyncValue<List<ManagedUser>>>((ref) {
-  final repo = ref.watch(userManagementRepositoryProvider);
-  return UserManagementNotifier(repo, ref);
-});
+final userManagementProvider =
+    StateNotifierProvider<
+      UserManagementNotifier,
+      AsyncValue<List<ManagedUser>>
+    >((ref) {
+      final repo = ref.watch(userManagementRepositoryProvider);
+      return UserManagementNotifier(repo, ref);
+    });
 
 /// Provider daftar pengguna yang TERFILTER sesuai hak akses pengguna login
 final visibleUsersProvider = Provider<List<ManagedUser>>((ref) {
@@ -209,7 +241,9 @@ final visibleUsersProvider = Provider<List<ManagedUser>>((ref) {
   // 1. Jika pengguna adalah MANAGER:
   // HANYA boleh melihat KASIR (Staff) di cabangnya sendiri
   if (authUser.role == UserRole.manager) {
-    final managerOutletId = authUser.outlets.isNotEmpty ? authUser.outlets.first.id : 'out-sudirman';
+    final managerOutletId = authUser.outlets.isNotEmpty
+        ? authUser.outlets.first.id
+        : 'out-sudirman';
 
     return allUsers.where((u) {
       // Wajib role staff
@@ -238,7 +272,9 @@ final visibleUsersProvider = Provider<List<ManagedUser>>((ref) {
       if (roleFilter == 'staff' && u.role != UserRole.staff) return false;
 
       // Filter Outlet
-      if (outletFilter != null && outletFilter.isNotEmpty && outletFilter != 'all') {
+      if (outletFilter != null &&
+          outletFilter.isNotEmpty &&
+          outletFilter != 'all') {
         if (u.outletId != outletFilter) return false;
       }
 
