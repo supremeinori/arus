@@ -25,41 +25,44 @@ class ProfileScreen extends ConsumerWidget {
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         title: Text(
-          'Profil & Akun',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
+          'Profil',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
         ),
+        centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           // User Card with Avatar (Photo / Letter)
+
           Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: AppTheme.darkCardSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      user.avatarUrl!,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _LetterAvatar(user: user),
-                    ),
-                  )
-                else
-                  _LetterAvatar(user: user),
-                const SizedBox(width: 16),
+                // Foto profil berbentuk lingkaran
+                ClipOval(
+                  child: SizedBox(
+                    width: 64,
+                    height: 64,
+                    child:
+                        user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                        ? Image.network(
+                            user.avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                _LetterAvatar(user: user),
+                          )
+                        : _LetterAvatar(user: user),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Nama dan role
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         user?.name ?? 'Pengguna',
@@ -67,43 +70,16 @@ class ProfileScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: AppTheme.textPrimaryDark,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
-                        user?.email ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        user?.role.toDisplayString() ?? 'Pengguna',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: AppTheme.textMutedDark,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.darkCardSurfaceElevated,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: AppTheme.darkCardBorder,
-                            width: 1.0,
-                          ),
-                        ),
-                        child: Text(
-                          user?.role.toDisplayString() ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.jadeTosca,
-                          ),
                         ),
                       ),
                     ],
@@ -112,6 +88,7 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
+
           const SizedBox(height: 20),
 
           // Keamanan & Preferensi Sesi
