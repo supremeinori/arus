@@ -74,6 +74,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
+      // Batasi akses modul pengelolaan Outlet dan Katalog hanya untuk Owner (RBAC)
+      final isOwnerRestrictedRoute = state.matchedLocation.startsWith('/outlets') ||
+          state.matchedLocation.startsWith('/catalog');
+      if (isAuthenticated && isOwnerRestrictedRoute && !authState.isOwner) {
+        return '/shell';
+      }
+
       return null;
     },
     routes: [

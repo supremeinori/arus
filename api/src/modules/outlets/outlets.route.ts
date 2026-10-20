@@ -32,11 +32,18 @@ router.post(
   (req, res, next) => outletsController.create(req, res, next)
 );
 
-// 6. PATCH /api/outlets/:id - Perbarui data cabang (Owner & Manager)
+// 6. PATCH /api/outlets/:id - Perbarui data cabang (Owner only)
 router.patch(
   '/outlets/:id',
-  requireRole([Role.owner, Role.manager]),
+  requireRole([Role.owner]),
   (req, res, next) => outletsController.update(req, res, next)
+);
+
+// 7. DELETE /api/outlets/:id - Nonaktifkan cabang (Soft Delete, Owner only)
+router.delete(
+  '/outlets/:id',
+  requireRole([Role.owner]),
+  (req, res, next) => outletsController.deactivate(req, res, next)
 );
 
 export default router;

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/outlet_models.dart';
 import 'outlets_provider.dart';
+import 'widgets/outlet_map_widget.dart';
 
 class OutletFormScreen extends ConsumerStatefulWidget {
   final String? outletId;
@@ -22,8 +24,12 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
   final _addressController = TextEditingController();
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
+
+  double? _selectedLat;
+  double? _selectedLng;
   String _selectedTimezone = 'Asia/Jakarta';
   bool _isActive = true;
+  String? _locationError;
 
   final List<String> _timezones = [
     'Asia/Jakarta',
@@ -44,9 +50,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Prefill edit dijadwalkan setelah frame pertama (aturan E26:
-    // tanpa side-effect sinkron di build). Data susulan ditangani
-    // ref.listen di build.
+    // Prefill edit dijadwalkan setelah frame pertama (aturan E26)
     if (widget.outletId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -63,28 +67,52 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
     setState(() {
       _nameController.text = outlet.name;
       _addressController.text = outlet.address;
+      _selectedLat = outlet.latitude;
+      _selectedLng = outlet.longitude;
       _latController.text = outlet.latitude.toString();
       _lngController.text = outlet.longitude.toString();
       _selectedTimezone = outlet.timezone;
       _isActive = outlet.isActive;
+      _locationError = null;
+    });
+  }
+
+  void _handleLocationSelected(LatLng point) {
+    setState(() {
+      _selectedLat = point.latitude;
+      _selectedLng = point.longitude;
+      _latController.text = point.latitude.toStringAsFixed(6);
+      _lngController.text = point.longitude.toStringAsFixed(6);
+      _locationError = null;
     });
   }
 
   void _applyCityPreset(String city, double lat, double lng, String tz) {
     setState(() {
-      _latController.text = lat.toString();
-      _lngController.text = lng.toString();
+      _selectedLat = lat;
+      _selectedLng = lng;
+      _latController.text = lat.toStringAsFixed(6);
+      _lngController.text = lng.toStringAsFixed(6);
       _selectedTimezone = tz;
+      _locationError = null;
     });
   }
 
   Future<void> _handleSubmit() async {
+    final lat = _selectedLat ?? double.tryParse(_latController.text.trim()) ?? 0.0;
+    final lng = _selectedLng ?? double.tryParse(_lngController.text.trim()) ?? 0.0;
+
+    if (lat == 0.0 && lng == 0.0) {
+      setState(() {
+        _locationError = 'Harap tentukan lokasi cabang dengan mengetuk titik pada peta.';
+      });
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
-    final lat = double.tryParse(_latController.text.trim()) ?? 0.0;
-    final lng = double.tryParse(_lngController.text.trim()) ?? 0.0;
 
     bool success;
     if (widget.outletId == null) {
@@ -139,8 +167,6 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
     final isEditing = widget.outletId != null;
     final mutationState = ref.watch(outletMutationProvider);
 
-    // Data yang tiba belakangan (FutureProvider) didengar di sini tanpa
-    // memutasi state sinkron di build (aturan E26): whenData + guard _isInit.
     if (isEditing) {
       ref.listen(outletDetailProvider(widget.outletId!), (prev, next) {
         next.whenData(_fillForm);
@@ -181,43 +207,60 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+
+            // Bagian Peta Interaktif & Pemilihan Lokasi LBS
             Row(
               children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _latController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                    labelText: 'Latitude *',
-                    hintText: '-7.2612',
-                    validator: (val) {
-                      if (val == null || double.tryParse(val) == null) {
-                        return 'Latitude tidak valid';
-                      }
-                      return null;
-                    },
+                const Expanded(
+                  child: Text(
+                    'Lokasi Cabang pada Peta *',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimaryDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppTextField(
-                    controller: _lngController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                    labelText: 'Longitude *',
-                    hintText: '112.7388',
-                    validator: (val) {
-                      if (val == null || double.tryParse(val) == null) {
-                        return 'Longitude tidak valid';
-                      }
-                      return null;
-                    },
+                Text(
+                  _selectedLat != null ? 'Koordinat Terpilih' : 'Ketuk Peta',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _selectedLat != null ? AppTheme.jadeTosca : AppTheme.textMutedDark,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             const Text(
-              'Preset Koordinat Cepat:',
+              'Ketuk titik cabang di peta atau gunakan GPS. Koordinat terisi otomatis tanpa input manual.',
+              style: TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
+            ),
+            const SizedBox(height: 10),
+
+            // Peta Interaktif
+            OutletLocationPickerWidget(
+              initialLatitude: _selectedLat,
+              initialLongitude: _selectedLng,
+              onLocationSelected: _handleLocationSelected,
+            ),
+
+            if (_locationError != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _locationError!,
+                style: const TextStyle(color: AppTheme.dangerRed, fontSize: 12),
+              ),
+            ],
+
+            const SizedBox(height: 14),
+
+            // Preset Kota Cepat
+            const Text(
+              'Preset Kota Cepat:',
               style: TextStyle(fontSize: 12, color: AppTheme.textMutedDark, fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -230,6 +273,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                   ActionChip(
                     backgroundColor: AppTheme.darkCardSurfaceElevated,
                     side: const BorderSide(color: AppTheme.darkCardBorder),
+                    avatar: const Icon(Icons.location_city_rounded, size: 16, color: AppTheme.jadeTosca),
                     label: const Text('Jakarta', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('Jakarta', -6.2088, 106.8456, 'Asia/Jakarta'),
                   ),
@@ -237,6 +281,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                   ActionChip(
                     backgroundColor: AppTheme.darkCardSurfaceElevated,
                     side: const BorderSide(color: AppTheme.darkCardBorder),
+                    avatar: const Icon(Icons.location_city_rounded, size: 16, color: AppTheme.jadeTosca),
                     label: const Text('Jogja', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('Jogja', -7.7828, 110.3670, 'Asia/Jakarta'),
                   ),
@@ -244,6 +289,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                   ActionChip(
                     backgroundColor: AppTheme.darkCardSurfaceElevated,
                     side: const BorderSide(color: AppTheme.darkCardBorder),
+                    avatar: const Icon(Icons.location_city_rounded, size: 16, color: AppTheme.jadeTosca),
                     label: const Text('Bali', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('Bali', -8.6705, 115.2126, 'Asia/Makassar'),
                   ),
@@ -251,6 +297,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
                   ActionChip(
                     backgroundColor: AppTheme.darkCardSurfaceElevated,
                     side: const BorderSide(color: AppTheme.darkCardBorder),
+                    avatar: const Icon(Icons.location_city_rounded, size: 16, color: AppTheme.jadeTosca),
                     label: const Text('London', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                     onPressed: () => _applyCityPreset('London', 51.5074, -0.1278, 'Europe/London'),
                   ),
@@ -258,6 +305,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
             AppDropdown<String>(
               value: _selectedTimezone,
               items: _timezones.map((tz) {

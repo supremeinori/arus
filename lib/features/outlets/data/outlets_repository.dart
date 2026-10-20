@@ -121,4 +121,18 @@ class OutletsRepository {
       throw AppException('Koneksi ke web service terputus. Gagal memperbarui outlet.');
     }
   }
+
+  /// Menonaktifkan outlet menggunakan soft delete (is_active = false)
+  Future<OutletModel> deactivateOutlet(String id) async {
+    try {
+      final response = await _client.delete<Map<String, dynamic>>('/outlets/$id');
+      final data = response.data?['data'] as Map<String, dynamic>;
+      return OutletModel.fromJson(data);
+    } on AppException {
+      rethrow;
+    } catch (_) {
+      // Fallback ke PATCH /outlets/:id dengan is_active: false
+      return updateOutlet(id, isActive: false);
+    }
+  }
 }

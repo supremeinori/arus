@@ -69,6 +69,21 @@ export class OutletsController {
     }
   }
 
+  async deactivate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const outlet = await outletsService.deactivateOutlet(id);
+
+      res.json({
+        success: true,
+        message: 'Cabang outlet berhasil dinonaktifkan.',
+        data: outlet,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async performance(req: Request, res: Response, next: NextFunction) {
     try {
       const performance = await outletsService.getOutletsPerformance();

@@ -18,14 +18,13 @@ class OutletDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final outletAsync = ref.watch(outletDetailProvider(outletId));
     final authState = ref.watch(authProvider);
-    final isPrivileged = authState.user?.role == UserRole.owner ||
-        authState.user?.role == UserRole.manager;
+    final isOwner = authState.user?.role == UserRole.owner;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
-          if (isPrivileged)
+          if (isOwner)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit Cabang',
@@ -36,15 +35,13 @@ class OutletDetailScreen extends ConsumerWidget {
       body: AsyncStateView<OutletModel>(
         value: outletAsync,
         onRetry: () => ref.invalidate(outletDetailProvider(outletId)),
-        dataBuilder: (outlet) => _DetailContent(outlet: outlet),
+        dataBuilder: (outlet) => _DetailContent(outlet: outlet, isOwner: isOwner),
       ),
     );
   }
-
 }
 
-/// Label jam lokal outlet — fungsi top-level murni (aturan E21:
-/// DateTime.now tidak lagi di dalam build).
+/// Label jam lokal outlet — fungsi top-level murni
 String outletLocalTimeDisplay(String timezone) {
   final now = DateTime.now().toUtc();
   if (timezone.contains('Jakarta')) {
@@ -60,15 +57,108 @@ String outletLocalTimeDisplay(String timezone) {
   return timezone;
 }
 
-/// Isi detail outlet — widget class top-level (aturan E23).
-class _DetailContent extends StatelessWidget {
+/// Isi detail outlet — widget class top-level
+class _DetailContent extends ConsumerWidget {
   final OutletModel outlet;
+  final bool isOwner;
 
-  const _DetailContent({required this.outlet});
+  const _DetailContent({required this.outlet, required this.isOwner});
+
+  void _confirmDeactivation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.darkCardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppTheme.darkCardBorder),
+        ),
+        title: const Text(
+          'Konfirmasi Penonaktifan Cabang',
+          style: TextStyle(color: AppTheme.textPrimaryDark, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menonaktifkan cabang “${outlet.name}”?\n\nCabang nonaktif tidak akan dapat menerima pesanan kasir, namun seluruh data historis dan inventaris tetap tersimpan dengan aman (soft delete).',
+          style: const TextStyle(color: AppTheme.textSecondaryDark, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Batal', style: TextStyle(color: AppTheme.textMutedDark)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.dangerRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final success = await ref
+                  .read(outletMutationProvider.notifier)
+                  .deactivateOutlet(outlet.id);
+              if (!context.mounted) return;
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Cabang “${outlet.name}” berhasil dinonaktifkan.'),
+                    backgroundColor: AppTheme.jadeTosca,
+                  ),
+                );
+              } else {
+                final err = ref.read(outletMutationProvider).error;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Gagal menonaktifkan cabang: $err'),
+                    backgroundColor: AppTheme.dangerRed,
+                  ),
+                );
+              }
+            },
+            child: const Text('Nonaktifkan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _reactivateOutlet(BuildContext context, WidgetRef ref) async {
+    final success = await ref
+        .read(outletMutationProvider.notifier)
+        .updateOutlet(outlet.id, isActive: true);
+    if (!context.mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cabang “${outlet.name}” berhasil diaktifkan kembali.'),
+          backgroundColor: AppTheme.jadeTosca,
+        ),
+      );
+    } else {
+      final err = ref.read(outletMutationProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengaktifkan cabang: $err'),
+          backgroundColor: AppTheme.dangerRed,
+        ),
+      );
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final localTimeDisplay = outletLocalTimeDisplay(outlet.timezone);
+    final userCoord = ref.watch(userCoordinatesProvider);
+
+    final straightMeters = calculateStraightDistanceMeters(
+      userCoord.$1,
+      userCoord.$2,
+      outlet.latitude,
+      outlet.longitude,
+    );
+    final roadMeters = estimateRoadDistanceMeters(straightMeters);
+    final hasValidGps = userCoord.$1 != 0.0 && userCoord.$2 != 0.0;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -92,7 +182,9 @@ class _DetailContent extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: outlet.isActive ? const Color(0x2210B981) : const Color(0x22EF4444),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: outlet.isActive ? const Color(0x3310B981) : const Color(0x33EF4444)),
+                        border: Border.all(
+                          color: outlet.isActive ? const Color(0x3310B981) : const Color(0x33EF4444),
+                        ),
                       ),
                       child: Text(
                         outlet.isActive ? 'Operasional Aktif' : 'Nonaktif',
@@ -166,6 +258,59 @@ class _DetailContent extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (hasValidGps) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkCardSurfaceElevated,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.darkCardBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.near_me_rounded, size: 15, color: AppTheme.jadeTosca),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Jarak dari Lokasi Anda (GPS):',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Garis Lurus: ${formatDistance(straightMeters)}',
+                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Est. Jalan: ${formatDistance(roadMeters)}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.jadeTosca),
+                                textAlign: TextAlign.end,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -192,7 +337,7 @@ class _DetailContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           tileColor: AppTheme.darkCardSurface,
@@ -205,13 +350,47 @@ class _DetailContent extends StatelessWidget {
           trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, color: AppTheme.textMutedDark)),
           onTap: () => context.push('/inventory?outlet_id=${outlet.id}'),
         ),
+
+        // Aksi Khusus Owner: Tombol Nonaktifkan (Soft Delete) atau Aktifkan Kembali
+        if (isOwner) ...[
+          const SizedBox(height: 24),
+          if (outlet.isActive)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.dangerRed,
+                side: const BorderSide(color: AppTheme.dangerRed, width: 1.2),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.power_settings_new_rounded, size: 18),
+              label: const Text(
+                'Nonaktifkan Cabang Ini (Soft Delete)',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onPressed: () => _confirmDeactivation(context, ref),
+            )
+          else
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.jadeTosca,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+              label: const Text(
+                'Aktifkan Kembali Cabang Ini',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              onPressed: () => _reactivateOutlet(context, ref),
+            ),
+        ],
       ],
     );
   }
-
 }
 
-/// Tile metrik outlet — widget class top-level const (aturan E23).
+/// Tile metrik outlet — widget class top-level const
 class _MetricTile extends StatelessWidget {
   final String label;
   final String value;

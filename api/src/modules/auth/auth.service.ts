@@ -110,7 +110,7 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      accessibleOutlets = (user.outlets || []).map((uo: any) => ({
+      accessibleOutlets = (user.outlets || []).filter((uo: any) => uo.outlet ? uo.outlet.is_active : true).map((uo: any) => ({
         id: uo.outlet?.id || uo.id,
         name: uo.outlet?.name || uo.name,
         timezone: uo.outlet?.timezone || uo.timezone,
@@ -260,7 +260,7 @@ export class AuthService {
         select: { id: true, name: true, timezone: true, address: true },
       });
     } else {
-      outlets = user.outlets.map((uo: any) => ({
+      outlets = (user.outlets || []).filter((uo: any) => uo.outlet ? uo.outlet.is_active : true).map((uo: any) => ({
         id: uo.outlet.id,
         name: uo.outlet.name,
         timezone: uo.outlet.timezone,

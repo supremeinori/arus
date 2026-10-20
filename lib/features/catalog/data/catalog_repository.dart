@@ -195,8 +195,12 @@ class CatalogRepository {
     if (unit != null) payload['unit'] = unit.trim();
     if (priceIdr != null) payload['price_idr'] = priceIdr;
     if (costIdr != null) payload['cost_idr'] = costIdr;
-    if (categoryId != null) payload['category_id'] = categoryId;
-    if (imageUrl != null) payload['image_url'] = imageUrl.trim();
+    // category_id & image_url SELALU dikirim, boleh null: backend menerima null
+    // untuk mengosongkan kategori/foto. Bila key tidak dikirim, Prisma tidak
+    // mengubah kolom lama sehingga hasil edit tidak pernah terlihat di UI.
+    payload['category_id'] = categoryId;
+    payload['image_url'] =
+        (imageUrl != null && imageUrl.trim().isNotEmpty) ? imageUrl.trim() : null;
     if (isActive != null) payload['is_active'] = isActive;
     if (recipes != null) payload['recipes'] = recipes;
 
@@ -205,10 +209,18 @@ class CatalogRepository {
         '/products/$id',
         data: payload,
       );
-      final data = res.data?['data'] as Map<String, dynamic>;
-      final prod = ProductModel.fromJson(data);
-      await _localDb.cacheSingleProduct(prod);
-      return prod;
+      // Respons PATCH adalah baris Prisma mentah: tidak memuat estimated_portions
+      // maupun cost_idr, dan bentuk recipe-nya berbeda dari GET /products/:id.
+      // Mapping langsung menulis 0 porsi & HPP null ke cache lokal, jadi ambil
+      // ulang produk agar hasil edit & cache lokal konsisten.
+      try {
+        return await getProductById(id);
+      } catch (_) {
+        final data = res.data?['data'] as Map<String, dynamic>;
+        final prod = ProductModel.fromJson(data);
+        await _localDb.cacheSingleProduct(prod);
+        return prod;
+      }
     } on AppException {
       rethrow;
     } catch (_) {

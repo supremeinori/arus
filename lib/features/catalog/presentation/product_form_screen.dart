@@ -13,10 +13,18 @@ import 'catalog_provider.dart';
 
 class _RecipeRow {
   String? ingredientId;
+  // Nama & satuan bahan ikut disimpan dari resep yang dimuat. Dipakai untuk
+  // menampilkan bahan yang tidak ada di daftar inventory (mis. terfilter).
+  String? ingredientName;
+  String? ingredientUnit;
   final TextEditingController amountController;
 
-  _RecipeRow({this.ingredientId, int? amount})
-      : amountController = TextEditingController(text: amount != null && amount > 0 ? amount.toString() : '');
+  _RecipeRow({
+    this.ingredientId,
+    this.ingredientName,
+    this.ingredientUnit,
+    int? amount,
+  }) : amountController = TextEditingController(text: amount != null && amount > 0 ? amount.toString() : '');
 
   void dispose() {
     amountController.dispose();
@@ -86,6 +94,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       for (final r in product.recipes) {
         _recipeRows.add(_RecipeRow(
           ingredientId: r.ingredientId,
+          ingredientName: r.ingredientName,
+          ingredientUnit: r.ingredientUnit,
           amount: r.amountNeeded,
         ));
       }
@@ -476,6 +486,18 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                   borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                 ),
               ),
+              validator: (val) {
+                final v = val?.trim() ?? '';
+                if (v.isEmpty) return null;
+                final uri = Uri.tryParse(v);
+                if (uri == null ||
+                    !uri.hasScheme ||
+                    (uri.scheme != 'http' && uri.scheme != 'https') ||
+                    uri.host.isEmpty) {
+                  return 'URL gambar tidak valid (contoh: https://images.unsplash.com/...)';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
 
@@ -615,6 +637,24 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                         }
                         final ingredientsList = uniqueMap.values.toList();
 
+                        // Opsi dropdown digabung dengan bahan yang sudah dipakai
+                        // produk. Bahan tersimpan bisa tidak muncul di daftar
+                        // inventory (filter outlet/status/pencarian), sehingga
+                        // resep akan tampil kosong padahal data tersimpan.
+                        final optionLabels = <String, String>{};
+                        final optionUnits = <String, String>{};
+                        for (final ing in ingredientsList) {
+                          optionLabels[ing.id] = '${ing.name} (${ing.unit})';
+                          optionUnits[ing.id] = ing.unit;
+                        }
+                        for (final r in widget.recipeRows) {
+                          final id = r.ingredientId;
+                          if (id == null || id.isEmpty || optionLabels.containsKey(id)) continue;
+                          optionLabels[id] =
+                              '${r.ingredientName ?? 'Bahan tidak tersedia'} (${r.ingredientUnit ?? ''})';
+                          optionUnits[id] = r.ingredientUnit ?? '';
+                        }
+
                         return Column(
                           children: [
                             for (int idx = 0; idx < widget.recipeRows.length; idx++) ...[
@@ -626,8 +666,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                       .firstWhere((i) => i?.id == row.ingredientId, orElse: () => null);
 
                                   final isKnown = row.ingredientId != null &&
-                                      ingredientsList.any((i) => i.id == row.ingredientId);
+                                      optionLabels.containsKey(row.ingredientId);
                                   final effectiveVal = isKnown ? row.ingredientId : null;
+                                  final selectedUnit = selectedIngredient?.unit ??
+                                      (row.ingredientId != null ? optionUnits[row.ingredientId] : null) ??
+                                      '';
 
                                   return Container(
                                     padding: const EdgeInsets.all(10),
@@ -657,11 +700,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                                 value: null,
                                                 child: Text('-- Pilih Bahan --', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
                                               ),
-                                              ...ingredientsList.map((ing) {
+                                              ...optionLabels.entries.map((entry) {
                                                 return DropdownMenuItem<String?>(
-                                                  value: ing.id,
+                                                  value: entry.key,
                                                   child: Text(
-                                                    '${ing.name} (${ing.unit})',
+                                                    entry.value,
                                                     style: GoogleFonts.inter(fontSize: 12.5),
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
@@ -688,7 +731,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                             decoration: InputDecoration(
                                               labelText: 'Takaran',
                                               hintText: '18',
-                                              suffixText: selectedIngredient?.unit ?? '',
+                                              suffixText: selectedUnit,
                                               isDense: true,
                                               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

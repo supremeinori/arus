@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../auth/domain/user_model.dart';
+import '../../auth/presentation/auth_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 
 class OperationsHubScreen extends ConsumerWidget {
@@ -12,6 +14,8 @@ class OperationsHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final authState = ref.watch(authProvider);
+    final isOwner = authState.user?.role == UserRole.owner;
 
     final scaffold = Scaffold(
       backgroundColor: AppTheme.lightBackground,
@@ -76,7 +80,8 @@ class OperationsHubScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
-          // 2. Grid 2x2: Fitur Operasional Inti
+          // 2. Grid Fitur Operasional: Owner melihat 4 kartu (Produk, Inventaris, Staff, Cabang).
+          // Manager hanya melihat fitur operasional non-owner (Inventaris, Staff) tanpa Produk & Cabang.
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -85,11 +90,12 @@ class OperationsHubScreen extends ConsumerWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 1.1,
             children: [
-              _buildSquareCard(
-                title: 'Produk',
-                icon: Icons.inventory_2_outlined,
-                onTap: () => context.push('/catalog'),
-              ),
+              if (isOwner)
+                _buildSquareCard(
+                  title: 'Produk',
+                  icon: Icons.inventory_2_outlined,
+                  onTap: () => context.push('/catalog'),
+                ),
               _buildSquareCard(
                 title: 'Inventaris',
                 icon: Icons.warehouse_outlined,
@@ -100,11 +106,12 @@ class OperationsHubScreen extends ConsumerWidget {
                 icon: Icons.people_outline_rounded,
                 onTap: () => context.push('/users'),
               ),
-              _buildSquareCard(
-                title: 'Cabang',
-                icon: Icons.storefront_outlined,
-                onTap: () => context.push('/outlets'),
-              ),
+              if (isOwner)
+                _buildSquareCard(
+                  title: 'Cabang',
+                  icon: Icons.storefront_outlined,
+                  onTap: () => context.push('/outlets'),
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -145,9 +152,8 @@ class OperationsHubScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
-      // Placeholder Bottom Navigation Bar (di-handle oleh MainShell)
     );
+
     return scaffold;
   }
 

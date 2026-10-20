@@ -54,7 +54,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       req.userOutlets = (allOutlets || []).map((o) => o.id);
     } else {
       const assigned = typeof prisma.userOutlet?.findMany === 'function' ? await prisma.userOutlet.findMany({
-        where: { user_id: user.id },
+        where: { user_id: user.id, outlet: { is_active: true } },
         select: { outlet_id: true },
       }) : [];
       req.userOutlets = (assigned || []).map((uo) => uo.outlet_id);

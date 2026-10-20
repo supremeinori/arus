@@ -73,7 +73,6 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
               onPressed: () => context.push('/outlets/new'),
             )
           : null,
-      // Tiap tab punya scroll sendiri, bukan scroll induk (aturan A13).
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -85,7 +84,7 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
   }
 }
 
-/// Tab daftar cabang — widget class top-level (aturan E23, E24).
+/// Tab daftar cabang — widget class top-level
 class _OutletsTab extends StatelessWidget {
   final AsyncValue<List<OutletModel>> outletsAsync;
   final AsyncValue<List<OutletPerformanceModel>> performanceAsync;
@@ -124,7 +123,7 @@ class _OutletsTab extends StatelessWidget {
   }
 }
 
-/// Kartu satu outlet — widget class top-level const (aturan E23).
+/// Kartu satu outlet — widget class top-level const
 class _OutletCard extends StatelessWidget {
   final OutletModel outlet;
   final OutletPerformanceModel? perf;
@@ -135,7 +134,10 @@ class _OutletCard extends StatelessWidget {
   Widget build(BuildContext context) {
     Color statusColor = AppTheme.jadeTosca;
     String statusText = 'Optimal';
-    if (perf?.performanceStatus == 'critical') {
+    if (!outlet.isActive) {
+      statusColor = AppTheme.textMutedDark;
+      statusText = 'Nonaktif';
+    } else if (perf?.performanceStatus == 'critical') {
       statusColor = AppTheme.dangerRed;
       statusText = 'Kritis';
     } else if (perf?.performanceStatus == 'warning') {
@@ -163,15 +165,36 @@ class _OutletCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      outlet.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimaryDark,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            outlet.name,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: outlet.isActive ? AppTheme.textPrimaryDark : AppTheme.textMutedDark,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (!outlet.isActive) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.dangerRed.withAlpha(25),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppTheme.dangerRed.withAlpha(60)),
+                            ),
+                            child: const Text(
+                              'Nonaktif',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.dangerRed),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Container(
@@ -243,8 +266,7 @@ class _OutletCard extends StatelessWidget {
   }
 }
 
-/// Label jam lokal untuk LBS — fungsi top-level murni (aturan E21:
-/// DateTime.now tidak lagi di dalam build).
+/// Label jam lokal untuk LBS — fungsi top-level murni
 String lbsLocalTimeDisplay(String timezone) {
   final nowUtc = DateTime.now().toUtc();
   if (timezone.contains('London')) {
@@ -255,8 +277,7 @@ String lbsLocalTimeDisplay(String timezone) {
   return '${DateFormat('HH:mm').format(nowUtc.add(const Duration(hours: 7)))} WIB';
 }
 
-/// Tab LBS / cabang terdekat — widget class top-level (aturan E23).
-/// Scroll milik tab sendiri, bukan scroll induk (aturan A13).
+/// Tab LBS / cabang terdekat — widget class top-level
 class _LbsTab extends ConsumerWidget {
   final AsyncValue<NearestOutletResult> nearestAsync;
   final AsyncValue<List<OutletPerformanceModel>> performanceAsync;
@@ -268,6 +289,8 @@ class _LbsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentCoord = ref.watch(userCoordinatesProvider);
+
     return AsyncStateView<NearestOutletResult>(
       value: nearestAsync,
       onRetry: () {
@@ -275,10 +298,242 @@ class _LbsTab extends ConsumerWidget {
         ref.invalidate(outletsPerformanceProvider);
         ref.read(authProvider.notifier).checkAuth();
       },
-      dataBuilder: (data) {
-        return OutletMapWidget(
-          nearestAsync: nearestAsync,
-          performanceAsync: performanceAsync,
+      dataBuilder: (result) {
+        final nearest = result.nearestOutlet;
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // 1. Panel Simulasi Posisi Pengguna (LBS GPS)
+            Card(
+              elevation: 0,
+              color: AppTheme.darkCardSurface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.my_location_rounded, size: 18, color: AppTheme.jadeTosca),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Simulasi Posisi Pengguna (LBS GPS)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppTheme.textPrimaryDark,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Koordinat saat ini: ${currentCoord.$1.toStringAsFixed(4)}, ${currentCoord.$2.toStringAsFixed(4)}',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ActionChip(
+                          backgroundColor: AppTheme.darkCardSurfaceElevated,
+                          side: const BorderSide(color: AppTheme.darkCardBorder),
+                          label: const Text('Jogja (Malioboro)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          onPressed: () {
+                            ref.read(userCoordinatesProvider.notifier).state = (-7.7828, 110.3670);
+                          },
+                        ),
+                        ActionChip(
+                          backgroundColor: AppTheme.darkCardSurfaceElevated,
+                          side: const BorderSide(color: AppTheme.darkCardBorder),
+                          label: const Text('Jakarta (Sudirman)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          onPressed: () {
+                            ref.read(userCoordinatesProvider.notifier).state = (-6.2146, 106.8215);
+                          },
+                        ),
+                        ActionChip(
+                          backgroundColor: AppTheme.darkCardSurfaceElevated,
+                          side: const BorderSide(color: AppTheme.darkCardBorder),
+                          label: const Text('Bali (Canggu)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          onPressed: () {
+                            ref.read(userCoordinatesProvider.notifier).state = (-8.6500, 115.1300);
+                          },
+                        ),
+                        ActionChip(
+                          backgroundColor: AppTheme.darkCardSurfaceElevated,
+                          side: const BorderSide(color: AppTheme.darkCardBorder),
+                          label: const Text('London (UK)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          onPressed: () {
+                            ref.read(userCoordinatesProvider.notifier).state = (51.5074, -0.1278);
+                          },
+                        ),
+                        ActionChip(
+                          backgroundColor: AppTheme.jadeTosca.withAlpha(25),
+                          side: const BorderSide(color: AppTheme.jadeTosca),
+                          avatar: const Icon(Icons.gps_fixed, size: 14, color: AppTheme.jadeTosca),
+                          label: const Text('GPS Riil', style: TextStyle(color: AppTheme.jadeTosca, fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () async {
+                            final gps = await fetchCurrentGpsLocation();
+                            ref.read(userCoordinatesProvider.notifier).state = gps;
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 2. Highlight Kartu Cabang Terdekat
+            if (nearest != null) ...[
+              Card(
+                elevation: 0,
+                color: AppTheme.darkCardSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppTheme.jadeTosca, width: 1.5),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.jadeTosca.withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.stars_rounded, color: AppTheme.jadeTosca, size: 16),
+                                SizedBox(width: 6),
+                                Text(
+                                  'CABANG TERDEKAT (LBS)',
+                                  style: TextStyle(
+                                    color: AppTheme.jadeTosca,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${nearest.distanceKm.toStringAsFixed(1)} km',
+                            style: const TextStyle(
+                              color: AppTheme.jadeTosca,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        nearest.name,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimaryDark,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        nearest.address,
+                        style: const TextStyle(color: AppTheme.textSecondaryDark, fontSize: 13),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 14),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.jadeTosca,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                        label: const Text('Buka Detail Cabang Terdekat', maxLines: 1, overflow: TextOverflow.ellipsis),
+                        onPressed: () => context.push('/outlets/${nearest.id}'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 3. Peta Interaktif LBS
+            Container(
+              height: 280,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.darkCardBorder, width: 1.2),
+              ),
+              child: OutletMapWidget(
+                nearestAsync: nearestAsync,
+                performanceAsync: performanceAsync,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 4. Daftar Seluruh Cabang Terurut Jarak
+            const Text(
+              'Seluruh Cabang Terurut Berdasarkan Jarak:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            ...result.allOutletsSorted.map((item) {
+              final localTime = lbsLocalTimeDisplay(item.timezone);
+
+              return Card(
+                color: AppTheme.darkCardSurface,
+                margin: const EdgeInsets.only(bottom: 8),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppTheme.darkCardSurfaceElevated,
+                    child: const Icon(Icons.location_on, color: AppTheme.jadeTosca, size: 20),
+                  ),
+                  title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime', style: const TextStyle(color: AppTheme.textMutedDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, size: 18, color: AppTheme.textMutedDark)),
+                  onTap: () => context.push('/outlets/${item.id}'),
+                ),
+              );
+            }),
+          ],
         );
       },
     );

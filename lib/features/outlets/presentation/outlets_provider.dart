@@ -21,6 +21,7 @@ final outletsPerformanceProvider = FutureProvider.autoDispose<List<OutletPerform
 // Default lokasi user untuk simulasi / geolokasi: Malioboro Yogyakarta (-7.7828, 110.3670)
 final userCoordinatesProvider = StateProvider<(double, double)>((ref) => (-7.7828, 110.3670));
 
+/// Mengambil koordinat GPS riil perangkat
 Future<(double, double)> fetchCurrentGpsLocation() async {
   try {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -46,6 +47,35 @@ Future<(double, double)> fetchCurrentGpsLocation() async {
   } catch (_) {
     return (-7.7828, 110.3670);
   }
+}
+
+/// Menghitung jarak garis lurus (geodesik / Haversine) dalam meter
+double calculateStraightDistanceMeters(
+  double lat1,
+  double lon1,
+  double lat2,
+  double lon2,
+) {
+  if (lat1 == 0.0 && lon1 == 0.0) return 0.0;
+  if (lat2 == 0.0 && lon2 == 0.0) return 0.0;
+  return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
+}
+
+/// Menghitung estimasi jarak tempuh melalui jaringan jalan darat
+/// (menggunakan circuity factor standar transportasi darat 1.35x dari garis lurus)
+double estimateRoadDistanceMeters(double straightDistanceMeters) {
+  if (straightDistanceMeters <= 0.0) return 0.0;
+  return straightDistanceMeters * 1.35;
+}
+
+/// Format jarak ke teks meter atau kilometer yang mudah dibaca
+String formatDistance(double meters) {
+  if (meters <= 0.0) return '0 m';
+  if (meters < 1000.0) {
+    return '${meters.round()} m';
+  }
+  final km = meters / 1000.0;
+  return '${km.toStringAsFixed(1)} km';
 }
 
 final nearestOutletProvider = FutureProvider.autoDispose<NearestOutletResult>((ref) async {
@@ -118,6 +148,24 @@ class OutletMutationNotifier extends StateNotifier<OutletMutationState> {
       _ref.invalidate(outletsListProvider);
       _ref.invalidate(outletDetailProvider(id));
       _ref.invalidate(outletsPerformanceProvider);
+      _ref.invalidate(nearestOutletProvider);
+      return true;
+    } catch (e) {
+      state = OutletMutationState(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// Soft delete outlet: memperbarui status is_active = false
+  Future<bool> deactivateOutlet(String id) async {
+    state = const OutletMutationState(isLoading: true);
+    try {
+      await _repo.deactivateOutlet(id);
+      state = const OutletMutationState(isLoading: false);
+      _ref.invalidate(outletsListProvider);
+      _ref.invalidate(outletDetailProvider(id));
+      _ref.invalidate(outletsPerformanceProvider);
+      _ref.invalidate(nearestOutletProvider);
       return true;
     } catch (e) {
       state = OutletMutationState(isLoading: false, error: e.toString());

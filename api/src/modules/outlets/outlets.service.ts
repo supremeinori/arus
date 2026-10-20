@@ -24,11 +24,14 @@ export function calculateHaversineDistanceKm(
 
 export class OutletsService {
   async listOutlets(user: { id: string; role: Role }, userOutlets: string[]) {
-    const isPrivileged = user.role === Role.owner || user.role === Role.manager;
+    const isOwner = user.role === Role.owner;
     const where: any = {};
 
-    if (!isPrivileged) {
-      where.id = { in: userOutlets };
+    if (!isOwner) {
+      where.is_active = true;
+      if (user.role !== Role.manager) {
+        where.id = { in: userOutlets };
+      }
     }
 
     try {
@@ -191,6 +194,24 @@ export class OutletsService {
   /**
    * Menghitung indikator performa untuk pewarnaan peta LBS (optimal / warning / critical).
    */
+  async deactivateOutlet(id: string) {
+    const outlet = await prisma.outlet.findUnique({ where: { id } });
+    if (!outlet) {
+      throw new AppError('NOT_FOUND', 404, 'Outlet tidak ditemukan.');
+    }
+
+    const updated = await prisma.outlet.update({
+      where: { id },
+      data: { is_active: false },
+    });
+
+    return {
+      ...updated,
+      latitude: Number(updated.latitude),
+      longitude: Number(updated.longitude),
+    };
+  }
+
   async getOutletsPerformance() {
     const outlets = await prisma.outlet.findMany({
       where: { is_active: true },
