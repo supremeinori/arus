@@ -34,8 +34,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with WidgetsB
       }
     });
 
-    // Auto-sync otomatis setiap 4 detik agar setiap transaksi kasir baru langsung ter-update
-    _autoSyncTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    // Auto-sync otomatis setiap 30 detik untuk memperbarui analitik secara stabil dan hemat daya
+    _autoSyncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         ref.invalidate(salesForecastProvider);
         ref.invalidate(stockoutForecastProvider);
@@ -80,7 +80,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with WidgetsB
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'AI Predictive Analytics',
+              'Analitik Prediktif',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 16.5,
