@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/uuid_generator.dart';
 import '../../../shared/widgets/app_widgets.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../data/pos_repository.dart';
@@ -86,6 +87,10 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
       ref.read(posCartProvider.notifier).clearCart();
       ref.invalidate(posCatalogProvider);
       ref.invalidate(posHistoryProvider);
+      ref.invalidate(salesForecastProvider);
+      ref.invalidate(stockoutForecastProvider);
+      ref.invalidate(analyticsOverviewProvider);
+      ref.invalidate(salesTrendProvider);
 
       if (mounted) {
         Navigator.of(context).pop(); // Tutup bottom sheet
@@ -111,6 +116,8 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
           outletName: user?.outlets.isNotEmpty == true ? user!.outlets.first.name : null,
         );
         ref.read(posCartProvider.notifier).clearCart();
+        ref.invalidate(salesForecastProvider);
+        ref.invalidate(stockoutForecastProvider);
         if (mounted) {
           Navigator.of(context).pop();
           showDialog(
