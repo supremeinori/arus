@@ -97,4 +97,47 @@ class AnalyticsRepository {
       throw const AppException('Koneksi ke web service terputus. Ringkasan shift tidak dapat dimuat.');
     }
   }
+
+  /// AI Time Series Sales Forecasting (7 / 30 Hari ke depan)
+  Future<SalesForecastModel> getSalesForecast({
+    String? outletId,
+    int horizon = 7,
+  }) async {
+    final query = <String, dynamic>{'horizon': horizon};
+    if (outletId != null && outletId.isNotEmpty) query['outlet_id'] = outletId;
+
+    try {
+      final response = await _client.get<Map<String, dynamic>>(
+        '/analytics/forecast/sales',
+        queryParameters: query,
+      );
+      final data = response.data?['data'] as Map<String, dynamic>;
+      return SalesForecastModel.fromJson(data);
+    } on AppException {
+      rethrow;
+    } catch (_) {
+      throw const AppException('Koneksi ke web service terputus. Prediksi penjualan AI tidak dapat dimuat.');
+    }
+  }
+
+  /// AI Stock Runout & Consumption Velocity Forecasting
+  Future<StockoutForecastModel> getStockoutForecast({
+    String? outletId,
+  }) async {
+    final query = <String, dynamic>{};
+    if (outletId != null && outletId.isNotEmpty) query['outlet_id'] = outletId;
+
+    try {
+      final response = await _client.get<Map<String, dynamic>>(
+        '/analytics/forecast/stockout',
+        queryParameters: query,
+      );
+      final data = response.data?['data'] as Map<String, dynamic>;
+      return StockoutForecastModel.fromJson(data);
+    } on AppException {
+      rethrow;
+    } catch (_) {
+      throw const AppException('Koneksi ke web service terputus. Prediksi kehabisan stok tidak dapat dimuat.');
+    }
+  }
 }

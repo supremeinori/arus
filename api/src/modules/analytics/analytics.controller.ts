@@ -72,6 +72,52 @@ export class AnalyticsController {
       next(err);
     }
   }
+
+  /**
+   * GET /api/analytics/forecast/sales
+   * Prediksi tren penjualan masa depan (minggu depan / bulan depan).
+   */
+  async getSalesForecast(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user!;
+      const allowedOutletIds = req.userOutlets || [];
+      const { outlet_id, horizon } = req.query;
+
+      const horizonDays = horizon ? parseInt(horizon as string, 10) : 7;
+      const data = await analyticsService.getSalesForecast(
+        {
+          outlet_id: outlet_id as string,
+          horizon_days: horizonDays,
+        },
+        { role: user.role, allowedOutletIds }
+      );
+
+      res.status(200).json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * GET /api/analytics/forecast/stockout
+   * Prediksi sisa waktu sampai stok habis (stock runout date).
+   */
+  async getStockoutForecast(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user!;
+      const allowedOutletIds = req.userOutlets || [];
+      const { outlet_id } = req.query;
+
+      const data = await analyticsService.getStockoutForecast(
+        { outlet_id: outlet_id as string },
+        { role: user.role, allowedOutletIds }
+      );
+
+      res.status(200).json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const analyticsController = new AnalyticsController();
