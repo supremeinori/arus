@@ -268,9 +268,19 @@ class _LbsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return OutletMapWidget(
-      nearestAsync: nearestAsync,
-      performanceAsync: performanceAsync,
+    return AsyncStateView<NearestOutletResult>(
+      value: nearestAsync,
+      onRetry: () {
+        ref.invalidate(nearestOutletProvider);
+        ref.invalidate(outletsPerformanceProvider);
+        ref.read(authProvider.notifier).checkAuth();
+      },
+      dataBuilder: (data) {
+        return OutletMapWidget(
+          nearestAsync: nearestAsync,
+          performanceAsync: performanceAsync,
+        );
+      },
     );
   }
 }

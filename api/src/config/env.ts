@@ -27,6 +27,12 @@ const envSchema = z.object({
   FEATURE_FX: z.coerce.boolean().default(true),
   FEATURE_GAME: z.coerce.boolean().default(true),
   FEATURE_AI: z.coerce.boolean().default(true),
+
+  // Firebase Cloud Messaging (opsional). Bila kosong, push dinonaktifkan
+  // dan aplikasi tetap berjalan normal.
+  FIREBASE_PROJECT_ID: z.string().default(''),
+  FIREBASE_CLIENT_EMAIL: z.string().default(''),
+  FIREBASE_PRIVATE_KEY: z.string().default(''),
 });
 
 export const env = envSchema.parse(process.env);

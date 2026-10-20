@@ -21,6 +21,8 @@ router.post('/ai/recommend-price', (req, res, next) => aiAssistantController.rec
 router.get('/ai/conversations', (req, res, next) => aiAssistantController.listConversations(req, res, next));
 
 // 3. GET /api/ai/conversations/:id/messages - Riwayat percakapan spesifik
-router.get('/api/ai/conversations/:id/messages', (req, res, next) => aiAssistantController.getMessages(req, res, next));
+//    Catatan: path sebelumnya '/api/ai/...' menghasilkan '/api/api/ai/...' saat
+//    router di-mount di '/api' dan lolos dari proteksi requireAuth di bawah.
+router.get('/ai/conversations/:id/messages', (req, res, next) => aiAssistantController.getMessages(req, res, next));
 
 export default router;

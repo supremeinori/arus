@@ -1,13 +1,14 @@
 class NotificationModel {
   final String id;
   final String userId;
-  final String type; // low_stock, sales_change, target_achieved, periodic_summary, system
+  final String type; // low_stock, sales_change, target_achieved, ai_result, system
   final String priority; // low, normal, high
   final String title;
   final String body;
   final Map<String, dynamic>? payload;
   final DateTime? readAt;
   final DateTime createdAt;
+  final bool isReadFlag;
 
   const NotificationModel({
     required this.id,
@@ -19,11 +20,14 @@ class NotificationModel {
     this.payload,
     this.readAt,
     required this.createdAt,
+    this.isReadFlag = false,
   });
 
-  bool get isRead => readAt != null;
+  bool get isRead => isReadFlag || readAt != null;
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final createdAt =
+        DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now();
     return NotificationModel(
       id: json['id'] as String? ?? '',
       userId: json['user_id'] as String? ?? '',
@@ -32,8 +36,12 @@ class NotificationModel {
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
       payload: json['payload'] as Map<String, dynamic>?,
-      readAt: json['read_at'] != null ? DateTime.tryParse(json['read_at'] as String) : null,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      readAt: json['read_at'] != null
+          ? DateTime.tryParse(json['read_at'] as String)
+          : null,
+      createdAt: createdAt,
+      // Backend (Prisma) memakai kolom is_read.
+      isReadFlag: json['is_read'] == true,
     );
   }
 }

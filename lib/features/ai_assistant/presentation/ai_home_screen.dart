@@ -42,8 +42,21 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
       if (pending != null && pending.isNotEmpty) {
         ref.read(aiPendingPromptProvider.notifier).state = null;
         _handleSend(pending);
+        return;
+      }
+
+      // Tap notifikasi hasil AI → buka percakapan yang tepat.
+      final pendingConversation = ref.read(aiPendingConversationProvider);
+      if (pendingConversation != null && pendingConversation.isNotEmpty) {
+        ref.read(aiPendingConversationProvider.notifier).state = null;
+        _loadConversation(pendingConversation);
       }
     });
+  }
+
+  Future<void> _loadConversation(String conversationId) async {
+    await ref.read(aiChatProvider.notifier).loadConversation(conversationId);
+    if (mounted) _scrollToBottom();
   }
 
   void _onTextChanged() {

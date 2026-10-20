@@ -10,3 +10,10 @@ export const createNotificationSchema = z.object({
 });
 
 export type CreateNotificationInput = z.infer<typeof createNotificationSchema>;
+
+export const registerDeviceTokenSchema = z.object({
+  token: z.string().min(1),
+  platform: z.enum(['android', 'ios', 'web']).default('android'),
+});
+
+export type RegisterDeviceTokenInput = z.infer<typeof registerDeviceTokenSchema>;

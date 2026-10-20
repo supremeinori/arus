@@ -62,6 +62,22 @@ class AiRepository {
     }
   }
 
+  Future<List<AiMessageModel>> getConversationMessages(String conversationId) async {
+    try {
+      final response = await _client.get<Map<String, dynamic>>(
+        '/ai/conversations/$conversationId/messages',
+      );
+      final raw = response.data?['data'];
+      final list = raw is List ? raw : const [];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map((e) => AiMessageModel.fromJson(e))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<String> getTtsAudio(String text) async {
     try {
       final response = await _client.post<Map<String, dynamic>>(

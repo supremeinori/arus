@@ -3,6 +3,14 @@ import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
 import { integrityService } from '../integrity/blockchain.service';
+import {
+  NotificationDraft,
+  NotificationsService,
+  createNotificationsWithDedup,
+  resolveInventoryRecipients,
+} from '../notifications/notifications.service';
+
+const notificationsService = new NotificationsService();
 
 export function toValidUuid(val: string): string {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -81,6 +89,7 @@ export class TransactionsService {
     }
 
     // Jalankan seluruh proses pembuatan transaksi dalam Prisma $transaction
+    const pendingPushDrafts: NotificationDraft[] = [];
     const committedTransaction = await prisma.$transaction(async (tx) => {
       let calculatedSubtotal = 0;
       const preparedItems: Array<{
@@ -260,25 +269,29 @@ export class TransactionsService {
         });
 
         // 4b. Jika stok bahan baku turun <= reorder_level, picu notifikasi
+        //     Hook notifikasi (tidak mengubah logika stok/POS). Penerima
+        //     dibatasi per cabang: Owner (semua cabang) + Manager(UserOutlet).
         if (update.new_quantity <= update.reorder_level) {
-          const stakeholders = await tx.user.findMany({
-            where: {
-              is_active: true,
-              role: { in: [Role.owner, Role.manager] },
-            },
-            select: { id: true },
-          });
+          const recipients = await resolveInventoryRecipients(tx, targetOutletId);
+          const todayStr = new Date().toISOString().slice(0, 10);
 
-          for (const u of stakeholders) {
-            await tx.notification.create({
-              data: {
-                user_id: u.id,
-                type: 'low_stock',
-                title: `Peringatan: Stok ${update.ingredient_name} Menipis`,
-                body: `Sisa bahan baku ${update.ingredient_name} di cabang kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`,
-              },
-            });
-          }
+          const drafts: NotificationDraft[] = recipients.map((userId) => ({
+            user_id: userId,
+            type: 'low_stock',
+            title: `Peringatan: Stok ${update.ingredient_name} Menipis`,
+            body: `Sisa bahan baku ${update.ingredient_name} di cabang kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`,
+            // Identifier record: bahan baku + cabang + periode. Sama dengan path
+            // evaluate sehingga notifikasi tidak dobel antar trigger.
+            dedup_key: `low_stock:${update.ingredient_id}:${targetOutletId}:${todayStr}`,
+            data: {
+              type: 'low_stock',
+              outlet_id: targetOutletId,
+              ingredient_id: update.ingredient_id,
+            },
+          }));
+
+          const fresh = await createNotificationsWithDedup(tx, drafts);
+          pendingPushDrafts.push(...fresh);
         }
       }
 
@@ -311,6 +324,16 @@ export class TransactionsService {
       maxWait: 10000,
       timeout: 25000,
     });
+
+    // Push dikirim SETELAH commit sukses. Kegagalan FCM tidak pernah menggagalkan
+    // transaksi bisnis yang sudah ter-commit.
+    if (pendingPushDrafts.length > 0) {
+      try {
+        await notificationsService.dispatchPush(pendingPushDrafts);
+      } catch (err) {
+        console.warn('[TransactionsService] Push low_stock gagal (diabaikan):', err);
+      }
+    }
 
     return committedTransaction;
   }

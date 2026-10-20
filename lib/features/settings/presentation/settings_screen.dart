@@ -329,7 +329,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.darkCardSurfaceElevated,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.jadeTosca.withAlpha(120), width: 1.0),
+                    border: Border.all(
+                      color: AppTheme.jadeTosca.withAlpha(120),
+                      width: 1.0,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -881,7 +884,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               decoration: BoxDecoration(
                 color: AppTheme.darkCardSurfaceElevated,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.jadeTosca.withAlpha(120), width: 1.0),
+                border: Border.all(
+                  color: AppTheme.jadeTosca.withAlpha(120),
+                  width: 1.0,
+                ),
               ),
               child: Row(
                 children: [
@@ -921,106 +927,87 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 24),
 
             // Section 3: Gerakan & Sensor (Shake to Refresh)
-            Text(
-              'Gerakan & Sensor (Shake to Refresh)',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: AppTheme.textPrimaryDark,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Atur sensitivitas guncangan ponsel untuk menyegarkan data secara otomatis.',
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppTheme.textMutedDark,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              elevation: 0,
-              color: AppTheme.darkCardSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(
-                  color: AppTheme.darkCardBorder,
-                  width: 1.0,
-                ),
-              ),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.vibration_rounded,
-                  color: AppTheme.jadeTosca,
-                ),
-                title: Text(
-                  'Sensitivitas Guncangan (Shake)',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                    color: AppTheme.textPrimaryDark,
-                  ),
-                ),
-                subtitle: Text(
-                  'Ambang batas: ${shakeThreshold.toStringAsFixed(1)} m/s²',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textMutedDark,
-                  ),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.darkCardSurfaceElevated,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: AppTheme.darkCardBorder,
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Text(
-                        shakeThreshold <= 4.5
-                            ? 'Ringan'
-                            : shakeThreshold <= 7.5
-                            ? 'Sedang'
-                            : shakeThreshold <= 11.0
-                            ? 'Kuat'
-                            : 'Sangat Kuat',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.jadeTosca,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ],
-                ),
-                onTap: () => ShakeSettingsSheet.show(context),
-              ),
-            ),
-            const SizedBox(height: 24),
+            // const SizedBox(height: 4),
+            // Text(
+            //   'Atur sensitivitas guncangan ponsel untuk menyegarkan data secara otomatis.',
+            //   maxLines: 3,
+            //   overflow: TextOverflow.ellipsis,
+            //   style: GoogleFonts.inter(
+            //     fontSize: 12,
+            //     color: AppTheme.textMutedDark,
+            //   ),
+            // ),
+            // const SizedBox(height: 12),
+            // Card(
+            //   elevation: 0,
+            //   color: AppTheme.darkCardSurface,
+            //   shape: RoundedRectangleBorder(
+            //     borderRadius: BorderRadius.circular(12),
+            //     side: const BorderSide(
+            //       color: AppTheme.darkCardBorder,
+            //       width: 1.0,
+            //     ),
+            //   ),
+            //   child: ListTile(
+            //     leading: const Icon(
+            //       Icons.vibration_rounded,
+            //       color: AppTheme.jadeTosca,
+            //     ),
+            //     title: Text(
+            //       'Sensitivitas Guncangan (Shake)',
+            //       maxLines: 1,
+            //       overflow: TextOverflow.ellipsis,
+            //       style: GoogleFonts.inter(
+            //         fontWeight: FontWeight.w600,
+            //         fontSize: 13.5,
+            //         color: AppTheme.textPrimaryDark,
+            //       ),
+            //     ),
+            //     trailing: Row(
+            //       mainAxisSize: MainAxisSize.min,
+            //       children: [
+            //         Container(
+            //           padding: const EdgeInsets.symmetric(
+            //             horizontal: 8,
+            //             vertical: 3,
+            //           ),
+            //           decoration: BoxDecoration(
+            //             color: AppTheme.darkCardSurfaceElevated,
+            //             borderRadius: BorderRadius.circular(6),
+            //             border: Border.all(
+            //               color: AppTheme.darkCardBorder,
+            //               width: 1.0,
+            //             ),
+            //           ),
+            //           child: Text(
+            //             shakeThreshold <= 4.5
+            //                 ? 'Ringan'
+            //                 : shakeThreshold <= 7.5
+            //                 ? 'Sedang'
+            //                 : shakeThreshold <= 11.0
+            //                 ? 'Kuat'
+            //                 : 'Sangat Kuat',
+            //             maxLines: 1,
+            //             overflow: TextOverflow.ellipsis,
+            //             style: GoogleFonts.inter(
+            //               fontSize: 11,
+            //               fontWeight: FontWeight.w700,
+            //               color: AppTheme.jadeTosca,
+            //             ),
+            //           ),
+            //         ),
+            //         const SizedBox(width: 8),
+            //         const Icon(
+            //           Icons.arrow_forward_ios_rounded,
+            //           size: 14,
+            //           color: AppTheme.textMutedDark,
+            //         ),
+            //       ],
+            //     ),
+            //     onTap: () => ShakeSettingsSheet.show(context),
+            //   ),
+            // ),
+            // const SizedBox(height: 24),
 
             // Section 4: Keamanan & Autentikasi Biometrik
             Text(
@@ -1198,7 +1185,11 @@ class _AmountChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+        style: GoogleFonts.inter(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textPrimaryDark,
+        ),
       ),
       backgroundColor: AppTheme.darkCardSurfaceElevated,
       side: const BorderSide(color: AppTheme.darkCardBorder),

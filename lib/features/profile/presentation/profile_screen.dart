@@ -15,6 +15,69 @@ import '../../shell/presentation/main_shell.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  static const _menuDivider = Divider(
+    height: 1,
+    indent: 56,
+    color: AppTheme.darkCardBorder,
+  );
+
+  String _getThresholdLabel(double threshold) {
+    if (threshold <= 4.5) return 'Ringan';
+    if (threshold <= 7.5) return 'Sedang';
+    if (threshold <= 11.0) return 'Kuat';
+    return 'Sangat Kuat';
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final dialog = ShadDialog(
+          title: const Text(
+            'Keluar dari Akun?',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          description: Text(
+            'Apakah Anda yakin ingin keluar dari sesi saat ini?',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: AppTheme.textMutedDark,
+            ),
+          ),
+          actions: [
+            ShadButton.ghost(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Batal',
+                style: GoogleFonts.inter(color: AppTheme.textMutedDark),
+              ),
+            ),
+            ShadButton.destructive(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref.read(shellTabIndexProvider.notifier).state = 0;
+                ref.read(authProvider.notifier).logout();
+              },
+              child: Text(
+                'Keluar',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        if (ShadTheme.maybeOf(ctx) == null) {
+          return ShadTheme(data: AppTheme.shadcnThemeLight, child: dialog);
+        }
+        return dialog;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
@@ -33,32 +96,13 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // User Card with Avatar (Photo / Letter)
-
+          // 1. Header Pengguna & Avatar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                // Foto profil berbentuk lingkaran
-                ClipOval(
-                  child: SizedBox(
-                    width: 64,
-                    height: 64,
-                    child:
-                        user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                        ? Image.network(
-                            user.avatarUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                _LetterAvatar(user: user),
-                          )
-                        : _LetterAvatar(user: user),
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Nama dan role
+                _UserAvatar(user: user),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,12 +118,25 @@ class ProfileScreen extends ConsumerWidget {
                           color: AppTheme.textPrimaryDark,
                         ),
                       ),
+                      if (user?.email != null && user!.email.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          user.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            color: AppTheme.textMutedDark,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Text(
                         user?.role.toDisplayString() ?? 'Pengguna',
                         style: GoogleFonts.inter(
                           fontSize: 13,
-                          color: AppTheme.textMutedDark,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.jadeTosca,
                         ),
                       ),
                     ],
@@ -88,358 +145,129 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 16),
 
-          const SizedBox(height: 20),
-
-          // Keamanan & Preferensi Sesi
-          const SizedBox(height: 8),
-          Card(
-            elevation: 0,
-            color: AppTheme.darkCardSurface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(
-                color: AppTheme.darkCardBorder,
-                width: 1.0,
+          // 2. Kartu Keamanan & Preferensi Sesi
+          _SectionCard(
+            children: [
+              _ProfileMenuTile(
+                icon: Icons.currency_exchange_rounded,
+                title: 'Pengaturan Kurs & Waktu',
+                onTap: () => context.push('/settings'),
               ),
-            ),
-            child: Column(
-              children: [
-                // 1. Pengaturan Kurs & Waktu
-                ListTile(
-                  leading: const Icon(
-                    Icons.currency_exchange_rounded,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Pengaturan Kurs & Waktu',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppTheme.textMutedDark,
-                  ),
-                  onTap: () => context.push('/settings'),
+              _menuDivider,
+              _ProfileMenuTile(
+                icon: Icons.sensors_rounded,
+                title: 'Diagnostik Sensor & Biometrik',
+                onTap: () => context.push('/sensors'),
+              ),
+              _menuDivider,
+              SwitchListTile(
+                secondary: const Icon(
+                  Icons.fingerprint_rounded,
+                  color: AppTheme.jadeTosca,
                 ),
-                const Divider(
-                  height: 1,
-                  indent: 56,
-                  color: AppTheme.darkCardBorder,
+                title: Text(
+                  'Login Sidik Jari (Biometrik)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
                 ),
-
-                // 2. Diagnostik Sensor Hardware
-                ListTile(
-                  leading: const Icon(
-                    Icons.sensors_rounded,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Diagnostik Sensor & Biometrik',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppTheme.textMutedDark,
-                  ),
-                  onTap: () => context.push('/sensors'),
-                ),
-                const Divider(
-                  height: 1,
-                  indent: 56,
-                  color: AppTheme.darkCardBorder,
-                ),
-
-                // 3. Login Sidik Jari (Biometrik)
-                SwitchListTile(
-                  secondary: const Icon(
-                    Icons.fingerprint_rounded,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Login Sidik Jari (Biometrik)',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-
-                  activeThumbColor: AppTheme.jadeTosca,
-                  value: user?.settings.biometricEnabled ?? false,
-                  onChanged: (val) async {
-                    if (val) {
-                      final confirmed = await ref
-                          .read(biometricServiceProvider)
-                          .authenticate(
-                            localizedReason: 'Konfirmasi sidik jari atau wajah untuk mengaktifkan biometrik',
-                          );
-                      if (confirmed) {
-                        ref.read(authProvider.notifier).toggleBiometric(true);
-                      }
-                    } else {
-                      ref.read(authProvider.notifier).toggleBiometric(false);
+                activeThumbColor: AppTheme.jadeTosca,
+                value: user?.settings.biometricEnabled ?? false,
+                onChanged: (val) async {
+                  if (val) {
+                    final confirmed = await ref
+                        .read(biometricServiceProvider)
+                        .authenticate(
+                          localizedReason:
+                              'Konfirmasi sidik jari atau wajah untuk mengaktifkan biometrik',
+                        );
+                    if (confirmed) {
+                      ref.read(authProvider.notifier).toggleBiometric(true);
                     }
-                  },
-                ),
-                const Divider(
-                  height: 1,
-                  indent: 56,
-                  color: AppTheme.darkCardBorder,
-                ),
-
-                // 4. Sensitivitas Guncangan (Shake)
-                ListTile(
-                  leading: const Icon(
-                    Icons.vibration_rounded,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Sensitivitas Guncangan (Shake)',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.darkCardSurfaceElevated,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: AppTheme.darkCardBorder,
-                            width: 1.0,
-                          ),
-                        ),
-                        child: Text(
-                          currentThreshold <= 4.5
-                              ? 'Ringan'
-                              : currentThreshold <= 7.5
-                              ? 'Sedang'
-                              : currentThreshold <= 11.0
-                              ? 'Kuat'
-                              : 'Sangat Kuat',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.jadeTosca,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: AppTheme.textMutedDark,
-                      ),
-                    ],
-                  ),
-                  onTap: () => ShakeSettingsSheet.show(context),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-          Card(
-            elevation: 0,
-            color: AppTheme.darkCardSurface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(
-                color: AppTheme.darkCardBorder,
-                width: 1.0,
+                  } else {
+                    ref.read(authProvider.notifier).toggleBiometric(false);
+                  }
+                },
               ),
-            ),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.people_outline_rounded,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Kelola Staf & Akun',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
+              _menuDivider,
+              _ProfileMenuTile(
+                icon: Icons.vibration_rounded,
+                title: 'Sensitivitas Guncangan (Shake)',
+                onTap: () => ShakeSettingsSheet.show(context),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.darkCardSurfaceElevated,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppTheme.darkCardBorder,
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Text(
+                        _getThresholdLabel(currentThreshold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.jadeTosca,
+                        ),
+                      ),
                     ),
-                  ),
-                  // subtitle: Text(
-                  //   'Atur hak akses kasir, manager, dan role pengguna',
-                  //   maxLines: 2,
-                  //   overflow: TextOverflow.ellipsis,
-                  //   style: GoogleFonts.inter(
-                  //     fontSize: 11.5,
-                  //     color: AppTheme.textMutedDark,
-                  //   ),
-                  // ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppTheme.textMutedDark,
-                  ),
-                  onTap: () => context.push('/users'),
-                ),
-                const Divider(
-                  height: 1,
-                  indent: 56,
-                  color: AppTheme.darkCardBorder,
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.rate_review_outlined,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Saran & Kesan Kuliah PAM',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: AppTheme.textMutedDark,
                     ),
-                  ),
-                  // subtitle: Text(
-                  //   'Kesan dan saran mata kuliah Pemrograman Aplikasi Mobile (Phase 1)',
-                  //   maxLines: 2,
-                  //   overflow: TextOverflow.ellipsis,
-                  //   style: GoogleFonts.inter(
-                  //     fontSize: 11.5,
-                  //     color: AppTheme.textMutedDark,
-                  //   ),
-                  // ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppTheme.textMutedDark,
-                  ),
-                  onTap: () => context.push('/feedback'),
+                  ],
                 ),
-                const Divider(
-                  height: 1,
-                  indent: 56,
-                  color: AppTheme.darkCardBorder,
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.info_outline_rounded,
-                    color: AppTheme.jadeTosca,
-                  ),
-                  title: Text(
-                    'Tentang ARUS',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                    ),
-                  ),
-                  // subtitle: Text(
-                  //   'Versi rilis v2.4.0, lisensi, & arsitektur sistem',
-                  //   maxLines: 2,
-                  //   overflow: TextOverflow.ellipsis,
-                  //   style: GoogleFonts.inter(
-                  //     fontSize: 11.5,
-                  //     color: AppTheme.textMutedDark,
-                  //   ),
-                  // ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppTheme.textMutedDark,
-                  ),
-                  onTap: () => context.push('/about'),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Kartu Administrasi & Aplikasi
+          _SectionCard(
+            children: [
+              _ProfileMenuTile(
+                icon: Icons.people_outline_rounded,
+                title: 'Kelola Staf & Akun',
+                onTap: () => context.push('/users'),
+              ),
+              _menuDivider,
+              _ProfileMenuTile(
+                icon: Icons.rate_review_outlined,
+                title: 'Saran & Kesan Kuliah PAM',
+                onTap: () => context.push('/feedback'),
+              ),
+              _menuDivider,
+              _ProfileMenuTile(
+                icon: Icons.info_outline_rounded,
+                title: 'Tentang ARUS',
+                onTap: () => context.push('/about'),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 
-          // Logout Button
+          // 4. Tombol Logout
           SizedBox(
             width: double.infinity,
             child: ShadButton.outline(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) {
-                    final dialog = ShadDialog(
-                      title: const Text(
-                        'Keluar dari Akun?',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      description: Text(
-                        'Apakah Anda yakin ingin keluar dari sesi saat ini?',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppTheme.textMutedDark,
-                        ),
-                      ),
-                      actions: [
-                        ShadButton.ghost(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text(
-                            'Batal',
-                            style: GoogleFonts.inter(
-                              color: AppTheme.textMutedDark,
-                            ),
-                          ),
-                        ),
-                        ShadButton.destructive(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            ref.read(shellTabIndexProvider.notifier).state = 0;
-                            ref.read(authProvider.notifier).logout();
-                          },
-                          child: Text(
-                            'Keluar',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                    if (ShadTheme.maybeOf(ctx) == null) {
-                      return ShadTheme(
-                        data: AppTheme.shadcnThemeLight,
-                        child: dialog,
-                      );
-                    }
-                    return dialog;
-                  },
-                );
-              },
+              onPressed: () => _showLogoutDialog(context, ref),
               leading: const Icon(
                 Icons.logout,
                 color: AppTheme.dangerRed,
@@ -466,7 +294,91 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Avatar huruf depan nama user (aturan E23: widget class const, bukan helper).
+/// Kartu kontainer bergaya section profil (aturan E23).
+class _SectionCard extends StatelessWidget {
+  final List<Widget> children;
+
+  const _SectionCard({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: AppTheme.darkCardSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+/// Baris tile menu navigasi profil terpadu untuk mencegah pengulangan boilerplate.
+class _ProfileMenuTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  const _ProfileMenuTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: AppTheme.jadeTosca),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          fontSize: 13.5,
+        ),
+      ),
+      trailing: trailing ??
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: AppTheme.textMutedDark,
+          ),
+      onTap: onTap,
+    );
+  }
+}
+
+/// Avatar profil foto dengan fallback ke inisial huruf.
+class _UserAvatar extends StatelessWidget {
+  final UserModel? user;
+
+  const _UserAvatar({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = user?.avatarUrl;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return ClipOval(
+        child: SizedBox(
+          width: 64,
+          height: 64,
+          child: Image.network(
+            avatarUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _LetterAvatar(user: user),
+          ),
+        ),
+      );
+    }
+    return _LetterAvatar(user: user);
+  }
+}
+
+/// Avatar inisial huruf depan nama user (aturan E23).
 class _LetterAvatar extends StatelessWidget {
   final UserModel? user;
 
@@ -479,11 +391,11 @@ class _LetterAvatar extends StatelessWidget {
         ? u.name[0].toUpperCase()
         : 'U';
     return Container(
-      width: 56,
-      height: 56,
+      width: 64,
+      height: 64,
       decoration: BoxDecoration(
         color: AppTheme.darkCardSurfaceElevated,
-        borderRadius: BorderRadius.circular(12),
+        shape: BoxShape.circle,
         border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
       child: Center(
@@ -492,7 +404,7 @@ class _LetterAvatar extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: FontWeight.w800,
             color: AppTheme.jadeTosca,
           ),

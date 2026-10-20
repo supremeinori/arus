@@ -213,6 +213,8 @@ class _NotificationCard extends ConsumerWidget {
           if (!context.mounted) return;
           if (item.type == 'low_stock') {
             context.push('/inventory');
+          } else if (item.type == 'ai_result') {
+            context.push('/ai');
           } else if (item.type == 'target_achieved' || item.type == 'sales_change') {
             context.push('/shell');
           }

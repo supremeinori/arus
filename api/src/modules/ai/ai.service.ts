@@ -6,6 +6,9 @@ import { outletsService } from '../outlets/outlets.service';
 import { AppError } from '../../shared/errors';
 import { env } from '../../config/env';
 import { ttsService } from './tts.service';
+import { NotificationsService } from '../notifications/notifications.service';
+
+const notificationsService = new NotificationsService();
 
 export function cleanVoiceSummaryText(text: string): string {
   const stripped = text
@@ -717,7 +720,7 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
 
     if (userId) {
       try {
-        await prisma.aiChatLog.create({
+        const chatLog = await prisma.aiChatLog.create({
           data: {
             user_id: userId,
             question: userMessage,
@@ -729,6 +732,21 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
             facts_used: facts,
           },
         });
+
+        // Notifikasi hasil AI (push + inbox). Kegagalan push tidak pernah
+        // menggagalkan jawaban AI yang sudah berhasil dihasilkan.
+        if (chatLog?.id) {
+          try {
+            await notificationsService.notifyAiResult({
+              userId,
+              chatLogId: chatLog.id,
+              question: userMessage,
+              answer: aiResponseText,
+            });
+          } catch (err) {
+            console.warn('[AI] Notifikasi hasil AI gagal (diabaikan):', err);
+          }
+        }
       } catch (_) {
         // Fallback ke memori lokal
       }
@@ -812,8 +830,9 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
    */
   async getConversationMessages(conversationId: string, userId: string) {
     try {
-      const log = await prisma.aiChatLog.findUnique({
-        where: { id: conversationId },
+      // Batasi ke milik user yang requesting (mencegah akses silang antar user).
+      const log = await prisma.aiChatLog.findFirst({
+        where: { id: conversationId, user_id: userId },
       });
       if (log) {
         return [

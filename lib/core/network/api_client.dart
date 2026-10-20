@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/env.dart';
@@ -13,6 +14,7 @@ class ApiClient {
   late final Dio _dio;
   final SecureStore secureStore;
   bool _isRefreshing = false;
+  final List<Completer<String?>> _refreshWaiters = [];
 
   ApiClient({required this.secureStore, Dio? customDio}) {
     _dio = customDio ??
@@ -44,45 +46,70 @@ class ApiClient {
           final path = error.requestOptions.path;
           final isAuthEndpoint = path.contains('/auth/login') || path.contains('/auth/refresh');
 
-          if (error.response?.statusCode == 401 && !isAuthEndpoint && !_isRefreshing) {
-            _isRefreshing = true;
-            try {
-              final refreshToken = await secureStore.getRefreshToken();
-              if (refreshToken != null && refreshToken.isNotEmpty) {
-                // Panggil refresh endpoint secara terpisah
-                final refreshDio = Dio(BaseOptions(baseUrl: AppEnv.apiBaseUrl));
-                final refreshResponse = await refreshDio.post(
-                  '/auth/refresh',
-                  data: {'refresh_token': refreshToken},
-                );
+          if (error.response?.statusCode == 401 && !isAuthEndpoint) {
+            String? newAccessToken;
+            
+            if (!_isRefreshing) {
+              _isRefreshing = true;
+              final completer = Completer<String?>();
+              _refreshWaiters.add(completer);
+              
+              try {
+                final refreshToken = await secureStore.getRefreshToken();
+                if (refreshToken != null && refreshToken.isNotEmpty) {
+                  // Panggil refresh endpoint secara terpisah
+                  final refreshDio = Dio(BaseOptions(baseUrl: AppEnv.apiBaseUrl));
+                  final refreshResponse = await refreshDio.post(
+                    '/auth/refresh',
+                    data: {'refresh_token': refreshToken},
+                  );
 
-                if (refreshResponse.statusCode == 200) {
-                  final data = refreshResponse.data['data'] as Map<String, dynamic>;
-                  final newAccessToken = data['access_token'] as String;
-                  final newRefreshToken = data['refresh_token'] as String;
+                  if (refreshResponse.statusCode == 200) {
+                    final data = refreshResponse.data['data'] as Map<String, dynamic>;
+                    newAccessToken = data['access_token'] as String;
+                    final newRefreshToken = data['refresh_token'] as String;
 
-                  await secureStore.setAccessToken(newAccessToken);
-                  await secureStore.setRefreshToken(newRefreshToken);
-
-                  // Ulangi request asli dengan token baru
-                  final opts = error.requestOptions;
-                  opts.headers['Authorization'] = 'Bearer $newAccessToken';
-                  _isRefreshing = false;
-
-                  final clonedResponse = await _dio.fetch(opts);
-                  return handler.resolve(clonedResponse);
+                    await secureStore.setAccessToken(newAccessToken);
+                    await secureStore.setRefreshToken(newRefreshToken);
+                  }
                 }
+              } on DioException catch (dioErr) {
+                // Hanya bersihkan token jika server merespons secara eksplisit bahwa token kedaluwarsa / ditolak (401/403)
+                // Jangan hapus token jika terjadi masalah koneksi fisik / offline / timeout
+                if (dioErr.response?.statusCode == 401 || dioErr.response?.statusCode == 403) {
+                  await secureStore.clearTokens();
+                }
+                newAccessToken = null;
+              } catch (_) {
+                newAccessToken = null;
+              } finally {
+                _isRefreshing = false;
+                // Resolve all waiters
+                for (final waiter in _refreshWaiters) {
+                  if (!waiter.isCompleted) {
+                    waiter.complete(newAccessToken);
+                  }
+                }
+                _refreshWaiters.clear();
               }
-            } on DioException catch (dioErr) {
-              // Hanya bersihkan token jika server merespons secara eksplisit bahwa token kedaluwarsa / ditolak (401/403)
-              // Jangan hapus token jika terjadi masalah koneksi fisik / offline / timeout
-              if (dioErr.response?.statusCode == 401 || dioErr.response?.statusCode == 403) {
-                await secureStore.clearTokens();
+            } else {
+              // Wait for ongoing refresh
+              final completer = Completer<String?>();
+              _refreshWaiters.add(completer);
+              newAccessToken = await completer.future;
+            }
+
+            if (newAccessToken != null) {
+              // Ulangi request asli dengan token baru
+              final opts = error.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $newAccessToken';
+              
+              try {
+                final clonedResponse = await _dio.fetch(opts);
+                return handler.resolve(clonedResponse);
+              } on DioException catch (e) {
+                return handler.reject(e);
               }
-            } catch (_) {
-              // Abaikan error tak terduga agar token offline tetap aman
-            } finally {
-              _isRefreshing = false;
             }
           }
 

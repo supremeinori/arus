@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotificationsService } from './notifications.service';
+import { registerDeviceTokenSchema } from './notifications.schema';
 
 const notificationsService = new NotificationsService();
 
@@ -57,6 +58,37 @@ export class NotificationsController {
       res.json({
         success: true,
         data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async registerToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user.id;
+      const parsed = registerDeviceTokenSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({
+          success: false,
+          message: 'Payload device token tidak valid.',
+          errors: parsed.error.flatten(),
+        });
+        return;
+      }
+
+      const result = await notificationsService.registerDeviceToken(
+        userId,
+        parsed.data
+      );
+
+      res.json({
+        success: true,
+        message: 'Device token terdaftar.',
+        data: {
+          id: result.id,
+          platform: result.platform,
+        },
       });
     } catch (err) {
       next(err);

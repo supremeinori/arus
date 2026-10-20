@@ -25,4 +25,9 @@ router.post('/notifications/evaluate', (req, res, next) =>
   controller.evaluate(req, res, next)
 );
 
+// 5. POST /api/notifications/device-token - Registrasi FCM Device Token
+router.post('/notifications/device-token', (req, res, next) =>
+  controller.registerToken(req, res, next)
+);
+
 export default router;

@@ -75,6 +75,25 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
     }
   }
 
+  Future<void> loadConversation(String conversationId) async {
+    if (conversationId.isEmpty) return;
+
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final messages = await _repository.getConversationMessages(conversationId);
+      state = AiChatState(
+        messages: messages,
+        conversationId: conversationId,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal memuat riwayat percakapan: $e',
+      );
+    }
+  }
+
   void startNewChat() {
     state = const AiChatState();
   }
@@ -87,3 +106,6 @@ final aiChatProvider = StateNotifierProvider<AiChatNotifier, AiChatState>((ref) 
 
 /// Handoff prompt dari MenuCreate → AI Chat (auto-fill & auto-submit).
 final aiPendingPromptProvider = StateProvider<String?>((ref) => null);
+
+/// Handoff id percakapan dari tap notifikasi hasil AI → AI Chat.
+final aiPendingConversationProvider = StateProvider<String?>((ref) => null);

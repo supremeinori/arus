@@ -4,6 +4,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Plugin Google Services hanya needed bila google-services.json tersedia.
+// Tanpa file tersebut, build tetap berhasil (push nonaktif di sisi client).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.example.arus"
     compileSdk = flutter.compileSdkVersion
@@ -12,6 +18,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Diperlukan oleh firebase_messaging (desugaring untuk library java.time)
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -48,6 +56,11 @@ kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
+}
+
+dependencies {
+    // Wajib bila isCoreLibraryDesugaringEnabled = true (firebase_messaging).
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

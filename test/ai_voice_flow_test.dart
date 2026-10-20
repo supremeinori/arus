@@ -42,6 +42,19 @@ class MockVoiceAiRepository implements AiRepository {
   Future<String> getTtsAudio(String text) async {
     return 'fake_tts_base64_data';
   }
+
+  @override
+  Future<List<AiMessageModel>> getConversationMessages(String conversationId) async {
+    return [
+      AiMessageModel(
+        id: 'voice-msg-history-1',
+        conversationId: conversationId,
+        role: 'assistant',
+        content: 'Riwayat percakapan tersimpan dari test.',
+        createdAt: DateTime.now(),
+      ),
+    ];
+  }
 }
 
 void main() {

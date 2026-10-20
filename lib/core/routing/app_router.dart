@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/ai_assistant/presentation/ai_home_screen.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -43,10 +44,15 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
   return RouterNotifier(ref);
 });
 
+/// Navigator key global — dipakai push service untuk menampilkan banner
+/// foreground tanpa harus punya BuildContext.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: (BuildContext context, GoRouterState state) {
@@ -97,6 +103,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notifications',
         builder: (context, state) => const NotificationScreen(),
       ),
+      // Layar penuh untuk AI — dipakai target tap notifikasi hasil AI.
+      GoRoute(path: '/ai', builder: (context, state) => const AiHomeScreen()),
       GoRoute(
         path: '/outlets',
         builder: (context, state) => const OutletListScreen(),

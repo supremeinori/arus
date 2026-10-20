@@ -27,8 +27,16 @@ vi.mock('../src/config/db', () => {
         findUnique: vi.fn(),
         count: vi.fn(),
         create: vi.fn(),
+        createMany: vi.fn(),
         update: vi.fn(),
         updateMany: vi.fn(),
+      },
+      deviceToken: {
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        deleteMany: vi.fn(),
       },
     },
   };
@@ -139,7 +147,7 @@ describe('Notifications Module (Milestone 12)', () => {
         unit: 'kg',
         stock_qty: 2,
         reorder_level: 5,
-        outlet: { name: 'Outlet Tebet' },
+        outlet: { id: 'out-1', name: 'Outlet Tebet' },
       },
     ] as any);
 
@@ -148,7 +156,7 @@ describe('Notifications Module (Milestone 12)', () => {
       { id: mockOwner.id },
     ] as any);
 
-    vi.mocked(prisma.notification.create).mockResolvedValue({ id: 'notif-new' } as any);
+    vi.mocked(prisma.notification.createMany).mockResolvedValue({ count: 1 } as any);
 
     const res = await request(app)
       .post('/api/notifications/evaluate')
@@ -156,5 +164,173 @@ describe('Notifications Module (Milestone 12)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.triggered_count).toBeGreaterThanOrEqual(0);
+  });
+
+  it('T-NOT-05: Mendaftarkan device token FCM milik user yang sedang login', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.deviceToken.findUnique).mockResolvedValue(null as any);
+    vi.mocked(prisma.deviceToken.create).mockResolvedValue({
+      id: 'dt-1',
+      user_id: mockOwner.id,
+      token: 'fcm-token-abc',
+      platform: 'android',
+    } as any);
+
+    const res = await request(app)
+      .post('/api/notifications/device-token')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ token: 'fcm-token-abc', platform: 'android' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(prisma.deviceToken.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          user_id: mockOwner.id,
+          token: 'fcm-token-abc',
+        }),
+      })
+    );
+  });
+
+  it('T-NOT-06: Device token milik user lain dipindahkan ke user aktif (multi device aman)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.deviceToken.findUnique).mockResolvedValue({
+      id: 'dt-1',
+      user_id: 'u-owner-2',
+      platform: 'android',
+    } as any);
+    vi.mocked(prisma.deviceToken.update).mockResolvedValue({
+      id: 'dt-1',
+      user_id: mockOwner.id,
+      platform: 'android',
+    } as any);
+
+    const res = await request(app)
+      .post('/api/notifications/device-token')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ token: 'fcm-token-abc' });
+
+    expect(res.status).toBe(200);
+    expect(prisma.deviceToken.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'dt-1' },
+        data: expect.objectContaining({ user_id: mockOwner.id }),
+      })
+    );
+  });
+
+  it('T-NOT-07: Payload device token tidak valid ditolak 400', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+
+    const res = await request(app)
+      .post('/api/notifications/device-token')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ platform: 'android' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('T-NOT-08: Dedup_key yang sudah ada tidak membuat notifikasi ganda', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.ingredient.findMany).mockResolvedValue([
+      {
+        id: 'ing-1',
+        outlet_id: 'out-1',
+        name: 'Biji Kopi Blend',
+        unit: 'kg',
+        stock_qty: 2,
+        reorder_level: 5,
+        outlet: { id: 'out-1', name: 'Outlet Tebet' },
+      },
+    ] as any);
+    vi.mocked(prisma.user.findMany).mockResolvedValue([
+      { id: mockOwner.id },
+    ] as any);
+
+    // Notifikasi dengan dedup_key yang sama sudah ada -> tidak ada createMany
+    const todayStr = new Date().toISOString().slice(0, 10);
+    vi.mocked(prisma.notification.findMany).mockResolvedValue([
+      {
+        user_id: mockOwner.id,
+        dedup_key: `low_stock:ing-1:out-1:${todayStr}`,
+      },
+    ] as any);
+
+    const res = await request(app)
+      .post('/api/notifications/evaluate')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.triggered_count).toBe(0);
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+  });
+
+  it('T-NOT-09: Penerima notifikasi dibatasi Owner + Manager(UserOutlet) per cabang', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.ingredient.findMany).mockResolvedValue([
+      {
+        id: 'ing-1',
+        outlet_id: 'out-1',
+        name: 'Biji Kopi Blend',
+        unit: 'kg',
+        stock_qty: 2,
+        reorder_level: 5,
+        outlet: { id: 'out-1', name: 'Outlet Tebet' },
+      },
+    ] as any);
+    vi.mocked(prisma.notification.findMany).mockResolvedValue([] as any);
+    vi.mocked(prisma.notification.createMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.findMany).mockResolvedValue([
+      { id: mockOwner.id },
+    ] as any);
+
+    const res = await request(app)
+      .post('/api/notifications/evaluate')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { role: Role.owner },
+            { role: Role.manager, outlets: { some: { outlet_id: 'out-1' } } },
+          ]),
+        }),
+      })
+    );
+  });
+
+  it('T-NOT-10: Kegagalan push FCM tidak menggagalkan endpoint evaluate', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.ingredient.findMany).mockResolvedValue([
+      {
+        id: 'ing-1',
+        outlet_id: 'out-1',
+        name: 'Biji Kopi Blend',
+        unit: 'kg',
+        stock_qty: 2,
+        reorder_level: 5,
+        outlet: { id: 'out-1', name: 'Outlet Tebet' },
+      },
+    ] as any);
+    vi.mocked(prisma.notification.findMany).mockResolvedValue([] as any);
+    vi.mocked(prisma.notification.createMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(prisma.user.findMany).mockResolvedValue([
+      { id: mockOwner.id },
+    ] as any);
+    // deviceToken.findMany menolak -> simulasi kegagalan push
+    vi.mocked(prisma.deviceToken.findMany).mockRejectedValue(
+      new Error('FCM down') as any
+    );
+
+    const res = await request(app)
+      .post('/api/notifications/evaluate')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 });
