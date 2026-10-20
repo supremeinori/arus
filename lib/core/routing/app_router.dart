@@ -20,7 +20,9 @@ import '../../features/outlets/presentation/outlet_list_screen.dart';
 import '../../features/pos/presentation/pos_history_screen.dart';
 import '../../features/pos/presentation/pos_screen.dart';
 import '../../features/sensors/presentation/sensor_test_screen.dart';
+import '../../features/settings/presentation/currency_settings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/settings/presentation/time_settings_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/integrity/presentation/integrity_chain_screen.dart';
@@ -94,6 +96,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+        routes: [
+          // Pengaturan dipisah per domain: kurs dan waktu punya layar sendiri.
+          GoRoute(
+            path: 'currency',
+            builder: (context, state) => const CurrencySettingsScreen(),
+          ),
+          GoRoute(
+            path: 'time',
+            builder: (context, state) => const TimeSettingsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/sensors',

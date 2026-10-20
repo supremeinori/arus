@@ -8,8 +8,10 @@ import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/auth/biometric_service.dart';
+import '../../../core/utils/timezone_converter.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import '../../sensors/presentation/shake_settings_sheet.dart';
+import '../../settings/presentation/currency_provider.dart';
 import '../../shell/presentation/main_shell.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -83,6 +85,10 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final currentThreshold = ref.watch(shakeThresholdProvider);
+    // Hasil pengaturan aktif untuk tiap domain (kurs & waktu) — ditampilkan
+    // sebagai ringkasan di masing-masing tile profil.
+    final currentCurrency = ref.watch(displayCurrencyProvider);
+    final currentTimezone = ref.watch(displayTimezoneProvider);
 
     final scaffold = Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -152,8 +158,24 @@ class ProfileScreen extends ConsumerWidget {
             children: [
               _ProfileMenuTile(
                 icon: Icons.currency_exchange_rounded,
-                title: 'Pengaturan Kurs & Waktu',
-                onTap: () => context.push('/settings'),
+                title: 'Pengaturan Kurs',
+                onTap: () => context.push('/settings/currency'),
+                trailing: _ProfileValueChip(
+                  label: currentCurrency,
+                  icon: Icons.payments_outlined,
+                ),
+              ),
+              _menuDivider,
+              _ProfileMenuTile(
+                icon: Icons.access_time_filled_rounded,
+                title: 'Pengaturan Waktu',
+                onTap: () => context.push('/settings/time'),
+                trailing: _ProfileValueChip(
+                  label: TimezoneConverter.getSuffix(currentTimezone)
+                      .split(' ')
+                      .first,
+                  icon: Icons.schedule_rounded,
+                ),
               ),
               _menuDivider,
               _ProfileMenuTile(
@@ -348,6 +370,58 @@ class _ProfileMenuTile extends StatelessWidget {
             color: AppTheme.textMutedDark,
           ),
       onTap: onTap,
+    );
+  }
+}
+
+/// Chip ringkasan hasil pengaturan aktif pada tile profil (kurs / waktu).
+///
+/// Menampilkan nilai efektif dari domain terkait, mis. "IDR" untuk kurs dan
+/// "WIB" untuk zona waktu, sehingga tiap domain pengaturan punya hasil yang
+/// jelas tanpa harus membuka layarnya.
+class _ProfileValueChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+
+  const _ProfileValueChip({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppTheme.darkCardSurfaceElevated,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: AppTheme.jadeTosca),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.jadeTosca,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 6),
+        const Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 14,
+          color: AppTheme.textMutedDark,
+        ),
+      ],
     );
   }
 }
