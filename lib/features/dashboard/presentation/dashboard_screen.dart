@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/utils/money_formatter.dart';
-import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../analytics/presentation/analytics_provider.dart';
@@ -18,7 +17,6 @@ import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
-import '../../shell/presentation/main_shell.dart';
 
 /// Design tokens for Light Mode Owner Dashboard (Wireframe & Anti-AI-Slop Compliant)
 class _DashboardColors {
@@ -98,11 +96,14 @@ class DashboardScreen extends ConsumerWidget {
     final ingredientsAsync = ref.watch(ingredientsListProvider);
 
     // Hitung jumlah masalah operasional dari stok kritis
-    final lowStockIngredients = ingredientsAsync.valueOrNull
+    final lowStockIngredients =
+        ingredientsAsync.valueOrNull
             ?.where((ing) => ing.isLowStock || ing.isOutOfStock)
             .toList() ??
         [];
-    final issuesCount = lowStockIngredients.isNotEmpty ? lowStockIngredients.length : 2;
+    final issuesCount = lowStockIngredients.isNotEmpty
+        ? lowStockIngredients.length
+        : 2;
 
     // Scroll controller untuk melompat ke section masalah / peringatan
     final ScrollController scrollController = ScrollController();
@@ -129,15 +130,13 @@ class DashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 1. Header (Wireframe: [logo] Arus .......... (🔔))
-                _WireframeHeader(
-                  unreadCount: unreadCount,
-                ),
+                _WireframeHeader(unreadCount: unreadCount),
                 const SizedBox(height: 14),
 
                 // 2. Hero Card: Omzet + Filter Button (Wireframe: Omzet, Rp.17.000.000, Di Cabang pada Hari)
                 overviewAsync.when(
                   loading: () => const _LoadingCard(height: 140),
-                  error: (_, __) => _HeroOmzetCard(
+                  error: (_, _) => _HeroOmzetCard(
                     revenueIdr: 17000000, // Demo fallback matching wireframe Rp.17.000.000
                     outlets: outlets,
                     selectedOutletId: selectedOutletId,
@@ -157,7 +156,7 @@ class DashboardScreen extends ConsumerWidget {
                 // 3. Row of 2 KPI Cards: Transaksi & Masalah (Wireframe)
                 overviewAsync.when(
                   loading: () => const _LoadingCard(height: 96),
-                  error: (_, __) => _KpiRowSection(
+                  error: (_, _) => _KpiRowSection(
                     transactionCount: 149,
                     issuesCount: issuesCount,
                     onViewHistory: () => context.push('/pos-history'),
@@ -170,7 +169,9 @@ class DashboardScreen extends ConsumerWidget {
                     },
                   ),
                   data: (kpi) => _KpiRowSection(
-                    transactionCount: kpi.transactionCount > 0 ? kpi.transactionCount : 149,
+                    transactionCount: kpi.transactionCount > 0
+                        ? kpi.transactionCount
+                        : 149,
                     issuesCount: issuesCount,
                     onViewHistory: () => context.push('/pos-history'),
                     onViewIssues: () {
@@ -223,9 +224,7 @@ class DashboardScreen extends ConsumerWidget {
 class _WireframeHeader extends StatelessWidget {
   final int unreadCount;
 
-  const _WireframeHeader({
-    required this.unreadCount,
-  });
+  const _WireframeHeader({required this.unreadCount});
 
   @override
   Widget build(BuildContext context) {
@@ -427,7 +426,10 @@ class _HeroOmzetCard extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F5F9), // Slate-100
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _DashboardColors.border, width: 1.0),
+                    border: Border.all(
+                      color: _DashboardColors.border,
+                      width: 1.0,
+                    ),
                   ),
                   child: const Icon(
                     Icons.filter_alt_outlined,
@@ -535,7 +537,11 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.tune_rounded, size: 20, color: _DashboardColors.teal),
+                  const Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: _DashboardColors.teal,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Kotak Filter Bisnis',
@@ -548,7 +554,11 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20, color: _DashboardColors.textMuted),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: _DashboardColors.textMuted,
+                ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => Navigator.pop(context),
@@ -581,7 +591,10 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
               child: DropdownButton<String?>(
                 value: _tempOutletId,
                 isExpanded: true,
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _DashboardColors.textMuted),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: _DashboardColors.textMuted,
+                ),
                 items: [
                   DropdownMenuItem<String?>(
                     value: null,
@@ -594,19 +607,21 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                       ),
                     ),
                   ),
-                  ...widget.outlets.map((o) => DropdownMenuItem<String?>(
-                        value: o.id,
-                        child: Text(
-                          o.name,
-                          style: GoogleFonts.inter(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w500,
-                            color: _DashboardColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  ...widget.outlets.map(
+                    (o) => DropdownMenuItem<String?>(
+                      value: o.id,
+                      child: Text(
+                        o.name,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                          color: _DashboardColors.textPrimary,
                         ),
-                      )),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
                 ],
                 onChanged: (val) {
                   setState(() => _tempOutletId = val);
@@ -632,13 +647,16 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
             runSpacing: 8,
             children: [
               ...DashboardDateFilter.values.map((filter) {
-                final isSelected = _tempCustomDate == null && _tempDateFilter == filter;
+                final isSelected =
+                    _tempCustomDate == null && _tempDateFilter == filter;
                 return ChoiceChip(
                   label: Text(filter.label),
                   labelStyle: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? Colors.white : _DashboardColors.textPrimary,
+                    color: isSelected
+                        ? Colors.white
+                        : _DashboardColors.textPrimary,
                   ),
                   selected: isSelected,
                   selectedColor: _DashboardColors.teal,
@@ -646,7 +664,9 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: BorderSide(
-                      color: isSelected ? _DashboardColors.teal : _DashboardColors.border,
+                      color: isSelected
+                          ? _DashboardColors.teal
+                          : _DashboardColors.border,
                       width: 1.0,
                     ),
                   ),
@@ -661,22 +681,37 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                 );
               }),
               ActionChip(
-                avatar: const Icon(Icons.calendar_today_rounded, size: 14, color: _DashboardColors.teal),
+                avatar: const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 14,
+                  color: _DashboardColors.teal,
+                ),
                 label: Text(
                   _tempCustomDate != null
-                      ? DateFormat('d MMM yyyy', 'id_ID').format(_tempCustomDate!)
+                      ? DateFormat(
+                          'd MMM yyyy',
+                          'id_ID',
+                        ).format(_tempCustomDate!)
                       : 'Pilih Tanggal...',
                 ),
                 labelStyle: GoogleFonts.inter(
                   fontSize: 12,
-                  fontWeight: _tempCustomDate != null ? FontWeight.w700 : FontWeight.w500,
-                  color: _tempCustomDate != null ? _DashboardColors.teal : _DashboardColors.textSecondary,
+                  fontWeight: _tempCustomDate != null
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  color: _tempCustomDate != null
+                      ? _DashboardColors.teal
+                      : _DashboardColors.textSecondary,
                 ),
-                backgroundColor: _tempCustomDate != null ? _DashboardColors.tealLight : const Color(0xFFF8FAFC),
+                backgroundColor: _tempCustomDate != null
+                    ? _DashboardColors.tealLight
+                    : const Color(0xFFF8FAFC),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
-                    color: _tempCustomDate != null ? _DashboardColors.teal : _DashboardColors.border,
+                    color: _tempCustomDate != null
+                        ? _DashboardColors.teal
+                        : _DashboardColors.border,
                     width: 1.0,
                   ),
                 ),
@@ -695,12 +730,17 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                 backgroundColor: _DashboardColors.teal,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onPressed: () {
-                ref.read(selectedOutletFilterProvider.notifier).state = _tempOutletId;
-                ref.read(selectedDateFilterProvider.notifier).state = _tempDateFilter;
-                ref.read(selectedCustomDateProvider.notifier).state = _tempCustomDate;
+                ref.read(selectedOutletFilterProvider.notifier).state =
+                    _tempOutletId;
+                ref.read(selectedDateFilterProvider.notifier).state =
+                    _tempDateFilter;
+                ref.read(selectedCustomDateProvider.notifier).state =
+                    _tempCustomDate;
                 Navigator.pop(context);
               },
               child: Text(
@@ -813,7 +853,9 @@ class _KpiRowSection extends StatelessWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    color: issuesCount > 0 ? _DashboardColors.amber : _DashboardColors.textPrimary,
+                    color: issuesCount > 0
+                        ? _DashboardColors.amber
+                        : _DashboardColors.textPrimary,
                     letterSpacing: -0.4,
                   ),
                 ),
@@ -898,7 +940,10 @@ class _TerlarisCard extends StatelessWidget {
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(color: _DashboardColors.teal, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: _DashboardColors.teal,
+                  strokeWidth: 2,
+                ),
               ),
             )
           else if (topList.isEmpty)
@@ -906,7 +951,10 @@ class _TerlarisCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(
                 'Belum ada data penjualan produk.',
-                style: GoogleFonts.inter(color: _DashboardColors.textMuted, fontSize: 13),
+                style: GoogleFonts.inter(
+                  color: _DashboardColors.textMuted,
+                  fontSize: 13,
+                ),
               ),
             )
           else
@@ -937,7 +985,9 @@ class _TerlarisCard extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: index == 0 ? _DashboardColors.teal : _DashboardColors.textSecondary,
+                              color: index == 0
+                                  ? _DashboardColors.teal
+                                  : _DashboardColors.textSecondary,
                             ),
                           ),
                         ),
@@ -1011,10 +1061,7 @@ class _TrenCard extends StatelessWidget {
   final List<SalesTrendPoint> trendPoints;
   final bool isLoading;
 
-  const _TrenCard({
-    required this.trendPoints,
-    required this.isLoading,
-  });
+  const _TrenCard({required this.trendPoints, required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
@@ -1058,7 +1105,10 @@ class _TrenCard extends StatelessWidget {
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(color: _DashboardColors.teal, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: _DashboardColors.teal,
+                  strokeWidth: 2,
+                ),
               ),
             )
           else
@@ -1067,7 +1117,9 @@ class _TrenCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: points.map((point) {
-                  final ratio = maxRevenue > 0 ? (point.revenueIdr / maxRevenue) : 0.3;
+                  final ratio = maxRevenue > 0
+                      ? (point.revenueIdr / maxRevenue)
+                      : 0.3;
                   final barHeight = math.max(16.0, ratio * 90.0);
                   final isPeak = point.revenueIdr == maxRevenue;
 
@@ -1081,18 +1133,26 @@ class _TrenCard extends StatelessWidget {
                           Container(
                             height: barHeight,
                             decoration: BoxDecoration(
-                              color: isPeak ? _DashboardColors.teal : const Color(0xFFCBD5E1),
+                              color: isPeak
+                                  ? _DashboardColors.teal
+                                  : const Color(0xFFCBD5E1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                           const SizedBox(height: 6),
                           // Label Hari
                           Text(
-                            point.date.length > 3 ? point.date.substring(point.date.length - 2) : point.date,
+                            point.date.length > 3
+                                ? point.date.substring(point.date.length - 2)
+                                : point.date,
                             style: GoogleFonts.inter(
                               fontSize: 10.5,
-                              fontWeight: isPeak ? FontWeight.w700 : FontWeight.w500,
-                              color: isPeak ? _DashboardColors.teal : _DashboardColors.textMuted,
+                              fontWeight: isPeak
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isPeak
+                                  ? _DashboardColors.teal
+                                  : _DashboardColors.textMuted,
                             ),
                           ),
                         ],
@@ -1196,18 +1256,27 @@ class _PeringatanCard extends StatelessWidget {
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
-                child: CircularProgressIndicator(color: _DashboardColors.teal, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: _DashboardColors.teal,
+                  strokeWidth: 2,
+                ),
               ),
             )
           else ...[
             ...alertItems.map((item) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: _DashboardColors.amberLight.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _DashboardColors.amber.withValues(alpha: 0.25), width: 1.0),
+                  border: Border.all(
+                    color: _DashboardColors.amber.withValues(alpha: 0.25),
+                    width: 1.0,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -1291,7 +1360,10 @@ class _LoadingCard extends StatelessWidget {
         border: Border.all(color: _DashboardColors.border, width: 1.0),
       ),
       alignment: Alignment.center,
-      child: const CircularProgressIndicator(color: _DashboardColors.teal, strokeWidth: 2),
+      child: const CircularProgressIndicator(
+        color: _DashboardColors.teal,
+        strokeWidth: 2,
+      ),
     );
   }
 }
