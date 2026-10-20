@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../data/outlets_repository.dart';
 import '../domain/outlet_models.dart';
 
@@ -19,6 +20,33 @@ final outletsPerformanceProvider = FutureProvider.autoDispose<List<OutletPerform
 
 // Default lokasi user untuk simulasi / geolokasi: Malioboro Yogyakarta (-7.7828, 110.3670)
 final userCoordinatesProvider = StateProvider<(double, double)>((ref) => (-7.7828, 110.3670));
+
+Future<(double, double)> fetchCurrentGpsLocation() async {
+  try {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return (-7.7828, 110.3670);
+    }
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return (-7.7828, 110.3670);
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      return (-7.7828, 110.3670);
+    }
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
+    );
+    return (position.latitude, position.longitude);
+  } catch (_) {
+    return (-7.7828, 110.3670);
+  }
+}
 
 final nearestOutletProvider = FutureProvider.autoDispose<NearestOutletResult>((ref) async {
   final repo = ref.watch(outletsRepositoryProvider);

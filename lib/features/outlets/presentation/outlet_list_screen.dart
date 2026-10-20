@@ -9,6 +9,7 @@ import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/outlet_models.dart';
 import 'outlets_provider.dart';
+import 'widgets/outlet_map_widget.dart';
 
 class OutletListScreen extends ConsumerStatefulWidget {
   const OutletListScreen({super.key});
@@ -77,7 +78,7 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
         controller: _tabController,
         children: [
           _OutletsTab(outletsAsync: outletsAsync, performanceAsync: performanceAsync),
-          _LbsTab(nearestAsync: nearestAsync),
+          _LbsTab(nearestAsync: nearestAsync, performanceAsync: performanceAsync),
         ],
       ),
     );
@@ -258,237 +259,18 @@ String lbsLocalTimeDisplay(String timezone) {
 /// Scroll milik tab sendiri, bukan scroll induk (aturan A13).
 class _LbsTab extends ConsumerWidget {
   final AsyncValue<NearestOutletResult> nearestAsync;
+  final AsyncValue<List<OutletPerformanceModel>> performanceAsync;
 
-  const _LbsTab({required this.nearestAsync});
+  const _LbsTab({
+    required this.nearestAsync,
+    required this.performanceAsync,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentCoord = ref.watch(userCoordinatesProvider);
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Location simulation selector
-        Card(
-          elevation: 0,
-          color: AppTheme.darkCardSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.my_location_rounded, size: 18, color: AppTheme.jadeTosca),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Simulasi Posisi Pengguna (LBS GPS)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppTheme.textPrimaryDark,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Koordinat saat ini: ${currentCoord.$1.toStringAsFixed(4)}, ${currentCoord.$2.toStringAsFixed(4)}',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textMutedDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ActionChip(
-                      backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      side: const BorderSide(color: AppTheme.darkCardBorder),
-                      label: const Text('Malioboro Jogja', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
-                      onPressed: () {
-                        ref.read(userCoordinatesProvider.notifier).state = (-7.7828, 110.3670);
-                      },
-                    ),
-                    ActionChip(
-                      backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      side: const BorderSide(color: AppTheme.darkCardBorder),
-                      label: const Text('Surakarta Solo', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
-                      onPressed: () {
-                        ref.read(userCoordinatesProvider.notifier).state = (-7.5561, 110.8316);
-                      },
-                    ),
-                    ActionChip(
-                      backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      side: const BorderSide(color: AppTheme.darkCardBorder),
-                      label: const Text('Kuta Bali', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
-                      onPressed: () {
-                        ref.read(userCoordinatesProvider.notifier).state = (-8.6705, 115.2126);
-                      },
-                    ),
-                    ActionChip(
-                      backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      side: const BorderSide(color: AppTheme.darkCardBorder),
-                      label: const Text('London UK', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
-                      onPressed: () {
-                        ref.read(userCoordinatesProvider.notifier).state = (51.5074, -0.1278);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        AsyncStateView<NearestOutletResult>(
-          value: nearestAsync,
-          onRetry: null,
-          dataBuilder: (result) {
-            final nearest = result.nearestOutlet;
-            if (nearest == null) {
-              return const EmptyStateView(
-                message: 'Tidak ada data cabang.',
-                icon: Icons.location_off_outlined,
-              );
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Highlight Nearest Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.darkCardSurfaceElevated,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.jadeTosca.withAlpha(120), width: 1.0),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.darkCardSurface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.darkCardBorder),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.stars_rounded, color: AppTheme.jadeTosca, size: 16),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    'CABANG TERDEKAT (LBS)',
-                                    style: TextStyle(
-                                      color: AppTheme.jadeTosca,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '${nearest.distanceKm.toStringAsFixed(1)} km',
-                            style: const TextStyle(
-                              color: AppTheme.jadeTosca,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        nearest.name,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimaryDark,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        nearest.address,
-                        style: const TextStyle(color: AppTheme.textSecondaryDark, fontSize: 13),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 14),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.jadeTosca,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                        label: const Text('Buka Detail Cabang Terdekat', maxLines: 1, overflow: TextOverflow.ellipsis),
-                        onPressed: () => context.push('/outlets/${nearest.id}'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Seluruh Cabang Terurut Berdasarkan Jarak:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-                // List kecil dan tetap — render inline tanpa scroll bersarang (aturan A4).
-                ...result.allOutletsSorted.map((item) {
-                  final localTime = lbsLocalTimeDisplay(item.timezone);
-
-                  return Card(
-                    color: AppTheme.darkCardSurface,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        child: const Icon(Icons.location_on, color: AppTheme.jadeTosca, size: 20),
-                      ),
-                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime', style: const TextStyle(color: AppTheme.textMutedDark), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, size: 18, color: AppTheme.textMutedDark)),
-                      onTap: () => context.push('/outlets/${item.id}'),
-                    ),
-                  );
-                }),
-              ],
-            );
-          },
-        ),
-      ],
+    return OutletMapWidget(
+      nearestAsync: nearestAsync,
+      performanceAsync: performanceAsync,
     );
   }
 }
