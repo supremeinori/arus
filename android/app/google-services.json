@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1049699393175",
+    "project_id": "arus-b223e",
+    "storage_bucket": "arus-b223e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1049699393175:android:067fac77349acfddc393d2",
+        "android_client_info": {
+          "package_name": "com.arus.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRhaQz_NKvUOVdA4AbUoeDpTvC6QdImM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -27,6 +27,21 @@ function mask(value) {
   return `${s.slice(0, 6)}…${s.slice(-4)} (${s.length} karakter)`;
 }
 
+/**
+ * Sama dengan normalizePrivateKey() di src/modules/push/push.service.ts.
+ * Script ini berdiri sendiri (CJS) sehingga normalisasinya diduplikasi di sini.
+ */
+function normalizePrivateKey(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .trim()
+    .replace(/^["']/, '')
+    .replace(/["'],?$/, '')
+    .trim();
+}
+
 async function listDeviceTokens() {
   try {
     const { PrismaClient } = require('@prisma/client');
@@ -57,7 +72,7 @@ async function listDeviceTokens() {
 async function main() {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
   console.log('== Konfigurasi Firebase Cloud Messaging ==');
   console.log('  FIREBASE_PROJECT_ID   :', projectId ? `TERISI (${projectId})` : 'KOSONG');
