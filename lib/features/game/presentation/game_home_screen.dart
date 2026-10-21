@@ -1,15 +1,28 @@
 ﻿import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/game_repository.dart';
+import '../domain/tilt_direction.dart';
+import '../../sensors/presentation/sensor_provider.dart';
 
 enum GameState { lobby, loading, playing, result }
 
+/// Status ketersediaan sensor untuk kontrol gyroscope.
+enum _GyroSensorState { initializing, ready, unavailable }
+
 class GameHomeScreen extends ConsumerStatefulWidget {
-  const GameHomeScreen({super.key});
+  const GameHomeScreen({super.key, this.clock});
+
+  /// Sumber waktu untuk logika kontrol gyroscope (hold-to-answer).
+  ///
+  /// `null` (default) memakai jam dinding aplikasi. Parameter ini adalah seam
+  /// untuk pengujian, sehingga durasi tahan 3 detik dapat diverifikasi tanpa
+  /// menunggu waktu nyata.
+  final DateTime Function()? clock;
 
   @override
   ConsumerState<GameHomeScreen> createState() => _GameHomeScreenState();
@@ -36,6 +49,21 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   String? _selectedOptionKey;
   bool _isAnswerChecked = false;
 
+  // Gyroscope Hold-to-Answer
+  // Aturan main: miringkan HP ke satu arah lalu tahan selama 3 detik.
+  //   Atas (A) | Kanan (B) | Kiri (C) | Bawah (D)
+  static const Duration _gyroPollInterval = Duration(milliseconds: 40);
+  static const Duration _gyroSensorTimeout = Duration(milliseconds: 2500);
+
+  final TiltHoldTracker _gyroTracker = TiltHoldTracker();
+  final ValueNotifier<double> _gyroProgress = ValueNotifier<double>(0);
+  Timer? _gyroPollTimer;
+  TiltDirection? _gyroDirection; // arah yang sedang ditahan (untuk UI)
+  bool _gyroAnswerLocked = false; // jawaban sudah terkunci via gyroscope
+  _GyroSensorState _gyroSensorState = _GyroSensorState.initializing;
+  DateTime? _lastGyroSampleAt; // timestamp sampel sensor terakhir
+  int _gyroStalePolls = 0; // jumlah polling tanpa sampel sensor baru
+
   // Data Sesi Selesai
   bool _isNewHighScore = false;
   UserGameStats? _userStats;
@@ -47,10 +75,145 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
     _loadUserStats();
   }
 
+  // ==========================================
+  // GYROSCOPE HOLD-TO-ANSWER
+  // ==========================================
+
+  /// Mulai monitoring sensor selama gameplay berjalan.
+  ///
+  /// Poll (bukan listener hardware baru) membaca state provider gyro yang
+  /// sudah ada, sehingga tidak ada duplikasi listener sensor.
+  void _startGyroPolling() {
+    _stopGyroPolling();
+    if (_gameState != GameState.playing) return;
+    // Seed timestamp sampel terakhir: sensor baru dianggap "siap" setelah ada
+    // sampel baru masuk, sehingga perangkat tanpa sensor terdeteksi sebagai
+    // tidak tersedia (fallback ke tombol sentuh).
+    _lastGyroSampleAt = ref.read(gyroscopeProvider).timestamp;
+    _gyroPollTimer = Timer.periodic(_gyroPollInterval, (_) => _pollGyro());
+  }
+
+  /// Hentikan monitoring sensor & reset seluruh status gyro.
+  void _stopGyroPolling() {
+    _gyroPollTimer?.cancel();
+    _gyroPollTimer = null;
+    _resetGyroState();
+    _gyroSensorState = _GyroSensorState.initializing;
+    _lastGyroSampleAt = null;
+    _gyroStalePolls = 0;
+  }
+
+  /// Reset status gyro (ganti soal / timeout / selesai / keluar).
+  ///
+  /// Status ketersediaan sensor tidak di-reset di sini: antar soal sensor tetap
+  /// hidup, jadi tidak perlu mengulang deteksi (menghindari kedipan UI).
+  void _resetGyroState() {
+    _gyroTracker.reset();
+    _gyroProgress.value = 0;
+    _gyroDirection = null;
+    _gyroAnswerLocked = false;
+  }
+
+  /// Baca sampel sensor terbaru, perbarui progres tahan, dan kunci jawaban
+  /// bila arah sudah dipertahankan selama [_gyroHoldDuration].
+  void _pollGyro() {
+    if (!mounted) return;
+    if (_gameState != GameState.playing || _isAnswerChecked) return;
+
+    final reading = ref.read(gyroscopeProvider);
+    final now = _now;
+
+    // Timestamp hanya maju bila ada event sensor masuk -> dipakai untuk
+    // mendeteksi sensor tidak tersedia (fallback ke kontrol sentuh).
+    if (reading.timestamp != _lastGyroSampleAt) {
+      _lastGyroSampleAt = reading.timestamp;
+      _gyroStalePolls = 0;
+      if (_gyroSensorState != _GyroSensorState.ready) {
+        setState(() => _gyroSensorState = _GyroSensorState.ready);
+      }
+    } else {
+      // Tidak ada sampel baru selama [_gyroSensorTimeout] -> sensor dianggap
+      // mati/tidak tersedia, pemain tetap bisa menjawab lewat tombol sentuh.
+      // Dihitung dari jumlah polling (bukan timestamp) agar tidak bergantung
+      // pada sumber jam.
+      _gyroStalePolls++;
+      if (_gyroStalePolls >= _gyroSensorStalePollLimit &&
+          _gyroSensorState != _GyroSensorState.unavailable) {
+        setState(() => _gyroSensorState = _GyroSensorState.unavailable);
+        // Batalkan tahan yang sedang berjalan: arah terakhir sudah basi.
+        _resetGyroState();
+      }
+    }
+
+    if (_gyroSensorState != _GyroSensorState.ready) return;
+    if (!_gyroControlEnabled) return;
+
+    final detected = detectTiltDirection(
+      pitch: reading.pitch,
+      roll: reading.roll,
+      activeDirection: _gyroTracker.direction,
+    );
+
+    final changed = _gyroTracker.update(detected: detected, now: now);
+    _gyroProgress.value = _gyroTracker.progressAt(now);
+
+    if (changed) {
+      setState(() {
+        _gyroDirection = _gyroTracker.direction;
+        _gyroAnswerLocked = _gyroTracker.isLocked;
+      });
+    }
+
+    if (_gyroTracker.isLocked) {
+      _lockGyroAnswer();
+    }
+  }
+
+  /// Kunci jawaban hasil tahan gyroscope.
+  ///
+  /// Pemeriksaan jawaban & penghitungan skor memakai alur yang sama dengan
+  /// tombol sentuh (`_selectOption`).
+  void _lockGyroAnswer() {
+    final direction = _gyroTracker.lockedDirection;
+    if (direction == null) return;
+    if (_questions.isEmpty) return;
+    if (_currentQuestionIndex >= _questions.length) return;
+
+    final options = _questions[_currentQuestionIndex].options;
+    if (direction.optionIndex >= options.length) {
+      _gyroTracker.reset();
+      return;
+    }
+
+    // Jawab lewat alur validasi & skor yang sama dengan tombol sentuh.
+    _selectOption(options[direction.optionIndex].key);
+
+    // Tracker dikunci ulang agar tidak ada jawaban ganda untuk soal ini.
+    _gyroTracker.reset();
+    _gyroProgress.value = 1.0;
+  }
+
+  /// Kontrol miring mengikuti pengaturan sensor pengguna (default: aktif).
+  bool get _gyroControlEnabled {
+    final settings = ref.read(sensorSettingsProvider).valueOrNull;
+    return settings?.tiltEnabled ?? true;
+  }
+
+  /// Jumlah polling tanpa sampel baru yang menandai sensor tidak tersedia.
+  int get _gyroSensorStalePollLimit =>
+      (_gyroSensorTimeout.inMilliseconds / _gyroPollInterval.inMilliseconds)
+          .ceil();
+
+  /// Sumber waktu kontrol gyroscope (jam dinding, atau clock yang disuntikkan
+  /// pada pengujian).
+  DateTime get _now => widget.clock?.call() ?? DateTime.now();
+
   @override
   void dispose() {
     _countdownTimer?.cancel();
     _sessionTimer?.cancel();
+    _stopGyroPolling();
+    _gyroProgress.dispose();
     super.dispose();
   }
 
@@ -104,6 +267,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
         });
         _startSessionTimer();
         _startQuestionTimer();
+        _startGyroPolling();
       }
     } catch (e) {
       if (mounted) {
@@ -125,6 +289,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
 
   void _startQuestionTimer() {
     _countdownTimer?.cancel();
+    _resetGyroState();
     setState(() {
       _remainingSeconds = _timePerQuestion;
       _selectedOptionKey = null;
@@ -142,6 +307,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   }
 
   void _onTimeOut() {
+    _resetGyroState();
     HapticFeedback.mediumImpact();
     setState(() {
       _remainingSeconds = 0;
@@ -194,6 +360,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   Future<void> _finishGame() async {
     _countdownTimer?.cancel();
     _sessionTimer?.cancel();
+    _stopGyroPolling();
 
     setState(() {
       _gameState = GameState.loading;
@@ -264,6 +431,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                             Navigator.pop(ctx);
                             _countdownTimer?.cancel();
                             _sessionTimer?.cancel();
+                            _stopGyroPolling();
                             setState(() => _gameState = GameState.lobby);
                           },
                           child: const Text('Keluar', style: TextStyle(color: Colors.white)),
@@ -530,6 +698,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
 
     final currentQ = _questions[_currentQuestionIndex];
     final timerProgress = _remainingSeconds / _timePerQuestion;
+    final gyroEnabled =
+        ref.watch(sensorSettingsProvider).valueOrNull?.tiltEnabled ?? true;
 
     return Column(
       children: [
@@ -594,6 +764,16 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     color: _remainingSeconds <= 3 ? AppTheme.error : Colors.grey.shade700,
                   ),
                 ),
+              ),
+              const SizedBox(height: 8),
+
+              // Kontrol Gyroscope Hold-to-Answer (indikator arah + progres tahan)
+              _GyroHoldPanel(
+                enabled: gyroEnabled,
+                sensorState: _gyroSensorState,
+                direction: _gyroDirection,
+                locked: _gyroAnswerLocked,
+                progress: _gyroProgress,
               ),
             ],
           ),
@@ -672,12 +852,14 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // 4 Tombol Pilihan Ganda
-                ...currentQ.options.map((opt) {
+                // 4 Tombol Pilihan Ganda (huruf A/B/C/D sesuai posisi)
+                ...currentQ.options.asMap().entries.map((entry) {
+                  final opt = entry.value;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _GameOptionButton(
                       opt: opt,
+                      letter: String.fromCharCode(65 + entry.key),
                       correctKey: currentQ.correctOptionKey,
                       isAnswerChecked: _isAnswerChecked,
                       selectedOptionKey: _selectedOptionKey,
@@ -1028,6 +1210,7 @@ class _GameModeCard extends StatelessWidget {
 
 class _GameOptionButton extends StatelessWidget {
   final GameQuestionOption opt;
+  final String letter;
   final String correctKey;
   final bool isAnswerChecked;
   final String? selectedOptionKey;
@@ -1035,6 +1218,7 @@ class _GameOptionButton extends StatelessWidget {
 
   const _GameOptionButton({
     required this.opt,
+    required this.letter,
     required this.correctKey,
     required this.isAnswerChecked,
     required this.selectedOptionKey,
@@ -1086,7 +1270,7 @@ class _GameOptionButton extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Text(
-                opt.key.replaceAll('opt_', '').toUpperCase(),
+                letter,
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
@@ -1109,6 +1293,240 @@ class _GameOptionButton extends StatelessWidget {
             ?trailingIcon,
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Panel indikator kontrol gyroscope hold-to-answer (aturan E23: widget class const).
+///
+/// Menampilkan:
+///   - status ketersediaan sensor (fallback ke tombol sentuh)
+///   - legenda 4 arah (Atas A / Kanan B / Kiri C / Bawah D)
+///   - arah yang sedang ditahan + progress bar + hitung mundur
+class _GyroHoldPanel extends StatelessWidget {
+  final bool enabled;
+  final _GyroSensorState sensorState;
+  final TiltDirection? direction;
+  final bool locked;
+  final ValueListenable<double> progress;
+
+  const _GyroHoldPanel({
+    required this.enabled,
+    required this.sensorState,
+    required this.direction,
+    required this.locked,
+    required this.progress,
+  });
+
+  static IconData _iconFor(TiltDirection direction) {
+    switch (direction) {
+      case TiltDirection.up:
+        return Icons.keyboard_arrow_up_rounded;
+      case TiltDirection.right:
+        return Icons.keyboard_arrow_right_rounded;
+      case TiltDirection.left:
+        return Icons.keyboard_arrow_left_rounded;
+      case TiltDirection.down:
+        return Icons.keyboard_arrow_down_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) {
+      return _buildNotice(
+        icon: Icons.screen_rotation_rounded,
+        text: 'Kontrol miring nonaktif (Pengaturan > Sensor). Gunakan tombol jawaban.',
+        color: Colors.grey.shade700,
+      );
+    }
+
+    switch (sensorState) {
+      case _GyroSensorState.initializing:
+        return _buildNotice(
+          icon: Icons.sensors_rounded,
+          text: 'Mengaktifkan sensor gyroscope...',
+          color: Colors.grey.shade700,
+        );
+      case _GyroSensorState.unavailable:
+        return _buildNotice(
+          icon: Icons.touch_app_rounded,
+          text: 'Sensor tidak tersedia. Gunakan tombol jawaban.',
+          color: AppTheme.error,
+        );
+      case _GyroSensorState.ready:
+        break;
+    }
+
+    if (locked) {
+      return _buildNotice(
+        icon: Icons.check_circle_rounded,
+        text: 'Jawaban terkunci lewat gyroscope.',
+        color: AppTheme.successGreen,
+      );
+    }
+
+    final dir = direction;
+    if (dir == null) {
+      return _buildLegend();
+    }
+    return _buildHold(dir);
+  }
+
+  Widget _buildNotice({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegend() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.screen_rotation_rounded,
+                  size: 16, color: AppTheme.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Miringkan HP & tahan 3 detik untuk menjawab',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 10,
+            runSpacing: 4,
+            children: TiltDirection.values.map((dir) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_iconFor(dir), size: 14, color: AppTheme.primary),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${dir.letter} ${dir.label}',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHold(TiltDirection dir) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(_iconFor(dir), size: 18, color: AppTheme.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Tahan: ${dir.label} (${dir.letter})',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+              ValueListenableBuilder<double>(
+                valueListenable: progress,
+                builder: (context, value, _) {
+                  final remaining = (kTiltHoldDuration.inMilliseconds *
+                          (1 - value) /
+                          1000)
+                      .ceil();
+                  return Text(
+                    '$remaining dtk',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primary,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ValueListenableBuilder<double>(
+            valueListenable: progress,
+            builder: (context, value, _) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: value,
+                  minHeight: 6,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

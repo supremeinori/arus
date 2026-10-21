@@ -49,6 +49,12 @@ Setiap sesi permainan (*1 Game Session*) dirancang cepat dan ringan (selesai dal
    * **Skor Maksimal Ideal:** $\pm 1.000\text{ Poin}$ dalam 1 sesi (5 soal).
 4. **Umpan Balik Instan (*Micro-Interaction*):**
    * Saat tombol pilihan ditekan, tombol berubah menjadi **Hijau** jika benar (disertai getaran *haptic* ringan) atau **Merah** jika salah (sambil menyorot jawaban yang benar selama 1 detik sebelum berpindah ke soal berikutnya).
+5. **Kontrol Gyroscope *Hold-to-Answer* (opsional, mengikuti pengaturan `tiltEnabled`):**
+   * **Aturan:** Miringkan HP ke satu arah lalu **tahan 3 detik** untuk mengunci jawaban. Atas = **A**, Kanan = **B**, Kiri = **C**, Bawah = **D** (mengikuti posisi tombol di layar).
+   * **Ambang & Toleransi:** Sudut masuk **30°**, toleransi keluar **10°** (arah aktif bertahan sampai 20°), sudut > **65°** dianggap tidak portrait (diarah/datar) dan miring diagonal nyaris imbang (< 15° selisih) dianggap ambigu.
+   * **Pembatalan:** Arah yang berubah atau kembali netral membatalkan progres tahan; ganti soal/timeout/selesai mereset progres.
+   * **Fallback:** Bila sensor tidak tersedia (atau dimatikan), status sensor ditampilkan di panel dan jawaban tetap dapat diberikan lewat tombol sentuh.
+   * **Deteksi Sensor Mati:** Status "tidak tersedia" muncul bila **63 polling** (≈ 2,5 detik @ polling 40 ms) tanpa sampel sensor baru; tahan yang sedang berjalan dibatalkan agar arah basi tidak terkunci. Konvensi status: *initializing* → *ready* (ada sampel baru) → *unavailable*.
 
 ---
 
@@ -63,6 +69,7 @@ Setiap sesi permainan (*1 Game Session*) dirancang cepat dan ringan (selesai dal
           ▼ (Fetch GET /api/game/questions?mode=...)
 [ SC29: Game Play Screen (Soal 1 s/d 5) ]
    ├── Header: Nomor Soal (1/5), Skor Saat Ini, & Progress Bar Timer (10 dtk)
+   ├── Panel Kontrol Gyroscope: Status Sensor + Legenda A/B/C/D + Arah Ditahan + Progress Bar Tahan
    ├── Area Tengah: Card Gambar Produk (Image.network dari products.image_url)
    │     └── (Jika Mode Tebak Harga: Tampilkan juga Teks Nama Produk di bawah foto)
    └── Area Bawah: 4 Tombol Pilihan Ganda (48dp touch target)

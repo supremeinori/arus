@@ -38,9 +38,16 @@ class AccelerometerReading {
 }
 
 class GyroscopeReading {
-  final double pitch; // Derajat rotasi sumbu X (-90 s/d +90)
-  final double roll; // Derajat rotasi sumbu Y (-90 s/d +90)
-  final double yaw; // Derajat rotasi sumbu Z (0 s/d 360)
+  /// Derajat kemiringan depan/belakang (sumbu X). 0° saat HP dipegang tegak
+  /// portrait, positif = ujung atas HP condong menjauh pengguna (miring atas).
+  final double pitch;
+
+  /// Derajat kemiringan kiri/kanan (sumbu Y). 0° saat HP dipegang tegak
+  /// portrait, positif = tepi kanan HP turun (miring kanan).
+  final double roll;
+
+  /// Derajat rotasi sumbu Z (0 s/d 360).
+  final double yaw;
   final DateTime timestamp;
 
   const GyroscopeReading({

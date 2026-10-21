@@ -82,6 +82,9 @@ class GyroscopeNotifier extends StateNotifier<GyroscopeReading> {
   double _roll = 0.0;
   double _yaw = 0.0;
 
+  /// Bobot low-pass filter untuk meredam getaran sensor (0..1).
+  static const double _smoothingFactor = 0.25;
+
   GyroscopeNotifier() : super(GyroscopeReading.zero()) {
     _startListening();
   }
@@ -89,15 +92,35 @@ class GyroscopeNotifier extends StateNotifier<GyroscopeReading> {
   void _startListening() {
     if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) return;
     try {
-      // 1. Hitung pitch dan roll fisik dari gravitasi akselerometer secara presisi
+      // 1. Orientasi absolut dihitung dari vektor gravitasi (akselerometer).
+      //    Gyroskop hanya mengukur kecepatan sudut, sehingga tidak bisa dipakai
+      //    langsung sebagai sudut kemiringan absolut (drift & tidak ada acuan).
       _accelSub = accelerometerEventStream().listen(
         (event) {
           if (!mounted) return;
-          final pitchRad = math.atan2(event.y, math.sqrt(event.x * event.x + event.z * event.z));
-          final rollRad = math.atan2(-event.x, event.z);
+          final magnitude = math.sqrt(
+            event.x * event.x + event.y * event.y + event.z * event.z,
+          );
+          // Abaikan sampel di luar rentang gravitasi wajar supaya getaran
+          // tangan / shake tidak sempat dibaca sebagai kemiringan ekstrem.
+          if (magnitude < 4.0 || magnitude > 20.0) return;
 
-          _pitch = (pitchRad * 180 / math.pi).clamp(-90.0, 90.0);
-          _roll = (rollRad * 180 / math.pi).clamp(-90.0, 90.0);
+          final nx = event.x / magnitude;
+          final ny = event.y / magnitude;
+          final nz = event.z / magnitude;
+
+          // 0° = HP dipegang tegak portrait.
+          // pitch > 0 : ujung atas condong menjauh pengguna (miring ATAS)
+          // pitch < 0 : ujung atas condong ke pengguna (miring BAWAH)
+          // roll  > 0 : tepi kanan turun (miring KANAN)
+          // roll  < 0 : tepi kiri turun (miring KIRI)
+          final rawPitch =
+              (math.atan2(-nz, ny) * 180 / math.pi).clamp(-90.0, 90.0);
+          final rawRoll =
+              (math.atan2(-nx, ny) * 180 / math.pi).clamp(-90.0, 90.0);
+
+          _pitch = _smooth(_pitch, rawPitch);
+          _roll = _smooth(_roll, rawRoll);
 
           state = GyroscopeReading(
             pitch: _pitch,
@@ -123,11 +146,19 @@ class GyroscopeNotifier extends StateNotifier<GyroscopeReading> {
     } catch (_) {}
   }
 
+  /// Low-pass filter: meredam derau sensor tanpa menambah latensi berarti.
+  double _smooth(double current, double target) {
+    return current + (target - current) * _smoothingFactor;
+  }
+
   void setTilt({double? pitch, double? roll, double? yaw}) {
-    state = state.copyWith(
-      pitch: pitch,
-      roll: roll,
-      yaw: yaw,
+    if (pitch != null) _pitch = pitch;
+    if (roll != null) _roll = roll;
+    if (yaw != null) _yaw = yaw;
+    state = GyroscopeReading(
+      pitch: _pitch,
+      roll: _roll,
+      yaw: _yaw,
       timestamp: DateTime.now(),
     );
   }
