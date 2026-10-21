@@ -196,7 +196,7 @@ void main() {
     expect(body.containsKey('recipes'), isFalse,
         reason: 'toggle status tidak boleh mengirim/menghapus resep');
     expect(body.containsKey('image_url'), isFalse,
-        reason: 'form ini tidak mengelola gambar, jadi tidak boleh dikirim');
+        reason: 'toggle status tidak boleh mengirim/mengubah gambar');
     expect(find.text('Aktifkan Menu'), findsOneWidget,
         reason: 'tombol harus berubah jadi Aktifkan Menu');
   });

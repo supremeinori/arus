@@ -14,6 +14,7 @@ import '../data/catalog_repository.dart';
 import '../domain/category_model.dart';
 import '../domain/product_model.dart';
 import 'catalog_provider.dart';
+import 'widgets/product_image_url_field.dart';
 import '../../settings/presentation/currency_provider.dart';
 
 /// Satu baris builder resep: dropdown bahan + input takaran.
@@ -47,6 +48,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
   final _nameCtrl = TextEditingController();
   final _skuCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
+  final _imageUrlCtrl = TextEditingController();
   final List<_RecipeRow> _rows = [_RecipeRow()];
 
   String? _categoryId;
@@ -69,6 +71,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
     _nameCtrl.dispose();
     _skuCtrl.dispose();
     _priceCtrl.dispose();
+    _imageUrlCtrl.dispose();
     for (final r in _rows) {
       r.dispose();
     }
@@ -171,6 +174,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
     _nameCtrl.text = product.name;
     _skuCtrl.text = product.sku;
     _priceCtrl.text = product.priceIdr.toString();
+    _imageUrlCtrl.text = product.imageUrl ?? '';
     _categoryId = product.categoryId;
     _isActive = product.isActive;
 
@@ -267,6 +271,8 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
       final repo = ref.read(catalogRepositoryProvider);
       final price =
           int.parse(_priceCtrl.text.replaceAll(RegExp(r'[^0-9]'), ''));
+      // URL gambar opsional: kosong = produk tanpa gambar.
+      final imageUrl = _imageUrlCtrl.text.trim();
       final isEdit = widget.productId != null;
       if (isEdit) {
         await repo.updateProduct(
@@ -276,6 +282,10 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
           priceIdr: price,
           categoryId: _categoryId,
           clearCategory: _categoryId == null,
+          imageUrl: imageUrl.isEmpty ? null : imageUrl,
+          // Form ini mengelola field gambar, jadi URL yang dikosongkan user
+          // harus benar-benar dihapus di server (bukan hanya tidak dikirim).
+          clearImage: imageUrl.isEmpty,
           recipes: recipes,
         );
         ref.invalidate(productDetailProvider(widget.productId!));
@@ -285,6 +295,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
           sku: _skuCtrl.text.trim(),
           priceIdr: price,
           categoryId: _categoryId,
+          imageUrl: imageUrl.isEmpty ? null : imageUrl,
           recipes: recipes,
         );
       }
@@ -412,6 +423,10 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 onChanged: (v) => setState(() => _categoryId = v),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // URL Gambar Menu (opsional) + preview langsung.
+            ProductImageUrlField(controller: _imageUrlCtrl),
             const SizedBox(height: 20),
 
             // ---------- Step 2: Builder resep dinamis ----------

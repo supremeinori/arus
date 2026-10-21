@@ -11,6 +11,7 @@ import '../data/catalog_repository.dart';
 import '../domain/product_model.dart';
 import '../../../core/utils/money_formatter.dart';
 import 'catalog_provider.dart';
+import 'widgets/product_image_url_field.dart';
 
 class _RecipeRow {
   String? ingredientId;
@@ -474,36 +475,9 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
             ),
             const SizedBox(height: 16),
 
-            // URL Foto / Gambar Produk
-            TextFormField(
+            // URL Foto / Gambar Produk (opsional) + preview langsung.
+            ProductImageUrlField(
               controller: widget.imageUrlController,
-              style: GoogleFonts.inter(fontSize: 14),
-              keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                labelText: 'URL Gambar Menu (Unsplash / Web)',
-                hintText: 'https://images.unsplash.com/...',
-                prefixIcon: const Icon(Icons.image_outlined, color: AppTheme.jadeTosca, size: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                ),
-              ),
-              validator: (val) {
-                final v = val?.trim() ?? '';
-                if (v.isEmpty) return null;
-                final uri = Uri.tryParse(v);
-                if (uri == null ||
-                    !uri.hasScheme ||
-                    (uri.scheme != 'http' && uri.scheme != 'https') ||
-                    uri.host.isEmpty) {
-                  return 'URL gambar tidak valid (contoh: https://images.unsplash.com/...)';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
 

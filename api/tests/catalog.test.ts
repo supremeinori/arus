@@ -154,4 +154,121 @@ describe('Catalog Module (Milestone 4)', () => {
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
   });
+
+  it('T-CAT-06: Create produk menyimpan image_url (opsional)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null as any);
+    vi.mocked(prisma.product.create).mockResolvedValue({
+      ...sampleProducts[0],
+      image_url: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80',
+    } as any);
+
+    const imageUrl = 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80';
+
+    const res = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        name: 'Kopi Gambar',
+        sku: 'KOP-IMG-01',
+        price_idr: 25000,
+        image_url: imageUrl,
+      });
+
+    expect(res.status).toBe(201);
+    // image_url harus diteruskan ke Prisma apa adanya.
+    expect(vi.mocked(prisma.product.create).mock.calls[0][0].data.image_url).toBe(imageUrl);
+    // Dan dikembalikan lagi di response supaya bisa dimuat ulang oleh form.
+    expect(res.body.data.image_url).toBe(imageUrl);
+  });
+
+  it('T-CAT-07: Create produk tanpa image_url menyimpan null (tidak wajib)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(null as any);
+    vi.mocked(prisma.product.create).mockResolvedValue({
+      ...sampleProducts[0],
+      image_url: null,
+    } as any);
+
+    const res = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        name: 'Kopi Tanpa Gambar',
+        sku: 'KOP-NOGAMBAR-01',
+        price_idr: 25000,
+      });
+
+    expect(res.status).toBe(201);
+    expect(vi.mocked(prisma.product.create).mock.calls[0][0].data.image_url).toBeNull();
+  });
+
+  it('T-CAT-08: Update produk menyimpan image_url baru', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(sampleProducts[0] as any);
+    vi.mocked(prisma.product.update).mockResolvedValue(sampleProducts[0] as any);
+
+    const imageUrl = 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=500&q=80';
+
+    const res = await request(app)
+      .patch('/api/products/prod-1')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ image_url: imageUrl });
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.product.update).mock.calls[0][0].data.image_url).toBe(imageUrl);
+  });
+
+  it('T-CAT-09: Update produk bisa mengosongkan image_url (null)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(sampleProducts[0] as any);
+    vi.mocked(prisma.product.update).mockResolvedValue(sampleProducts[0] as any);
+
+    const res = await request(app)
+      .patch('/api/products/prod-1')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ image_url: null });
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prisma.product.update).mock.calls[0][0].data.image_url).toBeNull();
+  });
+
+  it('T-CAT-10: Update produk tanpa field image_url tidak mengubah kolom gambar', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(sampleProducts[0] as any);
+    vi.mocked(prisma.product.update).mockResolvedValue(sampleProducts[0] as any);
+
+    const res = await request(app)
+      .patch('/api/products/prod-1')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ price_idr: 26000 });
+
+    expect(res.status).toBe(200);
+    const updateData = vi.mocked(prisma.product.update).mock.calls[0][0].data as any;
+    expect(updateData.image_url).toBeUndefined();
+  });
+
+  it('T-CAT-11: Detail produk mengembalikan image_url untuk dimuat ulang form', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+      ...sampleProducts[0],
+      image_url: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80',
+      recipes: [],
+    } as any);
+
+    const res = await request(app)
+      .get('/api/products/prod-1')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.image_url).toBe(
+      'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80',
+    );
+  });
 });
