@@ -219,8 +219,19 @@ class MoneyText extends ConsumerWidget {
   final num amountIdr;
   final TextStyle? style;
   final int? maxLines;
+  final TextAlign? textAlign;
 
-  const MoneyText(this.amountIdr, {super.key, this.style, this.maxLines = 1});
+  /// Teks tambahan sebelum nominal (mis. '- ' untuk baris diskon).
+  final String prefix;
+
+  const MoneyText(
+    this.amountIdr, {
+    super.key,
+    this.style,
+    this.maxLines = 1,
+    this.textAlign,
+    this.prefix = '',
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -229,9 +240,10 @@ class MoneyText extends ConsumerWidget {
     final rates = ratesAsync.valueOrNull?.rates;
 
     return Text(
-      MoneyFormatter.format(amountIdr, currency: currency, rates: rates),
+      '$prefix${MoneyFormatter.format(amountIdr, currency: currency, rates: rates)}',
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
+      textAlign: textAlign,
       style: style ??
           GoogleFonts.inter(
             fontWeight: FontWeight.w700,

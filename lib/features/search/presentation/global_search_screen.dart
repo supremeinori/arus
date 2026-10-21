@@ -177,11 +177,10 @@ class _ProductResultCard extends StatelessWidget {
         subtitle: Text('${p.sku} • ${p.categoryName ?? "Umum"}', style: GoogleFonts.inter(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: SizedBox(
           width: 100,
-          child: Text(
-            p.formattedPrice,
+          child: MoneyText(
+            p.priceIdr,
             style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppTheme.jadeTosca),
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
           ),
         ),

@@ -36,6 +36,17 @@ class AuthNotifierMock extends StateNotifier<AuthState>
   void restoreSessionInstant(UserModel user, [String? refreshToken]) {
     state = AuthState.authenticated(user);
   }
+
+  @override
+  Future<void> applyDisplayCurrency(String currency) async {
+    final user = state.user;
+    if (user == null) return;
+    state = AuthState.authenticated(
+      user.copyWith(
+        settings: user.settings.copyWith(displayCurrency: currency),
+      ),
+    );
+  }
 }
 
 void main() {

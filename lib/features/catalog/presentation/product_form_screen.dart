@@ -9,6 +9,7 @@ import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../data/catalog_repository.dart';
 import '../domain/product_model.dart';
+import '../../../core/utils/money_formatter.dart';
 import 'catalog_provider.dart';
 
 class _RecipeRow {
@@ -516,7 +517,8 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: GoogleFonts.inter(fontSize: 14),
                     decoration: InputDecoration(
-                      labelText: 'Harga Jual (Rp) *',
+                      labelText:
+                          'Harga Jual (${MoneyFormatter.symbolOf(MoneyFormatter.defaultCurrency).trim()}) *',
                       hintText: '22000',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),

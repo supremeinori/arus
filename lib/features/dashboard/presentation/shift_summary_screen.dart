@@ -8,6 +8,7 @@ import '../../auth/presentation/auth_provider.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../analytics/domain/analytics_models.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 class ShiftSummaryScreen extends ConsumerWidget {
   const ShiftSummaryScreen({super.key});
@@ -164,18 +165,18 @@ class ShiftSummaryScreen extends ConsumerWidget {
 }
 
 /// Metrik shift — widget class top-level
-class _ShiftMetrics extends StatelessWidget {
+class _ShiftMetrics extends ConsumerWidget {
   final ShiftSummaryModel shift;
 
   const _ShiftMetrics({required this.shift});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         _ShiftMetricTile(
           title: 'Total Penjualan Shift Hari Ini',
-          value: shift.formattedTodayRevenue,
+          value: ref.money(shift.todayRevenueIdr),
           icon: Icons.payments_rounded,
           color: AppTheme.jadeTosca,
           isPrimary: true,
@@ -186,7 +187,7 @@ class _ShiftMetrics extends StatelessWidget {
             Expanded(
               child: _ShiftMetricTile(
                 title: 'Uang Tunai (Cash)',
-                value: shift.formattedCashRevenue,
+                value: ref.money(shift.cashRevenueIdr),
                 icon: Icons.money_rounded,
                 color: AppTheme.successGreen,
               ),
@@ -195,7 +196,7 @@ class _ShiftMetrics extends StatelessWidget {
             Expanded(
               child: _ShiftMetricTile(
                 title: 'Non-Tunai (QRIS)',
-                value: shift.formattedQrisRevenue,
+                value: ref.money(shift.qrisRevenueIdr),
                 icon: Icons.qr_code_2_rounded,
                 color: AppTheme.jadeTosca,
               ),

@@ -14,6 +14,7 @@ import '../data/catalog_repository.dart';
 import '../domain/category_model.dart';
 import '../domain/product_model.dart';
 import 'catalog_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 /// Satu baris builder resep: dropdown bahan + input takaran.
 class _RecipeRow {
@@ -153,8 +154,9 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
     final recPrice = _aiRecommendedPrice ?? _priceFor(hpp, 50);
 
     final promptText =
-        'Saya sedang membuat produk baru bernama $menuName dengan HPP ${MoneyFormatter.format(hpp)}. '
-        'Tadi kamu merekomendasikan harga ${MoneyFormatter.format(recPrice)}. '
+        // Prompt AI tetap dalam IDR (basis data) agar rekomendasi harga valid.
+        'Saya sedang membuat produk baru bernama $menuName dengan HPP ${MoneyFormatter.format(hpp, currency: 'IDR')}. '
+        'Tadi kamu merekomendasikan harga ${MoneyFormatter.format(recPrice, currency: 'IDR')}. '
         'Tolong berikan simulasi detail BEP atau analisis lebih lanjut mengenai harga ini.';
 
     // Panggil Global AI Companion Bottom Sheet tanpa merusak state form di belakangnya
@@ -452,7 +454,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         final optionLabels = <String, String>{};
                         for (final e in ingredients) {
                           optionLabels[e.id] =
-                              '${e.name} (${MoneyFormatter.format(e.costPerUnit)}/${e.unit})';
+                              '${e.name} (${ref.money(e.costPerUnit)}/${e.unit})';
                         }
                         for (final r in _rows) {
                           final id = r.ingredientId;
@@ -573,7 +575,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                             ),
                           ),
                           Text(
-                            MoneyFormatter.format(hpp),
+                            ref.money(hpp),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
@@ -670,7 +672,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 size: 16,
                               ),
                               label: Text(
-                                'Gunakan Harga ${MoneyFormatter.format(_aiRecommendedPrice!)}',
+                                'Gunakan Harga ${ref.money(_aiRecommendedPrice!)}',
                                 style: GoogleFonts.inter(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
@@ -742,7 +744,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 : () => setState(() =>
                                     _priceCtrl.text = _priceFor(hpp, m).toString()),
                             child: Text(
-                              '${m == 30 ? "Rendah" : m == 50 ? "Sedang" : "Tinggi"} $m%\n${MoneyFormatter.format(_priceFor(hpp, m))}',
+                              '${m == 30 ? "Rendah" : m == 50 ? "Sedang" : "Tinggi"} $m%\n${ref.money(_priceFor(hpp, m))}',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(fontSize: 11),
                             ),
@@ -755,10 +757,11 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       style: GoogleFonts.inter(fontSize: 14),
-                      decoration: const InputDecoration(
-                        labelText: 'Harga Jual (price_idr) *',
+                      decoration: InputDecoration(
+                        labelText:
+                            'Harga Jual (${MoneyFormatter.symbolOf(MoneyFormatter.defaultCurrency).trim()}) *',
                         hintText: 'Klik rekomendasi atau ketik sendiri',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (v) {
                         final n =
@@ -766,7 +769,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                                 0;
                         if (n <= 0) return 'Harga jual wajib > 0';
                         if (hpp > 0 && n < hpp) {
-                          return 'Harga di bawah modal (${MoneyFormatter.format(hpp)})';
+                          return 'Harga di bawah modal (${ref.money(hpp)})';
                         }
                         return null;
                       },

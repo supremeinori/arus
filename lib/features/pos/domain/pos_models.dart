@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 
 class PosCartItem {
   final String productId;
@@ -17,15 +16,7 @@ class PosCartItem {
 
   int get lineTotalIdr => unitPriceIdr * quantity;
 
-  String get formattedUnitPrice {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(unitPriceIdr);
-  }
 
-  String get formattedLineTotal {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(lineTotalIdr);
-  }
 
   PosCartItem copyWith({
     String? productId,
@@ -153,8 +144,4 @@ class PosTransactionModel {
     };
   }
 
-  String get formattedTotal {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(totalIdr);
-  }
 }

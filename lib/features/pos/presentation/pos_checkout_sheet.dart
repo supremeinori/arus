@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/uuid_generator.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../analytics/presentation/analytics_provider.dart';
@@ -12,6 +11,7 @@ import '../data/pos_repository.dart';
 import 'pos_catalog_provider.dart';
 import 'pos_provider.dart';
 import 'pos_receipt_dialog.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 class PosCheckoutSheet extends ConsumerStatefulWidget {
   const PosCheckoutSheet({super.key});
@@ -189,7 +189,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textMutedDark),
                 ),
                 Text(
-                  MoneyFormatter.format(subtotal),
+                  ref.money(subtotal),
                   style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
                 ),
               ],
@@ -208,7 +208,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   child: AppTextField(
                     controller: _discountController,
                     keyboardType: TextInputType.number,
-                    hintText: 'Rp 0',
+                    hintText: ref.money(0),
                     onChanged: (val) {
                       final disc = int.tryParse(val) ?? 0;
                       ref.read(posCartProvider.notifier).setDiscount(disc);
@@ -228,7 +228,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark),
                 ),
                 Text(
-                  MoneyFormatter.format(total),
+                  ref.money(total),
                   style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.jadeTosca),
                 ),
               ],
@@ -267,8 +267,8 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                     const SizedBox(height: 8),
                     Text(
                       cartState.paymentMethod == 'qris_simulated'
-                          ? 'Scan QR untuk membayar ${MoneyFormatter.format(total)}'
-                          : 'Gesek kartu EDC sebesar ${MoneyFormatter.format(total)}',
+                          ? 'Scan QR untuk membayar ${ref.money(total)}'
+                          : 'Gesek kartu EDC sebesar ${ref.money(total)}',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMuted),
                     ),
@@ -312,7 +312,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                   ),
                   if (total <= 50000)
                     ActionChip(
-                      label: Text('Rp 50.000', style: GoogleFonts.inter(fontSize: 12)),
+                      label: Text(ref.money(50000), style: GoogleFonts.inter(fontSize: 12)),
                       backgroundColor: AppTheme.darkCardSurface,
                       side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -320,7 +320,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                     ),
                   if (total <= 100000)
                     ActionChip(
-                      label: Text('Rp 100.000', style: GoogleFonts.inter(fontSize: 12)),
+                      label: Text(ref.money(100000), style: GoogleFonts.inter(fontSize: 12)),
                       backgroundColor: AppTheme.darkCardSurface,
                       side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -338,7 +338,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                     style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark),
                   ),
                   Text(
-                    MoneyFormatter.format(change),
+                    ref.money(change),
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,

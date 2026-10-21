@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../domain/pos_models.dart';
 import 'pos_catalog_provider.dart';
@@ -146,7 +146,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
 }
 
 /// Kartu satu struk riwayat — widget const agar build ringan (aturan E23).
-class _HistoryCard extends StatelessWidget {
+class _HistoryCard extends ConsumerWidget {
   final PosTransactionModel tx;
   final bool canVoid;
   final bool voiding;
@@ -160,7 +160,7 @@ class _HistoryCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final voided = tx.status == 'voided';
     return Container(
       padding: const EdgeInsets.all(12),
@@ -206,7 +206,7 @@ class _HistoryCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${MoneyFormatter.format(tx.totalIdr)}',
+            '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${ref.money(tx.totalIdr)}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),

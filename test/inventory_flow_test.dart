@@ -43,6 +43,17 @@ class AuthNotifierMock extends StateNotifier<AuthState> implements AuthNotifier 
   void restoreSessionInstant(UserModel user, [String? refreshToken]) {
     state = AuthState.authenticated(user);
   }
+
+  @override
+  Future<void> applyDisplayCurrency(String currency) async {
+    final user = state.user;
+    if (user == null) return;
+    state = AuthState.authenticated(
+      user.copyWith(
+        settings: user.settings.copyWith(displayCurrency: currency),
+      ),
+    );
+  }
 }
 
 class MockShakeEventNotifier extends StateNotifier<DateTime?> implements ShakeEventNotifier {

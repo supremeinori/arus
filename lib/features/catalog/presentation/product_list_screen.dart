@@ -8,6 +8,8 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import 'catalog_provider.dart';
+import '../../../shared/widgets/app_widgets.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 class ProductListScreen extends ConsumerStatefulWidget {
   const ProductListScreen({super.key});
@@ -322,10 +324,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Expanded(
-                                            child: Text(
-                                              prod.formattedPrice,
+                                            child: MoneyText(
+                                              prod.priceIdr,
                                               maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
                                               style: GoogleFonts.inter(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.bold,
@@ -333,7 +334,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               ),
                                             ),
                                           ),
-                                          if (canManage && prod.formattedCost != null)
+                                          if (canManage && prod.costIdr != null)
                                             Container(
                                               padding: const EdgeInsets.symmetric(
                                                 horizontal: 6,
@@ -347,7 +348,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                                 ),
                                               ),
                                               child: Text(
-                                                'HPP: ${prod.formattedCost}',
+                                                'HPP: ${ref.money(prod.costIdr!)}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: GoogleFonts.inter(

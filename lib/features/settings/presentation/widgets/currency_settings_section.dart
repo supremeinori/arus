@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
@@ -39,21 +38,32 @@ class _CurrencySettingsSectionState
     if (mounted) setState(() {});
   }
 
-  final List<String> _availableCurrencies = [
-    'IDR',
-    'USD',
-    'EUR',
-    'SGD',
-    'JPY',
-    'MYR',
-    'GBP',
-  ];
+  /// Satu-satunya sumber daftar mata uang (sinkron dengan MoneyFormatter
+  /// dan endpoint /users/me/settings di backend).
+  final List<String> _availableCurrencies = MoneyFormatter.supportedCurrencies;
 
   @override
   void dispose() {
     _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     super.dispose();
+  }
+
+  /// Simpan pilihan ke backend (kolom `User.display_currency`).
+  Future<void> _selectCurrency(String currency) async {
+    final ok = await ref
+        .read(displayCurrencyProvider.notifier)
+        .setCurrency(currency);
+    if (!ok && mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal menyimpan mata uang. Periksa koneksi ke server.',
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
   }
 
   void _swapCurrencies() {
@@ -65,20 +75,15 @@ class _CurrencySettingsSectionState
   }
 
   double _calculateConversion(double amount, Map<String, double>? rates) {
-    if (rates == null || rates.isEmpty) {
-      if (_fromCurrency == 'IDR' && _toCurrency == 'USD') return amount / 16000;
-      if (_fromCurrency == 'USD' && _toCurrency == 'IDR') return amount * 16000;
-      if (_fromCurrency == 'IDR' && _toCurrency == 'EUR') return amount / 17000;
-      if (_fromCurrency == 'EUR' && _toCurrency == 'IDR') return amount * 17000;
-      return amount;
-    }
-
     if (_fromCurrency == _toCurrency) return amount;
 
-    final rateFrom = _fromCurrency == 'IDR'
-        ? 1.0
-        : (rates[_fromCurrency] ?? 1.0);
-    final rateTo = _toCurrency == 'IDR' ? 1.0 : (rates[_toCurrency] ?? 1.0);
+    // Kurs live (basis IDR); bila belum tersedia pakai fallback terpusat.
+    final effective = (rates == null || rates.isEmpty)
+        ? MoneyFormatter.fallbackRates
+        : rates;
+
+    final rateFrom = effective[_fromCurrency] ?? 1.0;
+    final rateTo = effective[_toCurrency] ?? 1.0;
 
     final amountInIdr = _fromCurrency == 'IDR' ? amount : (amount / rateFrom);
     final converted = _toCurrency == 'IDR'
@@ -87,54 +92,6 @@ class _CurrencySettingsSectionState
     return converted;
   }
 
-  String _formatCurrencyValue(double val, String currency) {
-    switch (currency) {
-      case 'IDR':
-        return NumberFormat.currency(
-          locale: 'id_ID',
-          symbol: 'Rp ',
-          decimalDigits: 0,
-        ).format(val);
-      case 'USD':
-        return NumberFormat.currency(
-          locale: 'en_US',
-          symbol: '\$ ',
-          decimalDigits: 2,
-        ).format(val);
-      case 'EUR':
-        return NumberFormat.currency(
-          locale: 'de_DE',
-          symbol: '€ ',
-          decimalDigits: 2,
-        ).format(val);
-      case 'SGD':
-        return NumberFormat.currency(
-          locale: 'en_SG',
-          symbol: 'S\$ ',
-          decimalDigits: 2,
-        ).format(val);
-      case 'JPY':
-        return NumberFormat.currency(
-          locale: 'ja_JP',
-          symbol: '¥ ',
-          decimalDigits: 0,
-        ).format(val);
-      case 'MYR':
-        return NumberFormat.currency(
-          locale: 'ms_MY',
-          symbol: 'RM ',
-          decimalDigits: 2,
-        ).format(val);
-      case 'GBP':
-        return NumberFormat.currency(
-          locale: 'en_GB',
-          symbol: '£ ',
-          decimalDigits: 2,
-        ).format(val);
-      default:
-        return '$currency ${NumberFormat('#,##0.00').format(val)}';
-    }
-  }
 
   void _applyPresetAmount(double val, String? customCurrency) {
     setState(() {
@@ -192,109 +149,23 @@ class _CurrencySettingsSectionState
           ),
           child: Column(
             children: [
-              ListTile(
-                leading: Icon(
-                  currentCurrency == 'IDR'
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: currentCurrency == 'IDR'
-                      ? AppTheme.jadeTosca
-                      : AppTheme.textMutedDark,
-                ),
-                title: Text(
-                  'Rupiah Indonesia (IDR)',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                    color: AppTheme.textPrimaryDark,
+              for (var i = 0; i < _availableCurrencies.length; i++) ...[
+                if (i > 0)
+                  const Divider(
+                    height: 1,
+                    color: AppTheme.darkCardBorder,
+                    thickness: 1,
                   ),
+                _CurrencyOptionTile(
+                  currency: _availableCurrencies[i],
+                  label: MoneyFormatter.currencyLabels[_availableCurrencies[i]] ??
+                      _availableCurrencies[i],
+                  sample: MoneyFormatter.currencySamples[_availableCurrencies[i]] ??
+                      0,
+                  selected: currentCurrency == _availableCurrencies[i],
+                  onSelected: _selectCurrency,
                 ),
-                subtitle: Text(
-                  'Format standar: Rp 2.500.000',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textMutedDark,
-                  ),
-                ),
-                onTap: () =>
-                    ref.read(displayCurrencyProvider.notifier).setCurrency('IDR'),
-              ),
-              const Divider(
-                height: 1,
-                color: AppTheme.darkCardBorder,
-                thickness: 1,
-              ),
-              ListTile(
-                leading: Icon(
-                  currentCurrency == 'USD'
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: currentCurrency == 'USD'
-                      ? AppTheme.jadeTosca
-                      : AppTheme.textMutedDark,
-                ),
-                title: Text(
-                  'Dolar Amerika Serikat (USD)',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                    color: AppTheme.textPrimaryDark,
-                  ),
-                ),
-                subtitle: Text(
-                  'Format internasional: \$155.00',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textMutedDark,
-                  ),
-                ),
-                onTap: () =>
-                    ref.read(displayCurrencyProvider.notifier).setCurrency('USD'),
-              ),
-              const Divider(
-                height: 1,
-                color: AppTheme.darkCardBorder,
-                thickness: 1,
-              ),
-              ListTile(
-                leading: Icon(
-                  currentCurrency == 'EUR'
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: currentCurrency == 'EUR'
-                      ? AppTheme.jadeTosca
-                      : AppTheme.textMutedDark,
-                ),
-                title: Text(
-                  'Euro Uni Eropa (EUR)',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                    color: AppTheme.textPrimaryDark,
-                  ),
-                ),
-                subtitle: Text(
-                  'Format ekspansi Eropa: € 145.00',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppTheme.textMutedDark,
-                  ),
-                ),
-                onTap: () =>
-                    ref.read(displayCurrencyProvider.notifier).setCurrency('EUR'),
-              ),
+              ],
             ],
           ),
         ),
@@ -334,7 +205,7 @@ class _CurrencySettingsSectionState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pratinjau Omzet Toko (Contoh Rp 2.500.000):',
+                          'Pratinjau Omzet Toko (Contoh ${MoneyFormatter.format(sampleOmzetIdr)}):',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
@@ -622,13 +493,13 @@ class _CurrencySettingsSectionState
                     inputAmount,
                     fx.rates,
                   );
-                  final formattedResult = _formatCurrencyValue(
+                  final formattedResult = MoneyFormatter.formatInCurrency(
                     convertedResult,
-                    _toCurrency,
+                    currency: _toCurrency,
                   );
-                  final singleUnitFormatted = _formatCurrencyValue(
+                  final singleUnitFormatted = MoneyFormatter.formatInCurrency(
                     _calculateConversion(1.0, fx.rates),
-                    _toCurrency,
+                    currency: _toCurrency,
                   );
                   return Container(
                     width: double.infinity,
@@ -719,6 +590,54 @@ class _AmountChip extends StatelessWidget {
       side: const BorderSide(color: AppTheme.darkCardBorder),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       onPressed: () => onSelect(value, customCurrency),
+    );
+  }
+}
+
+/// Tile pilihan satu mata uang tampilan (dibangun dari daftar mata uang
+/// yang didukung, bukan nominal hardcoded).
+class _CurrencyOptionTile extends StatelessWidget {
+  final String currency;
+  final String label;
+  final num sample;
+  final bool selected;
+  final ValueChanged<String> onSelected;
+
+  const _CurrencyOptionTile({
+    required this.currency,
+    required this.label,
+    required this.sample,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        selected ? Icons.radio_button_checked : Icons.radio_button_off,
+        color: selected ? AppTheme.jadeTosca : AppTheme.textMutedDark,
+      ),
+      title: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          fontSize: 13.5,
+          color: AppTheme.textPrimaryDark,
+        ),
+      ),
+      subtitle: Text(
+        'Contoh: ${MoneyFormatter.formatInCurrency(sample, currency: currency)}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          color: AppTheme.textMutedDark,
+        ),
+      ),
+      onTap: () => onSelected(currency),
     );
   }
 }

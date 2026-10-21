@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../domain/analytics_models.dart';
 import 'analytics_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
+import '../../../core/utils/money_formatter.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -431,7 +432,7 @@ class _HorizonPill extends StatelessWidget {
   }
 }
 
-class _SalesForecastKpis extends StatelessWidget {
+class _SalesForecastKpis extends ConsumerWidget {
   final SalesForecastSummary summary;
   final int horizonDays;
 
@@ -441,7 +442,7 @@ class _SalesForecastKpis extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isPositive = summary.growthPct >= 0;
 
     return Row(
@@ -461,7 +462,7 @@ class _SalesForecastKpis extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  summary.formattedProjectedTotal,
+                  ref.money(summary.projectedTotalRevenueIdr),
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
@@ -472,7 +473,7 @@ class _SalesForecastKpis extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${summary.formattedAvgDaily}/hari',
+                  '${ref.money(summary.avgDailyProjectedIdr)}/hari',
                   style: GoogleFonts.inter(color: AppTheme.jadeTosca, fontSize: 10.5, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -560,7 +561,7 @@ class _SalesForecastKpis extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  summary.peakProjectedDay.formattedRevenue,
+                  ref.money(summary.peakProjectedDay.revenueIdr),
                   style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10.5),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -643,20 +644,22 @@ class _AiInsightBanner extends StatelessWidget {
 // INTERACTIVE PREDICTIVE LINE CHART CARD
 // =========================================================================
 
-class _PredictiveChartCard extends StatefulWidget {
+class _PredictiveChartCard extends ConsumerStatefulWidget {
   final SalesForecastModel model;
 
   const _PredictiveChartCard({required this.model});
 
   @override
-  State<_PredictiveChartCard> createState() => _PredictiveChartCardState();
+  ConsumerState<_PredictiveChartCard> createState() => _PredictiveChartCardState();
 }
 
-class _PredictiveChartCardState extends State<_PredictiveChartCard> {
+class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
   int? touchedIndex;
 
   @override
   Widget build(BuildContext context) {
+    final currency = ref.watch(displayCurrencyProvider);
+    final rates = ref.watch(fxRatesProvider).valueOrNull?.rates;
     final allPoints = <ForecastPoint>[
       ...widget.model.historical,
       ...widget.model.forecast,
@@ -766,7 +769,7 @@ class _PredictiveChartCardState extends State<_PredictiveChartCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        MoneyFormatter.format(activePoint.revenueIdr),
+                        ref.money(activePoint.revenueIdr),
                         style: GoogleFonts.inter(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
@@ -775,7 +778,7 @@ class _PredictiveChartCardState extends State<_PredictiveChartCard> {
                       ),
                       if (activePoint.isProjected && activePoint.lowerBoundIdr > 0)
                         Text(
-                          'CI: ${MoneyFormatter.format(activePoint.lowerBoundIdr)} - ${MoneyFormatter.format(activePoint.upperBoundIdr)}',
+                          'CI: ${ref.money(activePoint.lowerBoundIdr)} - ${ref.money(activePoint.upperBoundIdr)}',
                           style: GoogleFonts.inter(
                             fontSize: 9.5,
                             color: AppTheme.textMutedDark,
@@ -818,6 +821,8 @@ class _PredictiveChartCardState extends State<_PredictiveChartCard> {
                       maxVal: math.max(1, maxVal),
                       minVal: math.max(0, minVal),
                       touchedIndex: touchedIndex,
+                      currency: currency,
+                      rates: rates,
                     ),
                   ),
                 ),
@@ -906,6 +911,8 @@ class _PredictiveChartPainter extends CustomPainter {
   final int maxVal;
   final int minVal;
   final int? touchedIndex;
+  final String currency;
+  final Map<String, double>? rates;
 
   _PredictiveChartPainter({
     required this.historicalCount,
@@ -913,6 +920,8 @@ class _PredictiveChartPainter extends CustomPainter {
     required this.maxVal,
     required this.minVal,
     this.touchedIndex,
+    this.currency = MoneyFormatter.defaultCurrency,
+    this.rates,
   });
 
   @override
@@ -944,7 +953,11 @@ class _PredictiveChartPainter extends CustomPainter {
 
       final double ratio = 1.0 - (g / gridSteps);
       final num val = baseline + range * ratio;
-      final label = _formatCompactIdr(val);
+      final label = MoneyFormatter.formatCompact(
+        val,
+        currency: currency,
+        rates: rates,
+      );
 
       final tp = TextPainter(
         text: TextSpan(
@@ -1203,21 +1216,6 @@ class _PredictiveChartPainter extends CustomPainter {
     }
   }
 
-  String _formatCompactIdr(num val) {
-    if (val <= 0) return '0';
-    if (val >= 1000000000) {
-      final v = val / 1000000000;
-      return '${v.toStringAsFixed(v >= 10 ? 0 : 1).replaceAll('.0', '')}M';
-    } else if (val >= 1000000) {
-      final v = val / 1000000;
-      return '${v.toStringAsFixed(v >= 10 ? 0 : 1).replaceAll('.0', '')}jt';
-    } else if (val >= 1000) {
-      final v = val / 1000;
-      return '${v.toStringAsFixed(0)}rb';
-    }
-    return val.round().toString();
-  }
-
   String _formatMilestoneDate(ForecastPoint p) {
     final isoMatch = RegExp(r'^\d{4}-(\d{2})-(\d{2})$').firstMatch(p.date);
     if (isoMatch != null) {
@@ -1240,17 +1238,18 @@ class _PredictiveChartPainter extends CustomPainter {
         oldDelegate.points != points ||
         oldDelegate.maxVal != maxVal ||
         oldDelegate.minVal != minVal ||
-        oldDelegate.historicalCount != historicalCount;
+        oldDelegate.historicalCount != historicalCount ||
+        oldDelegate.currency != currency;
   }
 }
 
-class _DailyForecastList extends StatelessWidget {
+class _DailyForecastList extends ConsumerWidget {
   final List<ForecastPoint> forecast;
 
   const _DailyForecastList({required this.forecast});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: forecast.map((f) {
         return Padding(
@@ -1293,7 +1292,7 @@ class _DailyForecastList extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Rentang: ${MoneyFormatter.format(f.lowerBoundIdr)} - ${MoneyFormatter.format(f.upperBoundIdr)}',
+                        'Rentang: ${ref.money(f.lowerBoundIdr)} - ${ref.money(f.upperBoundIdr)}',
                         style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1302,7 +1301,7 @@ class _DailyForecastList extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  f.formattedRevenue,
+                  ref.money(f.revenueIdr),
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 13.5,
@@ -1515,13 +1514,13 @@ class _StockStatusCard extends StatelessWidget {
   }
 }
 
-class _StockoutItemCard extends StatelessWidget {
+class _StockoutItemCard extends ConsumerWidget {
   final StockoutItem item;
 
   const _StockoutItemCard({required this.item});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final statusColor = item.isCritical
         ? AppTheme.dangerRed
         : item.isWarning
@@ -1652,7 +1651,7 @@ class _StockoutItemCard extends StatelessWidget {
                       style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
                     ),
                     Text(
-                      '+${item.recommendedReorderQty} ${item.unit} (${item.formattedRestockCost})',
+                      '+${item.recommendedReorderQty} ${item.unit} (${ref.money(item.estimatedRestockCostIdr)})',
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,

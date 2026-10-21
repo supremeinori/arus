@@ -43,6 +43,17 @@ class _MockAuthNotifier extends StateNotifier<AuthState>
   void restoreSessionInstant(UserModel user, [String? refreshToken]) {
     state = AuthState.authenticated(user);
   }
+
+  @override
+  Future<void> applyDisplayCurrency(String currency) async {
+    final user = state.user;
+    if (user == null) return;
+    state = AuthState.authenticated(
+      user.copyWith(
+        settings: user.settings.copyWith(displayCurrency: currency),
+      ),
+    );
+  }
 }
 
 /// Override sederhana untuk [displayCurrencyProvider] di unit test.
@@ -54,8 +65,9 @@ class _MockDisplayCurrencyNotifier extends DisplayCurrencyNotifier {
   String build() => _fixedCurrency;
 
   @override
-  Future<void> setCurrency(String currency) async {
+  Future<bool> setCurrency(String currency) async {
     state = currency;
+    return true;
   }
 }
 
@@ -74,6 +86,9 @@ void main() {
           ProviderScope(
             overrides: [
               fxRatesProvider.overrideWith((ref) async => mockRates),
+              authProvider.overrideWith(
+                (ref) => _MockAuthNotifier(AuthState.unauthenticated()),
+              ),
             ],
             child: const MaterialApp(home: CurrencySettingsScreen()),
           ),

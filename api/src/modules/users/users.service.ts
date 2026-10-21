@@ -2,7 +2,7 @@ import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
 import { hashPassword } from '../../shared/tokens';
-import { Currency } from './users.schema';
+import { Currency, DEFAULT_DISPLAY_CURRENCY } from './users.schema';
 
 export class UsersService {
   private inMemorySettings: Record<string, any> = {};
@@ -16,7 +16,7 @@ export class UsersService {
     if (!this.inMemorySettings[userId]) {
       this.inMemorySettings[userId] = {
         user_id: userId,
-        display_currency: user?.display_currency ?? 'IDR',
+        display_currency: user?.display_currency ?? DEFAULT_DISPLAY_CURRENCY,
         display_timezone: 'Asia/Jakarta',
         biometric_enabled: false,
         shake_refresh_enabled: true,
@@ -26,7 +26,8 @@ export class UsersService {
       };
     } else {
       // Refresh display_currency from DB on every call
-      this.inMemorySettings[userId].display_currency = user?.display_currency ?? this.inMemorySettings[userId].display_currency;
+      this.inMemorySettings[userId].display_currency =
+        user?.display_currency ?? this.inMemorySettings[userId].display_currency;
     }
     return this.inMemorySettings[userId];
   }

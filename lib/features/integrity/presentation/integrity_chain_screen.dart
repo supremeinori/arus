@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -14,6 +13,7 @@ import '../../outlets/presentation/outlets_provider.dart';
 import '../data/integrity_repository.dart';
 import '../domain/integrity_models.dart';
 import 'integrity_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 class IntegrityChainScreen extends ConsumerStatefulWidget {
   const IntegrityChainScreen({super.key});
@@ -194,7 +194,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
           child: Text(
-            'Sistem akan sengaja mengubah nominal transaksi blok #$blockIndex menjadi Rp 99.999.999 di database. Ini untuk mendemonstrasikan bahwa sistem ARUS mendeteksi kecurangan (TAMPERED).',
+            'Sistem akan sengaja mengubah nominal transaksi blok #$blockIndex menjadi ${ref.read(moneyFormatterProvider)(99999999)} di database. Ini untuk mendemonstrasikan bahwa sistem ARUS mendeteksi kecurangan (TAMPERED).',
             style: GoogleFonts.inter(fontSize: 13),
           ),
         ),
@@ -451,7 +451,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
   }
 }
 
-class _TransactionBlockCard extends StatelessWidget {
+class _TransactionBlockCard extends ConsumerWidget {
   final IntegrityBlockItem block;
   final bool isTampered;
   final VoidCallback onSimulateTamper;
@@ -465,7 +465,7 @@ class _TransactionBlockCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isGenesis = block.isGenesis;
     final isSale = block.eventType == 'sale';
     final date = DateTime.tryParse(block.timestamp)?.toLocal();
@@ -549,7 +549,7 @@ class _TransactionBlockCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  MoneyFormatter.format(block.totalAmount),
+                  ref.money(block.totalAmount),
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

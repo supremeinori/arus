@@ -1,3 +1,4 @@
+import '../../../core/utils/money_formatter.dart';
 enum UserRole {
   owner,
   manager,
@@ -68,7 +69,7 @@ class UserSettingsSummary {
   final int? dailyRevenueTargetIdr;
 
   const UserSettingsSummary({
-    this.displayCurrency = 'IDR',
+    this.displayCurrency = MoneyFormatter.defaultCurrency,
     this.displayTimezone = 'Asia/Jakarta',
     this.biometricEnabled = false,
     this.shakeRefreshEnabled = true,
@@ -79,7 +80,8 @@ class UserSettingsSummary {
   factory UserSettingsSummary.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const UserSettingsSummary();
     return UserSettingsSummary(
-      displayCurrency: json['display_currency'] as String? ?? 'IDR',
+      displayCurrency:
+          json['display_currency'] as String? ?? MoneyFormatter.defaultCurrency,
       displayTimezone: json['display_timezone'] as String? ?? 'Asia/Jakarta',
       biometricEnabled: json['biometric_enabled'] as bool? ?? false,
       shakeRefreshEnabled: json['shake_refresh_enabled'] as bool? ?? true,

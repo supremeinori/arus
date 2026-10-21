@@ -5,9 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/sync/sync_service.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/catalog_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import 'pos_provider.dart';
 import 'pos_cart_sheet.dart';
@@ -872,10 +872,9 @@ class _RedesignedProductCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          product.formattedPrice,
+                        child: MoneyText(
+                          product.priceIdr,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w800,
                             color: isOutOfStock
@@ -1050,7 +1049,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  MoneyFormatter.format(item.unitPriceIdr),
+                                  ref.money(item.unitPriceIdr),
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
                                     color: AppTheme.textMutedDark,
@@ -1089,7 +1088,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                           SizedBox(
                             width: 72,
                             child: Text(
-                              MoneyFormatter.format(item.lineTotalIdr),
+                              ref.money(item.lineTotalIdr),
                               textAlign: TextAlign.right,
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
@@ -1134,7 +1133,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                     children: [
                       Text('Diskon', style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.dangerRed)),
                       Text(
-                        '- ${MoneyFormatter.format(cartState.discountIdr)}',
+                        '- ${ref.money(cartState.discountIdr)}',
                         style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.dangerRed, fontWeight: FontWeight.w600),
                       ),
                     ],

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/ai_models.dart';
+import '../../../core/utils/money_formatter.dart';
 
 final aiRepositoryProvider = Provider<AiRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -114,7 +115,7 @@ class AiRepository {
     String? suggestion;
 
     if (lower.contains('omset') || lower.contains('penjualan') || lower.contains('pendapatan')) {
-      content = 'Berdasarkan rekap data transaksi terkini, total pendapatan hari ini mencapai Rp 4.250.000 dengan 84 transaksi selesai. Performa penjualan mengalami tren kenaikan +12.4% pada jam makan siang (12:00 - 14:00).';
+      content = 'Berdasarkan rekap data transaksi terkini, total pendapatan hari ini mencapai ${MoneyFormatter.format(4250000)} dengan 84 transaksi selesai. Performa penjualan mengalami tren kenaikan +12.4% pada jam makan siang (12:00 - 14:00).';
       suggestion = 'Pertahankan ketersediaan cup dan es batu menjelang sore hari.';
     } else if (lower.contains('stok') || lower.contains('habis') || lower.contains('susu')) {
       content = 'Peringatan Inventaris: Stok Susu Oat di Cabang Sudirman tersisa 4 kotak (di bawah reorder level 10 kotak). Segera buat pesanan ulang (PO) atau transfer stok darurat dari Cabang Senopati.';

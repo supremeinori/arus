@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/inventory_repository.dart';
 import '../domain/inventory_models.dart';
+import '../../../core/utils/money_formatter.dart';
 
 class AddIngredientDialog extends ConsumerStatefulWidget {
   final String outletId;
@@ -221,8 +222,9 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                     child: TextFormField(
                       controller: _costController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Modal/Unit (Rp)',
+                      decoration: InputDecoration(
+                        labelText:
+                            'Modal/Unit (${MoneyFormatter.symbolOf(MoneyFormatter.defaultCurrency).trim()})',
                         hintText: '150',
                         isDense: true,
                       ),

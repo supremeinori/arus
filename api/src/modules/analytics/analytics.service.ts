@@ -20,7 +20,7 @@ export class AnalyticsService {
     };
 
     // Filter Outlet Scope
-    if (userScope.role === Role.staff) {
+    if (userScope.role !== Role.owner) {
       if (query.outlet_id && !userScope.allowedOutletIds.includes(query.outlet_id)) {
         throw new AppError('FORBIDDEN', 403, 'Akses ke outlet ini tidak diizinkan.');
       }
@@ -133,7 +133,7 @@ export class AnalyticsService {
       created_at: { gte: startDate },
     };
 
-    if (userScope.role === Role.staff) {
+    if (userScope.role !== Role.owner) {
       where.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
     } else if (query.outlet_id) {
       where.outlet_id = query.outlet_id;
@@ -204,7 +204,7 @@ export class AnalyticsService {
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
     const where: any = { status: TxnStatus.completed };
-    if (userScope.role === Role.staff) {
+    if (userScope.role !== Role.owner) {
       where.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
     } else if (query.outlet_id) {
       where.outlet_id = query.outlet_id;
@@ -329,7 +329,7 @@ export class AnalyticsService {
       created_at: { gte: startDate },
     };
 
-    if (userScope.role === Role.staff) {
+    if (userScope.role !== Role.owner) {
       where.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
     } else if (query.outlet_id) {
       where.outlet_id = query.outlet_id;
@@ -634,7 +634,7 @@ export class AnalyticsService {
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
     const where: any = {};
-    if (userScope.role === Role.staff) {
+    if (userScope.role !== Role.owner) {
       where.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
     } else if (query.outlet_id) {
       where.outlet_id = query.outlet_id;

@@ -6,8 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/utils/money_formatter.dart';
+import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../../core/utils/money_formatter.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../../catalog/domain/product_model.dart';
@@ -17,6 +18,7 @@ import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 /// Design tokens for Light Mode Owner Dashboard (Wireframe & Anti-AI-Slop Compliant)
 class _DashboardColors {
@@ -80,12 +82,16 @@ class DashboardScreen extends ConsumerWidget {
 
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final isManager = user?.role == UserRole.manager;
 
     // API TERSEDIA: GET /api/notifications (Unread notification count)
     final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     // Filter states (Cabang & Hari)
-    final selectedOutletId = ref.watch(selectedOutletFilterProvider);
+    // Untuk role manager: cabang terkunci pada cabang yang di-assign oleh owner
+    final selectedOutletId = isManager && (user?.outlets.isNotEmpty ?? false)
+        ? user!.outlets.first.id
+        : ref.watch(selectedOutletFilterProvider);
     final selectedDateFilter = ref.watch(selectedDateFilterProvider);
     final selectedCustomDate = ref.watch(selectedCustomDateProvider);
     final List<({String id, String name})> outlets = (user?.outlets ?? [])
@@ -163,6 +169,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedCustomDate: selectedCustomDate,
                     errorMessage: 'Gagal memuat omzet dari server',
                     onRetry: () => ref.invalidate(analyticsOverviewProvider),
+                    isManager: isManager,
                   ),
                   data: (kpi) => _HeroOmzetCard(
                     revenueIdr: kpi.revenueIdr, // Data asli dari API
@@ -170,6 +177,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedOutletId: selectedOutletId,
                     selectedDateFilter: selectedDateFilter,
                     selectedCustomDate: selectedCustomDate,
+                    isManager: isManager,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -364,6 +372,7 @@ class _HeroOmzetCard extends ConsumerWidget {
   final DateTime? selectedCustomDate;
   final String? errorMessage;
   final VoidCallback? onRetry;
+  final bool isManager;
 
   const _HeroOmzetCard({
     required this.revenueIdr,
@@ -373,12 +382,14 @@ class _HeroOmzetCard extends ConsumerWidget {
     required this.selectedCustomDate,
     this.errorMessage,
     this.onRetry,
+    this.isManager = false,
   });
 
-  String _formatRp(int amount) {
-    final formatted = MoneyFormatter.format(amount);
+  /// Format omzet mengikuti mata uang tampilan milik pengguna.
+  String _formatMoney(BuildContext context, WidgetRef ref, int amount) {
+    final formatted = ref.money(amount);
     // Wireframe format: "Rp.17.000.000" / "Rp.2.500.000"
-    return formatted.replaceAll('Rp ', 'Rp.');
+    return MoneyFormatter.dottedIdrSymbol(formatted);
   }
 
   void _openFilterDialog(BuildContext context, WidgetRef ref) {
@@ -391,6 +402,7 @@ class _HeroOmzetCard extends ConsumerWidget {
         selectedOutletId: selectedOutletId,
         selectedDateFilter: selectedDateFilter,
         selectedCustomDate: selectedCustomDate,
+        isManager: isManager,
       ),
     );
   }
@@ -399,7 +411,20 @@ class _HeroOmzetCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Nama Cabang
     String branchLabel = 'Semua Cabang';
-    if (selectedOutletId != null) {
+    if (isManager) {
+      if (selectedOutletId != null) {
+        final found = outlets.where((o) => o.id == selectedOutletId);
+        if (found.isNotEmpty) {
+          branchLabel = found.first.name;
+        } else if (outlets.isNotEmpty) {
+          branchLabel = outlets.first.name;
+        }
+      } else if (outlets.isNotEmpty) {
+        branchLabel = outlets.first.name;
+      } else {
+        branchLabel = 'Cabang Saya';
+      }
+    } else if (selectedOutletId != null) {
       final found = outlets.where((o) => o.id == selectedOutletId);
       if (found.isNotEmpty) {
         branchLabel = found.first.name;
@@ -457,7 +482,7 @@ class _HeroOmzetCard extends ConsumerWidget {
 
           // Angka Besar Omzet (LEXEND w800) - Data riil dari API
           Text(
-            _formatRp(revenueIdr),
+            _formatMoney(context, ref, revenueIdr),
             style: GoogleFonts.lexend(
               fontSize: 32,
               fontWeight: FontWeight.w800,
@@ -476,33 +501,34 @@ class _HeroOmzetCard extends ConsumerWidget {
                 child: Stack(
                   alignment: Alignment.centerLeft,
                   children: [
-                    // DropdownButton transparan untuk direct selection & test runner compatibility
-                    Positioned.fill(
-                      child: Opacity(
-                        opacity: 0.001,
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String?>(
-                            value: selectedOutletId,
-                            isExpanded: true,
-                            items: [
-                              const DropdownMenuItem<String?>(
-                                value: null,
-                                child: Text('Semua Cabang'),
-                              ),
-                              ...outlets.map(
-                                (o) => DropdownMenuItem<String?>(
-                                  value: o.id,
-                                  child: Text(o.name),
+                    // DropdownButton transparan untuk direct selection & test runner compatibility (Hanya untuk Owner)
+                    if (!isManager)
+                      Positioned.fill(
+                        child: Opacity(
+                          opacity: 0.001,
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: selectedOutletId,
+                              isExpanded: true,
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('Semua Cabang'),
                                 ),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              ref.read(selectedOutletFilterProvider.notifier).state = val;
-                            },
+                                ...outlets.map(
+                                  (o) => DropdownMenuItem<String?>(
+                                    value: o.id,
+                                    child: Text(o.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (val) {
+                                ref.read(selectedOutletFilterProvider.notifier).state = val;
+                              },
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     IgnorePointer(
                       child: Text(
                         'Di "$branchLabel" pada "$dayLabel".',
@@ -552,18 +578,21 @@ class _HeroOmzetCard extends ConsumerWidget {
 // ============================================================================
 // KOTAK FILTER (Modal Bottom Sheet untuk Memilih Cabang & Hari)
 // Memicu refilter API GET /api/analytics/overview dengan parameter baru
+// Role Manager tidak memiliki opsi filter cabang karena terkunci pada cabang yang di-assign oleh Owner
 // ============================================================================
 class _FilterBoxSheet extends ConsumerStatefulWidget {
   final List<({String id, String name})> outlets;
   final String? selectedOutletId;
   final DashboardDateFilter selectedDateFilter;
   final DateTime? selectedCustomDate;
+  final bool isManager;
 
   const _FilterBoxSheet({
     required this.outlets,
     required this.selectedOutletId,
     required this.selectedDateFilter,
     required this.selectedCustomDate,
+    this.isManager = false,
   });
 
   @override
@@ -578,7 +607,11 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
   @override
   void initState() {
     super.initState();
-    _tempOutletId = widget.selectedOutletId;
+    if (widget.isManager) {
+      _tempOutletId = widget.outlets.isNotEmpty ? widget.outlets.first.id : widget.selectedOutletId;
+    } else {
+      _tempOutletId = widget.selectedOutletId;
+    }
     _tempDateFilter = widget.selectedDateFilter;
     _tempCustomDate = widget.selectedCustomDate;
   }
@@ -650,7 +683,7 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Kotak Filter Bisnis',
+                        widget.isManager ? 'Filter Periode Waktu' : 'Kotak Filter Bisnis',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -678,67 +711,69 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
           const Divider(height: 1, color: _DashboardColors.border),
           const SizedBox(height: 16),
 
-          // 1. Pemilihan Cabang
-          Text(
-            'PILIH CABANG OUTLET',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: _DashboardColors.textMuted,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _DashboardColors.border, width: 1.0),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: _tempOutletId,
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: _DashboardColors.textMuted,
-                ),
-                items: [
-                  DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text(
-                      'Semua Cabang',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: _DashboardColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  ...widget.outlets.map(
-                    (o) => DropdownMenuItem<String?>(
-                      value: o.id,
-                      child: Text(
-                        o.name,
-                        style: GoogleFonts.inter(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
-                          color: _DashboardColors.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: (val) {
-                  setState(() => _tempOutletId = val);
-                },
+          // 1. Pemilihan Cabang (Hanya untuk Owner, Role Manager tidak memiliki opsi filter cabang)
+          if (!widget.isManager) ...[
+            Text(
+              'PILIH CABANG OUTLET',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _DashboardColors.textMuted,
+                letterSpacing: 0.5,
               ),
             ),
-          ),
-          const SizedBox(height: 18),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _DashboardColors.border, width: 1.0),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  value: _tempOutletId,
+                  isExpanded: true,
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: _DashboardColors.textMuted,
+                  ),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(
+                        'Semua Cabang',
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: _DashboardColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    ...widget.outlets.map(
+                      (o) => DropdownMenuItem<String?>(
+                        value: o.id,
+                        child: Text(
+                          o.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                            color: _DashboardColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    setState(() => _tempOutletId = val);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
 
           // 2. Pemilihan Hari / Periode
           Text(
@@ -844,8 +879,13 @@ class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
                 ),
               ),
               onPressed: () {
-                ref.read(selectedOutletFilterProvider.notifier).state =
-                    _tempOutletId;
+                if (!widget.isManager) {
+                  ref.read(selectedOutletFilterProvider.notifier).state =
+                      _tempOutletId;
+                } else if (widget.outlets.isNotEmpty) {
+                  ref.read(selectedOutletFilterProvider.notifier).state =
+                      widget.outlets.first.id;
+                }
                 ref.read(selectedDateFilterProvider.notifier).state =
                     _tempDateFilter;
                 ref.read(selectedCustomDateProvider.notifier).state =
@@ -1003,7 +1043,7 @@ class _KpiRowSection extends StatelessWidget {
 // Saat ini menggunakan data riil katalog produk (GET /api/catalog/products),
 // dan kuantitas porsi terjual ditampilkan riil bila tersedia di model produk.
 // ============================================================================
-class _TerlarisCard extends StatelessWidget {
+class _TerlarisCard extends ConsumerWidget {
   final List<ProductModel> products;
   final bool isLoading;
   final VoidCallback onViewAll;
@@ -1015,7 +1055,7 @@ class _TerlarisCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topList = products.take(3).toList();
 
     return Container(
@@ -1136,7 +1176,7 @@ class _TerlarisCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              MoneyFormatter.format(product.priceIdr),
+                              ref.money(product.priceIdr),
                               style: GoogleFonts.lexend(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,

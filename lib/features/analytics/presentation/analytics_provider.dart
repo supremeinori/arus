@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../core/utils/money_formatter.dart';
+import '../../auth/domain/user_model.dart';
+import '../../auth/presentation/auth_provider.dart';
 import '../data/analytics_repository.dart';
 import '../domain/analytics_models.dart';
 
@@ -16,8 +17,24 @@ enum DashboardDateFilter {
   const DashboardDateFilter(this.label);
 }
 
-/// Filter outlet: null berarti "Seluruh Cabang" (default)
-final selectedOutletFilterProvider = StateProvider<String?>((ref) => null);
+/// Filter outlet: null berarti "Seluruh Cabang" (default untuk Owner).
+/// Untuk Role Manager & Staff: otomatis terkunci pada outlet yang di-assign oleh Owner.
+final selectedOutletFilterProvider = StateProvider<String?>((ref) {
+  final user = ref.watch(authProvider).user;
+  if (user != null && user.role != UserRole.owner && user.outlets.isNotEmpty) {
+    return user.outlets.first.id;
+  }
+  return null;
+});
+
+/// Helper untuk menentukan outlet efektif (Owner dapat memilih atau semua, sedangkan Manager/Staff terkunci ke outlet yang di-assign)
+String? getEffectiveOutletId(Ref ref) {
+  final user = ref.watch(authProvider).user;
+  if (user != null && user.role != UserRole.owner && user.outlets.isNotEmpty) {
+    return user.outlets.first.id;
+  }
+  return ref.watch(selectedOutletFilterProvider);
+}
 
 /// Filter hari/periode dashboard: default "Hari Ini"
 final selectedDateFilterProvider = StateProvider<DashboardDateFilter>((ref) => DashboardDateFilter.today);
@@ -55,36 +72,14 @@ class DailyProfitComparisonModel {
   bool get isProfitDown => profitDiff < 0;
   bool get isProfitEqual => profitDiff == 0;
 
-  String get formattedTodayProfit => MoneyFormatter.format(todayProfit);
-  String get formattedYesterdayProfit => MoneyFormatter.format(yesterdayProfit);
-  String get formattedTodayRevenue => MoneyFormatter.format(todayRevenue);
-  String get formattedYesterdayRevenue => MoneyFormatter.format(yesterdayRevenue);
-
-  String get formattedProfitDiff {
-    final prefix = profitDiff > 0 ? '+ ' : (profitDiff < 0 ? '- ' : '');
-    return '$prefix${MoneyFormatter.format(profitDiff.abs())}';
-  }
-
-  String get formattedProfitPct {
-    final prefix = profitPctChange > 0 ? '+' : '';
-    return '$prefix${profitPctChange.toStringAsFixed(1)}%';
-  }
-
-  String get formattedRevenueDiff {
-    final prefix = revenueDiff > 0 ? '+ ' : (revenueDiff < 0 ? '- ' : '');
-    return '$prefix${MoneyFormatter.format(revenueDiff.abs())}';
-  }
-
-  String get formattedRevenuePct {
-    final prefix = revenuePctChange > 0 ? '+' : '';
-    return '$prefix${revenuePctChange.toStringAsFixed(1)}%';
-  }
+  // Format nominal uang TIDAK lagi di-hardcode di sini: nominal ditampilkan
+  // lewat MoneyText/ref.money() supaya mengikuti mata uang pengguna.
 }
 
 /// Provider ringkasan analitik utama (mengikuti outlet & date filter)
 final analyticsOverviewProvider = FutureProvider.autoDispose<AnalyticsOverviewModel>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
-  final outletId = ref.watch(selectedOutletFilterProvider);
+  final outletId = getEffectiveOutletId(ref);
   final dateFilter = ref.watch(selectedDateFilterProvider);
   final customDate = ref.watch(selectedCustomDateProvider);
 
@@ -182,19 +177,19 @@ final dailyProfitComparisonProvider = Provider.autoDispose<AsyncValue<DailyProfi
 
 final salesTrendProvider = FutureProvider.autoDispose<List<SalesTrendPoint>>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
-  final outletId = ref.watch(selectedOutletFilterProvider);
+  final outletId = getEffectiveOutletId(ref);
   return repo.getSalesTrend(outletId: outletId, days: 7);
 });
 
 final peakHoursProvider = FutureProvider.autoDispose<List<PeakHourPoint>>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
-  final outletId = ref.watch(selectedOutletFilterProvider);
+  final outletId = getEffectiveOutletId(ref);
   return repo.getPeakHours(outletId: outletId);
 });
 
 final shiftSummaryProvider = FutureProvider.autoDispose<ShiftSummaryModel>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
-  final outletId = ref.watch(selectedOutletFilterProvider);
+  final outletId = getEffectiveOutletId(ref);
   return repo.getShiftSummary(outletId: outletId);
 });
 
@@ -214,7 +209,7 @@ final selectedStockoutFilterProvider = StateProvider.autoDispose<String>((ref) =
 /// Provider data AI Sales Forecast (Time Series Model)
 final salesForecastProvider = FutureProvider.autoDispose<SalesForecastModel>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
-  final outletId = ref.watch(selectedOutletFilterProvider);
+  final outletId = getEffectiveOutletId(ref);
   final horizon = ref.watch(selectedForecastHorizonProvider);
   return repo.getSalesForecast(outletId: outletId, horizon: horizon);
 });
@@ -222,6 +217,6 @@ final salesForecastProvider = FutureProvider.autoDispose<SalesForecastModel>((re
 /// Provider data AI Stockout & Velocity Forecast
 final stockoutForecastProvider = FutureProvider.autoDispose<StockoutForecastModel>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
-  final outletId = ref.watch(selectedOutletFilterProvider);
+  final outletId = getEffectiveOutletId(ref);
   return repo.getStockoutForecast(outletId: outletId);
 });

@@ -8,6 +8,7 @@ import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/product_model.dart';
 import 'catalog_provider.dart';
+import '../../../shared/widgets/app_widgets.dart';
 
 class ProductDetailScreen extends ConsumerWidget {
   final String productId;
@@ -198,10 +199,9 @@ class _ProductHeaderCard extends StatelessWidget {
                       style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      prod.formattedPrice,
+                    MoneyText(
+                      prod.priceIdr,
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -211,7 +211,7 @@ class _ProductHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (canManage && prod.formattedCost != null)
+              if (canManage && prod.costIdr != null)
                 Flexible(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -223,10 +223,9 @@ class _ProductHeaderCard extends StatelessWidget {
                         style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        prod.formattedCost!,
+                      MoneyText(
+                        prod.costIdr!,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,

@@ -2,10 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arus/core/utils/money_formatter.dart';
+import 'package:arus/features/auth/domain/user_model.dart';
+import 'package:arus/features/auth/presentation/auth_provider.dart';
+import 'package:arus/features/auth/presentation/auth_state.dart';
 import 'package:arus/core/utils/timezone_converter.dart';
 import 'package:arus/features/settings/domain/currency_models.dart';
 import 'package:arus/features/settings/presentation/currency_provider.dart';
 import 'package:arus/features/settings/presentation/settings_screen.dart';
+
+/// Auth notifier mock:CurrencySettingsScreen membaca preferensi dari sesi.
+class _MockAuthNotifier extends StateNotifier<AuthState>
+    implements AuthNotifier {
+  _MockAuthNotifier(super.initialState);
+
+  @override
+  Future<void> checkAuth([bool requireBiometricIfEnabled = true]) async {}
+
+  @override
+  Future<bool> login(String email, String password) async => true;
+
+  @override
+  Future<bool> authenticateWithBiometric() async => true;
+
+  @override
+  Future<void> toggleBiometric(bool enabled) async {}
+
+  @override
+  Future<void> logout() async {
+    state = AuthState.unauthenticated();
+  }
+
+  @override
+  Future<UserModel?> getPersistedUser() async => state.user;
+
+  @override
+  void setUnauthenticated([String? message]) {
+    state = AuthState.unauthenticated(message);
+  }
+
+  @override
+  void restoreSessionInstant(UserModel user, [String? refreshToken]) {
+    state = AuthState.authenticated(user);
+  }
+
+  @override
+  Future<void> applyDisplayCurrency(String currency) async {}
+}
 
 void main() {
   group('Currency & Timezone Flow Tests (Milestone 13)', () {
@@ -49,6 +91,9 @@ void main() {
         ProviderScope(
           overrides: [
             fxRatesProvider.overrideWith((ref) async => mockRates),
+            authProvider.overrideWith(
+              (ref) => _MockAuthNotifier(AuthState.unauthenticated()),
+            ),
           ],
           child: const MaterialApp(
             home: SettingsScreen(),

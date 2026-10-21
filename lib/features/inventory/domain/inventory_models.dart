@@ -55,17 +55,14 @@ class IngredientModel {
   }
 
   bool get isLowStock => status == 'low' || (stockQty <= reorderLevel && stockQty > 0);
-  bool get isOutOfStock => status == 'out' || stockQty <= 0;
-
-  String get formattedCost {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return '${formatter.format(costPerUnit)} / $unit';
-  }
 
   String get formattedStock {
     final formatter = NumberFormat.decimalPattern('id_ID');
     return '${formatter.format(stockQty)} $unit';
   }
+  bool get isOutOfStock => status == 'out' || stockQty <= 0;
+
+
 }
 
 class InventoryStockItem {
@@ -122,16 +119,7 @@ class InventoryStockItem {
     );
   }
 
-  String get formattedPrice {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(priceIdr);
-  }
 
-  String? get formattedCost {
-    if (costIdr == null) return null;
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(costIdr);
-  }
 }
 
 class InventoryMovementItem {

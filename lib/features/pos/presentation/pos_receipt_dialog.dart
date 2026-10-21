@@ -2,7 +2,6 @@
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/pos_models.dart';
 
@@ -168,10 +167,10 @@ class PosReceiptDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Diskon', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFDC2626))),
-                  Text(
-                    '- ${MoneyFormatter.format(transaction.discountIdr)}',
+                  MoneyText(
+                    transaction.discountIdr,
+                    prefix: '- ',
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
                   ),
                 ],

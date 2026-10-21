@@ -46,6 +46,14 @@ describe('Analytics Module (Milestone 7)', () => {
     is_active: true,
   };
 
+  const mockManager = {
+    id: 'u-mgr-1',
+    email: 'manager@arus.demo',
+    name: 'Doni Manager',
+    role: Role.manager,
+    is_active: true,
+  };
+
   const ownerToken = signAccessToken({
     sub: mockOwner.id,
     email: mockOwner.email,
@@ -56,6 +64,12 @@ describe('Analytics Module (Milestone 7)', () => {
     sub: mockStaff.id,
     email: mockStaff.email,
     role: mockStaff.role,
+  });
+
+  const managerToken = signAccessToken({
+    sub: mockManager.id,
+    email: mockManager.email,
+    role: mockManager.role,
   });
 
   beforeEach(() => {
@@ -117,5 +131,34 @@ describe('Analytics Module (Milestone 7)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(7);
+  });
+
+  it('T-ANA-04: Manager terkunci pada outlet yang di-assign dan ditolak jika mengakses outlet lain', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockManager as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: 'out-mgr' }] as any);
+
+    // 1. Ditolak jika mencoba mengakses outlet yang bukan miliknya
+    const resForbidden = await request(app)
+      .get('/api/analytics/overview?outlet_id=out-other')
+      .set('Authorization', `Bearer ${managerToken}`);
+
+    expect(resForbidden.status).toBe(403);
+
+    // 2. Berhasil jika mengakses outlet yang di-assign oleh owner, dan tetap mendapatkan kalkulasi laba/margin
+    vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
+      _sum: { total_idr: 800000, subtotal_idr: 800000, discount_idr: 0 },
+    } as any);
+    vi.mocked(prisma.transaction.count).mockResolvedValue(15);
+    vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([
+      { quantity: 15, unit_price_idr: 53333, unit_cost_idr: 20000, line_total_idr: 800000 },
+    ] as any);
+
+    const resAllowed = await request(app)
+      .get('/api/analytics/overview?outlet_id=out-mgr')
+      .set('Authorization', `Bearer ${managerToken}`);
+
+    expect(resAllowed.status).toBe(200);
+    expect(resAllowed.body.data.revenue_idr).toBe(800000);
+    expect(resAllowed.body.data).toHaveProperty('gross_profit_idr');
   });
 });

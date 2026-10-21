@@ -291,6 +291,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Terapkan preferensi mata uang ke state sesi setelah berhasil disimpan
+  /// di backend (PATCH /users/me/settings).
+  ///
+  /// Dipanggil oleh [DisplayCurrencyNotifier] supaya seluruh widget yang
+  /// membaca `authProvider` ikut berubah tanpa perlu reload aplikasi.
+  Future<void> applyDisplayCurrency(String currency) async {
+    final currentUser = state.user;
+    if (currentUser == null) return;
+    if (currentUser.settings.displayCurrency == currency) return;
+
+    final updatedUser = currentUser.copyWith(
+      settings: currentUser.settings.copyWith(displayCurrency: currency),
+    );
+
+    try {
+      await _secureStore.setUserJson(jsonEncode(updatedUser.toJson()));
+    } catch (_) {}
+    try {
+      await _localDb.updateDisplayCurrencySetting(updatedUser.id, currency);
+    } catch (_) {}
+
+    if (mounted) {
+      state = AuthState.authenticated(updatedUser);
+    }
+  }
+
   Future<void> logout() async {
     final refreshToken = await _secureStore.getRefreshToken();
     if (refreshToken != null && refreshToken.isNotEmpty) {

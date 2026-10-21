@@ -202,6 +202,71 @@ void main() {
       expect(find.text('Omzet'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('DashboardScreen untuk Role Manager TIDAK memiliki filter cabang (terkunci ke cabang yang di-assign)', (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      const managerUser = UserModel(
+        id: 'u-mgr-1',
+        name: 'Doni Manager',
+        email: 'doni@arus.demo',
+        role: UserRole.manager,
+        outlets: [
+          OutletSummary(id: 'out-mgr-branch', name: 'Kopi Arus - Cikini', timezone: 'Asia/Jakarta'),
+        ],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith((ref) => AuthNotifierMock(AuthState.authenticated(managerUser))),
+          analyticsOverviewProvider.overrideWith((ref) async => sampleKpi),
+          salesTrendProvider.overrideWith((ref) async => sampleTrend),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: DashboardScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Label cabang langsung menampilkan cabang yang di-assign, BUKAN "Semua Cabang"
+      expect(find.textContaining('Di "Kopi Arus - Cikini" pada "Hari Ini".'), findsOneWidget);
+      expect(find.text('Semua Cabang'), findsNothing);
+
+      // Buka filter dialog via icon filter
+      await tester.tap(find.byIcon(Icons.filter_alt_outlined));
+      await tester.pumpAndSettle();
+
+      // Kotak filter terbuka tetapi TIDAK ada opsi "PILIH CABANG OUTLET"
+      expect(find.text('PILIH CABANG OUTLET'), findsNothing);
+      expect(find.text('Semua Cabang'), findsNothing);
+      expect(find.text('PILIH HARI / PERIODE'), findsOneWidget);
+
+      // Pilih hari 'Kemarin'
+      await tester.tap(find.text('Kemarin').last);
+      await tester.pumpAndSettle();
+
+      // Terapkan filter
+      await tester.tap(find.text('Terapkan Filter'));
+      await tester.pumpAndSettle();
+
+      // State outlet tetap cabang yang di-assign, sedangkan periode hari berubah
+      expect(container.read(selectedOutletFilterProvider), 'out-mgr-branch');
+      expect(container.read(selectedDateFilterProvider), DashboardDateFilter.yesterday);
+      expect(find.textContaining('Di "Kopi Arus - Cikini" pada "Kemarin".'), findsOneWidget);
+    });
   });
 }
 
@@ -219,6 +284,9 @@ class AuthNotifierMock extends StateNotifier<AuthState> implements AuthNotifier 
 
   @override
   Future<void> toggleBiometric(bool enabled) async {}
+
+  @override
+  Future<void> applyDisplayCurrency(String currency) async {}
 
   @override
   Future<void> logout() async {}

@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import 'pos_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 /// Bottom sheet detail keranjang: daftar baris + tombol +, -, hapus per baris,
 /// kalkulasi Subtotal, Diskon, Total live.
@@ -74,7 +75,7 @@ class PosCartSheet extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textPrimaryDark)),
-                            Text(MoneyFormatter.format(item.unitPriceIdr),
+                            Text(ref.money(item.unitPriceIdr),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
@@ -104,7 +105,7 @@ class PosCartSheet extends ConsumerWidget {
                       ),
                       SizedBox(
                         width: 84,
-                        child: Text(MoneyFormatter.format(item.lineTotalIdr),
+                        child: Text(ref.money(item.lineTotalIdr),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
@@ -125,7 +126,7 @@ class PosCartSheet extends ConsumerWidget {
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text('Diskon', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark)),
-            Text('- ${MoneyFormatter.format(cart.discountIdr)}',
+            Text('- ${ref.money(cart.discountIdr)}',
                 style: GoogleFonts.inter(fontSize: 13, color: AppTheme.dangerRed)),
           ]),
           const SizedBox(height: 6),

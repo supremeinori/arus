@@ -34,21 +34,8 @@ class AnalyticsOverviewModel {
     );
   }
 
-  String get formattedRevenue {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(revenueIdr);
-  }
 
-  String get formattedGrossProfit {
-    if (grossProfitIdr == null) return '-';
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(grossProfitIdr);
-  }
 
-  String get formattedAvgBasket {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(avgBasketSizeIdr);
-  }
 }
 
 class SalesTrendPoint {
@@ -125,20 +112,8 @@ class ShiftSummaryModel {
     );
   }
 
-  String get formattedTodayRevenue {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(todayRevenueIdr);
-  }
 
-  String get formattedCashRevenue {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(cashRevenueIdr);
-  }
 
-  String get formattedQrisRevenue {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(qrisRevenueIdr);
-  }
 }
 
 // =========================================================================
@@ -173,10 +148,6 @@ class ForecastPoint {
     );
   }
 
-  String get formattedRevenue {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(revenueIdr);
-  }
 }
 
 class PeakProjectedDay {
@@ -198,10 +169,6 @@ class PeakProjectedDay {
     );
   }
 
-  String get formattedRevenue {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(revenueIdr);
-  }
 }
 
 class SalesForecastSummary {
@@ -234,15 +201,7 @@ class SalesForecastSummary {
     );
   }
 
-  String get formattedProjectedTotal {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(projectedTotalRevenueIdr);
-  }
 
-  String get formattedAvgDaily {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(avgDailyProjectedIdr);
-  }
 }
 
 class SalesForecastModel {
@@ -327,10 +286,6 @@ class StockoutItem {
   bool get isWarning => status == 'warning';
   bool get isSafe => status == 'safe';
 
-  String get formattedRestockCost {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return formatter.format(estimatedRestockCostIdr);
-  }
 }
 
 class StockoutSummary {

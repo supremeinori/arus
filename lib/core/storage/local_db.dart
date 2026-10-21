@@ -7,6 +7,7 @@ import '../../features/auth/domain/user_model.dart';
 import '../../features/catalog/domain/category_model.dart';
 import '../../features/catalog/domain/product_model.dart';
 import '../../features/pos/domain/pos_models.dart';
+import '../utils/money_formatter.dart';
 
 final localDbProvider = Provider<LocalDatabase>((ref) {
   return LocalDatabase.instance;
@@ -34,7 +35,7 @@ class LocalSessionSettings {
     required this.role,
     this.avatarUrl,
     this.biometricEnabled = false,
-    this.displayCurrency = 'IDR',
+    this.displayCurrency = MoneyFormatter.defaultCurrency,
     this.displayTimezone = 'WIB',
     this.shakeSensorEnabled = true,
     this.tiltSensorEnabled = true,
@@ -69,7 +70,8 @@ class LocalSessionSettings {
       role: map['role'] as String? ?? 'staff',
       avatarUrl: map['avatar_url'] as String?,
       biometricEnabled: (map['biometric_enabled'] as int? ?? 0) == 1,
-      displayCurrency: map['display_currency'] as String? ?? 'IDR',
+      displayCurrency:
+          map['display_currency'] as String? ?? MoneyFormatter.defaultCurrency,
       displayTimezone: map['display_timezone'] as String? ?? 'WIB',
       shakeSensorEnabled: (map['shake_sensor_enabled'] as int? ?? 1) == 1,
       tiltSensorEnabled: (map['tilt_sensor_enabled'] as int? ?? 1) == 1,
@@ -456,6 +458,56 @@ class LocalDatabase {
           decoded['settings']['biometric_enabled'] = enabled;
         } else {
           decoded['settings'] = {'biometric_enabled': enabled};
+        }
+        await db.update(
+          'local_session_settings',
+          {'user_json': jsonEncode(decoded)},
+          where: 'user_id = ?',
+          whereArgs: [userId],
+        );
+      }
+    } catch (_) {}
+  }
+
+  /// Simpan preferensi mata uang tampilan untuk [userId] di cache lokal.
+  ///
+  /// Cache lokal hanyaCadangan offline; sumber kebenaran tetap kolom
+  /// `User.display_currency` di server.
+  Future<void> updateDisplayCurrencySetting(String userId, String currency) async {
+    final db = await database;
+    if (db == null) {
+      if (_webSessionStore.containsKey(userId)) {
+        final rawUser = _webSessionStore[userId]!['user_json'] as String?;
+        if (rawUser != null) {
+          try {
+            final decoded = jsonDecode(rawUser) as Map<String, dynamic>;
+            if (decoded['settings'] is Map) {
+              decoded['settings']['display_currency'] = currency;
+            } else {
+              decoded['settings'] = {'display_currency': currency};
+            }
+            _webSessionStore[userId]!['user_json'] = jsonEncode(decoded);
+          } catch (_) {}
+        }
+      }
+      return;
+    }
+
+    try {
+      final maps = await db.query(
+        'local_session_settings',
+        columns: ['user_json'],
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        limit: 1,
+      );
+      if (maps.isNotEmpty && maps.first['user_json'] != null) {
+        final decoded =
+            jsonDecode(maps.first['user_json'] as String) as Map<String, dynamic>;
+        if (decoded['settings'] is Map) {
+          decoded['settings']['display_currency'] = currency;
+        } else {
+          decoded['settings'] = {'display_currency': currency};
         }
         await db.update(
           'local_session_settings',

@@ -15,6 +15,7 @@ import 'stock_adjustment_dialog.dart';
 import 'add_ingredient_dialog.dart';
 import 'stock_movement_screen.dart';
 import '../../sensors/presentation/sensor_provider.dart';
+import '../../settings/presentation/currency_provider.dart';
 
 class InventoryListScreen extends ConsumerStatefulWidget {
   const InventoryListScreen({super.key});
@@ -501,7 +502,7 @@ class _IngredientCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Modal: ${item.formattedCost} • Reorder: ${item.reorderLevel} ${item.unit}',
+                      'Modal: ${ref.money(item.costPerUnit)} / ${item.unit} • Reorder: ${item.reorderLevel} ${item.unit}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 11.5),
@@ -665,7 +666,7 @@ class _StaffPortionView extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${p.formattedPrice} • SKU: ${p.sku}',
+                          '${ref.money(p.priceIdr)} • SKU: ${p.sku}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
