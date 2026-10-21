@@ -14,7 +14,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node-dev --transpile-only prisma/seed/seed.ts",
-    "db:fresh": "prisma db push --force-reset && prisma db seed"
+    "db:fresh": "prisma db push --force-reset && prisma db seed",
+    "verify:push": "node scripts/verify-push.js"
   },
   "prisma": {
     "seed": "ts-node-dev --transpile-only prisma/seed/seed.ts"

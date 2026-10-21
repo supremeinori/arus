@@ -1,12 +1,10 @@
 import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { analyticsService } from '../analytics/analytics.service';
-import { inventoryService } from '../inventory/inventory.service';
-import { outletsService } from '../outlets/outlets.service';
 import { AppError } from '../../shared/errors';
 import { env } from '../../config/env';
 import { ttsService } from './tts.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { aiBusinessEngine, EvaluatedBusinessFacts } from './ai_business_engine';
 
 const notificationsService = new NotificationsService();
 
@@ -44,7 +42,7 @@ export class AiAssistantService {
   private static customNicknames = new Map<string, string>();
 
   /**
-   * Panggil Google Gemini API dengan multi-turn context history & persona bisnis.
+   * Panggil Google Gemini API dengan multi-turn context history & persona bisnis ter-grounding.
    */
   private async callGemini(
     userMessage: string,
@@ -63,12 +61,19 @@ export class AiAssistantService {
       const systemInstruction = `Anda adalah ARUS Business Copilot, asisten kecerdasan bisnis & rekan diskusi keputusan (DSS) pribadi untuk ${userContext.name} (${userContext.role}) di platform bisnis ARUS.
 
 Karakter & Gaya Komunikasi:
-- Cerdas, hangat, humoris jika diajak bercanda, namun tajam dan berwawasan saat membahas bisnis.
-- Jika pengguna mengajak bercanda, meminta dipanggil dengan panggilan tertentu (misal: "panggil aku kanjeng ratu", "panggil aku bos", "sayang"), IKUTI DAN PATUHI DENGAN SENANG HATI secara luwes dan ramah.
-- Panggil pengguna dengan panggilan yang diminta atau secara personal (${userContext.name}).
+- Cerdas, hangat, komunikatif, analitis, dan berwawasan saat membahas data operasional bisnis.
+- Jika pengguna mengajak bercanda atau meminta dipanggil dengan panggilan tertentu (misal: "bos", "sayang", "ratu"), patuhi dengan ramah dan luwes.
+- Panggil pengguna dengan nama atau panggilan yang diminta (${userContext.name}).
 - Ingat konteks percakapan sebelumnya agar diskusi mengalir alami.
-- Jika membahas data bisnis, gunakan FAKTA DATA BISNIS berikut sebagai kebenaran mutlak (jangan halusinasi angka di luar data ini):
+
+ATURAN WAJIB GROUNDED DATA (ANTI-HALUSINASI MUTLAK):
+1. Anda HANYA BOLEH menggunakan angka omset, jumlah transaksi, basket size, margin, stok, nama produk, dan nama cabang yang TERCANTUM EKSPLISIT pada FAKTA DATA BISNIS berikut:
 ${JSON.stringify(facts, null, 2)}
+2. DILARANG KERAS mengarang angka, membuat estimasi fiktif di luar data di atas, atau menyebut produk/cabang yang tidak ada dalam data.
+3. Jika fakta menunjukkan bahwa suatu cabang atau periode memiliki 0 transaksi atau belum ada data penjualan/stok, nyatakan dengan jujur dan transparan bahwa data transaksi belum tercatat di database untuk cabang/periode tersebut.
+4. Jika pengguna meminta perbandingan antarcabang, bandingkan angka masing-masing cabang secara adil dan objektif sesuai data fakta.
+5. Sertakan angka konkrit dalam format rupiah (misal Rp 22.524.000) dan sebutkan nama cabang serta periode yang relevan.
+6. Berikan rekomendasi keputusan bisnis (DSS) yang masuk akal dan didukung oleh fakta tersebut.
 
 Format Output:
 Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar), sertakan juga TEPAT DI BAGIAN PALING AKHIR satu ringkasan lisan 1-2 kalimat yang ramah, ringkas, santai, dan BEBAS DARI SIMBOL MARKDOWN (*, #, -, bullet, tabel) serta menyebutkan angka dengan natural agar dapat dibacakan oleh suara wanita Gadis (TTS). Awali bagian ringkasan tersebut dengan penanda persis:
@@ -125,8 +130,8 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
   }
 
   /**
-   * Menjawab pertanyaan pengguna dengan sistem Grounded Facts (Anti-Halusinasi),
-   * memori percakapan berlanjut (Multi-Turn), dan responsif terhadap gaya bicara pengguna.
+   * Menjawab pertanyaan pengguna dengan sistem Grounded Facts aktual dari database,
+   * rule engine evaluasi bisnis, branch awareness, dan pencegahan halusinasi.
    */
   async handleChat(
     userId: string,
@@ -149,13 +154,11 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
     let userName = userScope.role === Role.owner ? 'Owner' : userScope.role === Role.manager ? 'Manager' : 'Staff Kasir';
     let userRoleTitle = userScope.role === Role.owner ? 'Owner' : userScope.role === Role.manager ? 'Manager' : 'Staff Kasir';
 
-    // Cek apakah ada panggilan kustom yang tersimpan di sesi percakapan
     const savedNickname = AiAssistantService.customNicknames.get(conversationId);
     if (savedNickname) {
       userName = savedNickname;
     }
 
-    // Deteksi jika user meminta panggilan khusus baru
     const matchCall = userMessage.match(/panggil (?:aku|saya|gue|gua) (.*)/i);
     if (matchCall) {
       const extractedNick = matchCall[1].replace(/dong|ya|plis|please|\?|\!/gi, '').trim();
@@ -174,11 +177,9 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
         userName = dbUser.name;
         userRoleTitle = dbUser.role === Role.owner ? 'Owner' : dbUser.role === Role.manager ? 'Manager' : 'Staff Kasir';
       }
-    } catch (_) {
-      // Fallback
-    }
+    } catch (_) {}
 
-    // 2. Analisis Input Pengguna: Apakah Chitchat/Candaan, Tanya Proses Bisnis, atau Metrik Finansial?
+    // 2. Analisis Input Pengguna: Chitchat/Candaan vs Pertanyaan Bisnis Nyata
     const memory = AiAssistantService.conversationMemory.get(conversationId) || [];
     const lower = userMessage.toLowerCase();
 
@@ -193,7 +194,22 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
       lower.includes('bagaimana bisnis') ||
       lower.includes('arsitektur');
 
+    const hasComparisonKeyword =
+      lower.includes('banding') ||
+      lower.includes('komparasi') ||
+      lower.includes('perbandingan') ||
+      lower.includes('antarcabang') ||
+      lower.includes('antar cabang') ||
+      lower.includes('paling ramai') ||
+      lower.includes('paling tinggi') ||
+      lower.includes('mana yang') ||
+      lower.includes('cabang mana') ||
+      lower.includes('semua cabang') ||
+      lower.includes('seluruh cabang') ||
+      lower.includes('rekap cabang');
+
     const hasBusinessKeyword =
+      hasComparisonKeyword ||
       lower.includes('jual') ||
       lower.includes('omset') ||
       lower.includes('pendapatan') ||
@@ -223,7 +239,9 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
       lower.includes('gerai') ||
       lower.includes('cabang') ||
       lower.includes('outlet') ||
-      lower.includes('lokasi');
+      lower.includes('lokasi') ||
+      lower.includes('void') ||
+      lower.includes('anomali');
 
     const isChitChatOrCasual =
       !hasBusinessKeyword &&
@@ -270,20 +288,23 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
         lower.includes('hehe'));
 
     let currentTopic: string | null = null;
+    let evaluatedBusinessFacts: EvaluatedBusinessFacts | null = null;
+    let facts: Array<{ type: string; title: string; value: any }> = [];
 
     if (!isChitChatOrCasual) {
       if (hasBusinessProcessKeyword) {
         currentTopic = 'business_process';
+      } else if (hasComparisonKeyword) {
+        currentTopic = 'branch_comparison';
       } else if (
-        lower.includes('jual') ||
-        lower.includes('omset') ||
-        lower.includes('pendapatan') ||
-        lower.includes('laba') ||
-        lower.includes('untung') ||
-        lower.includes('revenue') ||
-        lower.includes('target')
+        lower.includes('laris') ||
+        lower.includes('laku') ||
+        lower.includes('menu') ||
+        lower.includes('favorit') ||
+        lower.includes('best seller') ||
+        lower.includes('produk')
       ) {
-        currentTopic = 'sales';
+        currentTopic = 'products';
       } else if (
         lower.includes('stok') ||
         lower.includes('barang') ||
@@ -295,14 +316,15 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
       ) {
         currentTopic = 'inventory';
       } else if (
-        lower.includes('laris') ||
-        lower.includes('laku') ||
-        lower.includes('menu') ||
-        lower.includes('favorit') ||
-        lower.includes('best seller') ||
-        lower.includes('produk')
+        lower.includes('jual') ||
+        lower.includes('omset') ||
+        lower.includes('pendapatan') ||
+        lower.includes('laba') ||
+        lower.includes('untung') ||
+        lower.includes('revenue') ||
+        lower.includes('target')
       ) {
-        currentTopic = 'products';
+        currentTopic = 'sales';
       } else if (
         lower.includes('ramai') ||
         lower.includes('jam') ||
@@ -320,9 +342,11 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
         lower.includes('lokasi')
       ) {
         currentTopic = 'outlets';
+      } else {
+        currentTopic = 'business_overview';
       }
 
-      // KONTEKS KELANJUTAN (Context Inheritance): Hanya jika pertanyaan adalah follow-up bisnis nyata
+      // Context Inheritance jika follow-up
       const isBusinessFollowUp =
         lower.includes('kalau') ||
         lower.includes('bagaimana') ||
@@ -331,152 +355,121 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
         lower.includes('mengapa') ||
         lower.includes('banding') ||
         lower.includes('kemarin') ||
-        lower.includes('senopati') ||
-        lower.includes('sudirman') ||
-        lower.includes('canggu') ||
         lower.includes('terus') ||
         lower.includes('lalu') ||
         lower.includes('solusi') ||
         lower.includes('saran');
 
-      if (!currentTopic && isBusinessFollowUp && memory.length > 0) {
+      if ((!currentTopic || currentTopic === 'business_overview') && isBusinessFollowUp && memory.length > 0) {
         const lastTurn = memory[memory.length - 1];
         if (lastTurn.topic && lastTurn.topic !== 'chitchat') {
           currentTopic = lastTurn.topic;
         }
       }
+
+      // 3. RETRIEVER & RULE ENGINE: Eksekusi Query Aktual Database + Validasi
+      const outletScope = await aiBusinessEngine.resolveOutlets(userMessage, query.outlet_id, userScope);
+
+      // Tangani jika ada permintaan cabang di luar izin role (RBAC)
+      if (outletScope.forbiddenOutletName) {
+        const forbiddenResponse = aiBusinessEngine.generateDeterministicResponse(
+          {
+            topic: 'forbidden',
+            period_label: 'Saat Ini',
+            is_comparison: false,
+            target_outlets: [],
+            forbidden_outlet_name: outletScope.forbiddenOutletName,
+            overview: {
+              total_revenue_idr: 0,
+              completed_transactions: 0,
+              void_transactions: 0,
+              void_rate_pct: 0,
+              avg_basket_idr: 0,
+              total_cost_idr: 0,
+              gross_profit_idr: 0,
+              gross_margin_pct: 0,
+              payment_methods: {},
+            },
+            branch_metrics: [],
+            top_products: [],
+            inventory_alerts: [],
+            peak_hours: [],
+            anomalies: [],
+            recommendations: [],
+          },
+          userName
+        );
+
+        let audioBase64 = '';
+        try {
+          audioBase64 = await ttsService.textToSpeechBase64(forbiddenResponse.voice_summary);
+        } catch (_) {}
+
+        return {
+          conversation_id: conversationId,
+          message: {
+            id: 'msg-' + Date.now(),
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: forbiddenResponse.reply_text,
+            structured: { suggestion: forbiddenResponse.suggestion },
+            facts_used: [],
+            model: 'grounded-dss-engine',
+            status: 'ok',
+            created_at: new Date(),
+          },
+          facts: [],
+          suggestion: forbiddenResponse.suggestion,
+          reply_text: forbiddenResponse.reply_text,
+          voice_summary: forbiddenResponse.voice_summary,
+          audio_base64: audioBase64,
+        };
+      }
+
+      const timeWindow = aiBusinessEngine.resolveTimeWindow(userMessage);
+      evaluatedBusinessFacts = await aiBusinessEngine.evaluateBusinessFacts(
+        userMessage,
+        currentTopic || 'sales',
+        outletScope.targetOutlets,
+        timeWindow,
+        userScope,
+        outletScope.isComparison
+      );
+
+      facts = aiBusinessEngine.buildFactsList(evaluatedBusinessFacts);
+
+      if (currentTopic === 'business_process') {
+        facts.push({
+          type: 'business_process_summary',
+          title: 'Arsitektur dan Alur Operasional Bisnis ARUS',
+          value: {
+            pillars: [
+              '1. POS Kasir: Transaksi multi-metode (QRIS/Tunai) cepat & offline-first',
+              '2. Inventaris Otomatis: Resep bahan baku terpotong real-time saat pesanan dibayar',
+              '3. Audit Ledger: Rantai hash SHA-256 tamper-evident anti-fraud struk kasir',
+              '4. Decision Support System: Dashboard analitik omset, margin kotor, & peringatan restock',
+            ],
+          },
+        });
+      }
     } else {
       currentTopic = 'chitchat';
     }
 
-    // 3. RETRIEVER: Tarik Data Fakta Database Berdasarkan Topik
-    const facts: Array<{ type: string; title: string; value: any }> = [];
-
-    // Topik Penjualan / Omset
-    if (currentTopic === 'sales') {
-      const overview = await analyticsService.getOverview(
-        { outlet_id: query.outlet_id },
-        userScope
-      );
-      facts.push({
-        type: 'analytics_overview',
-        title: 'Ringkasan Omset Terkini',
-        value: {
-          revenue_idr: overview.revenue_idr,
-          transaction_count: overview.transaction_count,
-          avg_basket_idr: overview.avg_basket_size_idr,
-          gross_margin_pct: (overview as any).gross_margin_pct ?? 68,
-        },
-      });
-    }
-
-    // Topik Stok / Inventaris
-    if (currentTopic === 'inventory') {
-      const stockRes = await inventoryService.listStocks(
-        { outlet_id: query.outlet_id, low_stock: true, page_size: 5 },
-        userScope
-      );
-      facts.push({
-        type: 'low_stock_items',
-        title: 'Daftar Bahan Baku Stok Menipis',
-        value: (stockRes.ingredients || stockRes.stocks || []).map((s: any) => ({
-          product_name: s.name || s.product_name,
-          quantity: s.stock_qty ?? s.quantity,
-          unit: s.unit,
-          reorder_level: s.reorder_level,
-          outlet_name: s.outlet?.name || s.outlet_name,
-        })),
-      });
-    }
-
-    // Topik Menu & Produk Laris
-    if (currentTopic === 'products') {
-      facts.push({
-        type: 'top_products',
-        title: 'Menu Terlaris',
-        value: [
-          { name: 'Es Kopi Susu Gula Aren', sold: 142, margin_pct: 72 },
-          { name: 'Croissant Butter', sold: 86, margin_pct: 55 },
-          { name: 'Americano Iced', sold: 64, margin_pct: 78 },
-        ],
-      });
-    }
-
-    // Topik Jam Ramai (Peak Hours)
-    if (currentTopic === 'peak_hours') {
-      const peakHours = await analyticsService.getPeakHours(
-        { outlet_id: query.outlet_id },
-        userScope
-      );
-      const busiest = peakHours
-        .filter((h) => h.transaction_count > 0)
-        .sort((a, b) => b.transaction_count - a.transaction_count)
-        .slice(0, 3);
-
-      facts.push({
-        type: 'peak_hours',
-        title: 'Jam Paling Ramai',
-        value: busiest.map((b) => ({
-          time: b.label,
-          transactions: b.transaction_count,
-          revenue_idr: b.total_revenue_idr,
-        })),
-      });
-    }
-
-    // Topik Gerai / Cabang
-    if (currentTopic === 'outlets') {
-      try {
-        const outlets = await outletsService.listOutlets(
-          { id: userId, role: userScope.role },
-          userScope.allowedOutletIds
-        );
-        facts.push({
-          type: 'outlets_list',
-          title: 'Daftar Gerai & Cabang',
-          value: outlets.map((o: any) => ({
-            name: o.name,
-            address: o.address,
-            timezone: o.timezone,
-          })),
-        });
-      } catch (_) {
-        facts.push({
-          type: 'outlets_list',
-          title: 'Daftar Gerai & Cabang',
-          value: [
-            { name: 'Kopi Arus - Sudirman (HQ)', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat', timezone: 'Asia/Jakarta' },
-            { name: 'Kopi Arus - Senopati', address: 'Jl. Senopati No. 12, Jakarta Selatan', timezone: 'Asia/Jakarta' },
-            { name: 'Kopi Arus - Canggu', address: 'Jl. Pantai Batu Bolong, Bali', timezone: 'Asia/Makassar' },
-          ],
-        });
-      }
-    }
-
-    // Topik Alur & Proses Bisnis ARUS
-    if (currentTopic === 'business_process') {
-      facts.push({
-        type: 'business_process_summary',
-        title: 'Arsitektur dan Alur Operasional Bisnis ARUS',
-        value: {
-          pillars: [
-            '1. POS Kasir: Transaksi multi-metode (QRIS/Tunai) cepat & offline-first',
-            '2. Inventaris Otomatis: Resep bahan baku terpotong real-time saat pesanan dibayar',
-            '3. Audit Ledger: Rantai hash SHA-256 tamper-evident anti-fraud struk kasir',
-            '4. Decision Support System: Dashboard analitik omset, margin kotor, & peringatan restock',
-          ],
-        },
-      });
-    }
-
-    // 4. GENERATOR: Respons Pintar, Alami & Fleksibel
+    // 4. GENERATOR: Respons Berbasis Fakta (Gemini jika online, atau Deterministic Rule Engine jika offline)
     let aiResponseText = '';
     let suggestionText = '';
 
-    const liveGeminiText = await this.callGemini(userMessage, facts, memory, {
-      name: userName,
-      role: userRoleTitle,
-    }, query.screen_context);
+    const liveGeminiText = await this.callGemini(
+      userMessage,
+      facts,
+      memory,
+      {
+        name: userName,
+        role: userRoleTitle,
+      },
+      query.screen_context
+    );
 
     let voiceSummary = '';
     if (liveGeminiText) {
@@ -488,7 +481,7 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
         aiResponseText = liveGeminiText.trim();
         voiceSummary = cleanVoiceSummaryText(aiResponseText);
       }
-      suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini.';
+      suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini berbasis data aktual database.';
     } else if (currentTopic === 'chitchat' || facts.length === 0) {
       // RESPONS NATURAL UNTUK INTERAKSI MANUSIAWI, BERCANDA, DAN CHITCHAT
       if (lower.includes('panggil')) {
@@ -564,104 +557,11 @@ Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar)
         aiResponseText = `Saya **ARUS Business Copilot**, asisten kecerdasan bisnis cerdas untuk platform ARUS. 🤖\n\nTugas saya menemani Anda menganalisis angka transaksi kasir, memantau keamanan audit struk, menjaga stok bahan baku tidak kehabisan, serta memberikan rekomendasi bisnis yang menguntungkan.`;
         suggestionText = 'Coba tanyakan: "Bagaimana performa toko kita hari ini?"';
       } else {
-        // Natural friendly response for any open-ended or casual message, NEVER stiff template
-        aiResponseText = `Siap, ${userName}! Saya menyimak dengan baik. 😄\n\nSebagai asisten bisnis pribadi Anda di platform ARUS, saya bisa diajak ngobrol santai maupun diajak serius menganalisis performa toko—seperti evaluasi omset harian, cek bahan baku yang mau habis, sampai rekomendasi menu paling laris.\n\nAda hal tertentu yang sedang Anda pikirkan untuk bisnis kita hari ini?`;
+        aiResponseText = `Siap, ${userName}! Saya menyimak dengan baik. 😄\n\nSebagai asisten bisnis pribadi Anda di platform ARUS, saya bisa diajak ngobrol santai maupun diajak serius menganalisis performa toko—seperti evaluasi omset harian, perbandingan antarcabang, cek bahan baku yang mau habis, sampai rekomendasi menu paling laris.\n\nAda hal tertentu yang sedang Anda pikirkan untuk bisnis kita hari ini?`;
         suggestionText = 'Coba tanyakan: "Berapa omset kita hari ini?" atau "Menu apa yang paling laris?"';
       }
-    } else {
-      // SMART GROUNDED REASONING ENGINE (DSS Berstruktur 3 Lapisan untuk Pertanyaan Bisnis Nyata)
-      const sections: string[] = [];
-      const isFollowUp = memory.length > 0 && memory[memory.length - 1].topic === currentTopic;
-      const greetingPrefix = isFollowUp
-        ? `Melanjutkan diskusi kita sebelumnya, ${userName}:\n\n`
-        : `Halo ${userName}, berikut laporan analitis terkini yang berhasil saya himpun dari sistem:\n\n`;
-
-      sections.push(greetingPrefix);
-
-      for (const fact of facts) {
-        if (fact.type === 'analytics_overview') {
-          const rev = Number(fact.value.revenue_idr).toLocaleString('id-ID');
-          const avg = Number(fact.value.avg_basket_idr).toLocaleString('id-ID');
-          const margin = fact.value.gross_margin_pct ?? 68;
-
-          sections.push(`📌 **Ringkasan Penjualan:**
-Saat ini penjualan tercatat sebesar **Rp ${rev}** dari total **${fact.value.transaction_count} transaksi**, dengan rata-rata belanja konsumen (basket size) di angka **Rp ${avg}**.
-
-📊 **Analisis Bisnis:**
-Estimasi margin laba kotor berada di angka **${margin}%**, yang tergolong sangat sehat untuk standar industri retail/F&B. Tingkat repeat order dan stabilitas keranjang belanja menunjukkan tren positif.
-
-💡 **Rekomendasi Keputusan (DSS):**
-Untuk menggenjot omset di sisa hari ini, staf kasir disarankan melakukan *upselling* (menawarkan ukuran large atau paket bundling kopi + pastry) agar rata-rata belanja naik ke atas Rp 50.000.`);
-          suggestionText = 'Tanyakan lebih lanjut: "Menu apa yang paling berkontribusi ke omset ini?"';
-        } else if (fact.type === 'low_stock_items') {
-          if (fact.value.length === 0) {
-            sections.push(`📌 **Status Inventaris:**
-Kabar baik! Seluruh persediaan stok bahan baku di gerai saat ini berada dalam level aman di atas ambang batas minimum.
-
-📊 **Analisis Bisnis:**
-Tidak terdeteksi risiko *stockout* atau gangguan operasional dalam 48 jam ke depan.
-
-💡 **Rekomendasi Keputusan (DSS):**
-Pertahankan jadwal penghitungan stok fisik (*stock opname*) rutin akhir pekan untuk menjamin akurasi kartu stok.`);
-            suggestionText = 'Tanyakan: "Kapan jam toko paling ramai untuk antisipasi persediaan?"';
-          } else {
-            const list = fact.value
-              .map((item: any) => `• **${item.product_name}**: tersisa **${item.quantity} ${item.unit}** (Batas aman: ${item.reorder_level} ${item.unit}) di ${item.outlet_name}`)
-              .join('\n');
-            sections.push(`📌 **Peringatan Inventaris:**
-Terdeteksi **${fact.value.length} bahan baku** mendekati batas minimum stok dan memerlukan perhatian:
-${list}
-
-📊 **Analisis Bisnis:**
-Jika laju penjualan hari ini berlanjut, bahan-bahan di atas berpotensi habis sebelum akhir pekan, yang dapat mengakibatkan hilangnya potensi pendapatan (*loss of sales*).
-
-💡 **Rekomendasi Keputusan (DSS):**
-Segera terbitkan Purchase Order (PO) restock kepada pemasok utama hari ini agar pengiriman tiba sebelum lonjakan transaksi akhir pekan.`);
-            suggestionText = 'Tanyakan: "Menu apa yang paling terpengaruh jika stok ini habis?"';
-          }
-        } else if (fact.type === 'top_products') {
-          const list = fact.value
-            .map((p: any, idx: number) => `${idx + 1}. **${p.name}** — Terjual ${p.sold} porsi | Kontribusi Margin: ~${p.margin_pct}%`)
-            .join('\n');
-          sections.push(`📌 **Produk Unggulan (Best Seller):**
-Berikut 3 produk dengan volume penjualan tertinggi:
-${list}
-
-📊 **Analisis Bisnis:**
-Varian kopi berbasis espresso dan gula aren menjadi mesin pencetak laba utama dengan margin laba kotor melampaui 70%.
-
-💡 **Rekomendasi Keputusan (DSS):**
-Pertahankan kualitas bahan baku kopi & susu, serta pertimbangkan promo *cross-selling* dengan produk margin sedang (seperti croissant) guna mendongkrak margin total.`);
-          suggestionText = 'Tanyakan: "Apakah stok biji kopi dan susu kita masih cukup?"';
-        } else if (fact.type === 'peak_hours') {
-          const list = fact.value
-            .map((ph: any) => `• Pukul **${ph.time}**: ${ph.transactions} transaksi (Total Rp ${Number(ph.revenue_idr).toLocaleString('id-ID')})`)
-            .join('\n');
-          sections.push(`📌 **Jam Paling Ramai (Peak Hours):**
-Berdasarkan histori transaksi, lonjakan antrean terjadi pada jam-jam berikut:
-${list}
-
-📊 **Analisis Bisnis:**
-Lebih dari 55% perputaran kas harian terkonsentrasi di jendela waktu tersebut.
-
-💡 **Rekomendasi Keputusan (DSS):**
-Pastikan penugasan kasir penuh dan persiapan *mise en place* bahan baku sudah selesai 30 menit sebelum jam puncak agar waktu tunggu antrean tetap di bawah 3 menit.`);
-          suggestionText = 'Tanyakan: "Bagaimana ketersediaan stok kasir saat jam ramai?"';
-        } else if (fact.type === 'outlets_list') {
-          const list = fact.value
-            .map((o: any, idx: number) => `${idx + 1}. **${o.name}** — ${o.address} (Zona: ${o.timezone})`)
-            .join('\n');
-          sections.push(`📌 **Jaringan Gerai Bisnis:**
-Saat ini bisnis Anda menaungi **${fact.value.length} gerai operasional**:\n${list}
-
-📊 **Analisis Bisnis:**
-Seluruh gerai telah terhubung secara real-time dengan sinkronisasi multi-zona waktu (WIB/WITA) dan pemantauan terpusat.
-
-💡 **Rekomendasi Keputusan (DSS):**
-Anda dapat menyaring laporan atau meminta analisis khusus per cabang kapan saja.`);
-          suggestionText = 'Coba tanyakan: "Bandingkan omset cabang Sudirman dan Senopati"';
-        } else if (fact.type === 'business_process_summary') {
-          sections.push(`📌 **Alur Proses Bisnis & Arsitektur ARUS:**
+    } else if (currentTopic === 'business_process') {
+      aiResponseText = `📌 **Alur Proses Bisnis & Arsitektur ARUS:**
 Platform ARUS dirancang khusus untuk mengelola operasional ritel & F&B secara terpadu melalui 4 pilar utama:
 
 1. 🛒 **Point of Sale (POS) & Transaksi Kasir:**
@@ -680,12 +580,15 @@ Platform ARUS dirancang khusus untuk mengelola operasional ritel & F&B secara te
    • Data transaksi diagregasi secara real-time ke dashboard Owner untuk memantau omset harian, margin kotor, jam sibuk (*peak hours*), serta rekomendasi restock otomatis.
 
 💡 **Rekomendasi Keputusan (DSS):**
-Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
-          suggestionText = 'Coba tanyakan: "Bagaimana omset kita hari ini?" atau "Bahan apa yang stoknya menipis?"';
-        }
-      }
-
-      aiResponseText = sections.join('\n\n');
+Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`;
+      suggestionText = 'Coba tanyakan: "Bagaimana omset kita hari ini?" atau "Bahan apa yang stoknya menipis?"';
+      voiceSummary = 'Platform ARUS mengintegrasikan kasir POS, otomasi inventaris resep, audit ledger kriptografi, dan dashboard analitik bisnis secara real-time.';
+    } else if (evaluatedBusinessFacts) {
+      // SMART GROUNDED DETERMINISTIC RESPONSE (Rule Engine)
+      const deterministic = aiBusinessEngine.generateDeterministicResponse(evaluatedBusinessFacts, userName);
+      aiResponseText = deterministic.reply_text;
+      suggestionText = deterministic.suggestion;
+      voiceSummary = deterministic.voice_summary;
     }
 
     // 5. Simpan ke Riwayat Percakapan (Memory Cache & Database)
@@ -727,14 +630,12 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
             answer_json: {
               content: aiResponseText,
               suggestion: suggestionText,
-              model: liveGeminiText ? env.LLM_MODEL : 'gemini-2.0-flash-grounded',
+              model: liveGeminiText ? env.LLM_MODEL : 'grounded-dss-engine',
             },
             facts_used: facts,
           },
         });
 
-        // Notifikasi hasil AI (push + inbox). Kegagalan push tidak pernah
-        // menggagalkan jawaban AI yang sudah berhasil dihasilkan.
         if (chatLog?.id) {
           try {
             await notificationsService.notifyAiResult({
@@ -747,9 +648,7 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
             console.warn('[AI] Notifikasi hasil AI gagal (diabaikan):', err);
           }
         }
-      } catch (_) {
-        // Fallback ke memori lokal
-      }
+      } catch (_) {}
     }
 
     if (!voiceSummary) {
@@ -830,7 +729,6 @@ Seluruh pilar di atas telah berjalan aktif di seluruh gerai Anda.`);
    */
   async getConversationMessages(conversationId: string, userId: string) {
     try {
-      // Batasi ke milik user yang requesting (mencegah akses silang antar user).
       const log = await prisma.aiChatLog.findFirst({
         where: { id: conversationId, user_id: userId },
       });
@@ -958,14 +856,13 @@ WAJIB KEMBALIKAN HANYA DALAM FORMAT JSON MURNI tanpa markdown backticks (tanpa \
 
     // Fallback cerdas offline (margin 50%)
     const fallbackMargin = 50;
-    const recommendedPrice = Math.round((cogs * (100 + fallbackMargin)) / 100 / 500) * 500; // dibulatkan ke kelipatan 500 terdekat
+    const recommendedPrice = Math.round((cogs * (100 + fallbackMargin)) / 100 / 500) * 500;
     return {
       recommended_price: recommendedPrice > 0 ? recommendedPrice : 15000,
       margin_percentage: fallbackMargin,
       reasoning: `Rekomendasi standar margin ${fallbackMargin}% di atas HPP Rp ${cogs} untuk menutup operasional & profit sehat.`,
     };
   }
-
 }
 
 export const aiAssistantService = new AiAssistantService();

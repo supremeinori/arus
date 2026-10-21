@@ -1,4 +1,4 @@
-package com.example.arus
+package com.arus.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
