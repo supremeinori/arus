@@ -331,3 +331,38 @@ class StockoutForecastModel {
     );
   }
 }
+
+class TopSellingProductModel {
+  final int rank;
+  final String productId;
+  final String productName;
+  final String categoryName;
+  final int quantitySold;
+  final int totalRevenueIdr;
+  final int unitPriceIdr;
+  final String? imageUrl;
+
+  const TopSellingProductModel({
+    required this.rank,
+    required this.productId,
+    required this.productName,
+    required this.categoryName,
+    required this.quantitySold,
+    required this.totalRevenueIdr,
+    required this.unitPriceIdr,
+    this.imageUrl,
+  });
+
+  factory TopSellingProductModel.fromJson(Map<String, dynamic> json) {
+    return TopSellingProductModel(
+      rank: (json['rank'] as num?)?.toInt() ?? 1,
+      productId: json['product_id'] as String? ?? '',
+      productName: json['product_name'] as String? ?? '',
+      categoryName: json['category_name'] as String? ?? 'Menu Utama',
+      quantitySold: (json['quantity_sold'] as num?)?.toInt() ?? 0,
+      totalRevenueIdr: (json['total_revenue_idr'] as num?)?.toInt() ?? 0,
+      unitPriceIdr: (json['unit_price_idr'] as num?)?.toInt() ?? 0,
+      imageUrl: json['image_url'] as String?,
+    );
+  }
+}

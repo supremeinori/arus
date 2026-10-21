@@ -9,10 +9,9 @@ import 'package:intl/intl.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../shared/widgets/dashboard_filter_sheet.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../analytics/presentation/analytics_provider.dart';
-import '../../catalog/domain/product_model.dart';
-import '../../catalog/presentation/catalog_provider.dart';
 import '../../insights/presentation/insights_provider.dart';
 import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
@@ -49,7 +48,7 @@ class DashboardScreen extends ConsumerWidget {
         ref.invalidate(dailyProfitComparisonProvider);
         ref.invalidate(ingredientsListProvider);
         ref.invalidate(insightsListProvider);
-        ref.invalidate(productListProvider);
+        ref.invalidate(leaderboardProvider);
         ref.invalidate(notificationsListProvider);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,8 +102,8 @@ class DashboardScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(analyticsOverviewProvider);
     // API TERSEDIA: GET /api/analytics/sales-trend (Grafik Tren Penjualan)
     final trendAsync = ref.watch(salesTrendProvider);
-    // Data Katalog Produk: GET /api/catalog/products
-    final productsAsync = ref.watch(productListProvider);
+    // API TERSEDIA: GET /api/analytics/leaderboard (Menu Terlaris dari DB)
+    final leaderboardAsync = ref.watch(leaderboardProvider);
     // API TERSEDIA: GET /api/inventory/ingredients (Data Bahan & Stok Kritis)
     final ingredientsAsync = ref.watch(ingredientsListProvider);
 
@@ -141,7 +140,7 @@ class DashboardScreen extends ConsumerWidget {
             ref.invalidate(dailyProfitComparisonProvider);
             ref.invalidate(ingredientsListProvider);
             ref.invalidate(insightsListProvider);
-            ref.invalidate(productListProvider);
+            ref.invalidate(leaderboardProvider);
             ref.invalidate(notificationsListProvider);
           },
           child: SingleChildScrollView(
@@ -190,7 +189,7 @@ class DashboardScreen extends ConsumerWidget {
                   error: (_, _) => _KpiRowSection(
                     transactionCount: 0,
                     issuesCount: issuesCount,
-                    onViewHistory: () => context.push('/pos-history'),
+                    onViewHistory: () => context.push('/pos/history?scope=dashboard'),
                     onViewIssues: () {
                       scrollController.animateTo(
                         scrollController.position.maxScrollExtent,
@@ -202,7 +201,7 @@ class DashboardScreen extends ConsumerWidget {
                   data: (kpi) => _KpiRowSection(
                     transactionCount: kpi.transactionCount, // Data asli dari API
                     issuesCount: issuesCount,
-                    onViewHistory: () => context.push('/pos-history'),
+                    onViewHistory: () => context.push('/pos/history?scope=dashboard'),
                     onViewIssues: () {
                       scrollController.animateTo(
                         scrollController.position.maxScrollExtent,
@@ -215,25 +214,13 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // 4. Section: Terlaris (Wireframe: Terlaris ........ Lihat Semua)
-                // ============================================================
-                // TODO: [BELUM ADA API] Endpoint Produk Terlaris (Top Selling)
-                // Rekomendasi API Backend yang perlu dibuat:
-                //   GET /api/analytics/products?type=top_selling&outlet_id=...&from=...&to=...&limit=3
-                // Response yang diharapkan:
-                //   [
-                //     {
-                //       "product_id": "...",
-                //       "name": "Kopi Susu Gula Aren",
-                //       "category_name": "Coffee",
-                //       "price_idr": 20000,
-                //       "sold_quantity": 45
-                //     }
-                //   ]
-                // ============================================================
+                // API TERSEDIA: GET /api/analytics/leaderboard?outlet_id=...&from=...&to=...&limit=3
+                // Peringkat dihitung backend dari transaction_items + transactions
+                // (status completed), bukan dari daftar katalog maupun data lokal.
                 _TerlarisCard(
-                  products: productsAsync.valueOrNull ?? [],
-                  isLoading: productsAsync.isLoading,
-                  onViewAll: () => context.push('/catalog'),
+                  products: leaderboardAsync.valueOrNull ?? [],
+                  isLoading: leaderboardAsync.isLoading,
+                  onViewAll: () => context.push('/leaderboard'),
                 ),
                 const SizedBox(height: 12),
 
@@ -393,17 +380,13 @@ class _HeroOmzetCard extends ConsumerWidget {
   }
 
   void _openFilterDialog(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _FilterBoxSheet(
-        outlets: outlets,
-        selectedOutletId: selectedOutletId,
-        selectedDateFilter: selectedDateFilter,
-        selectedCustomDate: selectedCustomDate,
-        isManager: isManager,
-      ),
+    showDashboardFilterSheet(
+      context,
+      outlets: outlets,
+      selectedOutletId: selectedOutletId,
+      selectedDateFilter: selectedDateFilter,
+      selectedCustomDate: selectedCustomDate,
+      isManager: isManager,
     );
   }
 
@@ -576,339 +559,6 @@ class _HeroOmzetCard extends ConsumerWidget {
 }
 
 // ============================================================================
-// KOTAK FILTER (Modal Bottom Sheet untuk Memilih Cabang & Hari)
-// Memicu refilter API GET /api/analytics/overview dengan parameter baru
-// Role Manager tidak memiliki opsi filter cabang karena terkunci pada cabang yang di-assign oleh Owner
-// ============================================================================
-class _FilterBoxSheet extends ConsumerStatefulWidget {
-  final List<({String id, String name})> outlets;
-  final String? selectedOutletId;
-  final DashboardDateFilter selectedDateFilter;
-  final DateTime? selectedCustomDate;
-  final bool isManager;
-
-  const _FilterBoxSheet({
-    required this.outlets,
-    required this.selectedOutletId,
-    required this.selectedDateFilter,
-    required this.selectedCustomDate,
-    this.isManager = false,
-  });
-
-  @override
-  ConsumerState<_FilterBoxSheet> createState() => _FilterBoxSheetState();
-}
-
-class _FilterBoxSheetState extends ConsumerState<_FilterBoxSheet> {
-  late String? _tempOutletId;
-  late DashboardDateFilter _tempDateFilter;
-  late DateTime? _tempCustomDate;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.isManager) {
-      _tempOutletId = widget.outlets.isNotEmpty ? widget.outlets.first.id : widget.selectedOutletId;
-    } else {
-      _tempOutletId = widget.selectedOutletId;
-    }
-    _tempDateFilter = widget.selectedDateFilter;
-    _tempCustomDate = widget.selectedCustomDate;
-  }
-
-  Future<void> _pickCustomCalendarDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _tempCustomDate ?? now,
-      firstDate: DateTime(2020),
-      lastDate: now,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: _DashboardColors.teal,
-              onPrimary: Colors.white,
-              onSurface: _DashboardColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _tempCustomDate = picked;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Header Title
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.tune_rounded,
-                      size: 20,
-                      color: _DashboardColors.teal,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        widget.isManager ? 'Filter Periode Waktu' : 'Kotak Filter Bisnis',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: _DashboardColors.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.close_rounded,
-                  size: 20,
-                  color: _DashboardColors.textMuted,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: _DashboardColors.border),
-          const SizedBox(height: 16),
-
-          // 1. Pemilihan Cabang (Hanya untuk Owner, Role Manager tidak memiliki opsi filter cabang)
-          if (!widget.isManager) ...[
-            Text(
-              'PILIH CABANG OUTLET',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _DashboardColors.textMuted,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _DashboardColors.border, width: 1.0),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String?>(
-                  value: _tempOutletId,
-                  isExpanded: true,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: _DashboardColors.textMuted,
-                  ),
-                  items: [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text(
-                        'Semua Cabang',
-                        style: GoogleFonts.inter(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: _DashboardColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    ...widget.outlets.map(
-                      (o) => DropdownMenuItem<String?>(
-                        value: o.id,
-                        child: Text(
-                          o.name,
-                          style: GoogleFonts.inter(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w500,
-                            color: _DashboardColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                  onChanged: (val) {
-                    setState(() => _tempOutletId = val);
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-          ],
-
-          // 2. Pemilihan Hari / Periode
-          Text(
-            'PILIH HARI / PERIODE',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: _DashboardColors.textMuted,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...DashboardDateFilter.values.map((filter) {
-                final isSelected =
-                    _tempCustomDate == null && _tempDateFilter == filter;
-                return ChoiceChip(
-                  label: Text(filter.label),
-                  labelStyle: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected
-                        ? Colors.white
-                        : _DashboardColors.textPrimary,
-                  ),
-                  selected: isSelected,
-                  selectedColor: _DashboardColors.teal,
-                  backgroundColor: const Color(0xFFF8FAFC),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: isSelected
-                          ? _DashboardColors.teal
-                          : _DashboardColors.border,
-                      width: 1.0,
-                    ),
-                  ),
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _tempDateFilter = filter;
-                        _tempCustomDate = null;
-                      });
-                    }
-                  },
-                );
-              }),
-              ActionChip(
-                avatar: const Icon(
-                  Icons.calendar_today_rounded,
-                  size: 14,
-                  color: _DashboardColors.teal,
-                ),
-                label: Text(
-                  _tempCustomDate != null
-                      ? DateFormat(
-                          'd MMM yyyy',
-                          'id_ID',
-                        ).format(_tempCustomDate!)
-                      : 'Pilih Tanggal...',
-                ),
-                labelStyle: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: _tempCustomDate != null
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  color: _tempCustomDate != null
-                      ? _DashboardColors.teal
-                      : _DashboardColors.textSecondary,
-                ),
-                backgroundColor: _tempCustomDate != null
-                    ? _DashboardColors.tealLight
-                    : const Color(0xFFF8FAFC),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(
-                    color: _tempCustomDate != null
-                        ? _DashboardColors.teal
-                        : _DashboardColors.border,
-                    width: 1.0,
-                  ),
-                ),
-                onPressed: _pickCustomCalendarDate,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Tombol Terapkan
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _DashboardColors.teal,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () {
-                if (!widget.isManager) {
-                  ref.read(selectedOutletFilterProvider.notifier).state =
-                      _tempOutletId;
-                } else if (widget.outlets.isNotEmpty) {
-                  ref.read(selectedOutletFilterProvider.notifier).state =
-                      widget.outlets.first.id;
-                }
-                ref.read(selectedDateFilterProvider.notifier).state =
-                    _tempDateFilter;
-                ref.read(selectedCustomDateProvider.notifier).state =
-                    _tempCustomDate;
-                Navigator.pop(context);
-              },
-              child: Text(
-                'Terapkan Filter',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
 // 3. ROW OF 2 KPI CARDS (Wireframe: Transaksi [N] & Masalah [M])
 // Transaksi: API TERSEDIA (GET /api/analytics/overview -> transaction_count)
 // Masalah:   TODO: Belum ada API agregasi khusus, saat ini dihitung dari stok kritis
@@ -1033,18 +683,12 @@ class _KpiRowSection extends StatelessWidget {
 
 // ============================================================================
 // 4. SECTION TERLARIS (Wireframe: Terlaris ...... Lihat Semua)
-// ============================================================================
-// TODO: [BELUM ADA API] Endpoint Produk Terlaris (Top-Selling Products)
-// Endpoint yang perlu dibuat di backend:
-//   GET /api/analytics/products?type=top_selling&outlet_id=...&from=...&to=...&limit=3
-// Response yang diharapkan:
-//   List objek { id, name, categoryName, priceIdr, soldQuantity }
-//
-// Saat ini menggunakan data riil katalog produk (GET /api/catalog/products),
-// dan kuantitas porsi terjual ditampilkan riil bila tersedia di model produk.
+// API TERSEDIA: GET /api/analytics/leaderboard?outlet_id=...&from=...&to=...&limit=3
+// Data berasal dari perhitungan backend (transaction_items + transactions),
+// bukan dari daftar katalog produk.
 // ============================================================================
 class _TerlarisCard extends ConsumerWidget {
-  final List<ProductModel> products;
+  final List<TopSellingProductModel> products;
   final bool isLoading;
   final VoidCallback onViewAll;
 
@@ -1095,14 +739,14 @@ class _TerlarisCard extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
 
-          // List Produk Terlaris
+          // List Menu Terlaris
           if (isLoading)
             const _SkeletonList(itemCount: 3, itemHeight: 48)
           else if (topList.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                'Belum ada data produk terdaftar di katalog.',
+                'Belum ada penjualan menu pada periode ini.',
                 style: GoogleFonts.inter(
                   color: _DashboardColors.textMuted,
                   fontSize: 13,
@@ -1133,7 +777,7 @@ class _TerlarisCard extends ConsumerWidget {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            '#${index + 1}',
+                            '#${product.rank}',
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -1145,13 +789,13 @@ class _TerlarisCard extends ConsumerWidget {
                         ),
                         const SizedBox(width: 10),
 
-                        // Nama Produk
+                        // Nama Menu
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                product.name,
+                                product.productName,
                                 style: GoogleFonts.inter(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w600,
@@ -1161,35 +805,36 @@ class _TerlarisCard extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                product.categoryName ?? 'Menu Utama',
+                                product.categoryName,
                                 style: GoogleFonts.inter(
                                   fontSize: 11.5,
                                   color: _DashboardColors.textMuted,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
 
-                        // Harga & Porsi Terjual
+                        // Terjual & Omzet
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              ref.money(product.priceIdr),
+                              '${product.quantitySold} terjual',
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: _DashboardColors.teal,
+                              ),
+                            ),
+                            Text(
+                              ref.money(product.totalRevenueIdr),
                               style: GoogleFonts.lexend(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: _DashboardColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              product.estimatedPortions > 0
-                                  ? '${product.estimatedPortions} porsi'
-                                  : '- porsi',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                color: _DashboardColors.textMuted,
                               ),
                             ),
                           ],

@@ -30,6 +30,7 @@ import '../../features/search/presentation/global_search_screen.dart';
 import '../../features/about/presentation/about_screen.dart';
 import '../../features/feedback/presentation/feedback_screen.dart';
 import '../../features/users/presentation/user_management_screen.dart';
+import '../../features/analytics/presentation/leaderboard_screen.dart';
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -95,7 +96,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'history',
-            builder: (context, state) => const PosHistoryScreen(),
+            builder: (context, state) => PosHistoryScreen(
+              // scope=dashboard -> pakai filter cabang & periode dashboard.
+              // Tanpa scope -> riwayat outlet kasir aktif (tab POS).
+              useDashboardFilters:
+                  state.uri.queryParameters['scope'] == 'dashboard',
+            ),
           ),
         ],
       ),
@@ -207,6 +213,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/users',
         builder: (context, state) => const UserManagementScreen(),
+      ),
+      GoRoute(
+        path: '/leaderboard',
+        builder: (context, state) => const LeaderboardScreen(),
       ),
     ],
   );

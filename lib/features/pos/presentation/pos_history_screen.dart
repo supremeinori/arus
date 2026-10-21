@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/dashboard_filter_sheet.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../settings/presentation/currency_provider.dart';
@@ -16,11 +18,20 @@ import 'pos_catalog_provider.dart';
 /// Format jam struk riwayat — top-level, bukan di build (aturan E21).
 final _historyTimeFmt = DateFormat('HH:mm');
 
-/// Tab/halaman "Riwayat Transaksi Hari Ini": daftar struk outlet aktif +
-/// tombol Void (input alasan) → POST /api/pos/void.
+/// Halaman "Riwayat Transaksi": daftar struk outlet + tombol Void
+/// (input alasan) → POST /api/pos/void.
+/// Filter mengikuti dashboard: Owner boleh pilih cabang & periode,
+/// Manager hanya periode dan hanya cabangnya sendiri (dijaga backend).
 /// Tombol void hanya tampil untuk owner/manager (sesuai guard backend).
 class PosHistoryScreen extends ConsumerStatefulWidget {
-  const PosHistoryScreen({super.key});
+  /// true  -> dipakai dari Dashboard: ikut filter cabang & periode dashboard.
+  /// false -> dipakai dari tab POS: riwayat outlet kasir yang aktif.
+  final bool useDashboardFilters;
+
+  const PosHistoryScreen({
+    super.key,
+    this.useDashboardFilters = false,
+  });
 
   @override
   ConsumerState<PosHistoryScreen> createState() => _PosHistoryScreenState();
@@ -33,6 +44,13 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
     final role = ref.watch(authProvider).user?.role;
     return role == UserRole.owner || role == UserRole.manager;
   }
+
+  /// Provider riwayat sesuai konteks pemakaian layar:
+  /// dashboard -> ikut filter cabang & periode; POS -> outlet kasir aktif.
+  AutoDisposeFutureProvider<List<PosTransactionModel>> get _historyProvider =>
+      widget.useDashboardFilters
+          ? dashboardHistoryProvider
+          : posHistoryProvider;
 
   Future<void> _askVoidReason(PosTransactionModel tx) async {
     final reasonCtrl = TextEditingController();
@@ -76,7 +94,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
             outletId: tx.outletId,
             reason: reason,
           );
-      ref.invalidate(posHistoryProvider);
+      ref.invalidate(_historyProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.green.shade700,
@@ -99,10 +117,37 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authProvider).user;
+    final isManager = user?.role == UserRole.manager;
+    final selectedOutletId = isManager && (user?.outlets.isNotEmpty ?? false)
+        ? user!.outlets.first.id
+        : ref.watch(selectedOutletFilterProvider);
+    final selectedDateFilter = ref.watch(selectedDateFilterProvider);
+    final selectedCustomDate = ref.watch(selectedCustomDateProvider);
+    final List<({String id, String name})> outlets = (user?.outlets ?? [])
+        .map((o) => (id: o.id, name: o.name))
+        .toList();
+
+    String branchLabel = 'Semua Cabang';
+    if (isManager) {
+      if (outlets.isNotEmpty) {
+        branchLabel = outlets.first.name;
+      } else {
+        branchLabel = 'Cabang Saya';
+      }
+    } else if (selectedOutletId != null) {
+      final found = outlets.where((o) => o.id == selectedOutletId);
+      if (found.isNotEmpty) branchLabel = found.first.name;
+    }
+
+    final String dayLabel = selectedCustomDate != null
+        ? DateFormat('d MMM yyyy', 'id_ID').format(selectedCustomDate)
+        : selectedDateFilter.label;
+
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        title: Text('Riwayat Transaksi Hari Ini',
+        title: Text('Riwayat Transaksi',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
@@ -110,36 +155,99 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Muat ulang',
-            onPressed: () => ref.invalidate(posHistoryProvider),
+            onPressed: () => ref.invalidate(_historyProvider),
           ),
         ],
       ),
       // Satu .when() terpusat via AsyncStateView (aturan E24).
-      body: AsyncStateView<List<PosTransactionModel>>(
-        value: ref.watch(posHistoryProvider),
-        onRetry: () => ref.invalidate(posHistoryProvider),
-        dataBuilder: (list) {
-          if (list.isEmpty) {
-            return const EmptyStateView(
-              message: 'Belum ada transaksi hari ini.',
-              icon: Icons.receipt_long_outlined,
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 10),
-            itemBuilder: (_, i) {
-              final tx = list[i];
-              return _HistoryCard(
-                tx: tx,
-                canVoid: _canVoid,
-                voiding: _voiding,
-                onVoid: () => _askVoidReason(tx),
-              );
-            },
-          );
-        },
+      body: Column(
+        children: [
+          // Baris filter aktif (cabang + periode) — hanya pada mode dashboard.
+          if (widget.useDashboardFilters)
+            Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.darkCardSurfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.darkCardBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.filter_alt_outlined,
+                      size: 18, color: AppTheme.jadeTosca),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Di "$branchLabel" pada "$dayLabel".',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimaryDark),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () => showDashboardFilterSheet(
+                      context,
+                      outlets: outlets,
+                      selectedOutletId: selectedOutletId,
+                      selectedDateFilter: selectedDateFilter,
+                      selectedCustomDate: selectedCustomDate,
+                      isManager: isManager,
+                      ownerTitle: 'Filter Riwayat Transaksi',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppTheme.jadeTosca),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text('Ubah',
+                        style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.jadeTosca)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: AsyncStateView<List<PosTransactionModel>>(
+              value: ref.watch(_historyProvider),
+              onRetry: () => ref.invalidate(_historyProvider),
+              dataBuilder: (list) {
+                if (list.isEmpty) {
+                  return const EmptyStateView(
+                    message: 'Belum ada transaksi pada periode ini.',
+                    icon: Icons.receipt_long_outlined,
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  itemCount: list.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    final tx = list[i];
+                    return _HistoryCard(
+                      tx: tx,
+                      canVoid: _canVoid,
+                      voiding: _voiding,
+                      onVoid: () => _askVoidReason(tx),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

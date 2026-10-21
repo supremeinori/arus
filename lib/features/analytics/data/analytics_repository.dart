@@ -140,4 +140,30 @@ class AnalyticsRepository {
       throw const AppException('Koneksi ke web service terputus. Prediksi kehabisan stok tidak dapat dimuat.');
     }
   }
+
+  /// Leaderboard Menu Terlaris (Top Selling Products) dari Backend Database
+  Future<List<TopSellingProductModel>> getLeaderboard({
+    String? outletId,
+    String? from,
+    String? to,
+    int limit = 20,
+  }) async {
+    final query = <String, dynamic>{'limit': limit};
+    if (outletId != null && outletId.isNotEmpty) query['outlet_id'] = outletId;
+    if (from != null && from.isNotEmpty) query['from'] = from;
+    if (to != null && to.isNotEmpty) query['to'] = to;
+
+    try {
+      final response = await _client.get<Map<String, dynamic>>(
+        '/analytics/leaderboard',
+        queryParameters: query,
+      );
+      final list = response.data?['data'] as List<dynamic>? ?? [];
+      return list.map((item) => TopSellingProductModel.fromJson(item as Map<String, dynamic>)).toList();
+    } on AppException {
+      rethrow;
+    } catch (_) {
+      throw const AppException('Koneksi ke web service terputus. Data leaderboard terlaris tidak dapat dimuat.');
+    }
+  }
 }

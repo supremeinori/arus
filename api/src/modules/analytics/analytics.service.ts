@@ -817,6 +817,118 @@ export class AnalyticsService {
       items,
     };
   }
+
+  /**
+   * Leaderboard Menu Terlaris (Top Selling Products) berdasarkan data penjualan aktual di database.
+   * Mendukung filter outlet, tanggal (from/to), dan RBAC ketat (manager terkunci ke cabang sendiri).
+   */
+  async getLeaderboard(
+    query: {
+      outlet_id?: string;
+      from?: string;
+      to?: string;
+      limit?: number;
+    },
+    userScope: { role: Role; allowedOutletIds: string[] }
+  ) {
+    const limit = Math.min(query.limit ?? 20, 100);
+    const whereTx: any = {
+      status: TxnStatus.completed,
+    };
+
+    if (userScope.role !== Role.owner) {
+      if (query.outlet_id && !userScope.allowedOutletIds.includes(query.outlet_id)) {
+        throw new AppError('FORBIDDEN', 403, 'Akses ke outlet ini tidak diizinkan.');
+      }
+      whereTx.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
+    } else if (query.outlet_id) {
+      whereTx.outlet_id = query.outlet_id;
+    }
+
+    if (query.from || query.to) {
+      whereTx.created_at = {};
+      if (query.from) whereTx.created_at.gte = new Date(`${query.from}T00:00:00.000Z`);
+      if (query.to) whereTx.created_at.lte = new Date(`${query.to}T23:59:59.999Z`);
+    }
+
+    try {
+      const items = await prisma.transactionItem.findMany({
+        where: {
+          transaction: whereTx,
+        },
+        include: {
+          product: {
+            include: {
+              category: { select: { name: true } },
+            },
+          },
+        },
+      });
+
+      const productMap = new Map<string, {
+        product_id: string;
+        product_name: string;
+        category_name: string;
+        unit_price_idr: number;
+        image_url: string | null;
+        quantity_sold: number;
+        total_revenue_idr: number;
+      }>();
+
+      for (const item of items) {
+        const prodId = item.product_id;
+        const name = item.product_name_snapshot || item.product?.name || 'Menu';
+        const categoryName = item.product?.category?.name || 'Menu Utama';
+        const unitPrice = item.unit_price_idr;
+        const imageUrl = item.product?.image_url || null;
+
+        const existing = productMap.get(prodId);
+        if (existing) {
+          existing.quantity_sold += item.quantity;
+          existing.total_revenue_idr += item.line_total_idr;
+        } else {
+          productMap.set(prodId, {
+            product_id: prodId,
+            product_name: name,
+            category_name: categoryName,
+            unit_price_idr: unitPrice,
+            image_url: imageUrl,
+            quantity_sold: item.quantity,
+            total_revenue_idr: item.line_total_idr,
+          });
+        }
+      }
+
+      const sortedList = Array.from(productMap.values()).sort((a, b) => {
+        if (b.quantity_sold !== a.quantity_sold) {
+          return b.quantity_sold - a.quantity_sold;
+        }
+        return b.total_revenue_idr - a.total_revenue_idr;
+      });
+
+      const ranked = sortedList.slice(0, limit).map((p, idx) => ({
+        rank: idx + 1,
+        product_id: p.product_id,
+        product_name: p.product_name,
+        category_name: p.category_name,
+        quantity_sold: p.quantity_sold,
+        total_revenue_idr: p.total_revenue_idr,
+        unit_price_idr: p.unit_price_idr,
+        image_url: p.image_url,
+      }));
+
+      return ranked;
+    } catch (err) {
+      // Tidak ada fallback data dummy: leaderboard HARUS berasal dari database.
+      // Bila database gagal diakses, laporkan error agar UI menampilkan state error.
+      console.warn('[AnalyticsService] getLeaderboard gagal:', err);
+      throw new AppError(
+        'DATABASE_ERROR',
+        503,
+        'Data penjualan tidak dapat dimuat dari database. Silakan coba lagi.'
+      );
+    }
+  }
 }
 
 export const analyticsService = new AnalyticsService();

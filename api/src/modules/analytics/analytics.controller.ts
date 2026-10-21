@@ -118,6 +118,32 @@ export class AnalyticsController {
       next(err);
     }
   }
+
+  /**
+   * GET /api/analytics/leaderboard
+   * Leaderboard menu terlaris berdasarkan data penjualan aktual di database.
+   */
+  async getLeaderboard(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user!;
+      const allowedOutletIds = req.userOutlets || [];
+      const { outlet_id, from, to, limit } = req.query;
+
+      const data = await analyticsService.getLeaderboard(
+        {
+          outlet_id: outlet_id as string,
+          from: from as string,
+          to: to as string,
+          limit: limit ? parseInt(limit as string, 10) : undefined,
+        },
+        { role: user.role, allowedOutletIds }
+      );
+
+      res.status(200).json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const analyticsController = new AnalyticsController();

@@ -42,6 +42,44 @@ final selectedDateFilterProvider = StateProvider<DashboardDateFilter>((ref) => D
 /// Filter tanggal kustom spesifik (jika pengguna memilih tanggal via date picker)
 final selectedCustomDateProvider = StateProvider<DateTime?>((ref) => null);
 
+/// Menerjemahkan filter periode dashboard menjadi rentang tanggal `from`/`to`
+/// (format YYYY-MM-DD) agar dashboard, riwayat transaksi, dan leaderboard
+/// memakai definisi periode yang sama persis.
+({String from, String to}) resolveDashboardDateRange(
+  DashboardDateFilter dateFilter,
+  DateTime? customDate, {
+  DateTime? now,
+}) {
+  final today = now ?? DateTime.now();
+  if (customDate != null) {
+    final d = DateFormat('yyyy-MM-dd').format(customDate);
+    return (from: d, to: d);
+  }
+  switch (dateFilter) {
+    case DashboardDateFilter.today:
+      final d = DateFormat('yyyy-MM-dd').format(today);
+      return (from: d, to: d);
+    case DashboardDateFilter.yesterday:
+      final d = DateFormat('yyyy-MM-dd').format(today.subtract(const Duration(days: 1)));
+      return (from: d, to: d);
+    case DashboardDateFilter.last7Days:
+      return (
+        from: DateFormat('yyyy-MM-dd').format(today.subtract(const Duration(days: 6))),
+        to: DateFormat('yyyy-MM-dd').format(today),
+      );
+    case DashboardDateFilter.last30Days:
+      return (
+        from: DateFormat('yyyy-MM-dd').format(today.subtract(const Duration(days: 29))),
+        to: DateFormat('yyyy-MM-dd').format(today),
+      );
+    case DashboardDateFilter.thisMonth:
+      return (
+        from: DateFormat('yyyy-MM-dd').format(DateTime(today.year, today.month, 1)),
+        to: DateFormat('yyyy-MM-dd').format(today),
+      );
+  }
+}
+
 /// Model komparasi laba dan omset hari kemarin vs hari sekarang
 class DailyProfitComparisonModel {
   final AnalyticsOverviewModel today;
@@ -219,4 +257,21 @@ final stockoutForecastProvider = FutureProvider.autoDispose<StockoutForecastMode
   final repo = ref.watch(analyticsRepositoryProvider);
   final outletId = getEffectiveOutletId(ref);
   return repo.getStockoutForecast(outletId: outletId);
+});
+
+/// Provider data Leaderboard Menu Terlaris (mengikuti filter outlet & tanggal)
+final leaderboardProvider = FutureProvider.autoDispose<List<TopSellingProductModel>>((ref) async {
+  final repo = ref.watch(analyticsRepositoryProvider);
+  final outletId = getEffectiveOutletId(ref);
+  final range = resolveDashboardDateRange(
+    ref.watch(selectedDateFilterProvider),
+    ref.watch(selectedCustomDateProvider),
+  );
+
+  return repo.getLeaderboard(
+    outletId: outletId,
+    from: range.from,
+    to: range.to,
+    limit: 50,
+  );
 });

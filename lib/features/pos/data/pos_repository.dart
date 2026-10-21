@@ -147,11 +147,18 @@ class PosRepository {
   Future<List<PosTransactionModel>> getTransactions({
     String? outletId,
     String? status,
+    String? from,
+    String? to,
   }) async {
     try {
       final query = <String, dynamic>{};
       if (outletId != null && outletId.isNotEmpty) query['outlet_id'] = outletId;
       if (status != null && status.isNotEmpty) query['status'] = status;
+      if (from != null && from.isNotEmpty) query['from'] = from;
+      if (to != null && to.isNotEmpty) query['to'] = to;
+      // Riwayat dashboard butuh daftar panjang, bukan satu halaman 20 baris.
+      query['page'] = 1;
+      query['page_size'] = 100;
 
       final response = await _client.get<Map<String, dynamic>>(
         '/transactions',

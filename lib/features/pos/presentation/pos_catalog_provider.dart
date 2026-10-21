@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../data/pos_catalog_repository.dart';
@@ -26,10 +27,30 @@ final posCatalogProvider =
   return repo.getCatalog(outletId);
 });
 
-/// Riwayat transaksi outlet aktif (server; fallback offline di repository lama).
+/// Riwayat transaksi untuk layar POS: scoped ke outlet kasir yang aktif.
+/// Dipakai tab riwayat di dalam mesin kasir (tidak ikut filter dashboard).
 final posHistoryProvider =
     FutureProvider.autoDispose<List<PosTransactionModel>>((ref) async {
   final outletId = ref.watch(posOutletIdProvider);
   final repo = ref.watch(posRepositoryProvider);
   return repo.getTransactions(outletId: outletId);
+});
+
+/// Riwayat transaksi untuk halaman Riwayat Transaksi yang dibuka dari
+/// Dashboard: mengikuti filter dashboard (cabang & periode).
+/// Owner: boleh "Semua Cabang" atau cabang tertentu.
+/// Manager/Staff: backend mengunci ke cabang yang di-assign.
+final dashboardHistoryProvider =
+    FutureProvider.autoDispose<List<PosTransactionModel>>((ref) async {
+  final outletId = getEffectiveOutletId(ref);
+  final range = resolveDashboardDateRange(
+    ref.watch(selectedDateFilterProvider),
+    ref.watch(selectedCustomDateProvider),
+  );
+  final repo = ref.watch(posRepositoryProvider);
+  return repo.getTransactions(
+    outletId: outletId,
+    from: range.from,
+    to: range.to,
+  );
 });

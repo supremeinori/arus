@@ -486,6 +486,8 @@ export class TransactionsService {
       outlet_id?: string;
       status?: TxnStatus;
       receipt_no?: string;
+      from?: string;
+      to?: string;
       page?: number;
       page_size?: number;
     },
@@ -497,7 +499,9 @@ export class TransactionsService {
 
     const where: any = {};
 
-    if (userScope.role === Role.staff) {
+    // RBAC: seluruh role selain owner terkunci ke outlet yang di-assign.
+    // Manipulasi query outlet_id di luar wewenang ditolak (bukan diabaikan diam-diam).
+    if (userScope.role !== Role.owner) {
       if (query.outlet_id && !userScope.allowedOutletIds.includes(query.outlet_id)) {
         throw new AppError('FORBIDDEN', 403, 'Akses ke outlet ini tidak diizinkan.');
       }
@@ -509,6 +513,13 @@ export class TransactionsService {
     if (query.status) where.status = query.status;
     if (query.receipt_no) {
       where.receipt_no = { contains: query.receipt_no, mode: 'insensitive' };
+    }
+
+    // Filter periode waktu (YYYY-MM-DD), inklusif sampai akhir hari.
+    if (query.from || query.to) {
+      where.created_at = {};
+      if (query.from) where.created_at.gte = new Date(`${query.from}T00:00:00.000Z`);
+      if (query.to) where.created_at.lte = new Date(`${query.to}T23:59:59.999Z`);
     }
 
     const [total, transactions] = await Promise.all([

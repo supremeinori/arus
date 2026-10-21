@@ -39,13 +39,15 @@ export class TransactionsController {
     try {
       const user = req.user!;
       const allowedOutletIds = req.userOutlets || [];
-      const { outlet_id, status, receipt_no, page, page_size } = req.query;
+      const { outlet_id, status, receipt_no, from, to, page, page_size } = req.query;
 
       const result = await transactionsService.listTransactions(
         {
           outlet_id: outlet_id as string,
           status: status as TxnStatus,
           receipt_no: receipt_no as string,
+          from: from as string,
+          to: to as string,
           page: page ? parseInt(page as string, 10) : undefined,
           page_size: page_size ? parseInt(page_size as string, 10) : undefined,
         },

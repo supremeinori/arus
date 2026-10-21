@@ -25,4 +25,7 @@ router.get('/analytics/forecast/sales', (req, res, next) => analyticsController.
 // 6. GET /api/analytics/forecast/stockout - AI Stock Runout & Velocity Prediction
 router.get('/analytics/forecast/stockout', (req, res, next) => analyticsController.getStockoutForecast(req, res, next));
 
+// 7. GET /api/analytics/leaderboard - Leaderboard Menu Terlaris (Database Sales)
+router.get('/analytics/leaderboard', (req, res, next) => analyticsController.getLeaderboard(req, res, next));
+
 export default router;
