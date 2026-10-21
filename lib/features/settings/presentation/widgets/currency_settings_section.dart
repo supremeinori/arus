@@ -221,7 +221,7 @@ class _CurrencySettingsSectionState
                   ),
                 ),
                 onTap: () =>
-                    ref.read(displayCurrencyProvider.notifier).state = 'IDR',
+                    ref.read(displayCurrencyProvider.notifier).setCurrency('IDR'),
               ),
               const Divider(
                 height: 1,
@@ -257,7 +257,7 @@ class _CurrencySettingsSectionState
                   ),
                 ),
                 onTap: () =>
-                    ref.read(displayCurrencyProvider.notifier).state = 'USD',
+                    ref.read(displayCurrencyProvider.notifier).setCurrency('USD'),
               ),
               const Divider(
                 height: 1,
@@ -293,7 +293,7 @@ class _CurrencySettingsSectionState
                   ),
                 ),
                 onTap: () =>
-                    ref.read(displayCurrencyProvider.notifier).state = 'EUR',
+                    ref.read(displayCurrencyProvider.notifier).setCurrency('EUR'),
               ),
             ],
           ),

@@ -168,6 +168,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           categoryId: _selectedCategoryId,
           imageUrl: imageUrl,
           recipes: recipesPayload,
+          // Hanya kosongkan kalau memang form ini yang mengosongkan field
+          // tersebut (kategori/foto dihapus user), bukan karena form tidak
+          // punya field-nya sama sekali.
+          clearCategory: _selectedCategoryId == null,
+          clearImage: imageUrl == null,
         );
         ref.invalidate(productDetailProvider(widget.productId!));
       }
@@ -175,7 +180,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       ref.invalidate(productListProvider);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.textPrimaryDark,
             content: Text(

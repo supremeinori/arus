@@ -32,6 +32,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
     final categoriesState = ref.watch(categoriesProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final showInactive = ref.watch(showInactiveProvider);
     final productsState = ref.watch(productListProvider);
 
     return Scaffold(
@@ -103,6 +104,27 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       ),
                       onSelected: (_) {
                         ref.read(selectedCategoryProvider.notifier).state = null;
+                      },
+                    ),
+                  ),
+                  if (canManage)
+                    Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: FilterChip(
+                      label: const Text('Tampilkan nonaktif'),
+                      selected: showInactive,
+                      selectedColor: const Color(0x33EF4444),
+                      backgroundColor: AppTheme.darkCardSurfaceElevated,
+                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      labelStyle: TextStyle(
+                        color: showInactive
+                            ? const Color(0xFFF87171)
+                            : AppTheme.textPrimaryDark,
+                        fontWeight: showInactive ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                      onSelected: (v) {
+                        ref.read(showInactiveProvider.notifier).state = v;
                       },
                     ),
                   ),
@@ -216,15 +238,43 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        prod.name,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: AppTheme.textPrimaryDark,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              prod.name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.inter(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                                color: AppTheme.textPrimaryDark,
+                                              ),
+                                            ),
+                                          ),
+                                          if (!prod.isActive) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0x22EF4444),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(color: const Color(0xFFEF4444)),
+                                              ),
+                                              child: Text(
+                                                'NONAKTIF',
+                                                style: GoogleFonts.inter(
+                                                  color: const Color(0xFFF87171),
+                                                  fontSize: 9.5,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       const SizedBox(height: 4),
                                       Row(

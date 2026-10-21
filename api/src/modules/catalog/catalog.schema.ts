@@ -35,7 +35,7 @@ export const updateProductSchema = z.object({
 export const productQuerySchema = z.object({
   outlet_id: z.string().min(1).optional(),
   category_id: z.string().min(1).optional(),
-  is_active: z.enum(['true', 'false']).optional(),
+  is_active: z.enum(['true', 'false', 'all']).optional(),
   q: z.string().optional(),
   sort: z.enum(['name', 'price_asc', 'price_desc', 'created_at']).default('name'),
   page: z.coerce.number().int().positive().default(1),

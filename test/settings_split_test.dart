@@ -45,6 +45,20 @@ class _MockAuthNotifier extends StateNotifier<AuthState>
   }
 }
 
+/// Override sederhana untuk [displayCurrencyProvider] di unit test.
+class _MockDisplayCurrencyNotifier extends DisplayCurrencyNotifier {
+  final String _fixedCurrency;
+  _MockDisplayCurrencyNotifier(this._fixedCurrency);
+
+  @override
+  String build() => _fixedCurrency;
+
+  @override
+  Future<void> setCurrency(String currency) async {
+    state = currency;
+  }
+}
+
 void main() {
   const mockRates = CurrencyRateModel(
     base: 'IDR',
@@ -135,7 +149,7 @@ void main() {
               authProvider.overrideWith(
                 (ref) => _MockAuthNotifier(AuthState.authenticated(testUser)),
               ),
-              displayCurrencyProvider.overrideWith((ref) => 'USD'),
+              displayCurrencyProvider.overrideWith(() => _MockDisplayCurrencyNotifier('USD')),
               displayTimezoneProvider.overrideWith((ref) => 'Asia/Makassar'),
             ],
             child: const MaterialApp(home: ProfileScreen()),

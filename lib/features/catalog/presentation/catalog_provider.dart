@@ -14,14 +14,20 @@ final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
 // Daftar Produk
+/// Tampilkan juga menu yang dinonaktifkan (is_active = false) supaya owner
+/// bisa mengaktifkannya kembali kapan menu itu mau dipakai lagi.
+final showInactiveProvider = StateProvider<bool>((ref) => false);
+
 final productListProvider = FutureProvider.autoDispose<List<ProductModel>>((ref) async {
   final repo = ref.watch(catalogRepositoryProvider);
   final categoryId = ref.watch(selectedCategoryProvider);
   final query = ref.watch(searchQueryProvider);
+  final showInactive = ref.watch(showInactiveProvider);
 
   return repo.getProducts(
     categoryId: categoryId,
     q: query,
+    includeInactive: showInactive,
   );
 });
 

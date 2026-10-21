@@ -8,7 +8,6 @@ import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/catalog/presentation/menu_create_screen.dart';
 import '../../features/catalog/presentation/product_detail_screen.dart';
-import '../../features/catalog/presentation/product_form_screen.dart';
 import '../../features/catalog/presentation/product_list_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/inventory/presentation/inventory_list_screen.dart';
@@ -179,8 +178,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'edit',
+                // Edit memakai layar yang sama dengan "Tambah Menu Baru" supaya
+                // alurnya sama: wizard resep, HPP live, dan rekomendasi harga AI.
                 builder: (context, state) =>
-                    ProductFormScreen(productId: state.pathParameters['id']),
+                    MenuCreateScreen(productId: state.pathParameters['id']),
               ),
             ],
           ),

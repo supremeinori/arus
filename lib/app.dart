@@ -27,8 +27,13 @@ class ArusApp extends ConsumerWidget {
       materialThemeBuilder: (context, theme) {
         return AppTheme.lightTheme;
       },
-      builder: (context, child) => BiometricLockWrapper(
-        child: child ?? const SizedBox.shrink(),
+      // ShadApp.router tidak menyediakan ScaffoldMessenger, sehingga
+      // ScaffoldMessenger.of(context) di layar mana pun akan null dan
+      // melempar "Null check operator used on a null value" pada mode release.
+      builder: (context, child) => ScaffoldMessenger(
+        child: BiometricLockWrapper(
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }

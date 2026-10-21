@@ -8,16 +8,15 @@ export class UsersService {
   private inMemorySettings: Record<string, any> = {};
 
   async getUserSettings(userId: string) {
-    if ((prisma as any).userSettings?.findUnique) {
-      try {
-        const found = await (prisma as any).userSettings.findUnique({ where: { user_id: userId } });
-        if (found) return found;
-      } catch (_) {}
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { display_currency: true },
+    });
+
     if (!this.inMemorySettings[userId]) {
       this.inMemorySettings[userId] = {
         user_id: userId,
-        display_currency: 'IDR',
+        display_currency: user?.display_currency ?? 'IDR',
         display_timezone: 'Asia/Jakarta',
         biometric_enabled: false,
         shake_refresh_enabled: true,
@@ -25,6 +24,9 @@ export class UsersService {
         daily_revenue_target_idr: 5000000,
         updated_at: new Date(),
       };
+    } else {
+      // Refresh display_currency from DB on every call
+      this.inMemorySettings[userId].display_currency = user?.display_currency ?? this.inMemorySettings[userId].display_currency;
     }
     return this.inMemorySettings[userId];
   }
@@ -40,16 +42,14 @@ export class UsersService {
       daily_revenue_target_idr?: number | null;
     }
   ) {
-    if ((prisma as any).userSettings?.upsert) {
-      try {
-        const updated = await (prisma as any).userSettings.upsert({
-          where: { user_id: userId },
-          create: { user_id: userId, ...data },
-          update: data,
-        });
-        if (updated) return updated;
-      } catch (_) {}
+    // Persist display_currency to DB if provided
+    if (data.display_currency) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { display_currency: data.display_currency },
+      });
     }
+
     const current = await this.getUserSettings(userId);
     this.inMemorySettings[userId] = {
       ...current,

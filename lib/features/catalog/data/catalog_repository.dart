@@ -68,6 +68,7 @@ class CatalogRepository {
     String? q,
     String? sort,
     bool? isActive,
+    bool includeInactive = false,
     int page = 1,
     int pageSize = 50,
   }) async {
@@ -88,7 +89,10 @@ class CatalogRepository {
     if (sort != null) {
       queryParams['sort'] = sort;
     }
-    if (isActive != null) {
+    // 'all' → backend tidak memfilter is_active (aktif + nonaktif).
+    if (includeInactive) {
+      queryParams['is_active'] = 'all';
+    } else if (isActive != null) {
       queryParams['is_active'] = isActive.toString();
     }
 
@@ -188,6 +192,8 @@ class CatalogRepository {
     String? imageUrl,
     bool? isActive,
     List<Map<String, dynamic>>? recipes,
+    bool clearCategory = false,
+    bool clearImage = false,
   }) async {
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name.trim();
@@ -195,12 +201,19 @@ class CatalogRepository {
     if (unit != null) payload['unit'] = unit.trim();
     if (priceIdr != null) payload['price_idr'] = priceIdr;
     if (costIdr != null) payload['cost_idr'] = costIdr;
-    // category_id & image_url SELALU dikirim, boleh null: backend menerima null
-    // untuk mengosongkan kategori/foto. Bila key tidak dikirim, Prisma tidak
-    // mengubah kolom lama sehingga hasil edit tidak pernah terlihat di UI.
-    payload['category_id'] = categoryId;
-    payload['image_url'] =
-        (imageUrl != null && imageUrl.trim().isNotEmpty) ? imageUrl.trim() : null;
+    // Kategori & gambar hanya boleh berubah kalau form-nya memang mengelola
+    // field itu DAN pengguna sengaja mengosongkannya (clear* = true).
+    // Kalau tidak dikirim, Prisma tidak mengubah kolom lama.
+    if (clearCategory) {
+      payload['category_id'] = null;
+    } else if (categoryId != null) {
+      payload['category_id'] = categoryId;
+    }
+    if (clearImage) {
+      payload['image_url'] = null;
+    } else if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      payload['image_url'] = imageUrl.trim();
+    }
     if (isActive != null) payload['is_active'] = isActive;
     if (recipes != null) payload['recipes'] = recipes;
 

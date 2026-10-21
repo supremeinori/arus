@@ -130,7 +130,7 @@ export class AuthService {
         avatar_url: user.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
         outlets: accessibleOutlets,
         settings: {
-          display_currency: 'IDR',
+          display_currency: (user as any).display_currency ?? 'IDR',
           display_timezone: 'Asia/Jakarta',
           biometric_enabled: false,
           shake_refresh_enabled: true,
@@ -278,7 +278,7 @@ export class AuthService {
       },
       outlets,
       settings: {
-        display_currency: 'IDR',
+        display_currency: (user as any).display_currency ?? 'IDR',
         display_timezone: 'Asia/Jakarta',
         biometric_enabled: false,
         shake_refresh_enabled: true,

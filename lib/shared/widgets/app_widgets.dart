@@ -1,8 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../features/settings/presentation/currency_provider.dart';
 
 /// Field teks standar ARUS — aman di dalam Row (aturan B7: handle lebar sendiri).
 /// Memakai inputDecorationTheme global; screen cukup pass controller/hint.
@@ -209,8 +211,11 @@ class KpiCard extends StatelessWidget {
   }
 }
 
-/// Teks uang standar — formatter terpusat (ganti NumberFormat di build, E21).
-class MoneyText extends StatelessWidget {
+/// Teks uang standar — formatter terpusat, currency-aware (E21).
+///
+/// Membaca [displayCurrencyProvider] dan [fxRatesProvider] dari Riverpod
+/// sehingga setiap widget ini otomatis merespons perubahan mata uang tampilan.
+class MoneyText extends ConsumerWidget {
   final num amountIdr;
   final TextStyle? style;
   final int? maxLines;
@@ -218,9 +223,13 @@ class MoneyText extends StatelessWidget {
   const MoneyText(this.amountIdr, {super.key, this.style, this.maxLines = 1});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(displayCurrencyProvider);
+    final ratesAsync = ref.watch(fxRatesProvider);
+    final rates = ratesAsync.valueOrNull?.rates;
+
     return Text(
-      MoneyFormatter.format(amountIdr),
+      MoneyFormatter.format(amountIdr, currency: currency, rates: rates),
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
       style: style ??

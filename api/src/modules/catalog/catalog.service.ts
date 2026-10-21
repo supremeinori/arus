@@ -129,7 +129,15 @@ export class CatalogService {
     }
 
     if (query.is_active !== undefined) {
-      where.is_active = query.is_active === 'true';
+      if (query.is_active === 'all') {
+        // 'all' → tidak ada filter is_active (aktif + nonaktif sekaligus).
+        // Staff tetap hanya melihat menu aktif.
+        if (userRole === Role.staff || !userRole) {
+          where.is_active = true;
+        }
+      } else {
+        where.is_active = query.is_active === 'true';
+      }
     } else if (userRole === Role.staff || !userRole) {
       where.is_active = true;
     }
