@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/test_push_notification_button.dart';
 import '../domain/notification_models.dart';
 import 'notifications_provider.dart';
 
@@ -77,6 +78,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       ),
       body: Column(
         children: [
+          // Tombol uji notifikasi (sementara) — hapus baris ini untuk
+          // menghilangkan tombol tanpa mengubah sistem notifikasi push.
+          const TestPushNotificationButton(),
           _FilterChips(
             selectedFilter: _selectedFilter,
             onSelected: (val) => setState(() => _selectedFilter = val),
