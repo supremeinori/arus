@@ -9,6 +9,7 @@ import 'package:arus/features/catalog/presentation/catalog_provider.dart';
 import 'package:arus/features/inventory/domain/inventory_models.dart';
 import 'package:arus/features/inventory/presentation/inventory_list_screen.dart';
 import 'package:arus/features/inventory/presentation/inventory_provider.dart';
+import 'package:arus/features/analytics/presentation/analytics_provider.dart';
 import 'package:arus/features/outlets/domain/outlet_models.dart';
 import 'package:arus/features/outlets/presentation/outlets_provider.dart';
 import 'package:arus/features/sensors/presentation/sensor_provider.dart';
@@ -144,7 +145,7 @@ void main() {
           overrides: [
             authProvider.overrideWith((ref) => AuthNotifierMock(AuthState.authenticated(ownerUser))),
             outletsListProvider.overrideWith((ref) async => [sampleOutlet]),
-            selectedInventoryOutletProvider.overrideWith((ref) => 'out-1'),
+            selectedOutletFilterProvider.overrideWith((ref) => 'out-1'),
             ingredientsListProvider.overrideWith((ref) async => [sampleIngredient]),
             shakeEventProvider.overrideWith((ref) => MockShakeEventNotifier()),
           ],

@@ -98,8 +98,8 @@ class DailyProfitComparisonModel {
     return ((todayRevenue - yesterdayRevenue) / yesterdayRevenue.abs()) * 100;
   }
 
-  int get todayProfit => today.grossProfitIdr ?? (todayRevenue * 0.4).round();
-  int get yesterdayProfit => yesterday.grossProfitIdr ?? (yesterdayRevenue * 0.4).round();
+  int get todayProfit => today.grossProfitIdr ?? (today.grossMarginPct != null && today.revenueIdr > 0 ? (today.revenueIdr * today.grossMarginPct! / 100).round() : 0);
+  int get yesterdayProfit => yesterday.grossProfitIdr ?? (yesterday.grossMarginPct != null && yesterday.revenueIdr > 0 ? (yesterday.revenueIdr * yesterday.grossMarginPct! / 100).round() : 0);
   int get profitDiff => todayProfit - yesterdayProfit;
   double get profitPctChange {
     if (yesterdayProfit == 0) return todayProfit > 0 ? 100.0 : 0.0;
@@ -187,12 +187,15 @@ final dailyProfitComparisonProvider = Provider.autoDispose<AsyncValue<DailyProfi
   // Ambil data kemarin dari sales trend jika tersedia
   final yesterdayPoint = trend.where((p) => p.date == yesterdayStr).firstOrNull;
 
-  final yesterdayRevenue = yesterdayPoint?.revenueIdr ?? (overview.revenueIdr * 0.88).round();
-  final yesterdayCount = yesterdayPoint?.count ?? (overview.transactionCount * 0.9).round();
+  // Jika data kemarin tidak tersedia, gunakan data hari ini (0% perubahan) — TIDAK memfabrikasi angka.
+  final yesterdayRevenue = yesterdayPoint?.revenueIdr ?? overview.revenueIdr;
+  final yesterdayCount = yesterdayPoint?.count ?? overview.transactionCount;
 
   final marginFraction = (overview.grossMarginPct != null && overview.grossMarginPct! > 0)
       ? (overview.grossMarginPct! / 100.0)
-      : 0.4;
+      : (overview.grossProfitIdr != null && overview.revenueIdr > 0)
+          ? (overview.grossProfitIdr! / overview.revenueIdr)
+          : 0.0;
   final yesterdayProfit = (yesterdayRevenue * marginFraction).round();
 
   final yesterdayModel = AnalyticsOverviewModel(

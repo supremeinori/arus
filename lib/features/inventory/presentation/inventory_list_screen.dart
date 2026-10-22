@@ -6,6 +6,7 @@ import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 import '../../outlets/presentation/outlets_provider.dart';
 import '../../catalog/presentation/catalog_provider.dart';
 import '../data/inventory_repository.dart';
@@ -146,7 +147,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final isManager = user?.role == UserRole.manager;
 
     final filterState = ref.watch(inventoryFilterProvider);
-    final selectedOutletId = ref.watch(selectedInventoryOutletProvider);
+    final selectedOutletId = ref.watch(selectedOutletFilterProvider);
     final ingredientsAsync = ref.watch(ingredientsListProvider);
     final outletsAsync = ref.watch(outletsListProvider);
 
@@ -234,7 +235,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   // Pastikan state selected terisi
                   if (selectedOutletId != currentOutletId) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ref.read(selectedInventoryOutletProvider.notifier).state = currentOutletId;
+                      ref.read(selectedOutletFilterProvider.notifier).state = currentOutletId;
                     });
                   }
 
@@ -265,7 +266,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                             }).toList(),
                             onChanged: (val) {
                               if (val != null) {
-                                ref.read(selectedInventoryOutletProvider.notifier).state = val;
+                                ref.read(selectedOutletFilterProvider.notifier).state = val;
                                 ref.invalidate(ingredientsListProvider);
                               }
                             },

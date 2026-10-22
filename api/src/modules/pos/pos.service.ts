@@ -42,13 +42,18 @@ export class PosService {
     });
 
     return products.map((p) => {
-      const relevant = (p.recipes ?? []).filter(
+      const recipes = p.recipes ?? [];
+      // If product has any recipe, ALL required ingredients must exist at this outlet
+      const relevant = recipes.filter(
         (r) => r.ingredient && r.ingredient.outlet_id === outletId
       );
 
+      // Product unavailable if it has recipes but some required ingredient missing at this branch
+      const hasMissingIngredient = recipes.length > 0 && relevant.length < recipes.length;
+
       let maxPortions = 0;
       let unitCostIdr = 0;
-      if (relevant.length > 0) {
+      if (!hasMissingIngredient && relevant.length > 0) {
         const portions = relevant.map((r) =>
           r.amount_needed > 0 ? Math.floor(r.ingredient.stock_qty / r.amount_needed) : 0
         );
@@ -67,7 +72,7 @@ export class PosService {
         image_url: p.image_url,
         category_id: p.category_id,
         category: p.category,
-        is_available: maxPortions > 0,
+        is_available: maxPortions > 0 && !hasMissingIngredient,
         max_portions: maxPortions,
         unit_cost_idr: userScope.role !== Role.staff ? unitCostIdr : undefined,
       };

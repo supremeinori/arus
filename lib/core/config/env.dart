@@ -35,7 +35,7 @@ class AppEnv {
     }
 
     // Default ke Cloud Web Service Vercel resmi (online 24/7 HTTPS)
-    return 'https://arus-lime.vercel.app/api';
-    // return 'http://localhost:5000/api';
+    // return 'https://arus-lime.vercel.app/api';
+    return 'http://localhost:5000/api';
   }
 }

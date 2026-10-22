@@ -1,16 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 import '../data/inventory_repository.dart';
 import '../domain/inventory_models.dart';
-
-final selectedInventoryOutletProvider = StateProvider<String?>((ref) {
-  final user = ref.watch(authProvider).user;
-  if (user != null && user.role != UserRole.owner && user.outlets.isNotEmpty) {
-    return user.outlets.first.id;
-  }
-  return null;
-});
 
 class InventoryFilterState {
   final String status; // 'all' | 'ok' | 'low' | 'out'
@@ -41,7 +34,7 @@ final inventoryFilterProvider = StateProvider<InventoryFilterState>((ref) {
 
 final ingredientsListProvider = FutureProvider.autoDispose<List<IngredientModel>>((ref) async {
   final repo = ref.watch(inventoryRepositoryProvider);
-  final outletId = ref.watch(selectedInventoryOutletProvider);
+  final outletId = ref.watch(selectedOutletFilterProvider);
   final filter = ref.watch(inventoryFilterProvider);
 
   return repo.getIngredients(
@@ -54,7 +47,7 @@ final ingredientsListProvider = FutureProvider.autoDispose<List<IngredientModel>
 // Backward-compatible provider for existing widgets
 final inventoryListProvider = FutureProvider.autoDispose<List<InventoryStockItem>>((ref) async {
   final repo = ref.watch(inventoryRepositoryProvider);
-  final outletId = ref.watch(selectedInventoryOutletProvider);
+  final outletId = ref.watch(selectedOutletFilterProvider);
   final filter = ref.watch(inventoryFilterProvider);
 
   return repo.getStocks(

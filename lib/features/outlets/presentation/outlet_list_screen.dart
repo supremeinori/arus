@@ -278,7 +278,7 @@ String lbsLocalTimeDisplay(String timezone) {
 }
 
 /// Tab LBS / cabang terdekat — widget class top-level
-class _LbsTab extends ConsumerWidget {
+class _LbsTab extends ConsumerStatefulWidget {
   final AsyncValue<NearestOutletResult> nearestAsync;
   final AsyncValue<List<OutletPerformanceModel>> performanceAsync;
 
@@ -288,11 +288,34 @@ class _LbsTab extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LbsTab> createState() => _LbsTabState();
+}
+
+class _LbsTabState extends ConsumerState<_LbsTab> {
+  bool _gpsFetched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-fetch real GPS on first load of LBS tab
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_gpsFetched) {
+        _gpsFetched = true;
+        fetchCurrentGpsLocation().then((coord) {
+          if (mounted) {
+            ref.read(userCoordinatesProvider.notifier).state = coord;
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentCoord = ref.watch(userCoordinatesProvider);
 
     return AsyncStateView<NearestOutletResult>(
-      value: nearestAsync,
+      value: widget.nearestAsync,
       onRetry: () {
         ref.invalidate(nearestOutletProvider);
         ref.invalidate(outletsPerformanceProvider);
@@ -496,8 +519,8 @@ class _LbsTab extends ConsumerWidget {
                 border: Border.all(color: AppTheme.darkCardBorder, width: 1.2),
               ),
               child: OutletMapWidget(
-                nearestAsync: nearestAsync,
-                performanceAsync: performanceAsync,
+                nearestAsync: widget.nearestAsync,
+                performanceAsync: widget.performanceAsync,
               ),
             ),
             const SizedBox(height: 20),

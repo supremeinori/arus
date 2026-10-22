@@ -130,6 +130,15 @@ export class TransactionsService {
           (r) => r.ingredient && r.ingredient.outlet_id === targetOutletId
         );
 
+        // Jika produk memiliki resep, pastikan seluruh bahan resep wajib ada di cabang ini
+        if (product.recipes.length > 0 && relevantRecipes.length < product.recipes.length) {
+          throw new AppError(
+            'INVENTORY_INSUFFICIENT',
+            400,
+            `Produk "${product.name}" tidak dapat dipesan karena bahan baku tidak lengkap di cabang ini.`
+          );
+        }
+
         // Hitung modal HPP menu dari total modal bahan baku resep
         const unitCostIdr = relevantRecipes.reduce((sum, r) => {
           return sum + r.amount_needed * (r.ingredient?.cost_per_unit ?? 0);
