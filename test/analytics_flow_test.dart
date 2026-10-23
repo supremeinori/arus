@@ -64,7 +64,7 @@ void main() {
       expect(find.text('Rp.2.500.000'), findsOneWidget);
       expect(find.text('Transaksi'), findsOneWidget);
       expect(find.text('50'), findsOneWidget);
-      expect(find.text('Lihat riwayat'), findsOneWidget);
+      expect(find.text('Lihat Transaksi'), findsOneWidget);
       expect(find.text('Masalah'), findsOneWidget);
       expect(find.text('Lihat Masalah'), findsOneWidget);
 

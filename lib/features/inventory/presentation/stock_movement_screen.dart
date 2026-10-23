@@ -22,6 +22,7 @@ class StockMovementScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text('Riwayat Mutasi Stok', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17)),
         actions: [
           IconButton(
@@ -67,10 +68,27 @@ class StockMovementScreen extends ConsumerWidget {
                           color: isPositive ? const Color(0x2210B981) : const Color(0x22EF4444),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
-                          isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                          color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                          size: 20,
+                        // Arah stok dibaca dari ikon + label, bukan warna saja.
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                              color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                              size: 20,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isPositive ? 'Masuk' : 'Keluar',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),

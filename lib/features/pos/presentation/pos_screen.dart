@@ -120,6 +120,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         shape: const Border(
           bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
         ),
+        centerTitle: true,
         leading: Navigator.of(context).canPop()
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimaryDark),
@@ -128,6 +129,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               )
             : null,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
@@ -524,15 +527,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         }
 
         return GridView.builder(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          // Napas vertikal tambahan supaya grid tidak menempel ke chip kategori.
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
             crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            mainAxisSpacing: 14,
           ),
           itemCount: filtered.length,
           itemBuilder: (context, index) {

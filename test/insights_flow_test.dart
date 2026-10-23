@@ -34,7 +34,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Rekomendasi Keputusan (AI/DSS)'), findsOneWidget);
+      expect(find.text('Rekomendasi'), findsOneWidget);
       expect(find.text('Stok Menipis: Susu UHT di Outlet Tebet'), findsOneWidget);
       expect(find.text('LOW_STOCK'), findsOneWidget);
       expect(find.textContaining('Rekomendasi: Segera lakukan pengadaan stok.'), findsOneWidget);

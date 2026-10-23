@@ -17,7 +17,9 @@ import '../../inventory/domain/inventory_models.dart';
 import '../../inventory/presentation/inventory_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
 import '../../sensors/presentation/sensor_provider.dart';
+import '../../../core/utils/timezone_converter.dart';
 import '../../settings/presentation/currency_provider.dart';
+import '../../settings/presentation/widgets/time_settings_section.dart';
 
 /// Design tokens for Light Mode Owner Dashboard (Wireframe & Anti-AI-Slop Compliant)
 class _DashboardColors {
@@ -81,14 +83,16 @@ class DashboardScreen extends ConsumerWidget {
 
     final authState = ref.watch(authProvider);
     final user = authState.user;
-    final isManager = user?.role == UserRole.manager;
+    // Revisi 22 Okt 2026: tab Beranda kini dipakai kasir juga (Ringkasan Shift dibuang),
+    // jadi Outlet terkunci untuk semua role selain owner.
+    final isOutletLocked = user?.role != UserRole.owner;
 
     // API TERSEDIA: GET /api/notifications (Unread notification count)
     final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     // Filter states (Cabang & Hari)
     // Untuk role manager: cabang terkunci pada cabang yang di-assign oleh owner
-    final selectedOutletId = isManager && (user?.outlets.isNotEmpty ?? false)
+    final selectedOutletId = isOutletLocked && (user?.outlets.isNotEmpty ?? false)
         ? user!.outlets.first.id
         : ref.watch(selectedOutletFilterProvider);
     final selectedDateFilter = ref.watch(selectedDateFilterProvider);
@@ -150,9 +154,15 @@ class DashboardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Header (Wireframe: [logo] Arus .......... (🔔))
+                // 1. Header (Wireframe: Arus + sapaan .......... (🔔))
                 // API TERSEDIA: GET /api/notifications (badge unread)
-                _WireframeHeader(unreadCount: unreadCount),
+                _WireframeHeader(
+                  unreadCount: unreadCount,
+                  greeting: TimezoneConverter.greeting(
+                    ref.watch(settingsClockProvider),
+                    ref.watch(displayTimezoneProvider),
+                  ),
+                ),
                 const SizedBox(height: 14),
 
                 // 2. Hero Card: Omzet + Filter Button (Wireframe: Omzet, Rp.X, Di Cabang pada Hari)
@@ -168,7 +178,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedCustomDate: selectedCustomDate,
                     errorMessage: 'Gagal memuat omzet dari server',
                     onRetry: () => ref.invalidate(analyticsOverviewProvider),
-                    isManager: isManager,
+                    outletLocked: isOutletLocked,
                   ),
                   data: (kpi) => _HeroOmzetCard(
                     revenueIdr: kpi.revenueIdr, // Data asli dari API
@@ -176,7 +186,7 @@ class DashboardScreen extends ConsumerWidget {
                     selectedOutletId: selectedOutletId,
                     selectedDateFilter: selectedDateFilter,
                     selectedCustomDate: selectedCustomDate,
-                    isManager: isManager,
+                    outletLocked: isOutletLocked,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -259,8 +269,9 @@ class DashboardScreen extends ConsumerWidget {
 // ============================================================================
 class _WireframeHeader extends StatelessWidget {
   final int unreadCount;
+  final String greeting;
 
-  const _WireframeHeader({required this.unreadCount});
+  const _WireframeHeader({required this.unreadCount, required this.greeting});
 
   @override
   Widget build(BuildContext context) {
@@ -269,36 +280,38 @@ class _WireframeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo Badge + "Arus" Text
-          Row(
+          // Wordmark "Arus" + sapaan pemilik akun
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B), // Slate-800 Dark Container
-                  borderRadius: BorderRadius.circular(10),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    const TextSpan(text: 'Ar'),
+                    TextSpan(
+                      text: 'us',
+                      style: GoogleFonts.inter(color: _DashboardColors.teal),
+                    ),
+                  ],
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  'logo',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Arus',
                 style: GoogleFonts.inter(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
                   color: _DashboardColors.textPrimary,
-                  letterSpacing: -0.3,
+                  letterSpacing: -0.4,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                greeting,
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  color: _DashboardColors.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -359,7 +372,7 @@ class _HeroOmzetCard extends ConsumerWidget {
   final DateTime? selectedCustomDate;
   final String? errorMessage;
   final VoidCallback? onRetry;
-  final bool isManager;
+  final bool outletLocked;
 
   const _HeroOmzetCard({
     required this.revenueIdr,
@@ -369,7 +382,7 @@ class _HeroOmzetCard extends ConsumerWidget {
     required this.selectedCustomDate,
     this.errorMessage,
     this.onRetry,
-    this.isManager = false,
+    this.outletLocked = false,
   });
 
   /// Format omzet mengikuti mata uang tampilan milik pengguna.
@@ -386,7 +399,7 @@ class _HeroOmzetCard extends ConsumerWidget {
       selectedOutletId: selectedOutletId,
       selectedDateFilter: selectedDateFilter,
       selectedCustomDate: selectedCustomDate,
-      isManager: isManager,
+      isManager: outletLocked,
     );
   }
 
@@ -394,7 +407,7 @@ class _HeroOmzetCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Nama Cabang
     String branchLabel = 'Semua Cabang';
-    if (isManager) {
+    if (outletLocked) {
       if (selectedOutletId != null) {
         final found = outlets.where((o) => o.id == selectedOutletId);
         if (found.isNotEmpty) {
@@ -429,16 +442,21 @@ class _HeroOmzetCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label "Omzet" (Inter)
+          // Label "Omzet" (Inter) + penanda periode aktif
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Omzet',
-                style: GoogleFonts.inter(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: _DashboardColors.textSecondary,
+              Expanded(
+                child: Text(
+                  'Omzet',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                    color: _DashboardColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (errorMessage != null && onRetry != null)
@@ -458,16 +476,34 @@ class _HeroOmzetCard extends ConsumerWidget {
                       ),
                     ],
                   ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _DashboardColors.tealLight,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    dayLabel,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _DashboardColors.teal,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // Angka Besar Omzet (LEXEND w800) - Data riil dari API
           Text(
             _formatMoney(context, ref, revenueIdr),
             style: GoogleFonts.lexend(
-              fontSize: 32,
+              fontSize: 30,
               fontWeight: FontWeight.w800,
               color: _DashboardColors.textPrimary,
               letterSpacing: -0.6,
@@ -475,7 +511,7 @@ class _HeroOmzetCard extends ConsumerWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Baris Bawah: Di "Nama Cabang" pada "Pilihan Hari" + Filter Icon
           Row(
@@ -485,7 +521,7 @@ class _HeroOmzetCard extends ConsumerWidget {
                   alignment: Alignment.centerLeft,
                   children: [
                     // DropdownButton transparan untuk direct selection & test runner compatibility (Hanya untuk Owner)
-                    if (!isManager)
+                    if (!outletLocked)
                       Positioned.fill(
                         child: Opacity(
                           opacity: 0.001,
@@ -516,7 +552,7 @@ class _HeroOmzetCard extends ConsumerWidget {
                       child: Text(
                         'Di "$branchLabel" pada "$dayLabel".',
                         style: GoogleFonts.inter(
-                          fontSize: 12.5,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           color: _DashboardColors.textSecondary,
                         ),
@@ -595,12 +631,12 @@ class _KpiRowSection extends StatelessWidget {
                 Text(
                   'Transaksi',
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: _DashboardColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   '$transactionCount',
                   style: GoogleFonts.lexend(
@@ -614,7 +650,7 @@ class _KpiRowSection extends StatelessWidget {
                 InkWell(
                   onTap: onViewHistory,
                   child: Text(
-                    'Lihat riwayat',
+                    'Lihat Transaksi',
                     style: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -629,50 +665,55 @@ class _KpiRowSection extends StatelessWidget {
         const SizedBox(width: 10),
 
         // Kartu Masalah (Dihitung dari stok bahan kritis / TODO API masalah agregat)
+        // Revisi 22 Okt 2026: seluruh kartu bisa diketuk, bukan hanya teksnya.
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: _DashboardColors.card,
+          child: Material(
+            color: _DashboardColors.card,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: onViewIssues,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _DashboardColors.border, width: 1.0),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Masalah',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _DashboardColors.textSecondary,
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _DashboardColors.border, width: 1.0),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '$issuesCount',
-                  style: GoogleFonts.lexend(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: issuesCount > 0
-                        ? _DashboardColors.amber
-                        : _DashboardColors.textPrimary,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: onViewIssues,
-                  child: Text(
-                    'Lihat Masalah',
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: _DashboardColors.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Masalah',
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: _DashboardColors.textSecondary,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$issuesCount',
+                      style: GoogleFonts.lexend(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: issuesCount > 0
+                            ? _DashboardColors.amber
+                            : _DashboardColors.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Lihat Masalah',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: _DashboardColors.teal,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -729,7 +770,7 @@ class _TerlarisCard extends ConsumerWidget {
                 child: Text(
                   'Lihat Semua',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: _DashboardColors.teal,
                   ),
@@ -1011,7 +1052,7 @@ class _PeringatanCard extends StatelessWidget {
                 child: Text(
                   'Lihat Semua',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: _DashboardColors.teal,
                   ),

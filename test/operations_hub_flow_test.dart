@@ -24,7 +24,7 @@ void main() {
       role: UserRole.manager,
     );
 
-    testWidgets('Owner melihat seluruh menu: Mesin Kasir, Produk, Inventaris, Staff, Cabang, Ledger', (tester) async {
+    testWidgets('Owner melihat 4 blok: Produk, Inventaris, Kelola Staf & Akun, Hiburan', (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -50,18 +50,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pusat Operasi'), findsOneWidget);
-      expect(find.text('Mesin Kasir'), findsOneWidget);
       expect(find.text('Produk'), findsOneWidget);
       expect(find.text('Inventaris'), findsOneWidget);
-      expect(find.text('Staff'), findsOneWidget);
-      expect(find.text('Cabang'), findsOneWidget);
-      expect(find.text('Ledger'), findsOneWidget);
-      expect(find.text('Mini-Game Menu'), findsOneWidget);
+      expect(find.text('Kelola Staf & Akun'), findsOneWidget);
+      expect(find.text('Hiburan'), findsOneWidget);
+      // Revisi 22 Okt 2026: kartu POS, Cabang, dan Ledger dipindahkan dari Pusat Operasi.
+      expect(find.text('Mesin Kasir'), findsNothing);
+      expect(find.text('Cabang'), findsNothing);
+      expect(find.text('Ledger'), findsNothing);
+      expect(find.text('Mini-Game Menu'), findsNothing);
 
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Manager TIDAK melihat menu Produk dan Cabang, layout menyesuaikan rapi', (tester) async {
+    testWidgets('Manager TIDAK melihat blok Produk, layout menyesuaikan rapi', (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -87,16 +89,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pusat Operasi'), findsOneWidget);
-      expect(find.text('Mesin Kasir'), findsOneWidget);
-      // Sembunyikan sepenuhnya Cabang & Produk untuk Manager
+      // Sembunyikan sepenuhnya Produk untuk Manager
       expect(find.text('Produk'), findsNothing);
       expect(find.text('Cabang'), findsNothing);
 
       // Fitur operasional manajerial tetap ada
       expect(find.text('Inventaris'), findsOneWidget);
-      expect(find.text('Staff'), findsOneWidget);
-      expect(find.text('Ledger'), findsOneWidget);
-      expect(find.text('Mini-Game Menu'), findsOneWidget);
+      expect(find.text('Kelola Staf & Akun'), findsOneWidget);
+      expect(find.text('Hiburan'), findsOneWidget);
 
       expect(tester.takeException(), isNull);
     });

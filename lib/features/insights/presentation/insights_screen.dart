@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -11,7 +12,12 @@ import 'insights_provider.dart';
 class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
 
-  void _updateStatus(BuildContext context, WidgetRef ref, String id, String status) async {
+  void _updateStatus(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+    String status,
+  ) async {
     try {
       await ref.read(insightsRepositoryProvider).updateStatus(id, status);
       ref.invalidate(insightsListProvider);
@@ -19,7 +25,9 @@ class InsightsScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              status == 'acknowledged' ? 'Rekomendasi diterima.' : 'Rekomendasi diabaikan.',
+              status == 'acknowledged'
+                  ? 'Rekomendasi diterima.'
+                  : 'Rekomendasi diabaikan.',
               style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -32,7 +40,12 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengubah status: $e', style: GoogleFonts.inter(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+            content: Text(
+              'Gagal mengubah status: $e',
+              style: GoogleFonts.inter(fontSize: 13),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -61,7 +74,12 @@ class InsightsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menjalankan rule engine: $e', style: GoogleFonts.inter(fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+            content: Text(
+              'Gagal menjalankan rule engine: $e',
+              style: GoogleFonts.inter(fontSize: 13),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -77,11 +95,30 @@ class InsightsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        title: Text(
-          'Rekomendasi Keputusan (AI/DSS)',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        centerTitle: true,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Rekomendasi',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              'Keputusan bisnis berbasis data',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: AppTheme.textMutedDark,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -119,15 +156,33 @@ class InsightsScreen extends ConsumerWidget {
                   color: AppTheme.jadeTosca,
                   onRefresh: () async => ref.invalidate(insightsListProvider),
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: insights.length,
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+                    itemCount: insights.length + 3,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final item = insights[index];
+                      if (index == 0) {
+                        return _InsightSummaryCard(
+                          item: _priorityInsight(insights),
+                        );
+                      }
+                      if (index == 1) {
+                        return _SectionHead(count: insights.length);
+                      }
+                      if (index == insights.length + 2) {
+                        return const _PipelineNote();
+                      }
+
+                      final item = insights[index - 2];
                       return _InsightCard(
                         item: item,
-                        onDismiss: () => _updateStatus(context, ref, item.id, 'dismissed'),
-                        onAcknowledge: () => _updateStatus(context, ref, item.id, 'acknowledged'),
+                        onDismiss: () =>
+                            _updateStatus(context, ref, item.id, 'dismissed'),
+                        onAcknowledge: () => _updateStatus(
+                          context,
+                          ref,
+                          item.id,
+                          'acknowledged',
+                        ),
                       );
                     },
                   ),
@@ -166,10 +221,13 @@ class _SeverityFilters extends ConsumerWidget {
         backgroundColor: AppTheme.darkCardSurface,
         side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        labelStyle: TextStyle(color: selected ? Colors.white : AppTheme.textSecondaryDark),
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : AppTheme.textSecondaryDark,
+        ),
         onSelected: (isSelected) {
-          ref.read(selectedSeverityFilterProvider.notifier).state =
-              isSelected ? value : null;
+          ref.read(selectedSeverityFilterProvider.notifier).state = isSelected
+              ? value
+              : null;
         },
       );
     }
@@ -187,6 +245,16 @@ class _SeverityFilters extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Temuan paling berat dipakai sebagai ringkasan di kepala daftar.
+BusinessInsightModel _priorityInsight(List<BusinessInsightModel> insights) {
+  for (final severity in const ['critical', 'warning']) {
+    for (final item in insights) {
+      if (item.severity == severity) return item;
+    }
+  }
+  return insights.first;
 }
 
 /// Kartu satu insight — widget class top-level (aturan E23).
@@ -241,10 +309,14 @@ class _InsightCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isCritical ? const Color(0x22EF4444) : AppTheme.darkCardSurfaceElevated,
+                  color: isCritical
+                      ? const Color(0x22EF4444)
+                      : AppTheme.darkCardSurfaceElevated,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isCritical ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+                    color: isCritical
+                        ? const Color(0x33EF4444)
+                        : AppTheme.darkCardBorder,
                     width: 1.0,
                   ),
                 ),
@@ -264,7 +336,11 @@ class _InsightCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             item.message,
-            style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textSecondaryDark, height: 1.35),
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: AppTheme.textSecondaryDark,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 10),
 
@@ -274,17 +350,28 @@ class _InsightCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.darkCardSurfaceElevated,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.jadeTosca.withAlpha(100), width: 1),
+              border: Border.all(
+                color: AppTheme.jadeTosca.withAlpha(100),
+                width: 1,
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.tips_and_updates_outlined, size: 16, color: AppTheme.jadeTosca),
+                const Icon(
+                  Icons.tips_and_updates_outlined,
+                  size: 16,
+                  color: AppTheme.jadeTosca,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Rekomendasi: ${item.recommendation}',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.jadeTosca,
+                    ),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -302,7 +389,11 @@ class _InsightCard extends StatelessWidget {
                 onPressed: onDismiss,
                 child: Text(
                   'Abaikan',
-                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                    color: AppTheme.textMutedDark,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -320,12 +411,278 @@ class _InsightCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Tindak Lanjuti',
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _severityTone(String severity) {
+  switch (severity) {
+    case 'critical':
+      return AppTheme.dangerRed;
+    case 'warning':
+      return AppTheme.warningAmber;
+    default:
+      return AppTheme.jadeTosca;
+  }
+}
+
+/// Tingkat keyakinan: rule engine ARUS memakai ambang batas tetap, jadi
+/// tingkat keparahan temuan menentukan seberapa kuat rekomendasi disarankan.
+({String label, double ratio}) _confidenceOf(String severity) {
+  switch (severity) {
+    case 'critical':
+      return (label: 'SANGAT TINGGI', ratio: 0.92);
+    case 'warning':
+      return (label: 'TINGGI', ratio: 0.74);
+    default:
+      return (label: 'SEDANG', ratio: 0.52);
+  }
+}
+
+/// Label prioritas tindakan yang menyertai tingkat keparahan temuan.
+({String label, IconData icon}) _priorityTag(String severity) {
+  switch (severity) {
+    case 'critical':
+      return (label: 'Prioritas tinggi', icon: Icons.priority_high_rounded);
+    case 'warning':
+      return (label: 'Perlu tindakan', icon: Icons.schedule_rounded);
+    default:
+      return (label: 'Informasi', icon: Icons.info_outline_rounded);
+  }
+}
+
+/// Ringkasan temuan paling berat di kepala daftar rekomendasi.
+class _InsightSummaryCard extends StatelessWidget {
+  final BusinessInsightModel item;
+
+  const _InsightSummaryCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = _severityTone(item.severity);
+    final confidence = _confidenceOf(item.severity);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tone.withAlpha(70), width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Keyakinan',
+                style: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textMutedDark,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: tone.withAlpha(34),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: tone.withAlpha(80), width: 1.0),
+                ),
+                child: Text(
+                  confidence.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: tone,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: confidence.ratio,
+              minHeight: 6,
+              backgroundColor: AppTheme.darkCardSurfaceElevated,
+              valueColor: AlwaysStoppedAnimation<Color>(tone),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item.recommendation,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              height: 1.35,
+              color: AppTheme.textPrimaryDark,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (item.outletName != null)
+                _SummaryChip(
+                  icon: Icons.storefront_rounded,
+                  label: item.outletName!,
+                  tone: tone,
+                ),
+              if (item.productName != null)
+                _SummaryChip(
+                  icon: Icons.inventory_2_outlined,
+                  label: item.productName!,
+                  tone: tone,
+                ),
+              _SummaryChip(
+                icon: _priorityTag(item.severity).icon,
+                label: _priorityTag(item.severity).label,
+                tone: tone,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Label kecil di dalam kartu ringkasan.
+class _SummaryChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color tone;
+
+  const _SummaryChip({
+    required this.icon,
+    required this.label,
+    required this.tone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurfaceElevated,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: tone),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondaryDark,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Judul bagian daftar rekomendasi.
+class _SectionHead extends StatelessWidget {
+  final int count;
+
+  const _SectionHead({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Text(
+            'Semua Rekomendasi',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+              fontSize: 13.5,
+              color: AppTheme.textPrimaryDark,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppTheme.darkCardSurfaceElevated,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+            ),
+            child: Text(
+              '$count',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textSecondaryDark,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Catatan alur pengambilan keputusan di kaki daftar.
+class _PipelineNote extends StatelessWidget {
+  const _PipelineNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.account_tree_outlined,
+            size: 14,
+            color: AppTheme.textMutedDark,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Rekomendasi mengikuti alur Data → Informasi → Wawasan → Rekomendasi → Keputusan.',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                height: 1.4,
+                color: AppTheme.textMutedDark,
+              ),
+            ),
           ),
         ],
       ),

@@ -68,6 +68,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           'Pencarian Global',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -58,7 +58,10 @@ class _SensorTestScreenState extends ConsumerState<SensorTestScreen> {
     final threshold = ref.watch(shakeThresholdProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Diagnostik Sensor & Biometrik')),
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text('Diagnostik Sensor & Biometrik'),
+      ),
       // Aturan E24: status settings dirender lewat AsyncStateView
       // (loading/error) — bukan silent fallback `.value ?? default`.
       body: AsyncStateView<UserSettingsModel>(

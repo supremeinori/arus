@@ -162,7 +162,7 @@ void main() {
       expect(fromMap.displayTimezone, 'WIT');
     });
 
-    testWidgets('T-P1-03: ProfileScreen menampilkan avatar, toggle biometrik, navigasi feedback, dan logout', (tester) async {
+    testWidgets('T-P1-03: ProfileScreen menampilkan avatar, pintu pengaturan, navigasi feedback, dan logout', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -205,15 +205,12 @@ void main() {
       expect(find.text('Owner'), findsOneWidget);
       expect(find.text('A'), findsOneWidget); // Letter avatar initial
 
-      // 2. Validasi Switch Biometrik
-      expect(find.text('Login Sidik Jari (Biometrik)'), findsOneWidget);
-      final switchFinder = find.byType(Switch);
-      expect(switchFinder, findsOneWidget);
-      await tester.tap(switchFinder);
-      await tester.pumpAndSettle();
-
-      expect(authNotifier.toggleBiometricCalled, isTrue);
-      expect(authNotifier.lastToggleValue, isTrue);
+      // 2. Kurs, Waktu, dan Sidik Jari sudah dipindah ke layar Pengaturan,
+      //    jadi Profil hanya menyisakan satu pintu masuk ke sana.
+      expect(find.text('Pengaturan'), findsOneWidget);
+      expect(find.text('Login Sidik Jari (Biometrik)'), findsNothing);
+      expect(find.text('Pengaturan Kurs'), findsNothing);
+      expect(find.text('Pengaturan Waktu'), findsNothing);
 
       // 3. Validasi Keberadaan Tombol Saran & Kesan Kuliah PAM
       expect(find.text('Saran & Kesan Kuliah PAM'), findsOneWidget);

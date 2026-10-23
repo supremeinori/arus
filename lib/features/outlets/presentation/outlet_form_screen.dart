@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -176,6 +176,7 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           isEditing ? 'Edit Informasi Cabang' : 'Tambah Cabang Baru',
           maxLines: 1,
@@ -327,23 +328,34 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
               ),
             ],
             const SizedBox(height: 28),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.jadeTosca,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: mutationState.isLoading ? null : _handleSubmit,
-              child: mutationState.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(isEditing ? 'Simpan Perubahan' : 'Buat Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
-            ),
           ],
+        ),
+      ),
+      // Tombol simpan melekat di bawah layar (lihat mockup Form Cabang).
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          decoration: BoxDecoration(
+            color: AppTheme.darkBackground,
+            border: Border(top: BorderSide(color: AppTheme.darkCardBorder)),
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.jadeTosca,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: mutationState.isLoading ? null : _handleSubmit,
+            child: mutationState.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : Text(isEditing ? 'Simpan Perubahan' : 'Buat Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
         ),
       ),
     );

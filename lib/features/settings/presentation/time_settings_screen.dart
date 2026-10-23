@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -15,6 +15,7 @@ class TimeSettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           'Pengaturan Waktu',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),

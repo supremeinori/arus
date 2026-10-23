@@ -157,6 +157,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         leading: Padding(
           padding: const EdgeInsets.all(8),
           child: ClipOval(
@@ -175,7 +176,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
         ),
         leadingWidth: 52,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               _isVoiceMode ? 'ARUS Voice Mode' : 'Asisten AI Bisnis',

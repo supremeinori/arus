@@ -118,8 +118,11 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-    final isManager = user?.role == UserRole.manager;
-    final selectedOutletId = isManager && (user?.outlets.isNotEmpty ?? false)
+    // Revisi 22 Okt 2026: owner punya pemilih cabang langsung di halaman ini.
+    final isOwner = user?.role == UserRole.owner;
+    // Kasir juga terkunci ke cabangnya sendiri (tab Beranda kini dipakai kasir).
+    final isOutletLocked = user?.role != UserRole.owner;
+    final selectedOutletId = isOutletLocked && (user?.outlets.isNotEmpty ?? false)
         ? user!.outlets.first.id
         : ref.watch(selectedOutletFilterProvider);
     final selectedDateFilter = ref.watch(selectedDateFilterProvider);
@@ -129,7 +132,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
         .toList();
 
     String branchLabel = 'Semua Cabang';
-    if (isManager) {
+    if (isOutletLocked) {
       if (outlets.isNotEmpty) {
         branchLabel = outlets.first.name;
       } else {
@@ -147,6 +150,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text('Riwayat Transaksi',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -163,7 +167,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
       body: Column(
         children: [
           // Baris filter aktif (cabang + periode) — hanya pada mode dashboard.
-          if (widget.useDashboardFilters)
+          if (widget.useDashboardFilters && isOwner)
             Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Container(
@@ -197,7 +201,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                       selectedOutletId: selectedOutletId,
                       selectedDateFilter: selectedDateFilter,
                       selectedCustomDate: selectedCustomDate,
-                      isManager: isManager,
+                      isManager: isOutletLocked,
                       ownerTitle: 'Filter Riwayat Transaksi',
                     ),
                     style: OutlinedButton.styleFrom(
@@ -230,12 +234,29 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                     icon: Icons.receipt_long_outlined,
                   );
                 }
+                // Kartu ringkasan total di atas daftar (lihat mockup Riwayat Transaksi).
+                final totalAll = list
+                    .where((tx) => tx.status != 'voided')
+                    .fold<int>(0, (sum, tx) => sum + tx.totalIdr);
+                final tunai = list
+                    .where((tx) => tx.status != 'voided' && tx.paymentMethod == 'cash')
+                    .fold<int>(0, (sum, tx) => sum + tx.totalIdr);
+                final qris = totalAll - tunai;
+
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  itemCount: list.length,
+                  itemCount: list.length + 1,
                   separatorBuilder: (context, index) => const SizedBox(height: 10),
                   itemBuilder: (_, i) {
-                    final tx = list[i];
+                    if (i == 0) {
+                      return _HistorySummaryCard(
+                        totalText: ref.money(totalAll),
+                        tunaiText: ref.money(tunai),
+                        qrisText: ref.money(qris),
+                        count: list.where((tx) => tx.status != 'voided').length,
+                      );
+                    }
+                    final tx = list[i - 1];
                     return _HistoryCard(
                       tx: tx,
                       canVoid: _canVoid,
@@ -248,6 +269,91 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Ringkasan total pada periode & cabang yang sedang difilter.
+class _HistorySummaryCard extends StatelessWidget {
+  final String totalText;
+  final String tunaiText;
+  final String qrisText;
+  final int count;
+
+  const _HistorySummaryCard({
+    required this.totalText,
+    required this.tunaiText,
+    required this.qrisText,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.darkCardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Total $count Transaksi',
+            style: GoogleFonts.inter(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            totalText,
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimaryDark,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _PaymentChip(label: 'Tunai', amountText: tunaiText),
+              _PaymentChip(label: 'QRIS', amountText: qrisText),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentChip extends StatelessWidget {
+  final String label;
+  final String amountText;
+
+  const _PaymentChip({required this.label, required this.amountText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '$label $amountText',
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: AppTheme.jadeTosca,
+        ),
       ),
     );
   }

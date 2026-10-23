@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
+import '../../users/presentation/user_management_provider.dart';
 
 class OperationsHubScreen extends ConsumerWidget {
   const OperationsHubScreen({super.key});
@@ -14,10 +15,9 @@ class OperationsHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotificationCountProvider);
-    final authState = ref.watch(authProvider);
-    final isOwner = authState.user?.role == UserRole.owner;
+    final isOwner = ref.watch(authProvider).user?.role == UserRole.owner;
 
-    final scaffold = Scaffold(
+    return Scaffold(
       backgroundColor: AppTheme.lightBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.lightBackground,
@@ -36,10 +36,7 @@ class OperationsHubScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.search_rounded,
-              color: AppTheme.textPrimaryLight,
-            ),
+            icon: const Icon(Icons.search_rounded, color: AppTheme.textPrimaryLight),
             tooltip: 'Pencarian Global',
             onPressed: () => context.push('/search'),
           ),
@@ -57,10 +54,7 @@ class OperationsHubScreen extends ConsumerWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              child: const Icon(
-                Icons.notifications_outlined,
-                color: AppTheme.textPrimaryLight,
-              ),
+              child: const Icon(Icons.notifications_outlined, color: AppTheme.textPrimaryLight),
             ),
             tooltip: 'Pusat Notifikasi',
             onPressed: () => context.push('/notifications'),
@@ -69,189 +63,344 @@ class OperationsHubScreen extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
         children: [
-          // 1. Hero Card: Mesin Kasir
-          _buildWideCard(
-            title: 'Mesin Kasir',
-            subtitle: 'Buka kasir aktif untuk input penjualan, scan barang & cetak struk',
-            icon: Icons.point_of_sale_rounded,
-            onTap: () => context.push('/pos'),
-          ),
-          const SizedBox(height: 12),
-
-          // 2. Grid Fitur Operasional: Owner melihat 4 kartu (Produk, Inventaris, Staff, Cabang).
-          // Manager hanya melihat fitur operasional non-owner (Inventaris, Staff) tanpa Produk & Cabang.
+          // Kartu POS dihapus (revisi 22 Okt 2026): mesin kasir hanya untuk kasir
+          // lewat tab "Kasir". Endpoint /pos tidak disentuh.
+          // Cabang, Ledger, dan Pengaturan kini di Profil -> Manajemen & Integritas.
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.1,
+            childAspectRatio: 1.05,
             children: [
               if (isOwner)
-                _buildSquareCard(
+                _OperationTile(
                   title: 'Produk',
-                  icon: Icons.inventory_2_outlined,
+                  subtitle: 'Menu & harga',
+                  icon: Icons.restaurant_menu_rounded,
                   onTap: () => context.push('/catalog'),
                 ),
-              _buildSquareCard(
+              _OperationTile(
                 title: 'Inventaris',
-                icon: Icons.warehouse_outlined,
+                subtitle: 'Stok bahan',
+                icon: Icons.inventory_2_outlined,
                 onTap: () => context.push('/inventory'),
               ),
-              _buildSquareCard(
-                title: 'Staff',
-                icon: Icons.people_outline_rounded,
-                onTap: () => context.push('/users'),
+              _OperationTile(
+                title: 'Kelola Staf & Akun',
+                subtitle: isOwner ? 'Pilih cabang dahulu' : 'Kasir di cabang Anda',
+                icon: Icons.groups_2_outlined,
+                highlighted: true,
+                onTap: () => _openAccountManager(context, ref),
               ),
-              if (isOwner)
-                _buildSquareCard(
-                  title: 'Cabang',
-                  icon: Icons.storefront_outlined,
-                  onTap: () => context.push('/outlets'),
-                ),
+              _OperationTile(
+                title: 'Minigames',
+                subtitle: 'Guess the Menu',
+                icon: Icons.sports_esports_outlined,
+                onTap: () => context.push('/game'),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // 3. Wide Card: Ledger
-          _buildWideCard(
-            title: 'Ledger',
-            subtitle: 'Integritas blockchain & audit transaksi tersegel SHA-256',
-            icon: Icons.verified_user_outlined,
-            onTap: () => context.push('/integrity'),
-          ),
-          const SizedBox(height: 20),
-
-          // 4. Section: Entertain
-          Text(
-            'Entertain',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textPrimaryLight,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildEntertainCard(
-            onTap: () => context.push('/game'),
-          ),
-          const SizedBox(height: 80), // Padding bawah agar tidak tertutup FAB/Bottom Bar
         ],
       ),
+    );
+  }
+}
 
-      // Floating Component di kanan bawah
-      floatingActionButton: Container(
-        width: 56,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppTheme.textMutedLight,
-          borderRadius: BorderRadius.circular(12),
+/// Sentinel untuk pilihan "Semua Cabang" yang id-nya null.
+const String _allBranches = '__all_branches__';
+
+/// Langkah pemilihan cabang sebelum masuk Manajemen Pengguna.
+///
+/// Owner memilih cabang (atau semua cabang); manager cabangnya terkunci.
+/// Pemilihan hanya menulis ke [userOutletFilterProvider] milik halaman akun,
+/// jadi tidak ada rute baru maupun perubahan aturan data.
+Future<void> _openAccountManager(BuildContext context, WidgetRef ref) async {
+  final user = ref.read(authProvider).user;
+  final isOwner = user?.role == UserRole.owner;
+
+  final items = <_BranchOption>[
+    if (isOwner)
+      const _BranchOption(
+        id: _allBranches,
+        name: 'Semua Cabang',
+        subtitle: 'Akun dari seluruh cabang',
+        icon: Icons.apps_rounded,
+      ),
+    if (isOwner)
+      ...ref.read(availableOutletsProvider).map(
+        (outlet) => _BranchOption(
+          id: outlet.id,
+          name: outlet.name,
+          subtitle: outlet.address,
+          icon: Icons.storefront_rounded,
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-    );
+    if (!isOwner)
+      if (user != null)
+        ...user.outlets.map(
+          (outlet) => _BranchOption(
+            id: outlet.id,
+            name: outlet.name,
+            subtitle: outlet.address,
+            icon: Icons.storefront_rounded,
+            locked: true,
+          ),
+        ),
+  ];
 
-    return scaffold;
+  if (items.isEmpty) {
+    await context.push('/users');
+    return;
   }
 
-  // Helper: Wide Card (Mesin Kasir & Ledger)
-  static Widget _buildWideCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: AppTheme.lightCardSurface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: AppTheme.lightCardSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.textPrimaryLight.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimaryLight,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w400,
-                        color: AppTheme.textMutedLight,
-                        height: 1.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 44,
-                height: 44,
+  final selectedId = await showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _BranchPickerSheet(
+      items: items,
+      isOwner: isOwner,
+      selectedId: isOwner ? ref.read(userOutletFilterProvider) : null,
+    ),
+  );
+
+  if (selectedId == null) return;
+
+  if (isOwner) {
+    ref.read(userOutletFilterProvider.notifier).state =
+        selectedId == _allBranches ? null : selectedId;
+  }
+
+  if (context.mounted) await context.push('/users');
+}
+
+/// Satu pilihan cabang di sheet pemilih.
+class _BranchOption {
+  final String id;
+  final String name;
+  final String? subtitle;
+  final IconData icon;
+  final bool locked;
+
+  const _BranchOption({
+    required this.id,
+    required this.name,
+    this.subtitle,
+    this.icon = Icons.storefront_rounded,
+    this.locked = false,
+  });
+}
+
+/// Sheet "Pilih Cabang" sebelum membuka manajemen pengguna.
+class _BranchPickerSheet extends StatelessWidget {
+  final List<_BranchOption> items;
+  final bool isOwner;
+  final String? selectedId;
+
+  const _BranchPickerSheet({
+    required this.items,
+    required this.isOwner,
+    required this.selectedId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        border: Border(top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.lightToskaBg,
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.darkCardBorder,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                child: Icon(icon, size: 22, color: AppTheme.jadeTosca),
               ),
-            ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Pilih Cabang',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimaryDark,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              isOwner
+                  ? 'Daftar akun yang tampil mengikuti cabang yang dipilih.'
+                  : 'Akun yang bisa Anda kelola terbatas pada cabang tugas.',
+              style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 14),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (_, i) {
+                  final option = items[i];
+                  return _BranchOptionTile(
+                    option: option,
+                    isSelected: option.id == selectedId,
+                    onTap: () => Navigator.of(context).pop(option.id),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Baris pilihan cabang dengan penanda terpilih / terkunci.
+class _BranchOptionTile extends StatelessWidget {
+  final _BranchOption option;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _BranchOptionTile({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: Material(
+        color: isSelected ? AppTheme.jadeTosca.withAlpha(24) : AppTheme.darkCardSurfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? AppTheme.jadeTosca : AppTheme.darkCardBorder,
+                width: isSelected ? 1.4 : 1.0,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  option.icon,
+                  size: 20,
+                  color: isSelected ? AppTheme.jadeTosca : AppTheme.textMutedDark,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        option.name,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimaryDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (option.subtitle != null && option.subtitle!.isNotEmpty)
+                        Text(
+                          option.subtitle!,
+                          style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+                if (option.locked)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.lock_outline, size: 13, color: AppTheme.textMutedDark),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Terkunci',
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textMutedDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  )
+                else
+                  const Icon(Icons.chevron_right_rounded, size: 20, color: AppTheme.textMutedDark),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  // Helper: Square Card Grid (Produk, Inventaris, Staff, Cabang)
-  static Widget _buildSquareCard({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+/// Kartu fitur operasional di grid 2 kolom.
+class _OperationTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool highlighted;
+  final VoidCallback onTap;
+
+  const _OperationTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+    this.highlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
       color: AppTheme.lightCardSurface,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppTheme.lightCardSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: highlighted ? AppTheme.jadeTosca : AppTheme.lightCardBorder,
+              width: highlighted ? 1.4 : 1.0,
+            ),
             boxShadow: [
               BoxShadow(
                 color: AppTheme.textPrimaryLight.withValues(alpha: 0.03),
@@ -262,83 +411,41 @@ class OperationsHubScreen extends ConsumerWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 title,
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimaryLight,
+                  height: 1.25,
                 ),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              ),
-              Center(
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: AppTheme.lightToskaBg,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, size: 28, color: AppTheme.jadeTosca),
-                ),
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Helper: Entertain Large Card (Mini-Game)
-  static Widget _buildEntertainCard({required VoidCallback onTap}) {
-    return Material(
-      color: AppTheme.lightCardSurface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          height: 160,
-          decoration: BoxDecoration(
-            color: AppTheme.lightCardSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.textPrimaryLight.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.sports_esports_outlined,
-                size: 64,
-                color: AppTheme.jadeTosca,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Mini-Game Menu',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimaryLight,
-                ),
               ),
               const SizedBox(height: 2),
               Text(
-                'Tebak menu & edukasi resep',
-                style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  color: AppTheme.textMutedLight,
+                subtitle,
+                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedLight),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              // Sisa tinggi diserap Spacer supaya kotak tidak pernah meluber.
+              const Spacer(),
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: highlighted ? AppTheme.jadeTosca : AppTheme.lightToskaBg,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 24,
+                    color: highlighted ? Colors.white : AppTheme.jadeTosca,
+                  ),
                 ),
               ),
             ],

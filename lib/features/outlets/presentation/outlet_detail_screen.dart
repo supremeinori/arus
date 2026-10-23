@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
@@ -22,7 +23,12 @@ class OutletDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Cabang', maxLines: 1, overflow: TextOverflow.ellipsis),
+        centerTitle: true,
+        title: const Text(
+          'Detail Cabang',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           if (isOwner)
             IconButton(
@@ -35,7 +41,8 @@ class OutletDetailScreen extends ConsumerWidget {
       body: AsyncStateView<OutletModel>(
         value: outletAsync,
         onRetry: () => ref.invalidate(outletDetailProvider(outletId)),
-        dataBuilder: (outlet) => _DetailContent(outlet: outlet, isOwner: isOwner),
+        dataBuilder: (outlet) =>
+            _DetailContent(outlet: outlet, isOwner: isOwner),
       ),
     );
   }
@@ -75,22 +82,35 @@ class _DetailContent extends ConsumerWidget {
         ),
         title: const Text(
           'Konfirmasi Penonaktifan Cabang',
-          style: TextStyle(color: AppTheme.textPrimaryDark, fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(
+            color: AppTheme.textPrimaryDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
         content: Text(
-          'Apakah Anda yakin ingin menonaktifkan cabang “${outlet.name}”?\n\nCabang nonaktif tidak akan dapat menerima pesanan kasir, namun seluruh data historis dan inventaris tetap tersimpan dengan aman (soft delete).',
-          style: const TextStyle(color: AppTheme.textSecondaryDark, fontSize: 13, height: 1.4),
+          'Apakah Anda yakin ingin menonaktifkan cabang “${outlet.name}”\n\nCabang nonaktif tidak akan dapat menerima pesanan kasir, namun seluruh data historis dan inventaris tetap tersimpan dengan aman (soft delete).',
+          style: const TextStyle(
+            color: AppTheme.textSecondaryDark,
+            fontSize: 13,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Batal', style: TextStyle(color: AppTheme.textMutedDark)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppTheme.textMutedDark),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.dangerRed,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () async {
               Navigator.of(dialogContext).pop();
@@ -101,7 +121,9 @@ class _DetailContent extends ConsumerWidget {
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Cabang “${outlet.name}” berhasil dinonaktifkan.'),
+                    content: Text(
+                      'Cabang “${outlet.name}” berhasil dinonaktifkan.',
+                    ),
                     backgroundColor: AppTheme.jadeTosca,
                   ),
                 );
@@ -130,7 +152,9 @@ class _DetailContent extends ConsumerWidget {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Cabang “${outlet.name}” berhasil diaktifkan kembali.'),
+          content: Text(
+            'Cabang “${outlet.name}” berhasil diaktifkan kembali.',
+          ),
           backgroundColor: AppTheme.jadeTosca,
         ),
       );
@@ -159,233 +183,337 @@ class _DetailContent extends ConsumerWidget {
     final roadMeters = estimateRoadDistanceMeters(straightMeters);
     final hasValidGps = userCoord.$1 != 0.0 && userCoord.$2 != 0.0;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    final VoidCallback toggleAction = outlet.isActive
+        ? () => _confirmDeactivation(context, ref)
+        : () => _reactivateOutlet(context, ref);
+
+    return Column(
       children: [
-        Card(
-          color: AppTheme.darkCardSurface,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: outlet.isActive ? const Color(0x2210B981) : const Color(0x22EF4444),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: outlet.isActive ? const Color(0x3310B981) : const Color(0x33EF4444),
-                        ),
-                      ),
-                      child: Text(
-                        outlet.isActive ? 'Operasional Aktif' : 'Nonaktif',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: outlet.isActive ? const Color(0xFF34D399) : const Color(0xFFF87171),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        localTimeDisplay,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppTheme.jadeTosca,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  outlet.name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.textMutedDark),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        outlet.address,
-                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondaryDark),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.darkCardSurfaceElevated,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.darkCardBorder),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+            children: [
+              Card(
+                color: AppTheme.darkCardSurface,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(
+                    color: AppTheme.darkCardBorder,
+                    width: 1.0,
                   ),
-                  child: Row(
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.gps_fixed_rounded, size: 16, color: AppTheme.jadeTosca),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Koordinat GPS: ${outlet.latitude.toStringAsFixed(4)}, ${outlet.longitude.toStringAsFixed(4)}',
-                          style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppTheme.textMutedDark),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (hasValidGps) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.darkCardSurfaceElevated,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.darkCardBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.near_me_rounded, size: 15, color: AppTheme.jadeTosca),
-                            SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Jarak dari Lokasi Anda (GPS):',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: outlet.isActive
+                                  ? const Color(0x2210B981)
+                                  : const Color(0x22EF4444),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: outlet.isActive
+                                    ? const Color(0x3310B981)
+                                    : const Color(0x33EF4444),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Garis Lurus: ${formatDistance(straightMeters)}',
-                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondaryDark),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            child: Text(
+                              outlet.isActive
+                                  ? 'Operasional Aktif'
+                                  : 'Nonaktif',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: outlet.isActive
+                                    ? const Color(0xFF34D399)
+                                    : const Color(0xFFF87171),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              localTimeDisplay,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppTheme.jadeTosca,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        outlet.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimaryDark,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 18,
+                            color: AppTheme.textMutedDark,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              outlet.address,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.textSecondaryDark,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.darkCardSurfaceElevated,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.darkCardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.gps_fixed_rounded,
+                              size: 16,
+                              color: AppTheme.jadeTosca,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Est. Jalan: ${formatDistance(roadMeters)}',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.jadeTosca),
-                                textAlign: TextAlign.end,
+                                'Koordinat GPS: ${outlet.latitude.toStringAsFixed(4)}, ${outlet.longitude.toStringAsFixed(4)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'monospace',
+                                  color: AppTheme.textMutedDark,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
+                      ),
+                      if (hasValidGps) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkCardSurfaceElevated,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppTheme.darkCardBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.near_me_rounded,
+                                    size: 15,
+                                    color: AppTheme.jadeTosca,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Jarak dari Lokasi Anda (GPS):',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimaryDark,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Garis Lurus: ${formatDistance(straightMeters)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppTheme.textSecondaryDark,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Est. Jalan: ${formatDistance(roadMeters)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.jadeTosca,
+                                      ),
+                                      textAlign: TextAlign.end,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MetricTile(
+                      label: 'Total Stok SKU',
+                      value: '${outlet.inventoryCount} Produk',
+                      icon: Icons.inventory_2_outlined,
+                      color: AppTheme.jadeTosca,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MetricTile(
+                      label: 'Staf Bertugas',
+                      value: '${outlet.assignedUsersCount} Orang',
+                      icon: Icons.badge_outlined,
+                      color: const Color(0xFFF59E0B),
                     ),
                   ),
                 ],
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                tileColor: AppTheme.darkCardSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(
+                    color: AppTheme.darkCardBorder,
+                    width: 1.0,
+                  ),
+                ),
+                leading: const Icon(
+                  Icons.warehouse_outlined,
+                  color: AppTheme.jadeTosca,
+                ),
+                title: const Text(
+                  'Lihat Inventaris Cabang Ini',
+                  style: TextStyle(color: AppTheme.textPrimaryDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const SizedBox(
+                  width: 24,
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: AppTheme.textMutedDark,
+                  ),
+                ),
+                onTap: () => context.push('/inventory?outlet_id=${outlet.id}'),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _MetricTile(
-                label: 'Total Stok SKU',
-                value: '${outlet.inventoryCount} Produk',
-                icon: Icons.inventory_2_outlined,
-                color: AppTheme.jadeTosca,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _MetricTile(
-                label: 'Staf Bertugas',
-                value: '${outlet.assignedUsersCount} Orang',
-                icon: Icons.badge_outlined,
-                color: const Color(0xFFF59E0B),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          tileColor: AppTheme.darkCardSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          leading: const Icon(Icons.warehouse_outlined, color: AppTheme.jadeTosca),
-          title: const Text('Lihat Inventaris Cabang Ini', style: TextStyle(color: AppTheme.textPrimaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, color: AppTheme.textMutedDark)),
-          onTap: () => context.push('/inventory?outlet_id=${outlet.id}'),
-        ),
-
-        // Aksi Khusus Owner: Tombol Nonaktifkan (Soft Delete) atau Aktifkan Kembali
-        if (isOwner) ...[
-          const SizedBox(height: 24),
-          if (outlet.isActive)
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.dangerRed,
-                side: const BorderSide(color: AppTheme.dangerRed, width: 1.2),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              icon: const Icon(Icons.power_settings_new_rounded, size: 18),
-              label: const Text(
-                'Nonaktifkan Cabang Ini (Soft Delete)',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              onPressed: () => _confirmDeactivation(context, ref),
-            )
-          else
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.jadeTosca,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-              label: const Text(
-                'Aktifkan Kembali Cabang Ini',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              onPressed: () => _reactivateOutlet(context, ref),
-            ),
-        ],
+        if (isOwner)
+          _OutletActionBar(isActive: outlet.isActive, onPressed: toggleAction),
       ],
+    );
+  }
+}
+
+/// Tombol aksi owner yang melekat di bawah layar, sejajar dengan bar form cabang.
+class _OutletActionBar extends StatelessWidget {
+  final bool isActive;
+  final VoidCallback onPressed;
+
+  const _OutletActionBar({required this.isActive, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        decoration: BoxDecoration(
+          color: AppTheme.darkBackground,
+          border: Border(top: BorderSide(color: AppTheme.darkCardBorder)),
+        ),
+        child: isActive
+            ? OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.dangerRed,
+                  side: const BorderSide(color: AppTheme.dangerRed, width: 1.2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.power_settings_new_rounded, size: 18),
+                label: const Text(
+                  'Nonaktifkan Cabang Ini',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onPressed: onPressed,
+              )
+            : ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.jadeTosca,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: const Text(
+                  'Aktifkan Kembali Cabang Ini',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onPressed: onPressed,
+              ),
+      ),
     );
   }
 }
@@ -427,7 +555,11 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryDark,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

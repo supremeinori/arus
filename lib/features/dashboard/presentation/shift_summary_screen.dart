@@ -23,6 +23,7 @@ class ShiftSummaryScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppTheme.darkBackground,
         elevation: 0,
+        centerTitle: true,
         surfaceTintColor: Colors.transparent,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1.0),
@@ -112,21 +113,6 @@ class ShiftSummaryScreen extends ConsumerWidget {
                     value: shiftAsync,
                     onRetry: () => ref.invalidate(shiftSummaryProvider),
                     dataBuilder: (shift) => _ShiftMetrics(shift: shift),
-                  ),
-
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ShadButton(
-                      onPressed: () => context.push('/pos'),
-                      leading: const Icon(Icons.point_of_sale_rounded, size: 18),
-                      child: Text(
-                        'Buka Mesin Kasir Sekarang',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 16),
                   ShadCard(
