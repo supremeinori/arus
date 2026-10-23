@@ -325,6 +325,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           widget.productId != null ? 'Edit Menu / Produk' : 'Tambah Menu Baru',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
@@ -339,6 +340,7 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 return _formBody(categoriesState, ingredientsState);
               },
             ),
+      bottomNavigationBar: _actionBar(),
     );
   }
 
@@ -794,6 +796,27 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
               },
             ),
             const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Tombol aksi melekat di bawah layar supaya tidak perlu scroll
+  /// sampai ujung form (lihat mockup Form Menu).
+  Widget _actionBar() {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+        decoration: BoxDecoration(
+          color: AppTheme.darkBackground,
+          border: Border(top: BorderSide(color: AppTheme.darkCardBorder)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             ElevatedButton(
               onPressed: _saving ? null : _submit,
               style: ElevatedButton.styleFrom(

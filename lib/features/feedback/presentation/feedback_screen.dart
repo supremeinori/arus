@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -148,6 +148,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     final scaffold = Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           'Saran & Kesan Kuliah PAM',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),

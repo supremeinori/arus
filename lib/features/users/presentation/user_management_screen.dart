@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -66,7 +66,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             Expanded(
               child: Text(
                 'Hapus Akun?',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                   color: AppTheme.textPrimaryLight,
@@ -77,7 +77,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus akun "${user.name}" (${user.roleDisplay}) dari cabang ${user.outletName}?\n\nTindakan ini tidak dapat dibatalkan.',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 13.5,
             color: AppTheme.textSecondaryLight,
             height: 1.4,
@@ -88,7 +88,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Batal',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textMutedLight,
               ),
@@ -114,7 +114,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     SnackBar(
                       content: Text(
                         'Akun ${user.name} berhasil dihapus.',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                        style: GoogleFonts.inter(color: Colors.white),
                       ),
                       backgroundColor: const Color(0xFF0F172A),
                       behavior: SnackBarBehavior.floating,
@@ -127,7 +127,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     SnackBar(
                       content: Text(
                         e.toString().replaceAll('Exception: ', ''),
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                        style: GoogleFonts.inter(color: Colors.white),
                       ),
                       backgroundColor: AppTheme.dangerRed,
                       behavior: SnackBarBehavior.floating,
@@ -138,7 +138,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             },
             child: Text(
               'Hapus Akun',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -171,15 +171,16 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         foregroundColor: AppTheme.textPrimaryLight,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        centerTitle: true,
         shape: const Border(
           bottom: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
         ),
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               isOwner ? 'Manajemen Pengguna & Tim' : 'Kelola Kasir Cabang',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 16.5,
                 color: AppTheme.textPrimaryLight,
@@ -191,7 +192,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               isOwner
                   ? 'Akses Penuh: Kelola Manager & Kasir seluruh cabang'
                   : 'Cabang: $managerOutletName',
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w500,
                 fontSize: 11.5,
                 color: AppTheme.textMutedLight,
@@ -218,7 +219,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               icon: const Icon(Icons.person_add_rounded, size: 20),
               label: Text(
                 isOwner ? 'Tambah Akun' : 'Tambah Kasir',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 13.5,
                 ),
@@ -244,7 +245,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 const SizedBox(height: 12),
                 Text(
                   'Gagal memuat data pengguna',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
                   ),
@@ -253,7 +254,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 Text(
                   err.toString(),
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     color: AppTheme.textMutedLight,
                     fontSize: 13,
                   ),
@@ -319,7 +320,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           children: [
                             Text(
                               'Akses Terbatas Cabang Manager',
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
                                 color: const Color(0xFF14532D),
@@ -328,7 +329,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             const SizedBox(height: 3),
                             Text(
                               'Anda dapat menambah, mengedit, dan menghapus kasir khusus untuk cabang $managerOutletName ($managerStaffCount kasir terdaftar).',
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: const Color(0xFF166534),
                                 height: 1.35,
@@ -385,7 +386,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 13.5,
                     color: AppTheme.textPrimaryLight,
                   ),
@@ -393,7 +394,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     hintText: isOwner
                         ? 'Cari nama, email, atau cabang...'
                         : 'Cari nama atau email kasir...',
-                    hintStyle: GoogleFonts.plusJakartaSans(
+                    hintStyle: GoogleFonts.inter(
                       fontSize: 13,
                       color: AppTheme.textMutedLight,
                     ),
@@ -490,7 +491,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             isExpanded: true,
                             hint: Text(
                               'Semua Cabang',
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 11.5,
                                 color: AppTheme.textSecondaryLight,
                                 fontWeight: FontWeight.w600,
@@ -508,7 +509,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                 value: null,
                                 child: Text(
                                   'Semua Cabang',
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.inter(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -521,7 +522,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                   value: o.id,
                                   child: Text(
                                     o.name,
-                                    style: GoogleFonts.plusJakartaSans(
+                                    style: GoogleFonts.inter(
                                       fontSize: 11.5,
                                     ),
                                     maxLines: 1,
@@ -553,7 +554,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                     isOwner
                         ? 'Daftar Anggota & Staf (${visibleUsers.length})'
                         : 'Daftar Kasir Cabang (${visibleUsers.length})',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimaryLight,
@@ -573,7 +574,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       },
                       child: Text(
                         'Reset Filter',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.jadeTosca,
@@ -610,7 +611,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'Tidak Ada Pengguna',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
                           color: AppTheme.textPrimaryLight,
@@ -622,7 +623,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                             ? 'Belum ada kasir terdaftar di cabang Anda. Tekan tombol "+ Tambah Kasir" untuk mendaftarkan kasir baru.'
                             : 'Tidak ada data pengguna yang cocok dengan kriteria pencarian atau filter yang dipilih.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 12.5,
                           color: AppTheme.textMutedLight,
                           height: 1.4,
@@ -705,7 +706,7 @@ class _UserCard extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   user.initials,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                     color: user.roleColor,
@@ -724,7 +725,7 @@ class _UserCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             user.name,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimaryLight,
@@ -745,7 +746,7 @@ class _UserCard extends StatelessWidget {
                             ),
                             child: Text(
                               'Aktif',
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF15803D),
@@ -757,7 +758,7 @@ class _UserCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       user.email,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 12.5,
                         color: AppTheme.textMutedLight,
                       ),
@@ -776,7 +777,7 @@ class _UserCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             user.phone!,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 11.5,
                               color: const Color(0xFF64748B),
                             ),
@@ -806,7 +807,7 @@ class _UserCard extends StatelessWidget {
                 ),
                 child: Text(
                   user.roleDisplay,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: user.roleColor,
@@ -830,7 +831,7 @@ class _UserCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         user.outletName,
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF475569),
@@ -916,7 +917,7 @@ class _MetricChip extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textMutedLight,
@@ -930,7 +931,7 @@ class _MetricChip extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               count,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textPrimaryLight,
@@ -972,7 +973,7 @@ class _FilterChoiceChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.inter(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected ? Colors.white : AppTheme.textSecondaryLight,
@@ -1077,7 +1078,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
             SnackBar(
               content: Text(
                 'Data pengguna "${_nameController.text.trim()}" berhasil diperbarui.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
               backgroundColor: const Color(0xFF0F172A),
               behavior: SnackBarBehavior.floating,
@@ -1104,7 +1105,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
             SnackBar(
               content: Text(
                 'Pengguna baru "${_nameController.text.trim()}" berhasil ditambahkan.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white),
+                style: GoogleFonts.inter(color: Colors.white),
               ),
               backgroundColor: const Color(0xFF0F172A),
               behavior: SnackBarBehavior.floating,
@@ -1118,7 +1119,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
           SnackBar(
             content: Text(
               e.toString().replaceAll('Exception: ', ''),
-              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+              style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: AppTheme.dangerRed,
             behavior: SnackBarBehavior.floating,
@@ -1193,7 +1194,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                               : (isManager
                                     ? 'Tambah Kasir Baru'
                                     : 'Tambah Akun Baru'),
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 16.5,
                             color: AppTheme.textPrimaryLight,
@@ -1203,7 +1204,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                           isManager
                               ? 'Daftarkan kasir untuk cabang $_selectedOutletName'
                               : 'Tetapkan role (Manager/Kasir) dan penugasan cabang outlet',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppTheme.textMutedLight,
                           ),
@@ -1221,7 +1222,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               if (isOwner) ...[
                 Text(
                   'Pilih Peran (Role):',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
                     color: AppTheme.textPrimaryLight,
@@ -1259,7 +1260,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               // 2. Outlet Assignment
               Text(
                 'Penugasan Cabang Toko (Outlet):',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   color: AppTheme.textPrimaryLight,
@@ -1294,7 +1295,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                       Expanded(
                         child: Text(
                           _selectedOutletName,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF334155),
@@ -1312,7 +1313,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                         ),
                         child: Text(
                           'Cabang Anda',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF475569),
@@ -1362,7 +1363,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                                   Expanded(
                                     child: Text(
                                       o.name,
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: GoogleFonts.inter(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: AppTheme.textPrimaryLight,
@@ -1396,7 +1397,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               // 3. Nama Lengkap
               Text(
                 'Nama Lengkap:',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   color: AppTheme.textPrimaryLight,
@@ -1405,7 +1406,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _nameController,
-                style: GoogleFonts.plusJakartaSans(fontSize: 13.5),
+                style: GoogleFonts.inter(fontSize: 13.5),
                 decoration: _inputDecoration(
                   hint: isManager ? 'Misal: Siti Rahma' : 'Misal: Budi Santoso',
                   icon: Icons.person_outline_rounded,
@@ -1422,7 +1423,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               // 4. Email (Untuk Login)
               Text(
                 'Alamat Email (Username Login):',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   color: AppTheme.textPrimaryLight,
@@ -1432,7 +1433,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: GoogleFonts.plusJakartaSans(fontSize: 13.5),
+                style: GoogleFonts.inter(fontSize: 13.5),
                 decoration: _inputDecoration(
                   hint: 'Misal: kasir@arus.demo',
                   icon: Icons.email_outlined,
@@ -1454,7 +1455,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                 isEditing
                     ? 'Password Baru (Kosongkan jika tidak diganti):'
                     : 'Password Masuk:',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   color: AppTheme.textPrimaryLight,
@@ -1464,7 +1465,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                style: GoogleFonts.plusJakartaSans(fontSize: 13.5),
+                style: GoogleFonts.inter(fontSize: 13.5),
                 decoration: _inputDecoration(
                   hint: isEditing
                       ? 'Biarkan kosong untuk mempertahankan password lama'
@@ -1483,7 +1484,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               // 6. Nomor Handphone (Opsional)
               Text(
                 'Nomor Telepon / WhatsApp (Opsional):',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   color: AppTheme.textPrimaryLight,
@@ -1493,7 +1494,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: GoogleFonts.plusJakartaSans(fontSize: 13.5),
+                style: GoogleFonts.inter(fontSize: 13.5),
                 decoration: _inputDecoration(
                   hint: 'Misal: 081234567890',
                   icon: Icons.phone_outlined,
@@ -1528,7 +1529,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                           isEditing
                               ? 'Perbarui Data Pengguna'
                               : 'Simpan & Daftarkan Pengguna',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -1549,7 +1550,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: GoogleFonts.inter(
         fontSize: 13,
         color: AppTheme.textMutedLight,
       ),
@@ -1632,7 +1633,7 @@ class _RoleSelectCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: isSelected
@@ -1642,7 +1643,7 @@ class _RoleSelectCard extends StatelessWidget {
                   ),
                   Text(
                     subtitle,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 10.5,
                       color: AppTheme.textMutedLight,
                     ),

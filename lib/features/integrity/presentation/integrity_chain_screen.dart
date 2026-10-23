@@ -30,6 +30,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
     if (role != UserRole.owner && role != UserRole.manager) {
       return Scaffold(
         appBar: AppBar(
+          centerTitle: true,
           title: const Text(
             'Ledger Integritas',
             maxLines: 1,
@@ -54,6 +55,7 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           'Ledger Transaksi & Blockchain',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
@@ -64,7 +66,10 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
       body: AsyncStateView<List<OutletModel>>(
         value: outletsAsync,
         onRetry: () => ref.invalidate(outletsListProvider),
-        dataBuilder: (outlets) => _OutletLedger(outlets: outlets),
+        dataBuilder: (outlets) => _OutletLedger(
+          outlets: outlets,
+          isOwner: role == UserRole.owner,
+        ),
       ),
     );
   }
@@ -72,8 +77,11 @@ class _IntegrityChainScreenState extends ConsumerState<IntegrityChainScreen> {
 
 class _OutletLedger extends ConsumerStatefulWidget {
   final List<OutletModel> outlets;
+  // Revisi 22 Okt 2026: filter cabang hanya untuk owner,
+  // manager terkunci ke cabang yang ditugaskan.
+  final bool isOwner;
 
-  const _OutletLedger({required this.outlets});
+  const _OutletLedger({required this.outlets, required this.isOwner});
 
   @override
   ConsumerState<_OutletLedger> createState() => _OutletLedgerState();
@@ -94,30 +102,71 @@ class _OutletLedgerState extends ConsumerState<_OutletLedger> {
     final selectedIndex = outlets.indexWhere(
       (item) => item.id == _selectedOutletId,
     );
-    final outlet = outlets[selectedIndex >= 0 ? selectedIndex : 0];
+    final fallbackOutlet = outlets[selectedIndex >= 0 ? selectedIndex : 0];
+    final user = ref.watch(authProvider).user;
+    final lockedOutletId =
+        (user?.outlets.isNotEmpty ?? false) ? user!.outlets.first.id : null;
+    // Owner bebas memilih cabang, manager terkunci ke cabangnya sendiri.
+    final outlet = widget.isOwner
+        ? fallbackOutlet
+        : outlets.firstWhere(
+            (item) => item.id == lockedOutletId,
+            orElse: () => fallbackOutlet,
+          );
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: AppDropdown<String>(
-            value: outlet.id,
-            labelText: 'Pilih Cabang (Chain Independen)',
-            items: outlets
-                .map(
-                  (item) => DropdownMenuItem<String>(
-                    value: item.id,
-                    child: Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+        if (widget.isOwner)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: AppDropdown<String>(
+              value: outlet.id,
+              labelText: 'Pilih Cabang (Chain Independen)',
+              items: outlets
+                  .map(
+                    (item) => DropdownMenuItem<String>(
+                      value: item.id,
+                      child: Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (id) => setState(() => _selectedOutletId = id),
+            ),
+          )
+        else
+          // Non-owner: cabang terkunci, ditampilkan sebagai teks saja.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                Text(
+                  'Cabang',
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    outlet.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.jadeTosca,
                     ),
                   ),
-                )
-                .toList(),
-            onChanged: (id) => setState(() => _selectedOutletId = id),
+                ),
+              ],
+            ),
           ),
-        ),
         Expanded(
           child: AsyncStateView<IntegrityChainSnapshot>(
             value: ref.watch(integrityChainProvider(outlet.id)),
@@ -288,6 +337,9 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
         ? AppTheme.jadeTosca
         : AppTheme.dangerRed;
 
+    // Seluruh blok ditampilkan tanpa filter periode.
+    final blocks = overview.blocks;
+
     return RefreshIndicator(
       color: AppTheme.jadeTosca,
       onRefresh: () async =>
@@ -354,59 +406,61 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
           ),
           const SizedBox(height: 12),
 
-          // Metrik Ringkasan & Tombol Aksi
-          Row(
-            children: [
-              Chip(
-                backgroundColor: AppTheme.darkCardSurfaceElevated,
-                side: const BorderSide(color: AppTheme.darkCardBorder),
-                label: Text(
-                  '${overview.blockCount} Blok Transaksi',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimaryDark,
-                  ),
-                ),
+          // Metrik Ringkasan
+          Chip(
+            backgroundColor: AppTheme.darkCardSurfaceElevated,
+            side: const BorderSide(color: AppTheme.darkCardBorder),
+            label: Text(
+              '${blocks.length} Blok Transaksi',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimaryDark,
               ),
-              const Spacer(),
-              SizedBox(
-                height: 38,
-                child: OutlinedButton.icon(
-                  onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.jadeTosca,
-                    side: const BorderSide(color: AppTheme.jadeTosca),
-                    minimumSize: const Size(0, 38),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  icon: _isActionLoading
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.jadeTosca),
-                        )
-                      : const Icon(Icons.shield_outlined, size: 16),
-                  label: const Text('Uji Integritas'),
-                ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Tombol Uji Integritas (kembali ke satu tombol lebar penuh)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.jadeTosca,
+                side: const BorderSide(color: AppTheme.jadeTosca),
+                minimumSize: const Size.fromHeight(44),
               ),
-            ],
+              icon: _isActionLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.jadeTosca,
+                      ),
+                    )
+                  : const Icon(Icons.shield_outlined, size: 18),
+              label: const Text('Uji Integritas'),
+            ),
           ),
           const SizedBox(height: 16),
 
           // Header List Transaksi
           Row(
             children: [
-              Text(
-                'Rantai Transaksi · ${outlet.name}',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+              Expanded(
+                child: Text(
+                  'Rantai Transaksi · ${outlet.name}',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Text(
                 'SHA-256 Per-Cabang',
                 style: GoogleFonts.inter(
@@ -414,34 +468,36 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                   color: AppTheme.textMuted,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
           const SizedBox(height: 10),
 
-          if (overview.blocks.isEmpty)
+          if (blocks.isEmpty)
             const EmptyStateView(
               message:
                   'Belum ada blok transaksi tercatat untuk cabang ini.\nLakukan transaksi di Kasir POS untuk membentuk blok baru.',
               icon: Icons.link_off_rounded,
             )
           else ...[
-            for (int i = 0; i < overview.blocks.length; i++) ...[
+            for (int i = 0; i < blocks.length; i++) ...[
               _TransactionBlockCard(
-                block: overview.blocks[i],
+                block: blocks[i],
                 isTampered: isTampered &&
-                    (tamperedIdx == overview.blocks[i].index ||
-                        overview.blocks[i].data['total_idr'] == 99999999 ||
-                        overview.blocks[i].data['totalAmount'] == 99999999),
+                    (tamperedIdx == blocks[i].index ||
+                        blocks[i].data['total_idr'] == 99999999 ||
+                        blocks[i].data['totalAmount'] == 99999999),
                 onSimulateTamper: () =>
-                    _simulateTamper(outlet.id, overview.blocks[i].index),
+                    _simulateTamper(outlet.id, blocks[i].index),
                 onRecover: () =>
-                    _recoverBlock(outlet.id, overview.blocks[i].index),
+                    _recoverBlock(outlet.id, blocks[i].index),
               ),
-              if (i < overview.blocks.length - 1)
+              if (i < blocks.length - 1)
                 _ChainConnector(
-                  sourceIndex: overview.blocks[i].index,
-                  targetIndex: overview.blocks[i + 1].index,
+                  sourceIndex: blocks[i].index,
+                  targetIndex: blocks[i + 1].index,
                 ),
             ],
           ],

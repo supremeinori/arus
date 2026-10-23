@@ -37,4 +37,14 @@ class TimezoneConverter {
     final localTime = utc.add(getOffset(timezone));
     return '${_dateTimeFormat.format(localTime)} ${getSuffix(timezone)}';
   }
+
+  /// Sapaan berdasarkan jam operasional pengguna, bukan jam perangkat.
+  static String greeting(DateTime dateUtc, String timezone) {
+    final utc = dateUtc.isUtc ? dateUtc : dateUtc.toUtc();
+    final hour = utc.add(getOffset(timezone)).hour;
+    if (hour < 11) return 'Selamat pagi';
+    if (hour < 15) return 'Selamat siang';
+    if (hour < 19) return 'Selamat sore';
+    return 'Selamat malam';
+  }
 }

@@ -185,21 +185,11 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 const SizedBox(height: 14),
               ],
 
-              Text('Jenis Mutasi:', style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark)),
+              const _FieldLabel('Tipe Perubahan'),
               const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                initialValue: _movementType,
-                dropdownColor: AppTheme.darkCardSurface,
-                isDense: true,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-                items: [
-                  DropdownMenuItem(value: 'restock', child: Text('Restock Masuk (+)', style: GoogleFonts.inter(fontSize: 13))),
-                  DropdownMenuItem(value: 'correction', child: Text('Koreksi Opname (+/-)', style: GoogleFonts.inter(fontSize: 13))),
-                  DropdownMenuItem(value: 'waste', child: Text('Bahan Basi / Rusak (-)', style: GoogleFonts.inter(fontSize: 13))),
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _movementType = val);
-                },
+              _MovementTypeSelector(
+                selected: _movementType,
+                onChanged: (value) => setState(() => _movementType = value),
               ),
               const SizedBox(height: 14),
 
@@ -247,12 +237,13 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               ),
               const SizedBox(height: 14),
 
+              const _FieldLabel('Catatan / Alasan'),
+              const SizedBox(height: 6),
               TextFormField(
                 controller: _noteController,
                 maxLines: 2,
                 decoration: const InputDecoration(
-                  labelText: 'Catatan / Alasan (Opsional)',
-                  hintText: 'Misal: Kiriman supplier PT Kopi Baru, opname mingguan',
+                  hintText: 'Opsional, misal: Kiriman supplier PT Kopi Baru, opname mingguan',
                   isDense: true,
                 ),
               ),
@@ -277,6 +268,154 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               : Text('Simpan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       ],
+    );
+  }
+}
+
+/// Label kecil di atas kontrol dialog, memakai satu gaya agar seragam.
+class _FieldLabel extends StatelessWidget {
+  final String text;
+
+  const _FieldLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+/// Satu pilihan tipe mutasi stok.
+class _MovementOption {
+  final String value;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final Color tone;
+
+  const _MovementOption({
+    required this.value,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.tone,
+  });
+}
+
+const List<_MovementOption> _movementOptions = [
+  _MovementOption(
+    value: 'restock',
+    label: 'Masuk',
+    hint: 'Restock / beli',
+    icon: Icons.arrow_upward_rounded,
+    tone: AppTheme.jadeTosca,
+  ),
+  _MovementOption(
+    value: 'correction',
+    label: 'Koreksi',
+    hint: 'Opname +/-',
+    icon: Icons.tune_rounded,
+    tone: AppTheme.warningAmber,
+  ),
+  _MovementOption(
+    value: 'waste',
+    label: 'Keluar',
+    hint: 'Basi / rusak',
+    icon: Icons.arrow_downward_rounded,
+    tone: AppTheme.dangerRed,
+  ),
+];
+
+/// Tiga blok tipe mutasi yang bisa dibedakan sekali lihat, menggantikan dropdown abu.
+class _MovementTypeSelector extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _MovementTypeSelector({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final option in _movementOptions)
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: option == _movementOptions.last ? 0 : 8),
+              child: _MovementBlock(
+                option: option,
+                isSelected: option.value == selected,
+                onTap: () => onChanged(option.value),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Blok pilihan tunggal tipe mutasi.
+class _MovementBlock extends StatelessWidget {
+  final _MovementOption option;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _MovementBlock({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${option.label}, ${option.hint}',
+      child: Material(
+        color: isSelected ? option.tone.withAlpha(28) : AppTheme.darkCardSurfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? option.tone : AppTheme.darkCardBorder,
+                width: isSelected ? 1.4 : 1.0,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(option.icon, size: 18, color: isSelected ? option.tone : AppTheme.textMutedDark),
+                const SizedBox(height: 5),
+                Text(
+                  option.label,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? option.tone : AppTheme.textPrimaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  option.hint,
+                  style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textMutedDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

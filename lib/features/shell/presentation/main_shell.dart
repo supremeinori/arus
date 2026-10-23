@@ -89,6 +89,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     final currentIndex = ref.watch(shellTabIndexProvider);
 
     // Definisikan tab berdasarkan Role per SRS Section 16.2 (Tanpa tab AI terisolasi di bottom bar)
+    // Kasir memakai Ringkasan Shift sebagai Beranda (dikembalikan 22 Okt 2026)
+    // supaya tidak identik dengan dashboard owner & manager.
     final List<Widget> pages = isStaff
         ? const [
             ShiftSummaryScreen(),
@@ -123,7 +125,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             BottomNavigationBarItem(
               icon: Icon(Icons.menu_outlined),
               activeIcon: Icon(Icons.menu),
-              label: 'Lainnya',
+              label: 'Profil',
             ),
           ]
         : const [
@@ -145,7 +147,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             BottomNavigationBarItem(
               icon: Icon(Icons.menu_outlined),
               activeIcon: Icon(Icons.menu),
-              label: 'Lainnya',
+              label: 'Profil',
             ),
           ];
 

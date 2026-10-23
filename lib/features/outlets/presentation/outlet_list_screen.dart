@@ -44,6 +44,7 @@ class _OutletListScreenState extends ConsumerState<OutletListScreen>
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('Manajemen Cabang & LBS', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(

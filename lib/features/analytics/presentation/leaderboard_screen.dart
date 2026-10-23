@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -65,6 +65,7 @@ class LeaderboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -201,10 +202,18 @@ class LeaderboardScreen extends ConsumerWidget {
                         );
                       }
 
+                      final podium = list.take(3).toList(growable: false);
+                      final rest = list.skip(3).toList(growable: false);
+
                       return Column(
-                        children: list
-                            .map((item) => _LeaderboardItemCard(item: item))
-                            .toList(),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Podium 3 besar (lihat mockup Papan Peringkat).
+                          if (podium.isNotEmpty)
+                            _LeaderboardPodium(top3: podium),
+                          for (final item in rest)
+                            _LeaderboardItemCard(item: item),
+                        ],
                       );
                     },
                   ),
@@ -213,6 +222,116 @@ class LeaderboardScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Podium tiga besar: urutan tampil 2 - 1 - 3 supaya juara di tengah.
+class _LeaderboardPodium extends StatelessWidget {
+  final List<TopSellingProductModel> top3;
+
+  const _LeaderboardPodium({required this.top3});
+
+  @override
+  Widget build(BuildContext context) {
+    final order = <int>[1, 0, 2];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(10, 16, 10, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final idx in order)
+            if (idx < top3.length)
+              Expanded(
+                child: _PodiumColumn(
+                  item: top3[idx],
+                  isWinner: idx == 0,
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PodiumColumn extends StatelessWidget {
+  final TopSellingProductModel item;
+  final bool isWinner;
+
+  const _PodiumColumn({required this.item, required this.isWinner});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color accent = item.rank == 1
+        ? const Color(0xFFF59E0B)
+        : item.rank == 2
+            ? const Color(0xFF94A3B8)
+            : const Color(0xFFC2410C);
+    final double blockHeight = item.rank == 1 ? 64 : (item.rank == 2 ? 50 : 40);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            item.rank == 1 ? Icons.emoji_events_rounded : Icons.workspace_premium_outlined,
+            size: isWinner ? 26 : 20,
+            color: accent,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.productName,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: isWinner ? 12 : 11,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            height: blockHeight,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+              border: Border(top: BorderSide(color: accent, width: 2)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '#${item.rank}',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: accent,
+                  ),
+                ),
+                Text(
+                  '${item.quantitySold} terjual',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

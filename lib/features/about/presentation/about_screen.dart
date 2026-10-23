@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
@@ -11,6 +11,7 @@ class AboutScreen extends StatelessWidget {
     final scaffold = Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: AppTheme.darkBackground,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -34,71 +35,9 @@ class AboutScreen extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         children: [
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppTheme.jadeTosca,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'ARUS',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'ARUS Business DSS & POS',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryDark),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Versi 1.0.0 (Final Enterprise Baseline)',
-                  style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          ShadCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Deskripsi Sistem',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'ARUS adalah Mobile Business Decision-Support System terintegrasi Point-of-Sale (POS) untuk bisnis ritel dan F&B multi-cabang. Sistem ini mengalirkan data transaksi harian menjadi visualisasi analitik KPI, rekomendasi stok otomatis, dan konsultasi cerdas berbasis AI.',
-                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondaryDark, height: 1.5),
-                ),
-              ],
-            ),
-          ),
-
+          const _AppIdentityCard(),
           const SizedBox(height: 14),
 
           const ShadCard(
@@ -147,6 +86,86 @@ class AboutScreen extends StatelessWidget {
 }
 
 /// Baris teknologi — widget class top-level const
+/// Kartu identitas aplikasi: logo, nama, versi, dan penjelasan singkat.
+class _AppIdentityCard extends StatelessWidget {
+  const _AppIdentityCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShadCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppTheme.jadeTosca,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              'A',
+              style: GoogleFonts.inter(
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'ARUS Decision Hub',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimaryDark,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Versi 1.0.0 · Final Enterprise Baseline',
+            style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, thickness: 1, color: AppTheme.darkCardBorder),
+          const SizedBox(height: 16),
+          Text(
+            'ARUS adalah Mobile Business Decision-Support System terintegrasi '
+            'Point-of-Sale (POS) untuk bisnis ritel dan F&B multi-cabang. Data '
+            'transaksi harian diolah menjadi analitik KPI, rekomendasi stok, dan '
+            'konsultasi cerdas berbasis AI.',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: AppTheme.textSecondaryDark,
+              height: 1.6,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Data → Informasi → Wawasan → Rekomendasi → Keputusan',
+            style: GoogleFonts.inter(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.jadeTosca,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TechRow extends StatelessWidget {
   final String label;
   final String value;

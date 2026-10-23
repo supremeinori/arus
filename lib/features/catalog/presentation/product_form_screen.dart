@@ -217,6 +217,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       return Scaffold(
         backgroundColor: AppTheme.darkBackground,
         appBar: AppBar(
+          centerTitle: true,
           title: Text(
             'Edit Menu / Produk',
             style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
@@ -745,46 +746,65 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
               ),
             ),
             const SizedBox(height: 28),
-
-            // Submit Button
-            ElevatedButton(
-              onPressed: widget.isLoading ? null : widget.onSubmit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.jadeTosca,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: widget.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      widget.isEditing ? 'Simpan Perubahan Menu' : 'Simpan Menu Baru',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                    ),
-            ),
           ],
         ),
     );
 
-    if (!widget.showScaffold) return form;
+    // Tombol simpan melekat di bawah layar agar tidak perlu scroll
+    // sampai ujung form (lihat mockup Form Produk).
+    final submitBar = SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+        decoration: BoxDecoration(
+          color: AppTheme.darkBackground,
+          border: Border(top: BorderSide(color: AppTheme.darkCardBorder)),
+        ),
+        child: ElevatedButton(
+          onPressed: widget.isLoading ? null : widget.onSubmit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.jadeTosca,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: widget.isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  widget.isEditing ? 'Simpan Perubahan Menu' : 'Simpan Menu Baru',
+                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+        ),
+      ),
+    );
+
+    final body = Column(
+      children: [
+        Expanded(child: form),
+        submitBar,
+      ],
+    );
+
+    if (!widget.showScaffold) return body;
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           widget.isEditing ? 'Edit Menu / Produk' : 'Tambah Menu / Produk',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
-      body: form,
+      body: body,
     );
   }
 }

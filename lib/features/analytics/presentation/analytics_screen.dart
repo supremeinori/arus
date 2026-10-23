@@ -69,6 +69,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with WidgetsB
         backgroundColor: AppTheme.darkBackground,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        centerTitle: true,
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1.0),
           child: Divider(
@@ -78,7 +79,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with WidgetsB
           ),
         ),
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               'Analitik Prediktif',

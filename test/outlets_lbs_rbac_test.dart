@@ -243,10 +243,10 @@ void main() {
 
       expect(find.text('ARUS Cabang Sudirman'), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-      expect(find.text('Nonaktifkan Cabang Ini (Soft Delete)'), findsOneWidget);
+      expect(find.text('Nonaktifkan Cabang Ini'), findsOneWidget);
       expect(find.textContaining('Jarak dari Lokasi Anda (GPS):'), findsOneWidget);
 
-      await tester.tap(find.text('Nonaktifkan Cabang Ini (Soft Delete)'));
+      await tester.tap(find.text('Nonaktifkan Cabang Ini'));
       await tester.pumpAndSettle();
 
       expect(find.text('Konfirmasi Penonaktifan Cabang'), findsOneWidget);
@@ -288,7 +288,7 @@ void main() {
 
       expect(find.text('ARUS Cabang Sudirman'), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsNothing);
-      expect(find.text('Nonaktifkan Cabang Ini (Soft Delete)'), findsNothing);
+      expect(find.text('Nonaktifkan Cabang Ini'), findsNothing);
       expect(find.text('Aktifkan Kembali Cabang Ini'), findsNothing);
     });
   });

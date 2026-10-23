@@ -38,7 +38,7 @@ void main() {
       expect(find.text('staff@arus.demo'), findsOneWidget);
     });
 
-    testWidgets('MainShell untuk Staff menampilkan 4 tab (Beranda, Kasir, Stok, Lainnya)', (tester) async {
+    testWidgets('MainShell untuk Staff menampilkan 4 tab (Beranda, Kasir, Stok, Profil)', (tester) async {
       const staffUser = UserModel(
         id: 'u-staff',
         name: 'Siti Kasir',
@@ -78,15 +78,18 @@ void main() {
       expect(find.text('Beranda'), findsOneWidget);
       expect(find.text('Kasir'), findsOneWidget);
       expect(find.text('Stok'), findsOneWidget);
-      expect(find.text('Lainnya'), findsOneWidget);
+      expect(find.text('Profil'), findsOneWidget);
 
       // Pastikan tab khusus Owner/Manager (Operasi, AI, Analitik) TIDAK muncul
       expect(find.text('Operasi'), findsNothing);
       expect(find.text('AI'), findsNothing);
       expect(find.text('Analitik'), findsNothing);
+
+      // Beranda kasir memakai Ringkasan Shift, bukan dashboard owner/manager
+      expect(find.text('Ringkasan Shift Saya'), findsOneWidget);
     });
 
-    testWidgets('MainShell untuk Owner menampilkan 5 tab (Beranda, Operasi, AI, Analitik, Lainnya)', (tester) async {
+    testWidgets('MainShell untuk Owner menampilkan 4 tab (Beranda, Operasi, Analitik, Profil)', (tester) async {
       const ownerUser = UserModel(
         id: 'u-owner',
         name: 'Rina Owner',
@@ -114,6 +117,15 @@ void main() {
                 )),
             salesTrendProvider.overrideWith((ref) async => []),
             peakHoursProvider.overrideWith((ref) async => []),
+            // Shell Owner juga membangun layar Analitik. Proyeksi & risiko stok
+            // butuh backend, jadi di-stub error supaya pengujian tab tidak
+            // menunggu pemuatan tanpa henti.
+            salesForecastProvider.overrideWith(
+              (ref) => Future<SalesForecastModel>.error(Exception('stubbed di test')),
+            ),
+            stockoutForecastProvider.overrideWith(
+              (ref) => Future<StockoutForecastModel>.error(Exception('stubbed di test')),
+            ),
           ],
           child: const MaterialApp(
             home: MainShell(),
@@ -127,7 +139,7 @@ void main() {
       expect(find.text('Beranda'), findsOneWidget);
       expect(find.text('Operasi'), findsOneWidget);
       expect(find.text('Analitik'), findsOneWidget);
-      expect(find.text('Lainnya'), findsOneWidget);
+      expect(find.text('Profil'), findsOneWidget);
       // AI Companion Floating Action Button
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });

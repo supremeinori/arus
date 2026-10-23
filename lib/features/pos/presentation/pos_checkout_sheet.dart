@@ -43,6 +43,21 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
     setState(() {});
   }
 
+  void _appendDigit(String digit) {
+    final current = _paidController.text.trim();
+    final next = current.isEmpty || current == '0' ? digit : '$current$digit';
+    if (next.length > 12) return;
+    _paidController.text = next;
+    setState(() {});
+  }
+
+  void _backspace() {
+    final current = _paidController.text.trim();
+    if (current.isEmpty) return;
+    _paidController.text = current.substring(0, current.length - 1);
+    setState(() {});
+  }
+
   Future<void> _processCheckout() async {
     final cartState = ref.read(posCartProvider);
 
@@ -144,12 +159,13 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
     final isCash = cartState.paymentMethod == 'cash';
     final currentPaid = int.tryParse(_paidController.text) ?? 0;
     final change = isCash ? (currentPaid - total).clamp(0, double.infinity).toInt() : 0;
+    final paidEnough = currentPaid >= total;
 
     return Container(
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
-        top: 20,
+        top: 12,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
@@ -162,48 +178,93 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const _SheetTopBar(),
+            const SizedBox(height: 8),
+
+            // Total tagihan duduk paling atas supaya kasir langsung melihat angkanya.
+            Text(
+              'Total Tagihan',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMutedDark),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              ref.money(total),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800,
+                fontSize: 26,
+                letterSpacing: -0.7,
+                color: AppTheme.textPrimaryDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Pembayaran & Checkout',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17, color: AppTheme.textPrimaryDark),
+                _MethodPill(
+                  label: 'Tunai',
+                  icon: Icons.payments_outlined,
+                  isSelected: cartState.paymentMethod == 'cash',
+                  onTap: () => _selectMethod('cash'),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppTheme.textPrimaryDark),
-                  onPressed: () => Navigator.of(context).pop(),
+                const SizedBox(width: 8),
+                _MethodPill(
+                  label: 'QRIS',
+                  icon: Icons.qr_code_2_rounded,
+                  isSelected: cartState.paymentMethod == 'qris_simulated',
+                  onTap: () => _selectMethod('qris_simulated'),
+                ),
+                const SizedBox(width: 8),
+                _MethodPill(
+                  label: 'Kartu EDC',
+                  icon: Icons.credit_card_rounded,
+                  isSelected: cartState.paymentMethod == 'card_simulated',
+                  onTap: () => _selectMethod('card_simulated'),
                 ),
               ],
             ),
-            const Divider(color: AppTheme.darkCardBorder, thickness: 1.0),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
 
-            // Summary Subtotal & Diskon
+            const Divider(height: 1, color: AppTheme.darkCardBorder, thickness: 1.0),
+            const SizedBox(height: 12),
+
+            // Rincian tetap tersedia: subtotal dan diskon manual.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Subtotal (${cartState.totalItemsCount} item)',
-                  style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textMutedDark),
+                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   ref.money(subtotal),
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimaryDark),
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppTheme.textPrimaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-
-            // Diskon Field
+            const SizedBox(height: 8),
             Row(
               children: [
                 Text(
-                  'Diskon:',
-                  style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textMutedDark),
+                  'Diskon',
+                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: AppTextField(
                     controller: _discountController,
@@ -217,166 +278,88 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
-            // Total Tagihan
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total Tagihan',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textPrimaryDark),
-                ),
-                Text(
-                  ref.money(total),
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.jadeTosca),
-                ),
-              ],
-            ),
-            const Divider(height: 24, color: AppTheme.darkCardBorder, thickness: 1.2),
-
-            // Pilihan Metode Pembayaran
-            Text(
-              'Metode Pembayaran:',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppTheme.textPrimaryDark),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                _buildMethodChoice('cash', 'Tunai', Icons.payments_outlined, cartState.paymentMethod),
-                const SizedBox(width: 8),
-                _buildMethodChoice('qris_simulated', 'QRIS', Icons.qr_code_2_rounded, cartState.paymentMethod),
-                const SizedBox(width: 8),
-                _buildMethodChoice('card_simulated', 'Kartu EDC', Icons.credit_card_rounded, cartState.paymentMethod),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Simulasi QRIS / Kartu: tampilkan kode bayar + konfirmasi
-            if (!isCash) ...[
+            if (isCash) ...[
+              Row(
+                children: [
+                  _MiniStat(
+                    label: 'Dibayar',
+                    value: currentPaid == 0 ? '—' : ref.money(currentPaid),
+                  ),
+                  const SizedBox(width: 10),
+                  _MiniStat(
+                    label: 'Kembalian',
+                    value: ref.money(change),
+                    valueColor: paidEnough ? AppTheme.jadeTosca : AppTheme.textMutedDark,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _CashKeypad(onDigit: _appendDigit, onBackspace: _backspace),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _QuickAmountChip(label: 'Uang Pas', onTap: () => _setExactCash(total)),
+                  if (total <= 50000)
+                    _QuickAmountChip(label: ref.money(50000), onTap: () => _setPresetCash(50000)),
+                  if (total <= 100000)
+                    _QuickAmountChip(label: ref.money(100000), onTap: () => _setPresetCash(100000)),
+                ],
+              ),
+            ] else
+              // Simulasi QRIS / Kartu: tampilkan kode bayar + konfirmasi
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppTheme.darkCardSurfaceElevated,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.darkCardBorder),
+                  border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.qr_code_2_rounded, size: 120, color: AppTheme.textPrimaryDark),
+                    const Icon(Icons.qr_code_2_rounded, size: 96, color: AppTheme.textPrimaryDark),
                     const SizedBox(height: 8),
                     Text(
                       cartState.paymentMethod == 'qris_simulated'
                           ? 'Scan QR untuk membayar ${ref.money(total)}'
                           : 'Gesek kartu EDC sebesar ${ref.money(total)}',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textMuted),
+                      style: GoogleFonts.inter(fontSize: 12.5, color: AppTheme.textSecondaryDark),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Simulasi — tekan "Konfirmasi Pembayaran Diterima" setelah pelanggan membayar.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMuted),
+                      style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-            ],
-
-            // Jika Tunai: Input Uang & Preset Cepat
-            if (isCash) ...[
-              AppTextField(
-                controller: _paidController,
-                keyboardType: TextInputType.number,
-                labelText: 'Uang Diterima',
-                hintText: 'Masukkan nominal',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.check_circle_outline, color: AppTheme.jadeTosca),
-                  tooltip: 'Uang Pas',
-                  onPressed: () => _setExactCash(total),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 10),
-
-              Wrap(
-                spacing: 8,
-                children: [
-                  ActionChip(
-                    label: Text('Uang Pas', style: GoogleFonts.inter(fontSize: 12)),
-                    backgroundColor: AppTheme.darkCardSurface,
-                    side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    onPressed: () => _setExactCash(total),
-                  ),
-                  if (total <= 50000)
-                    ActionChip(
-                      label: Text(ref.money(50000), style: GoogleFonts.inter(fontSize: 12)),
-                      backgroundColor: AppTheme.darkCardSurface,
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      onPressed: () => _setPresetCash(50000),
-                    ),
-                  if (total <= 100000)
-                    ActionChip(
-                      label: Text(ref.money(100000), style: GoogleFonts.inter(fontSize: 12)),
-                      backgroundColor: AppTheme.darkCardSurface,
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      onPressed: () => _setPresetCash(100000),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Kembalian:',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: AppTheme.textPrimaryDark),
-                  ),
-                  Text(
-                    ref.money(change),
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: currentPaid >= total ? AppTheme.textPrimaryDark : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-            ],
 
             if (_errorMessage != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: AppTheme.dangerRed.withAlpha(20),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFCA5A5), width: 1.0),
+                  border: Border.all(color: AppTheme.dangerRed.withAlpha(90), width: 1.0),
                 ),
                 child: Text(
                   _errorMessage!,
-                  style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12),
+                  style: GoogleFonts.inter(color: AppTheme.dangerRed, fontSize: 12),
                 ),
               ),
             ],
 
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: PrimaryButton(
-                label: isCash
-                    ? 'Selesaikan Transaksi'
-                    : 'Konfirmasi Pembayaran Diterima',
-                isLoading: _isLoading,
-                onPressed: (_isLoading || (isCash && currentPaid < total))
-                    ? null
-                    : _processCheckout,
-              ),
+            const SizedBox(height: 16),
+            PrimaryButton(
+              label: isCash ? 'Bayar & Cetak Struk' : 'Konfirmasi Pembayaran Diterima',
+              isLoading: _isLoading,
+              onPressed: (_isLoading || (isCash && currentPaid < total)) ? null : _processCheckout,
             ),
           ],
         ),
@@ -384,41 +367,236 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
     );
   }
 
-  Widget _buildMethodChoice(String method, String label, IconData icon, String current) {
-    final isSelected = current == method;
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          ref.read(posCartProvider.notifier).setPaymentMethod(method);
-          setState(() {});
-        },
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFEFF6FF) : AppTheme.darkCardSurface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isSelected ? AppTheme.jadeTosca : AppTheme.darkCardBorder,
-              width: isSelected ? 1.5 : 1.0,
+  void _selectMethod(String method) {
+    ref.read(posCartProvider.notifier).setPaymentMethod(method);
+    setState(() {});
+  }
+}
+
+/// Pegangan sheet dan tombol tutup di baris paling atas.
+class _SheetTopBar extends StatelessWidget {
+  const _SheetTopBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(width: 40),
+        Expanded(
+          child: Center(
+            child: Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.darkCardBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-          child: Column(
-            children: [
-              Icon(icon, color: isSelected ? AppTheme.jadeTosca : AppTheme.textPrimaryDark, size: 22),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppTheme.jadeTosca : AppTheme.textPrimaryDark,
-                ),
+        ),
+        SizedBox(
+          width: 40,
+          child: IconButton(
+            iconSize: 18,
+            tooltip: 'Tutup',
+            icon: const Icon(Icons.close_rounded, color: AppTheme.textPrimaryDark),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Kartu kecil untuk nilai dibayar dan kembalian.
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _MiniStat({required this.label, required this.value, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppTheme.darkCardSurfaceElevated,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? AppTheme.textPrimaryDark,
               ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tombol metode pembayaran berbentuk pil.
+class _MethodPill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _MethodPill({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
+            decoration: BoxDecoration(
+              color: isSelected ? AppTheme.jadeTosca.withAlpha(28) : AppTheme.darkCardSurfaceElevated,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected ? AppTheme.jadeTosca : AppTheme.darkCardBorder,
+                width: isSelected ? 1.4 : 1.0,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: isSelected ? AppTheme.jadeTosca : AppTheme.textPrimaryDark),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppTheme.jadeTosca : AppTheme.textPrimaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Papan angka cepat supaya kasir tidak perlu memunculkan keyboard.
+class _CashKeypad extends StatelessWidget {
+  final ValueChanged<String> onDigit;
+  final VoidCallback onBackspace;
+
+  const _CashKeypad({required this.onDigit, required this.onBackspace});
+
+  @override
+  Widget build(BuildContext context) {
+    const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '000'];
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 3,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 2.4,
+      children: [
+        for (final digit in digits)
+          _KeypadKey(label: digit, onTap: () => onDigit(digit)),
+        _KeypadKey(icon: Icons.backspace_outlined, onTap: onBackspace, isAccent: true),
+      ],
+    );
+  }
+}
+
+/// Satu tombol papan angka.
+class _KeypadKey extends StatelessWidget {
+  final String? label;
+  final IconData? icon;
+  final bool isAccent;
+  final VoidCallback onTap;
+
+  const _KeypadKey({this.label, this.icon, required this.onTap, this.isAccent = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isAccent ? AppTheme.jadeTosca : AppTheme.darkCardSurfaceElevated,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isAccent ? AppTheme.jadeTosca : AppTheme.darkCardBorder,
+              width: 1.0,
+            ),
+          ),
+          child: icon != null
+              ? Icon(icon, size: 18, color: Colors.white)
+              : Text(
+                  label!,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip nominal cepat di bawah papan angka.
+class _QuickAmountChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickAmountChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textPrimaryDark)),
+      backgroundColor: AppTheme.darkCardSurfaceElevated,
+      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      onPressed: onTap,
     );
   }
 }

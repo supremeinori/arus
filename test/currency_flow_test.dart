@@ -6,8 +6,6 @@ import 'package:arus/features/auth/domain/user_model.dart';
 import 'package:arus/features/auth/presentation/auth_provider.dart';
 import 'package:arus/features/auth/presentation/auth_state.dart';
 import 'package:arus/core/utils/timezone_converter.dart';
-import 'package:arus/features/settings/domain/currency_models.dart';
-import 'package:arus/features/settings/presentation/currency_provider.dart';
 import 'package:arus/features/settings/presentation/settings_screen.dart';
 
 /// Auth notifier mock:CurrencySettingsScreen membaca preferensi dari sesi.
@@ -80,36 +78,31 @@ void main() {
       expect(london, '13:00 BST (London)'); // +1 jam
     });
 
-    testWidgets('SettingsScreen menampilkan radio tile mata uang dan live preview', (tester) async {
-      final mockRates = const CurrencyRateModel(
-        base: 'IDR',
-        asOf: '2026-10-06',
-        rates: {'USD': 0.000062, 'EUR': 0.000058},
-      );
-
+    testWidgets('SettingsScreen jadi hub kurs, waktu, dan sidik jari', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            fxRatesProvider.overrideWith((ref) async => mockRates),
             authProvider.overrideWith(
               (ref) => _MockAuthNotifier(AuthState.unauthenticated()),
             ),
           ],
-          child: const MaterialApp(
-            home: SettingsScreen(),
-          ),
+          child: const MaterialApp(home: SettingsScreen()),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Pengaturan Kurs & Waktu'), findsOneWidget);
-      expect(find.text('Rupiah Indonesia (IDR)'), findsOneWidget);
-      expect(find.text('Dolar Amerika Serikat (USD)'), findsOneWidget);
-      expect(find.text('Euro Uni Eropa (EUR)'), findsOneWidget);
-      expect(find.text('WIB — Waktu Indonesia Barat'), findsOneWidget);
-      expect(find.text('BST/GMT — London United Kingdom'), findsOneWidget);
-      expect(find.textContaining('Pratinjau Omzet Toko'), findsOneWidget);
+      // Ketiga pengaturan yang dipindah dari Profil punya pintunya di sini
+      expect(find.text('Pengaturan'), findsOneWidget);
+      expect(find.text('Pengaturan Kurs'), findsOneWidget);
+      expect(find.text('Pengaturan Waktu'), findsOneWidget);
+      expect(find.text('Login Sidik Jari (Biometrik)'), findsOneWidget);
+
+      // Chip di sisi kanan menampilkan nilai yang sedang aktif
+      expect(find.text('IDR'), findsOneWidget);
+      expect(find.textContaining('WIB'), findsOneWidget);
     });
   });
 }

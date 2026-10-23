@@ -400,6 +400,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           _gameState == GameState.playing
               ? (_selectedMode == 'guess_name' ? 'Tebak Nama Menu' : 'Tebak Harga Jual')
@@ -568,7 +569,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     icon: Icons.image_search_rounded,
                     title: 'Tebak Nama',
                     score: _userStats?.bestGuessName ?? 0,
-                    color: Colors.purple,
+                    color: AppTheme.jadeTosca,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -577,7 +578,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     icon: Icons.payments_rounded,
                     title: 'Tebak Harga',
                     score: _userStats?.bestGuessPrice ?? 0,
-                    color: Colors.teal,
+                    color: AppTheme.warningAmber,
                   ),
                 ),
               ],
@@ -597,7 +598,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
               title: 'Mode 1: Tebak Nama Menu',
               desc: 'Tampilkan foto makanan/minuman, tebak nama produk yang tepat dari 4 pilihan.',
               badgeText: '5 Soal · 10 Detik/Soal',
-              color: Colors.indigo,
+              color: AppTheme.jadeTosca,
               onTap: _startGame,
             ),
             const SizedBox(height: 12),
@@ -608,7 +609,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
               title: 'Mode 2: Tebak Harga Jual',
               desc: 'Lihat foto & nama menu kasir, tebak harga resmi yang terdaftar di POS.',
               badgeText: '5 Soal · Uji Hafalan Kasir',
-              color: Colors.deepOrange,
+              color: AppTheme.warningAmber,
               onTap: _startGame,
             ),
             const SizedBox(height: 24),
@@ -632,17 +633,19 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: AppTheme.lightCardBorder),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
                           radius: 18,
-                          backgroundColor: isName ? Colors.purple.shade50 : Colors.teal.shade50,
+                          backgroundColor: isName
+                              ? AppTheme.jadeTosca.withValues(alpha: 0.12)
+                              : AppTheme.warningAmber.withValues(alpha: 0.14),
                           child: Icon(
                             isName ? Icons.fastfood_rounded : Icons.price_check_rounded,
                             size: 18,
-                            color: isName ? Colors.purple : Colors.teal,
+                            color: isName ? AppTheme.jadeTosca : AppTheme.warningAmber,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -663,7 +666,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                                 '${s.correctCount}/5 Benar · ${s.durationSec}s',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
                               ),
                             ],
                           ),
@@ -719,12 +722,12 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
-                      color: Colors.grey.shade800,
+                      color: AppTheme.textPrimaryLight,
                     ),
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+                      const Icon(Icons.star_rounded, color: AppTheme.warningAmber, size: 20),
                       const SizedBox(width: 4),
                       Text(
                         '$_currentScore Poin',
@@ -747,7 +750,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 child: LinearProgressIndicator(
                   value: timerProgress,
                   minHeight: 8,
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: AppTheme.lightCardBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _remainingSeconds <= 3 ? AppTheme.error : AppTheme.primary,
                   ),
@@ -761,7 +764,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: _remainingSeconds <= 3 ? AppTheme.error : Colors.grey.shade700,
+                    color: _remainingSeconds <= 3 ? AppTheme.error : AppTheme.textSecondary,
                   ),
                 ),
               ),
@@ -812,7 +815,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: AppTheme.lightCardBorder),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.05),
@@ -827,7 +830,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                       currentQ.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(Icons.fastfood_rounded, size: 64, color: Colors.grey),
+                        child: Icon(Icons.fastfood_rounded, size: 64, color: AppTheme.textMuted),
                       ),
                       loadingBuilder: (ctx, child, progress) {
                         if (progress == null) return child;
@@ -847,7 +850,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: _selectedMode == 'guess_price' ? 18 : 15,
-                    color: Colors.black87,
+                    color: AppTheme.textPrimaryLight,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -880,11 +883,11 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   // ==========================================
   Widget _buildResultView() {
     String badgeTitle = 'Barista Pemula ⭐';
-    Color badgeColor = Colors.blueGrey;
+    Color badgeColor = AppTheme.textMuted;
 
     if (_currentScore >= 800) {
       badgeTitle = 'Master Menu POS ⭐⭐⭐';
-      badgeColor = Colors.amber.shade800;
+      badgeColor = AppTheme.warningAmber;
     } else if (_currentScore >= 500) {
       badgeTitle = 'Kasir Handal ⭐⭐';
       badgeColor = AppTheme.primary;
@@ -899,13 +902,13 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
+              color: AppTheme.warningAmber.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.emoji_events_rounded,
               size: 72,
-              color: Colors.amber.shade700,
+              color: AppTheme.warningAmber,
             ),
           ),
           const SizedBox(height: 16),
@@ -914,18 +917,18 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.amber.shade100,
+                color: AppTheme.warningAmber.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+                  const Icon(Icons.stars_rounded, color: AppTheme.warningAmber, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     'REKOR SKOR BARU! 🏆',
                     style: GoogleFonts.inter(
-                      color: Colors.amber.shade900,
+                      color: AppTheme.warningAmber,
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
                     ),
@@ -962,7 +965,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppTheme.lightCardBorder),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -975,7 +978,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
               children: [
                 Text(
                   'Total Skor Anda',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -994,13 +997,13 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                       label: 'Jawaban Benar',
                       value: '$_correctCount / ${_questions.length}',
                       icon: Icons.check_circle_rounded,
-                      color: Colors.green,
+                      color: AppTheme.jadeTosca,
                     ),
                     _GameResultMetric(
                       label: 'Waktu Bermain',
                       value: '${_totalDurationSec}s',
                       icon: Icons.timer_rounded,
-                      color: Colors.orange,
+                      color: AppTheme.warningAmber,
                     ),
                   ],
                 ),
@@ -1071,7 +1074,7 @@ class _GameStatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.lightCardBorder),
       ),
       child: Row(
         children: [
@@ -1089,7 +1092,7 @@ class _GameStatCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1099,7 +1102,7 @@ class _GameStatCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
-                    color: Colors.black87,
+                    color: AppTheme.textPrimaryLight,
                   ),
                 ),
               ],
@@ -1177,7 +1180,7 @@ class _GameModeCard extends StatelessWidget {
                     desc,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12, height: 1.3),
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 12, height: 1.3),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -1200,7 +1203,7 @@ class _GameModeCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.textMuted),
           ],
         ),
       ),
@@ -1228,8 +1231,8 @@ class _GameOptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color buttonColor = Colors.white;
-    Color textColor = Colors.black87;
-    Color borderColor = Colors.grey.shade300;
+    Color textColor = AppTheme.textPrimaryLight;
+    Color borderColor = AppTheme.lightCardBorder;
     Widget? trailingIcon;
 
     if (isAnswerChecked) {
@@ -1266,7 +1269,7 @@ class _GameOptionButton extends StatelessWidget {
               height: 28,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: AppTheme.lightCardSurfaceElevated,
                 shape: BoxShape.circle,
               ),
               child: Text(
@@ -1338,7 +1341,7 @@ class _GyroHoldPanel extends StatelessWidget {
       return _buildNotice(
         icon: Icons.screen_rotation_rounded,
         text: 'Kontrol miring nonaktif (Pengaturan > Sensor). Gunakan tombol jawaban.',
-        color: Colors.grey.shade700,
+        color: AppTheme.textSecondary,
       );
     }
 
@@ -1347,7 +1350,7 @@ class _GyroHoldPanel extends StatelessWidget {
         return _buildNotice(
           icon: Icons.sensors_rounded,
           text: 'Mengaktifkan sensor gyroscope...',
-          color: Colors.grey.shade700,
+          color: AppTheme.textSecondary,
         );
       case _GyroSensorState.unavailable:
         return _buildNotice(
@@ -1382,9 +1385,9 @@ class _GyroHoldPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.lightCardSurfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.lightCardBorder),
       ),
       child: Row(
         children: [
@@ -1411,9 +1414,9 @@ class _GyroHoldPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.lightCardSurfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.lightCardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1431,7 +1434,7 @@ class _GyroHoldPanel extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ),
@@ -1452,7 +1455,7 @@ class _GyroHoldPanel extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade700,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -1519,7 +1522,7 @@ class _GyroHoldPanel extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: value,
                   minHeight: 6,
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: AppTheme.lightCardBorder,
                   valueColor:
                       const AlwaysStoppedAnimation<Color>(AppTheme.primary),
                 ),
@@ -1565,7 +1568,7 @@ class _GameResultMetric extends StatelessWidget {
           label,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+          style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
         ),
       ],
     );

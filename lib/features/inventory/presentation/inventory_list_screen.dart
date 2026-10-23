@@ -153,6 +153,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           isStaff ? 'Stok & Estimasi Porsi' : 'Bahan Baku & Inventaris',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
@@ -363,10 +364,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     onRefresh: () async => ref.invalidate(ingredientsListProvider),
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                      itemCount: ingredients.length,
+                      itemCount: ingredients.length + 1,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
-                        final item = ingredients[index];
+                        // Stat ringkas di atas daftar (lihat mockup frame Inventaris).
+                        if (index == 0) {
+                          return _InventoryStatStrip(ingredients: ingredients);
+                        }
+                        final item = ingredients[index - 1];
                         return _IngredientCard(
                           item: item,
                           onEdit: () => _openAddIngredientDialog(selectedOutletId ?? '', item.outletName, item),
@@ -380,6 +385,96 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Stat ringkas di atas daftar bahan baku: total, menipis, habis.
+class _InventoryStatStrip extends StatelessWidget {
+  final List<IngredientModel> ingredients;
+
+  const _InventoryStatStrip({required this.ingredients});
+
+  @override
+  Widget build(BuildContext context) {
+    final low = ingredients.where((e) => e.isLowStock).length;
+    final out = ingredients.where((e) => e.isOutOfStock).length;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _StatTile(
+            label: 'Total Bahan',
+            value: '${ingredients.length}',
+            color: AppTheme.textPrimaryDark,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatTile(
+            label: 'Menipis',
+            value: '$low',
+            color: AppTheme.warningAmber,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatTile(
+            label: 'Habis',
+            value: '$out',
+            color: AppTheme.dangerRed,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.darkCardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textMuted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: -0.3,
+            ),
+          ),
         ],
       ),
     );

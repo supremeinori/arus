@@ -7,21 +7,13 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/auth/biometric_service.dart';
-import '../../../core/utils/timezone_converter.dart';
+import '../../../shared/widgets/settings_tile.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import '../../sensors/presentation/shake_settings_sheet.dart';
-import '../../settings/presentation/currency_provider.dart';
 import '../../shell/presentation/main_shell.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
-
-  static const _menuDivider = Divider(
-    height: 1,
-    indent: 56,
-    color: AppTheme.darkCardBorder,
-  );
 
   String _getThresholdLabel(double threshold) {
     if (threshold <= 4.5) return 'Ringan';
@@ -85,198 +77,114 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final currentThreshold = ref.watch(shakeThresholdProvider);
-    // Hasil pengaturan aktif untuk tiap domain (kurs & waktu) — ditampilkan
-    // sebagai ringkasan di masing-masing tile profil.
-    final currentCurrency = ref.watch(displayCurrencyProvider);
-    final currentTimezone = ref.watch(displayTimezoneProvider);
+    // Revisi 23 Okt 2026: "Cabang & Outlet" hanya untuk owner. Manajer tetap
+    // memegang "Integritas Data". Sebabnya Rute /outlets sudah dibatasi owner
+    // di app_router.dart, jadi tile itu sebelumnya jalan buntu bagi manajer.
+    final showManagement =
+        user?.role == UserRole.owner || user?.role == UserRole.manager;
+    final isOwner = user?.role == UserRole.owner;
 
     final scaffold = Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        title: Text(
-          'Profil',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 17),
-        ),
         centerTitle: true,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Profil',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              isOwner
+                  ? 'Kelola akun, cabang, dan integritas data'
+                  : 'Kelola akun dan integritas data',
+              style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
-          // 1. Header Pengguna & Avatar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
+          // 1. Kartu identitas akun
+          _ProfileHeaderCard(user: user),
+          const SizedBox(height: 18),
+
+          if (showManagement) ...[
+            SettingsSectionLabel(
+              isOwner ? 'Manajemen & Integritas' : 'Integritas Data',
+            ),
+            const SizedBox(height: 8),
+            SettingsSectionCard(
               children: [
-                _UserAvatar(user: user),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        user?.name ?? 'Pengguna',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimaryDark,
-                        ),
-                      ),
-                      if (user?.email != null && user!.email.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          user.email,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            color: AppTheme.textMutedDark,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.role.toDisplayString() ?? 'Pengguna',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.jadeTosca,
-                        ),
-                      ),
-                    ],
+                // Sementara #outlets ditahan untuk owner lewat app_router.dart,
+                // jadi kartunya disembunyikan untuk manajer.
+                if (isOwner) ...[
+                  SettingsNavTile(
+                    icon: Icons.storefront_rounded,
+                    title: 'Cabang & Outlet',
+                    onTap: () => context.push('/outlets'),
                   ),
+                  const SettingsTileDivider(),
+                ],
+                SettingsNavTile(
+                  icon: Icons.verified_user_outlined,
+                  title: 'Integritas Data (Ledger LBS)',
+                  onTap: () => context.push('/integrity'),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 18),
+          ],
 
-          // 2. Kartu Keamanan & Preferensi Sesi
-          _SectionCard(
+          const SettingsSectionLabel('Preferensi'),
+          const SizedBox(height: 8),
+          SettingsSectionCard(
             children: [
-              _ProfileMenuTile(
-                icon: Icons.currency_exchange_rounded,
-                title: 'Pengaturan Kurs',
-                onTap: () => context.push('/settings/currency'),
-                trailing: _ProfileValueChip(
-                  label: currentCurrency,
-                  icon: Icons.payments_outlined,
-                ),
+              const SettingsTileDivider(),
+              SettingsNavTile(
+                icon: Icons.settings_outlined,
+                title: 'Pengaturan',
+                onTap: () => context.push('/settings'),
               ),
-              _menuDivider,
-              _ProfileMenuTile(
-                icon: Icons.access_time_filled_rounded,
-                title: 'Pengaturan Waktu',
-                onTap: () => context.push('/settings/time'),
-                trailing: _ProfileValueChip(
-                  label: TimezoneConverter.getSuffix(currentTimezone)
-                      .split(' ')
-                      .first,
-                  icon: Icons.schedule_rounded,
-                ),
-              ),
-              _menuDivider,
-              _ProfileMenuTile(
+              const SettingsTileDivider(),
+              SettingsNavTile(
                 icon: Icons.sensors_rounded,
                 title: 'Diagnostik Sensor & Biometrik',
                 onTap: () => context.push('/sensors'),
               ),
-              _menuDivider,
-              SwitchListTile(
-                secondary: const Icon(
-                  Icons.fingerprint_rounded,
-                  color: AppTheme.jadeTosca,
-                ),
-                title: Text(
-                  'Login Sidik Jari (Biometrik)',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                  ),
-                ),
-                activeThumbColor: AppTheme.jadeTosca,
-                value: user?.settings.biometricEnabled ?? false,
-                onChanged: (val) async {
-                  if (val) {
-                    final confirmed = await ref
-                        .read(biometricServiceProvider)
-                        .authenticate(
-                          localizedReason:
-                              'Konfirmasi sidik jari atau wajah untuk mengaktifkan biometrik',
-                        );
-                    if (confirmed) {
-                      ref.read(authProvider.notifier).toggleBiometric(true);
-                    }
-                  } else {
-                    ref.read(authProvider.notifier).toggleBiometric(false);
-                  }
-                },
-              ),
-              _menuDivider,
-              _ProfileMenuTile(
+              const SettingsTileDivider(),
+              SettingsNavTile(
                 icon: Icons.vibration_rounded,
                 title: 'Sensitivitas Guncangan (Shake)',
                 onTap: () => ShakeSettingsSheet.show(context),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.darkCardSurfaceElevated,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: AppTheme.darkCardBorder,
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Text(
-                        _getThresholdLabel(currentThreshold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.jadeTosca,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: AppTheme.textMutedDark,
-                    ),
-                  ],
+                trailing: SettingsValueChip(
+                  label: _getThresholdLabel(currentThreshold),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
 
-          // 3. Kartu Administrasi & Aplikasi
-          _SectionCard(
+          const SettingsSectionLabel('Bantuan & Info'),
+          const SizedBox(height: 8),
+          // Revisi 22 Okt 2026: "Kelola Staf & Akun" dipindahkan ke Pusat Operasi,
+          // jadi di Profil tidak ada lagi pintu ganda ke halaman yang sama.
+          SettingsSectionCard(
             children: [
-              _ProfileMenuTile(
-                icon: Icons.people_outline_rounded,
-                title: 'Kelola Staf & Akun',
-                onTap: () => context.push('/users'),
-              ),
-              _menuDivider,
-              _ProfileMenuTile(
+              SettingsNavTile(
                 icon: Icons.rate_review_outlined,
                 title: 'Saran & Kesan Kuliah PAM',
                 onTap: () => context.push('/feedback'),
               ),
-              _menuDivider,
-              _ProfileMenuTile(
+              const SettingsTileDivider(),
+              SettingsNavTile(
                 icon: Icons.info_outline_rounded,
                 title: 'Tentang ARUS',
                 onTap: () => context.push('/about'),
@@ -285,23 +193,56 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
-          // 4. Tombol Logout
-          SizedBox(
-            width: double.infinity,
-            child: ShadButton.outline(
-              onPressed: () => _showLogoutDialog(context, ref),
-              leading: const Icon(
-                Icons.logout,
-                color: AppTheme.dangerRed,
-                size: 18,
-              ),
-              child: Text(
-                'Keluar Akun',
-                style: GoogleFonts.inter(
-                  color: AppTheme.dangerRed,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+          // 4. Zona keluar akun
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _showLogoutDialog(context, ref),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.dangerRed.withAlpha(18),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.dangerRed.withAlpha(70),
+                  width: 1.0,
                 ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.logout_rounded,
+                    size: 20,
+                    color: AppTheme.dangerRed,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Keluar Akun',
+                          style: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.dangerRed,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'Akhiri sesi di perangkat ini',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: AppTheme.textMutedDark,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -316,112 +257,73 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Kartu kontainer bergaya section profil (aturan E23).
-class _SectionCard extends StatelessWidget {
-  final List<Widget> children;
+/// Kartu identitas akun: avatar, nama, email, dan peran.
+class _ProfileHeaderCard extends StatelessWidget {
+  final UserModel? user;
 
-  const _SectionCard({required this.children});
+  const _ProfileHeaderCard({required this.user});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: AppTheme.darkCardSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+    final email = user?.email;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: AppTheme.darkCardSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
       ),
-      child: Column(children: children),
-    );
-  }
-}
-
-/// Baris tile menu navigasi profil terpadu untuk mencegah pengulangan boilerplate.
-class _ProfileMenuTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Widget? trailing;
-
-  const _ProfileMenuTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: AppTheme.jadeTosca),
-      title: Text(
-        title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-          fontSize: 13.5,
-        ),
-      ),
-      trailing: trailing ??
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 14,
-            color: AppTheme.textMutedDark,
+      child: Column(
+        children: [
+          _UserAvatar(user: user),
+          const SizedBox(height: 12),
+          Text(
+            user?.name ?? 'Pengguna',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimaryDark,
+            ),
           ),
-      onTap: onTap,
-    );
-  }
-}
-
-/// Chip ringkasan hasil pengaturan aktif pada tile profil (kurs / waktu).
-///
-/// Menampilkan nilai efektif dari domain terkait, mis. "IDR" untuk kurs dan
-/// "WIB" untuk zona waktu, sehingga tiap domain pengaturan punya hasil yang
-/// jelas tanpa harus membuka layarnya.
-class _ProfileValueChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-
-  const _ProfileValueChip({required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppTheme.darkCardSurfaceElevated,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 12, color: AppTheme.jadeTosca),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.jadeTosca,
-                ),
+          if (email != null && email.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              email,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                color: AppTheme.textMutedDark,
               ),
-            ],
+            ),
+          ],
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.jadeTosca.withAlpha(26),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.jadeTosca.withAlpha(70),
+                width: 1.0,
+              ),
+            ),
+            child: Text(
+              user?.role.toDisplayString() ?? 'Pengguna',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.jadeTosca,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-        const SizedBox(width: 6),
-        const Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 14,
-          color: AppTheme.textMutedDark,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -438,8 +340,8 @@ class _UserAvatar extends StatelessWidget {
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return ClipOval(
         child: SizedBox(
-          width: 64,
-          height: 64,
+          width: 72,
+          height: 72,
           child: Image.network(
             avatarUrl,
             fit: BoxFit.cover,
@@ -465,8 +367,8 @@ class _LetterAvatar extends StatelessWidget {
         ? u.name[0].toUpperCase()
         : 'U';
     return Container(
-      width: 64,
-      height: 64,
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
         color: AppTheme.darkCardSurfaceElevated,
         shape: BoxShape.circle,
@@ -478,7 +380,7 @@ class _LetterAvatar extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
-            fontSize: 24,
+            fontSize: 26,
             fontWeight: FontWeight.w800,
             color: AppTheme.jadeTosca,
           ),

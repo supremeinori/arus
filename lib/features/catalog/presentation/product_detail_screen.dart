@@ -24,6 +24,7 @@ class ProductDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           'Detail Produk',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),

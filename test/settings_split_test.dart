@@ -140,7 +140,7 @@ void main() {
     );
 
     testWidgets(
-      'ProfileScreen memisahkan tile Kurs dan Waktu beserta hasil aktifnya',
+      'ProfileScreen hanya menyediakan satu pintu masuk ke Pengaturan',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1600);
         tester.view.devicePixelRatio = 1.0;
@@ -164,7 +164,9 @@ void main() {
               authProvider.overrideWith(
                 (ref) => _MockAuthNotifier(AuthState.authenticated(testUser)),
               ),
-              displayCurrencyProvider.overrideWith(() => _MockDisplayCurrencyNotifier('USD')),
+              displayCurrencyProvider.overrideWith(
+                () => _MockDisplayCurrencyNotifier('USD'),
+              ),
               displayTimezoneProvider.overrideWith((ref) => 'Asia/Makassar'),
             ],
             child: const MaterialApp(home: ProfileScreen()),
@@ -172,14 +174,17 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Dua widget terpisah, bukan satu tile gabungan
-        expect(find.text('Pengaturan Kurs'), findsOneWidget);
-        expect(find.text('Pengaturan Waktu'), findsOneWidget);
+        // Kurs, Waktu, dan Sidik Jari pindah ke dalam layar Pengaturan,
+        // jadi Profil hanya menyediakan satu pintu masuk ke sana
+        expect(find.text('Pengaturan'), findsOneWidget);
+        expect(find.text('Pengaturan Kurs'), findsNothing);
+        expect(find.text('Pengaturan Waktu'), findsNothing);
         expect(find.text('Pengaturan Kurs & Waktu'), findsNothing);
+        expect(find.text('Login Sidik Jari (Biometrik)'), findsNothing);
 
-        // Hasil pengaturan aktif tiap domain tampil di tile masing-masing
-        expect(find.text('USD'), findsOneWidget);
-        expect(find.text('WITA'), findsOneWidget);
+        // Ringkasan nilai aktif tidak lagi disalin ke Profil
+        expect(find.text('USD'), findsNothing);
+        expect(find.text('WITA'), findsNothing);
       },
     );
   });
