@@ -306,6 +306,9 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
           if (mounted) {
             ref.read(userCoordinatesProvider.notifier).state = coord;
           }
+        }).catchError((e) {
+          // GPS auto-fetch failed - silently fall back to default coordinates
+          debugPrint('GPS auto-fetch failed: $e');
         });
       }
     });
@@ -409,8 +412,16 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
                           avatar: const Icon(Icons.gps_fixed, size: 14, color: AppTheme.jadeTosca),
                           label: const Text('GPS Riil', style: TextStyle(color: AppTheme.jadeTosca, fontSize: 12, fontWeight: FontWeight.bold)),
                           onPressed: () async {
-                            final gps = await fetchCurrentGpsLocation();
-                            ref.read(userCoordinatesProvider.notifier).state = gps;
+                            try {
+                              final gps = await fetchCurrentGpsLocation();
+                              ref.read(userCoordinatesProvider.notifier).state = gps;
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('GPS Error: $e'), backgroundColor: AppTheme.dangerRed),
+                                );
+                              }
+                            }
                           },
                         ),
                       ],

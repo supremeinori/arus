@@ -23,30 +23,27 @@ final userCoordinatesProvider = StateProvider<(double, double)>((ref) => (-7.782
 
 /// Mengambil koordinat GPS riil perangkat
 Future<(double, double)> fetchCurrentGpsLocation() async {
-  try {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return (-7.7828, 110.3670);
-    }
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return (-7.7828, 110.3670);
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return (-7.7828, 110.3670);
-    }
-    Position position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
-    );
-    return (position.latitude, position.longitude);
-  } catch (_) {
-    return (-7.7828, 110.3670);
+  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    throw Exception('Layanan GPS tidak aktif pada perangkat.');
   }
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      throw Exception('Izin lokasi GPS ditolak oleh pengguna.');
+    }
+  }
+  if (permission == LocationPermission.deniedForever) {
+    throw Exception('Izin lokasi GPS ditolak permanen.');
+  }
+  Position position = await Geolocator.getCurrentPosition(
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      timeLimit: Duration(seconds: 10),
+    ),
+  );
+  return (position.latitude, position.longitude);
 }
 
 /// Menghitung jarak garis lurus (geodesik / Haversine) dalam meter
