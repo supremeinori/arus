@@ -21,11 +21,11 @@ final outletsPerformanceProvider = FutureProvider.autoDispose<List<OutletPerform
 // Default lokasi user untuk simulasi / geolokasi: Malioboro Yogyakarta (-7.7828, 110.3670)
 final userCoordinatesProvider = StateProvider<(double, double)>((ref) => (-7.7828, 110.3670));
 
-/// Mengambil koordinat GPS riil perangkat
+/// Mengambil koordinat GPS riil perangkat dengan penanganan error komprehensif & timeout
 Future<(double, double)> fetchCurrentGpsLocation() async {
   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
-    throw Exception('Layanan GPS tidak aktif pada perangkat.');
+    throw Exception('Layanan GPS / Lokasi perangkat tidak aktif. Mohon aktifkan GPS.');
   }
   LocationPermission permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
@@ -35,15 +35,20 @@ Future<(double, double)> fetchCurrentGpsLocation() async {
     }
   }
   if (permission == LocationPermission.deniedForever) {
-    throw Exception('Izin lokasi GPS ditolak permanen.');
+    throw Exception('Izin lokasi GPS ditolak permanen. Ubah di Pengaturan Perangkat.');
   }
-  Position position = await Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(
-      accuracy: LocationAccuracy.high,
-      timeLimit: Duration(seconds: 10),
-    ),
-  );
-  return (position.latitude, position.longitude);
+  try {
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 8),
+      ),
+    );
+    return (position.latitude, position.longitude);
+  } catch (e) {
+    // Fallback jika GPS timeout / signal buruk
+    throw Exception('Gagal mendapatkan koordinat GPS terkini. Pastikan berada di ruang terbuka.');
+  }
 }
 
 /// Menghitung jarak garis lurus (geodesik / Haversine) dalam meter
