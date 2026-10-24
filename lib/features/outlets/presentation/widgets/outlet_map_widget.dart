@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -9,10 +10,12 @@ import '../../domain/route_model.dart';
 import '../../data/routing_repository.dart';
 import '../outlets_provider.dart';
 
-// Provider untuk mengambil rute jalan aktual (OSRM) secara asinkron
+// Provider untuk mengambil rute jalan aktual (OSRM) secara asinkron dengan auto cancel
 final selectedRouteProvider = FutureProvider.autoDispose.family<RoadRouteModel, (LatLng, LatLng)>((ref, coords) async {
   final routingRepo = ref.watch(routingRepositoryProvider);
-  return routingRepo.getRoute(origin: coords.$1, destination: coords.$2);
+  final cancelToken = CancelToken();
+  ref.onDispose(() => cancelToken.cancel('Route request disposed'));
+  return routingRepo.getRoute(origin: coords.$1, destination: coords.$2, cancelToken: cancelToken);
 });
 
 // =============================================================================
@@ -50,6 +53,20 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
     super.dispose();
   }
 
+  void _fitCameraToBounds(LatLng origin, LatLng destination, List<LatLng> routePoints) {
+    if (!mounted) return;
+    try {
+      final points = <LatLng>[origin, destination, ...routePoints];
+      final bounds = LatLngBounds.fromPoints(points);
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(48.0),
+        ),
+      );
+    } catch (_) {}
+  }
+
   Color _getStatusColor(String? status) {
     switch (status) {
       case 'critical':
@@ -85,6 +102,34 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
     final nearestResult = widget.nearestAsync.value;
     final allOutlets = nearestResult?.allOutletsSorted ?? [];
 
+    // Auto-select nearest outlet on initial load if none selected
+    if (_selectedOutlet == null && nearestResult != null) {
+      final nearest = nearestResult.nearestOutlet ?? allOutlets.firstOrNull;
+      if (nearest != null) {
+        final perf = perfMap[nearest.id];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _selectedOutlet == null) {
+            setState(() {
+              _selectedOutlet = perf ??
+                  OutletPerformanceModel(
+                    outletId: nearest.id,
+                    name: nearest.name,
+                    address: nearest.address,
+                    latitude: nearest.latitude,
+                    longitude: nearest.longitude,
+                    timezone: nearest.timezone,
+                    revenue30dIdr: 0,
+                    transactionCount30d: 0,
+                    lowStockCount: 0,
+                    performanceStatus: 'optimal',
+                  );
+            });
+          }
+        });
+      }
+    }
+
+    // Remove auto-listen camera fit in build method to avoid Infinity/NaN toInt during tests or rapid layout pass
     AsyncValue<RoadRouteModel>? routeAsync;
     if (_selectedOutlet != null) {
       final targetLatLng = LatLng(_selectedOutlet!.latitude, _selectedOutlet!.longitude);
@@ -115,7 +160,9 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                 polylines: [
                   Polyline(
                     points: routeAsync.value!.points,
-                    color: AppTheme.jadeTosca,
+                    color: routeAsync.value!.isFallback
+                        ? const Color(0xFFF59E0B)
+                        : AppTheme.jadeTosca,
                     strokeWidth: 4.5,
                     borderStrokeWidth: 1.5,
                     borderColor: Colors.white,
@@ -180,7 +227,18 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                                   performanceStatus: 'optimal',
                                 );
                           });
-                          _mapController.move(LatLng(item.latitude, item.longitude), 14.0);
+                          // Fit camera to show both user location and selected outlet + route
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            if (mounted && _selectedOutlet != null) {
+                              final targetLatLng = LatLng(_selectedOutlet!.latitude, _selectedOutlet!.longitude);
+                              final routeAsync = ref.read(selectedRouteProvider((userLatLng, targetLatLng)));
+                              routeAsync.whenData((route) {
+                                if (mounted && route.points.isNotEmpty) {
+                                  _fitCameraToBounds(userLatLng, targetLatLng, route.points);
+                                }
+                              });
+                            }
+                          });
                         },
                         child: Tooltip(
                           message: '${item.name} (${item.distanceKm.toStringAsFixed(1)} km)',
@@ -260,6 +318,7 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                           if (mounted) {
                             ref.read(userCoordinatesProvider.notifier).state = gpsCoord;
                             ref.invalidate(nearestOutletProvider);
+                            await ref.read(nearestOutletProvider.future);
                           }
                         } catch (e) {
                           if (mounted) {
@@ -299,6 +358,17 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                                     lowStockCount: 0,
                                     performanceStatus: 'optimal',
                                   );
+                            });
+                            // Fit camera to show both user location and selected outlet + route
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              if (mounted && _selectedOutlet != null) {
+                                final routeAsync = ref.read(selectedRouteProvider((userLatLng, targetLatLng)));
+                                routeAsync.whenData((route) {
+                                  if (mounted && route.points.isNotEmpty) {
+                                    _fitCameraToBounds(userLatLng, targetLatLng, route.points);
+                                  }
+                                });
+                              }
                             });
                           }
                         } else {

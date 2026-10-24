@@ -27,6 +27,7 @@ class RoutingRepository {
   Future<RoadRouteModel> getRoute({
     required LatLng origin,
     required LatLng destination,
+    CancelToken? cancelToken,
   }) async {
     // Validasi koordinat nol
     if (origin.latitude == 0.0 || origin.longitude == 0.0 ||
@@ -47,7 +48,10 @@ class RoutingRepository {
         'https://router.project-osrm.org/route/v1/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson';
 
     try {
-      final response = await _dio.get<Map<String, dynamic>>(url);
+      final response = await _dio.get<Map<String, dynamic>>(
+        url,
+        cancelToken: cancelToken,
+      );
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data!;
         final routes = data['routes'] as List<dynamic>?;
