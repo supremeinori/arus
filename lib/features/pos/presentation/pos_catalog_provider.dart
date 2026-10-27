@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
-import '../../inventory/presentation/inventory_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../data/pos_repository.dart';
 import '../domain/pos_models.dart';
@@ -33,7 +32,15 @@ final posHistoryProvider =
     FutureProvider.autoDispose<List<PosTransactionModel>>((ref) async {
   final outletId = ref.watch(posOutletIdProvider);
   final repo = ref.watch(posRepositoryProvider);
-  return repo.getTransactions(outletId: outletId);
+  final range = resolveDashboardDateRange(
+    ref.watch(selectedDateFilterProvider),
+    ref.watch(selectedCustomDateProvider),
+  );
+  return repo.getTransactions(
+    outletId: outletId,
+    from: range.from,
+    to: range.to,
+  );
 });
 
 /// Riwayat transaksi untuk halaman Riwayat Transaksi yang dibuka dari

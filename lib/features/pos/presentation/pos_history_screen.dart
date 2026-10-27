@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -167,7 +167,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
       body: Column(
         children: [
           // Baris filter aktif (cabang + periode) — hanya pada mode dashboard.
-          if (widget.useDashboardFilters && isOwner)
+          // Aktif untuk semua role
             Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Container(
@@ -202,7 +202,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                       selectedDateFilter: selectedDateFilter,
                       selectedCustomDate: selectedCustomDate,
                       isManager: isOutletLocked,
-                      ownerTitle: 'Filter Riwayat Transaksi',
+                      ownerTitle: isOwner ? 'Filter Riwayat Transaksi' : 'Filter Periode Waktu',
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppTheme.jadeTosca),
@@ -218,6 +218,103 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.jadeTosca)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Filter Periode Cepat (Hari Ini, 7 Hari, 30 Hari, dll)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final filter in DashboardDateFilter.values) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          filter.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: (selectedCustomDate == null && selectedDateFilter == filter)
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: (selectedCustomDate == null && selectedDateFilter == filter)
+                                ? Colors.white
+                                : AppTheme.textSecondaryDark,
+                          ),
+                        ),
+                        selected: selectedCustomDate == null && selectedDateFilter == filter,
+                        selectedColor: AppTheme.jadeTosca,
+                        backgroundColor: AppTheme.darkCardSurfaceElevated,
+                        side: BorderSide(
+                          color: (selectedCustomDate == null && selectedDateFilter == filter)
+                              ? AppTheme.jadeTosca
+                              : AppTheme.darkCardBorder,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        showCheckmark: false,
+                        onSelected: (selected) {
+                          if (selected) {
+                            ref.read(selectedCustomDateProvider.notifier).state = null;
+                            ref.read(selectedDateFilterProvider.notifier).state = filter;
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                  ActionChip(
+                    avatar: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 13,
+                      color: selectedCustomDate != null ? Colors.white : AppTheme.textSecondaryDark,
+                    ),
+                    label: Text(
+                      selectedCustomDate != null
+                          ? DateFormat('d MMM yyyy', 'id_ID').format(selectedCustomDate)
+                          : 'Kalender',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: selectedCustomDate != null ? FontWeight.w600 : FontWeight.w500,
+                        color: selectedCustomDate != null ? Colors.white : AppTheme.textSecondaryDark,
+                      ),
+                    ),
+                    backgroundColor: selectedCustomDate != null
+                        ? AppTheme.jadeTosca
+                        : AppTheme.darkCardSurfaceElevated,
+                    side: BorderSide(
+                      color: selectedCustomDate != null
+                          ? AppTheme.jadeTosca
+                          : AppTheme.darkCardBorder,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedCustomDate ?? now,
+                        firstDate: DateTime(2020),
+                        lastDate: now,
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.jadeTosca,
+                                onPrimary: Colors.white,
+                                surface: AppTheme.darkCardSurfaceElevated,
+                                onSurface: AppTheme.textPrimaryDark,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        ref.read(selectedCustomDateProvider.notifier).state = picked;
+                      }
+                    },
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/app_exception.dart';
@@ -26,6 +27,8 @@ class AnalyticsRepository {
     if (from != null && from.isNotEmpty) query['from'] = from;
     if (to != null && to.isNotEmpty) query['to'] = to;
 
+    final cacheKey = 'overview_${outletId ?? "all"}_${from ?? ""}_${to ?? ""}';
+
     try {
       final response = await _client.get<Map<String, dynamic>>(
         '/analytics/overview',
@@ -35,6 +38,11 @@ class AnalyticsRepository {
       final base = AnalyticsOverviewModel.fromJson(data);
 
       if (_localDb != null) {
+        await _localDb.saveDailyAnalyticsCache(
+          cacheKey: cacheKey,
+          payload: jsonEncode(data),
+        );
+
         final pendingRows = await _localDb.getPendingOfflineTransactions();
         final pending = _filterLocalRows(pendingRows, outletId: outletId, from: from, to: to);
         if (pending.isNotEmpty) {
@@ -50,11 +58,43 @@ class AnalyticsRepository {
       return base;
     } on AppException {
       if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedData = jsonDecode(cachedPayload) as Map<String, dynamic>;
+            final cachedBase = AnalyticsOverviewModel.fromJson(cachedData);
+            final pendingRows = await _localDb.getPendingOfflineTransactions();
+            final pending = _filterLocalRows(pendingRows, outletId: outletId, from: from, to: to);
+            final pendingRev = pending.fold<int>(0, (s, r) => s + (r['total_idr'] as int? ?? 0));
+            return cachedBase.copyWith(
+              revenueIdr: cachedBase.revenueIdr + pendingRev,
+              transactionCount: cachedBase.transactionCount + pending.length,
+              pendingCount: pending.length,
+              isOffline: true,
+            );
+          } catch (_) {}
+        }
         return await _computeLocalOverview(outletId: outletId, from: from, to: to);
       }
       rethrow;
     } catch (_) {
       if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedData = jsonDecode(cachedPayload) as Map<String, dynamic>;
+            final cachedBase = AnalyticsOverviewModel.fromJson(cachedData);
+            final pendingRows = await _localDb.getPendingOfflineTransactions();
+            final pending = _filterLocalRows(pendingRows, outletId: outletId, from: from, to: to);
+            final pendingRev = pending.fold<int>(0, (s, r) => s + (r['total_idr'] as int? ?? 0));
+            return cachedBase.copyWith(
+              revenueIdr: cachedBase.revenueIdr + pendingRev,
+              transactionCount: cachedBase.transactionCount + pending.length,
+              pendingCount: pending.length,
+              isOffline: true,
+            );
+          } catch (_) {}
+        }
         return await _computeLocalOverview(outletId: outletId, from: from, to: to);
       }
       throw const AppException('Koneksi ke web service terputus. Data ringkasan analitik tidak dapat dimuat.');
@@ -73,6 +113,8 @@ class AnalyticsRepository {
     if (from != null && from.isNotEmpty) query['from'] = from;
     if (to != null && to.isNotEmpty) query['to'] = to;
 
+    final cacheKey = 'sales_trend_${outletId ?? "all"}_${days ?? 0}_${from ?? ""}_${to ?? ""}';
+
     try {
       final response = await _client.get<Map<String, dynamic>>(
         '/analytics/sales-trend',
@@ -82,6 +124,11 @@ class AnalyticsRepository {
       var points = list.map((item) => SalesTrendPoint.fromJson(item as Map<String, dynamic>)).toList();
 
       if (_localDb != null) {
+        await _localDb.saveDailyAnalyticsCache(
+          cacheKey: cacheKey,
+          payload: jsonEncode(list),
+        );
+
         final pendingRows = await _localDb.getPendingOfflineTransactions();
         final pending = _filterLocalRows(pendingRows, outletId: outletId, from: from, to: to);
         if (pending.isNotEmpty) {
@@ -92,11 +139,37 @@ class AnalyticsRepository {
       return points;
     } on AppException {
       if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedList = jsonDecode(cachedPayload) as List<dynamic>? ?? [];
+            var cachedPoints = cachedList.map((item) => SalesTrendPoint.fromJson(item as Map<String, dynamic>)).toList();
+            final pendingRows = await _localDb.getPendingOfflineTransactions();
+            final pending = _filterLocalRows(pendingRows, outletId: outletId, from: from, to: to);
+            if (pending.isNotEmpty) {
+              cachedPoints = _mergePendingIntoSalesTrend(cachedPoints, pending);
+            }
+            return cachedPoints;
+          } catch (_) {}
+        }
         return await _computeLocalSalesTrend(outletId: outletId, days: days, from: from, to: to);
       }
       rethrow;
     } catch (_) {
       if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedList = jsonDecode(cachedPayload) as List<dynamic>? ?? [];
+            var cachedPoints = cachedList.map((item) => SalesTrendPoint.fromJson(item as Map<String, dynamic>)).toList();
+            final pendingRows = await _localDb.getPendingOfflineTransactions();
+            final pending = _filterLocalRows(pendingRows, outletId: outletId, from: from, to: to);
+            if (pending.isNotEmpty) {
+              cachedPoints = _mergePendingIntoSalesTrend(cachedPoints, pending);
+            }
+            return cachedPoints;
+          } catch (_) {}
+        }
         return await _computeLocalSalesTrend(outletId: outletId, days: days, from: from, to: to);
       }
       throw const AppException('Koneksi ke web service terputus. Tren penjualan tidak dapat dimuat.');
@@ -129,6 +202,10 @@ class AnalyticsRepository {
     final query = <String, dynamic>{};
     if (outletId != null && outletId.isNotEmpty) query['outlet_id'] = outletId;
 
+    final now = DateTime.now();
+    final todayKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final cacheKey = 'shift_summary_${outletId ?? "all"}_$todayKey';
+
     try {
       final response = await _client.get<Map<String, dynamic>>(
         '/analytics/shift-summary',
@@ -138,6 +215,11 @@ class AnalyticsRepository {
 
       int pendingCount = 0;
       if (_localDb != null) {
+        await _localDb.saveDailyAnalyticsCache(
+          cacheKey: cacheKey,
+          payload: jsonEncode(data),
+        );
+
         final pendingRows = await _localDb.getPendingOfflineTransactions();
         pendingCount = pendingRows.where((row) {
           if (outletId != null && outletId.isNotEmpty) {
@@ -159,11 +241,73 @@ class AnalyticsRepository {
       );
     } on AppException {
       if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedData = jsonDecode(cachedPayload) as Map<String, dynamic>;
+            final cachedModel = ShiftSummaryModel.fromJson(cachedData);
+            final pendingRows = await _localDb.getPendingOfflineTransactions();
+            final startOfToday = DateTime(now.year, now.month, now.day);
+            final todayPending = pendingRows.where((r) {
+              if (outletId != null && outletId.isNotEmpty) {
+                final rowOutlet = r['outlet_id'] as String?;
+                if (rowOutlet != null && rowOutlet.isNotEmpty && rowOutlet != outletId) return false;
+              }
+              final dt = DateTime.tryParse(r['created_at'] as String? ?? '');
+              return dt == null || !dt.isBefore(startOfToday);
+            }).toList();
+
+            final pendingRev = todayPending.fold<int>(0, (s, r) => s + (r['total_idr'] as int? ?? 0));
+            final pendingCash = todayPending.where((r) => r['payment_method'] == 'cash').fold<int>(0, (s, r) => s + (r['total_idr'] as int? ?? 0));
+            final pendingQris = pendingRev - pendingCash;
+
+            return ShiftSummaryModel(
+              todayRevenueIdr: cachedModel.todayRevenueIdr + pendingRev,
+              cashRevenueIdr: cachedModel.cashRevenueIdr + pendingCash,
+              qrisRevenueIdr: cachedModel.qrisRevenueIdr + pendingQris,
+              transactionCount: cachedModel.transactionCount + todayPending.length,
+              isOffline: true,
+              pendingCount: todayPending.length,
+              isDataAvailable: true,
+            );
+          } catch (_) {}
+        }
         return await _computeLocalShiftSummary(outletId: outletId);
       }
       rethrow;
     } catch (_) {
       if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedData = jsonDecode(cachedPayload) as Map<String, dynamic>;
+            final cachedModel = ShiftSummaryModel.fromJson(cachedData);
+            final pendingRows = await _localDb.getPendingOfflineTransactions();
+            final startOfToday = DateTime(now.year, now.month, now.day);
+            final todayPending = pendingRows.where((r) {
+              if (outletId != null && outletId.isNotEmpty) {
+                final rowOutlet = r['outlet_id'] as String?;
+                if (rowOutlet != null && rowOutlet.isNotEmpty && rowOutlet != outletId) return false;
+              }
+              final dt = DateTime.tryParse(r['created_at'] as String? ?? '');
+              return dt == null || !dt.isBefore(startOfToday);
+            }).toList();
+
+            final pendingRev = todayPending.fold<int>(0, (s, r) => s + (r['total_idr'] as int? ?? 0));
+            final pendingCash = todayPending.where((r) => r['payment_method'] == 'cash').fold<int>(0, (s, r) => s + (r['total_idr'] as int? ?? 0));
+            final pendingQris = pendingRev - pendingCash;
+
+            return ShiftSummaryModel(
+              todayRevenueIdr: cachedModel.todayRevenueIdr + pendingRev,
+              cashRevenueIdr: cachedModel.cashRevenueIdr + pendingCash,
+              qrisRevenueIdr: cachedModel.qrisRevenueIdr + pendingQris,
+              transactionCount: cachedModel.transactionCount + todayPending.length,
+              isOffline: true,
+              pendingCount: todayPending.length,
+              isDataAvailable: true,
+            );
+          } catch (_) {}
+        }
         return await _computeLocalShiftSummary(outletId: outletId);
       }
       throw const AppException('Koneksi ke web service terputus. Ringkasan shift tidak dapat dimuat.');
@@ -339,16 +483,46 @@ class AnalyticsRepository {
     if (from != null && from.isNotEmpty) query['from'] = from;
     if (to != null && to.isNotEmpty) query['to'] = to;
 
+    final cacheKey = 'leaderboard_${outletId ?? "all"}_${limit}_${from ?? ""}_${to ?? ""}';
+
     try {
       final response = await _client.get<Map<String, dynamic>>(
         '/analytics/leaderboard',
         queryParameters: query,
       );
       final list = response.data?['data'] as List<dynamic>? ?? [];
+
+      if (_localDb != null) {
+        await _localDb.saveDailyAnalyticsCache(
+          cacheKey: cacheKey,
+          payload: jsonEncode(list),
+        );
+      }
+
       return list.map((item) => TopSellingProductModel.fromJson(item as Map<String, dynamic>)).toList();
     } on AppException {
+      if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedList = jsonDecode(cachedPayload) as List<dynamic>? ?? [];
+            return cachedList.map((item) => TopSellingProductModel.fromJson(item as Map<String, dynamic>)).toList();
+          } catch (_) {}
+        }
+        return [];
+      }
       rethrow;
     } catch (_) {
+      if (_localDb != null) {
+        final cachedPayload = await _localDb.getDailyAnalyticsCache(cacheKey);
+        if (cachedPayload != null && cachedPayload.isNotEmpty) {
+          try {
+            final cachedList = jsonDecode(cachedPayload) as List<dynamic>? ?? [];
+            return cachedList.map((item) => TopSellingProductModel.fromJson(item as Map<String, dynamic>)).toList();
+          } catch (_) {}
+        }
+        return [];
+      }
       throw const AppException('Koneksi ke web service terputus. Data leaderboard terlaris tidak dapat dimuat.');
     }
   }

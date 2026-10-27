@@ -214,6 +214,15 @@ class LocalDatabase {
             created_at TEXT NOT NULL
           )
         ''');
+
+        // 6. Cache Analitik Harian & Dashboard (Offline Daily Fallback)
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS daily_analytics_cache (
+            cache_key TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -322,6 +331,15 @@ class LocalDatabase {
         } catch (_) {}
         try {
           await db.execute('ALTER TABLE local_session_settings ADD COLUMN refresh_token TEXT');
+        } catch (_) {}
+        try {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS daily_analytics_cache (
+              cache_key TEXT PRIMARY KEY,
+              payload TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            )
+          ''');
         } catch (_) {}
       },
     );
@@ -526,6 +544,7 @@ class LocalDatabase {
     _webProductsStore.clear();
     _webTransactionsStore.clear();
     _webOfflineTxQueue.clear();
+    _webDailyAnalyticsCache.clear();
     if (db != null) {
       try {
         await db.delete('local_session_settings');
@@ -534,6 +553,7 @@ class LocalDatabase {
         await db.delete('backup_products');
         await db.delete('offline_transactions');
         await db.delete('backup_transactions');
+        await db.delete('daily_analytics_cache');
       } catch (_) {}
     }
   }
@@ -1064,5 +1084,52 @@ class LocalDatabase {
       return result.where((tx) => tx.outletId.isEmpty || tx.outletId == outletId).toList();
     }
     return result;
+  }
+
+  // ========================================================
+  // 6. DAILY ANALYTICS & DASHBOARD CACHE (OFFLINE FALLBACK)
+  // ========================================================
+  final Map<String, Map<String, dynamic>> _webDailyAnalyticsCache = {};
+
+  Future<void> saveDailyAnalyticsCache({
+    required String cacheKey,
+    required String payload,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final db = await database;
+    if (db == null) {
+      _webDailyAnalyticsCache[cacheKey] = {
+        'cache_key': cacheKey,
+        'payload': payload,
+        'updated_at': now,
+      };
+      return;
+    }
+
+    await db.insert(
+      'daily_analytics_cache',
+      {
+        'cache_key': cacheKey,
+        'payload': payload,
+        'updated_at': now,
+      },
+      conflictAlgorithm: sql.ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<String?> getDailyAnalyticsCache(String cacheKey) async {
+    final db = await database;
+    if (db == null) {
+      return _webDailyAnalyticsCache[cacheKey]?['payload'] as String?;
+    }
+
+    final rows = await db.query(
+      'daily_analytics_cache',
+      where: 'cache_key = ?',
+      whereArgs: [cacheKey],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['payload'] as String?;
   }
 }
