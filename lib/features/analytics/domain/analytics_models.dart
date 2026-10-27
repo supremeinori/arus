@@ -246,17 +246,48 @@ class SalesForecastSummary {
 
 }
 
+class SalesForecastEvaluation {
+  final String status;
+  final int trainDays;
+  final int testDays;
+  final double seasonalNaiveMae;
+  final double modelMae;
+  final String chosenModel;
+
+  const SalesForecastEvaluation({
+    required this.status,
+    this.trainDays = 0,
+    this.testDays = 0,
+    this.seasonalNaiveMae = 0.0,
+    this.modelMae = 0.0,
+    this.chosenModel = '',
+  });
+
+  factory SalesForecastEvaluation.fromJson(Map<String, dynamic> json) {
+    return SalesForecastEvaluation(
+      status: json['status'] as String? ?? 'unknown',
+      trainDays: (json['train_days'] as num?)?.toInt() ?? 0,
+      testDays: (json['test_days'] as num?)?.toInt() ?? 0,
+      seasonalNaiveMae: (json['seasonal_naive_mae'] as num?)?.toDouble() ?? 0.0,
+      modelMae: (json['model_mae'] as num?)?.toDouble() ?? 0.0,
+      chosenModel: json['chosen_model'] as String? ?? '',
+    );
+  }
+}
+
 class SalesForecastModel {
   final int horizonDays;
   final List<ForecastPoint> historical;
   final List<ForecastPoint> forecast;
   final SalesForecastSummary summary;
+  final SalesForecastEvaluation? evaluation;
 
   const SalesForecastModel({
     required this.horizonDays,
     required this.historical,
     required this.forecast,
     required this.summary,
+    this.evaluation,
   });
 
   factory SalesForecastModel.fromJson(Map<String, dynamic> json) {
@@ -268,6 +299,9 @@ class SalesForecastModel {
       historical: histList.map((e) => ForecastPoint.fromJson(e as Map<String, dynamic>)).toList(),
       forecast: fcstList.map((e) => ForecastPoint.fromJson(e as Map<String, dynamic>)).toList(),
       summary: SalesForecastSummary.fromJson(json['summary'] as Map<String, dynamic>? ?? {}),
+      evaluation: json['evaluation'] != null && json['evaluation'] is Map<String, dynamic>
+          ? SalesForecastEvaluation.fromJson(json['evaluation'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

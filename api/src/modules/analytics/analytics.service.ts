@@ -285,7 +285,8 @@ export class AnalyticsService {
 
   /**
    * 1. ESTIMASI PREDIKSI TREN PENJUALAN PERIODIK (Time Series Forecasting)
-   * Responsif secara real-time terhadap setiap transaksi baru.
+   * Menggunakan riwayat aktual penuh, evaluasi holdout komparatif terhadap baseline,
+   * dan transparansi keterbatasan data tanpa angka sintetis.
    */
   async getSalesForecast(
     query: {
@@ -294,24 +295,31 @@ export class AnalyticsService {
     },
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
-    const horizonDays = query.horizon_days === 30 ? 30 : 7;
-    const historyDays = 30;
+    if (userScope.role !== Role.owner) {
+      if (query.outlet_id && !userScope.allowedOutletIds.includes(query.outlet_id)) {
+        throw new AppError('FORBIDDEN', 403, 'Akses ke outlet ini tidak diizinkan.');
+      }
+    }
 
-    const today = new Date();
-    const toLocalDateStr = (d: Date): string => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+    const horizonDays = query.horizon_days === 30 ? 30 : 7;
+    // Jendela riwayat: 30 hari untuk horizon 7 hari, 60 hari untuk horizon 30 hari
+    const historyDays = Math.max(horizonDays * 2, 30);
+
+    const now = new Date();
+    const toUtcDateStr = (d: Date): string => {
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
     };
 
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - (historyDays - 1));
-    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+    startDate.setUTCDate(startDate.getUTCDate() - (historyDays - 1));
 
     const where: any = {
       status: TxnStatus.completed,
-      created_at: { gte: startDate },
+      created_at: { gte: startDate, lte: endDate },
     };
 
     if (userScope.role !== Role.owner) {
@@ -327,122 +335,174 @@ export class AnalyticsService {
         orderBy: { created_at: 'asc' },
       });
 
-      // Siapkan Map tanggal riwayat sampai hari ini (inklusif hari ini)
+      // Siapkan Map tanggal riwayat kontinyu tanpa pemotongan tersembunyi
       const historicalMap = new Map<string, number>();
-      for (let i = historyDays - 1; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        historicalMap.set(toLocalDateStr(d), 0);
+      const curr = new Date(startDate);
+      while (curr <= endDate) {
+        historicalMap.set(toUtcDateStr(curr), 0);
+        curr.setUTCDate(curr.getUTCDate() + 1);
       }
 
-      // Masukkan transaksi riil ke masing-masing tanggal kalender
       for (const tx of transactions) {
-        const dStr = toLocalDateStr(new Date(tx.created_at));
+        const dStr = toUtcDateStr(new Date(tx.created_at));
         if (historicalMap.has(dStr)) {
           historicalMap.set(dStr, (historicalMap.get(dStr) ?? 0) + tx.total_idr);
-        } else {
-          historicalMap.set(dStr, tx.total_idr);
         }
       }
 
-      const todayStr = toLocalDateStr(today);
-      const todayRealRev = historicalMap.get(todayStr) ?? 0;
+      const historicalEntries = Array.from(historicalMap.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, revenue]) => ({
+          date,
+          revenue_idr: revenue,
+          is_projected: false,
+        }));
 
-      // Periksa apakah ada data transaksi riil
-      let totalRealRev = 0;
-      let nonZeroDays = 0;
-      for (const val of historicalMap.values()) {
-        if (val > 0) {
-          totalRealRev += val;
-          nonZeroDays++;
-        }
-      }
-
-      const historicalEntries: Array<{ date: string; revenue_idr: number; is_projected: boolean }> = [];
       const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const nonZeroEntries = historicalEntries.filter((e) => e.revenue_idr > 0);
+      const nonZeroDays = nonZeroEntries.length;
+      const totalHistoricalRev = historicalEntries.reduce((sum, e) => sum + e.revenue_idr, 0);
 
-      // Jika data riil di database masih baru/terbatas (misal hanya hari ini yang diinput),
-      // kita gabungkan data riil transaksi yang baru saja masuk dengan kalibrasi baseline cerdas.
-      if (nonZeroDays < 3) {
-        const baseAnchor = Math.max(todayRealRev > 0 ? todayRealRev : 1800000, 1200000);
+      // KASUS 1: Riwayat belum memadai (kurang dari 3 hari transaksi aktual)
+      // Tampilkan keterbatasan secara transparan tanpa mengarang data historis palsu
+      if (nonZeroDays < 3 || totalHistoricalRev === 0) {
+        const naiveDailyVal = nonZeroDays > 0 ? Math.round(totalHistoricalRev / nonZeroDays) : 0;
+        const forecast: Array<{
+          date: string;
+          day_name: string;
+          revenue_idr: number;
+          lower_bound_idr: number;
+          upper_bound_idr: number;
+          is_projected: boolean;
+        }> = [];
 
-        for (let i = 14 - 1; i >= 0; i--) {
-          const d = new Date(today);
-          d.setDate(today.getDate() - i);
-          const dStr = toLocalDateStr(d);
-          const dow = d.getDay();
-          const isWeekend = dow === 0 || dow === 6;
+        for (let h = 1; h <= horizonDays; h++) {
+          const futureDate = new Date(endDate);
+          futureDate.setUTCDate(futureDate.getUTCDate() + h);
+          const dateStr = toUtcDateStr(futureDate);
+          const dow = futureDate.getUTCDay();
 
-          let rev = 0;
-          if (i === 0) {
-            // Hari ini: 100% menggunakan akumulasi transaksi riil hari ini!
-            rev = todayRealRev;
-          } else if (historicalMap.has(dStr) && (historicalMap.get(dStr) ?? 0) > 0) {
-            rev = historicalMap.get(dStr)!;
-          } else {
-            // Hari-hari lampau sebelum sistem digunakan diisi proyeksi proporsional
-            const dayMult = isWeekend ? 1.3 : 0.95;
-            rev = Math.round(baseAnchor * dayMult + ((i * 37) % 5) * (baseAnchor * 0.04));
-          }
-
-          historicalEntries.push({
-            date: dStr,
-            revenue_idr: rev,
-            is_projected: false,
+          forecast.push({
+            date: dateStr,
+            day_name: dayNames[dow],
+            revenue_idr: naiveDailyVal,
+            lower_bound_idr: Math.max(0, Math.round(naiveDailyVal * 0.7)),
+            upper_bound_idr: Math.round(naiveDailyVal * 1.3),
+            is_projected: true,
           });
         }
-      } else {
-        const sortedEntries = Array.from(historicalMap.entries())
-          .sort((a, b) => a[0].localeCompare(b[0]))
-          .slice(-14);
 
-        for (const [date, revenue] of sortedEntries) {
-          historicalEntries.push({
-            date,
-            revenue_idr: revenue,
-            is_projected: false,
-          });
-        }
+        const projectedTotal = naiveDailyVal * horizonDays;
+        return {
+          horizon_days: horizonDays,
+          historical: historicalEntries,
+          forecast,
+          summary: {
+            projected_total_revenue_idr: projectedTotal,
+            previous_period_revenue_idr: totalHistoricalRev,
+            growth_pct: 0.0,
+            avg_daily_projected_idr: naiveDailyVal,
+            peak_projected_day: forecast[0] ?? { date: '', day_name: '', revenue_idr: 0 },
+            ai_insight:
+              nonZeroDays === 0
+                ? 'Belum ada data transaksi penjualan pada outlet ini. Lakukan transaksi untuk mengaktifkan peramalan deret waktu AI.'
+                : `Data riwayat transaksi masih terbatas (${nonZeroDays} hari). Model menggunakan baseline rata-rata sederhana hingga data historis mencapai minimal 7 hari.`,
+          },
+          evaluation: {
+            status: 'insufficient_history',
+            data_points_count: nonZeroDays,
+            required_points_count: 3,
+            model_name: 'naive_mean_baseline',
+          },
+        };
       }
 
-      // 1. Pola Musiman Hari (Day-of-Week Seasonality)
-      const dayOfWeekTotals: { sum: number; count: number }[] = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }));
-      let totalHistoricalRev = 0;
-
-      historicalEntries.forEach((entry) => {
-        const dow = new Date(entry.date).getDay();
-        dayOfWeekTotals[dow].sum += entry.revenue_idr;
-        dayOfWeekTotals[dow].count += 1;
-        totalHistoricalRev += entry.revenue_idr;
-      });
-
-      const overallDailyAvg = totalHistoricalRev / Math.max(1, historicalEntries.length);
-      const dowMultipliers = dayOfWeekTotals.map((item) => {
-        if (item.count === 0 || overallDailyAvg === 0) return 1.0;
-        const avgForDay = item.sum / item.count;
-        const factor = avgForDay / overallDailyAvg;
-        return Math.min(Math.max(factor, 0.7), 1.55);
-      });
-
-      // 2. Regresi Linear untuk Baseline Trend
+      // KASUS 2: Riwayat memadai (>= 3 hari). Lakukan evaluasi holdout kronologis terhadap baseline
       const N = historicalEntries.length;
-      let sumX = 0;
-      let sumY = 0;
-      let sumXY = 0;
-      let sumX2 = 0;
+      const holdoutSize = Math.min(7, Math.max(1, Math.floor(N / 4)));
+      const trainEntries = historicalEntries.slice(0, N - holdoutSize);
+      const testEntries = historicalEntries.slice(N - holdoutSize);
 
+      // Fit model musiman harian pada data latih (Day-of-Week Seasonality)
+      const trainDowTotals: { sum: number; count: number }[] = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }));
+      let trainTotalRev = 0;
+      trainEntries.forEach((entry) => {
+        const dow = new Date(entry.date).getUTCDay();
+        trainDowTotals[dow].sum += entry.revenue_idr;
+        trainDowTotals[dow].count += 1;
+        trainTotalRev += entry.revenue_idr;
+      });
+
+      const trainDailyAvg = trainTotalRev / Math.max(1, trainEntries.length);
+      const trainDowMultipliers = trainDowTotals.map((item) => {
+        if (item.count === 0 || trainDailyAvg === 0) return 1.0;
+        const avgForDay = item.sum / item.count;
+        return Math.min(Math.max(avgForDay / trainDailyAvg, 0.6), 1.6);
+      });
+
+      // Fit regresi linier pada data latih
+      let trainSumX = 0, trainSumY = 0, trainSumXY = 0, trainSumX2 = 0;
+      trainEntries.forEach((entry, idx) => {
+        trainSumX += idx;
+        trainSumY += entry.revenue_idr;
+        trainSumXY += idx * entry.revenue_idr;
+        trainSumX2 += idx * idx;
+      });
+      const trainDenom = trainEntries.length * trainSumX2 - trainSumX * trainSumX;
+      const trainSlope = trainDenom !== 0 ? (trainEntries.length * trainSumXY - trainSumX * trainSumY) / trainDenom : 0;
+      const trainIntercept = (trainSumY - trainSlope * trainSumX) / trainEntries.length;
+
+      // Evaluasi MAE pada Holdout Test Set: Model vs Baseline Seasonal-Naive
+      let modelAbsErrorSum = 0;
+      let baselineAbsErrorSum = 0;
+
+      testEntries.forEach((entry, idx) => {
+        const testIdx = trainEntries.length + idx;
+        const dow = new Date(entry.date).getUTCDay();
+
+        // Prediksi Model Seasonal-Trend
+        const modelPred = Math.max(0, Math.round((trainIntercept + trainSlope * testIdx) * trainDowMultipliers[dow]));
+        modelAbsErrorSum += Math.abs(entry.revenue_idr - modelPred);
+
+        // Prediksi Baseline Seasonal-Naive (mengambil nilai 7 hari lalu jika ada, fallback ke rata-rata)
+        const naiveSourceIdx = testIdx - 7;
+        const baselinePred = naiveSourceIdx >= 0 && naiveSourceIdx < trainEntries.length
+          ? trainEntries[naiveSourceIdx].revenue_idr
+          : Math.round(trainDailyAvg);
+        baselineAbsErrorSum += Math.abs(entry.revenue_idr - baselinePred);
+      });
+
+      const modelMae = modelAbsErrorSum / holdoutSize;
+      const baselineMae = baselineAbsErrorSum / holdoutSize;
+
+      // Keputusan Seleksi Model: gunakan model Seasonal-Trend bila error tidak lebih buruk dari baseline
+      const useSeasonalTrend = modelMae <= baselineMae * 1.1;
+
+      // Proyeksikan ke Depan menggunakan seluruh data riwayat N
+      const fullDowTotals: { sum: number; count: number }[] = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }));
+      historicalEntries.forEach((entry) => {
+        const dow = new Date(entry.date).getUTCDay();
+        fullDowTotals[dow].sum += entry.revenue_idr;
+        fullDowTotals[dow].count += 1;
+      });
+      const fullDailyAvg = totalHistoricalRev / N;
+      const fullDowMultipliers = fullDowTotals.map((item) => {
+        if (item.count === 0 || fullDailyAvg === 0) return 1.0;
+        const avgForDay = item.sum / item.count;
+        return Math.min(Math.max(avgForDay / fullDailyAvg, 0.6), 1.6);
+      });
+
+      let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
       historicalEntries.forEach((entry, idx) => {
         sumX += idx;
         sumY += entry.revenue_idr;
         sumXY += idx * entry.revenue_idr;
         sumX2 += idx * idx;
       });
-
       const denominator = N * sumX2 - sumX * sumX;
       const slope = denominator !== 0 ? (N * sumXY - sumX * sumY) / denominator : 0;
       const intercept = (sumY - slope * sumX) / N;
 
-      // 3. Deviasi Standar Residual (Confidence Interval)
       let sumSquaredResiduals = 0;
       historicalEntries.forEach((entry, idx) => {
         const trendEstimate = intercept + slope * idx;
@@ -451,7 +511,6 @@ export class AnalyticsService {
       });
       const residualStdDev = Math.sqrt(sumSquaredResiduals / Math.max(1, N - 2));
 
-      // 4. Proyeksikan ke Masa Depan (H+1 sampai H+horizon)
       const forecast: Array<{
         date: string;
         day_name: string;
@@ -465,15 +524,23 @@ export class AnalyticsService {
       let peakProjected = { date: '', day_name: '', revenue_idr: 0 };
 
       for (let h = 1; h <= horizonDays; h++) {
-        const futureDate = new Date(today);
-        futureDate.setDate(today.getDate() + h);
-        const dateStr = toLocalDateStr(futureDate);
-        const dow = futureDate.getDay();
+        const futureDate = new Date(endDate);
+        futureDate.setUTCDate(futureDate.getUTCDate() + h);
+        const dateStr = toUtcDateStr(futureDate);
+        const dow = futureDate.getUTCDay();
 
-        const futureX = N + h;
-        // Bobotkan proyeksi masa depan dengan tren saat ini
-        const baseTrend = Math.max(overallDailyAvg * 0.6, intercept + slope * futureX);
-        const projectedRev = Math.max(0, Math.round(baseTrend * dowMultipliers[dow]));
+        let projectedRev = 0;
+        if (useSeasonalTrend) {
+          const futureX = N - 1 + h;
+          const baseTrend = Math.max(fullDailyAvg * 0.5, intercept + slope * futureX);
+          projectedRev = Math.max(0, Math.round(baseTrend * fullDowMultipliers[dow]));
+        } else {
+          // Fallback ke seasonal naive
+          const histSourceIdx = N - 7 + ((h - 1) % 7);
+          projectedRev = histSourceIdx >= 0 && histSourceIdx < N
+            ? historicalEntries[histSourceIdx].revenue_idr
+            : Math.round(fullDailyAvg);
+        }
 
         const marginOfError = Math.round(Math.max(projectedRev * 0.12, 1.28 * residualStdDev));
         const lowerBound = Math.max(0, projectedRev - marginOfError);
@@ -499,11 +566,12 @@ export class AnalyticsService {
         });
       }
 
+      // Periode pembanding menggunakan jendela hari yang sama persis
       const prevPeriodRevenue = historicalEntries.slice(-horizonDays).reduce((acc, curr) => acc + curr.revenue_idr, 0);
       const growthPct =
         prevPeriodRevenue > 0
           ? Math.round(((projectedTotal - prevPeriodRevenue) / prevPeriodRevenue) * 1000) / 10
-          : 5.4;
+          : 0.0;
 
       const avgDailyProjected = Math.round(projectedTotal / horizonDays);
 
@@ -519,8 +587,15 @@ export class AnalyticsService {
           peak_projected_day: peakProjected,
           ai_insight:
             growthPct >= 0
-              ? `Model memprediksi pertumbuhan omzet +${growthPct}% dengan proyeksi puncak pada ${peakProjected.day_name}. Setiap transaksi baru otomatis memperbarui baseline proyeksi ini.`
-              : `Model memprediksi tren omzet ${growthPct}%. Pertimbangkan promo paket hemat atau campaign di jam-jam sepi.`,
+              ? `Model memproyeksikan omzet ${horizonDays} hari ke depan tumbuh +${growthPct}% dengan puncak pada ${peakProjected.day_name}. Evaluasi holdout MAE: Rp ${Math.round(modelMae).toLocaleString('id-ID')} vs baseline Rp ${Math.round(baselineMae).toLocaleString('id-ID')}.`
+              : `Model memproyeksikan tren omzet ${growthPct}% untuk ${horizonDays} hari ke depan dengan puncak pada ${peakProjected.day_name}. Evaluasi holdout MAE: Rp ${Math.round(modelMae).toLocaleString('id-ID')}.`,
+        },
+        evaluation: {
+          status: 'evaluated',
+          holdout_days: holdoutSize,
+          model_name: useSeasonalTrend ? 'seasonal_decomposition_trend' : 'seasonal_naive_baseline',
+          model_mae_idr: Math.round(modelMae),
+          baseline_mae_idr: Math.round(baselineMae),
         },
       };
     } catch (err: unknown) {
@@ -530,95 +605,20 @@ export class AnalyticsService {
   }
 
   /**
-   * Helper fallback simulator peramalan
-   */
-  private generateSyntheticForecast(horizonDays: number) {
-    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const now = new Date();
-
-    const historical = [];
-    let histTotal = 0;
-    for (let i = 14; i >= 1; i--) {
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
-      const dow = d.getDay();
-      const isWeekend = dow === 0 || dow === 6;
-      const base = isWeekend ? 3200000 : 1950000;
-      const rev = base + ((i * 37) % 7) * 80000;
-      histTotal += rev;
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      historical.push({
-        date: `${y}-${m}-${day}`,
-        revenue_idr: rev,
-        is_projected: false,
-      });
-    }
-
-    const forecast = [];
-    let projectedTotal = 0;
-    let peakProjected = { date: '', day_name: '', revenue_idr: 0 };
-
-    for (let h = 1; h <= horizonDays; h++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + h);
-      const dow = d.getDay();
-      const isWeekend = dow === 0 || dow === 6;
-      const base = (isWeekend ? 3450000 : 2100000) * (1 + (h / horizonDays) * 0.08);
-      const rev = Math.round(base + ((h * 23) % 5) * 65000);
-      const margin = Math.round(rev * 0.12);
-
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const item = {
-        date: `${y}-${m}-${day}`,
-        day_name: dayNames[dow],
-        revenue_idr: rev,
-        lower_bound_idr: rev - margin,
-        upper_bound_idr: rev + margin,
-        is_projected: true,
-      };
-
-      if (rev > peakProjected.revenue_idr) {
-        peakProjected = {
-          date: item.date,
-          day_name: item.day_name,
-          revenue_idr: rev,
-        };
-      }
-
-      projectedTotal += rev;
-      forecast.push(item);
-    }
-
-    const growthPct = 8.5;
-    return {
-      horizon_days: horizonDays,
-      historical,
-      forecast,
-      summary: {
-        projected_total_revenue_idr: projectedTotal,
-        previous_period_revenue_idr: Math.round(projectedTotal * 0.92),
-        growth_pct: growthPct,
-        avg_daily_projected_idr: Math.round(projectedTotal / horizonDays),
-        peak_projected_day: peakProjected,
-        ai_insight: `Model deret waktu memproyeksikan tren penjualan positif (+${growthPct}%). Puncak omzet diprediksi terjadi pada hari ${peakProjected.day_name}.`,
-      },
-    };
-  }
-
-  /**
    * 2. ESTIMASI PREDIKSI KAPAN STOK AKAN HABIS (Stock Runout Prediction)
-   * Menghitung laju pemakaian bahan per hari (Product Sales & Consumption Velocity)
-   * memproyeksikan exact date habis, status risiko (Kritis, Waspada, Aman),
-   * dan rekomendasi Reorder Quantity otomatis.
+   * Menghitung laju pemakaian bahan aktual per hari (14 hari terakhir),
+   * memproyeksikan status risiko tanpa fabrikasi data sintetis.
    */
   async getStockoutForecast(
     query: { outlet_id?: string },
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
+    if (userScope.role !== Role.owner) {
+      if (query.outlet_id && !userScope.allowedOutletIds.includes(query.outlet_id)) {
+        throw new AppError('FORBIDDEN', 403, 'Akses ke outlet ini tidak diizinkan.');
+      }
+    }
+
     const where: any = {};
     if (userScope.role !== Role.owner) {
       where.outlet_id = query.outlet_id || { in: userScope.allowedOutletIds };
@@ -643,48 +643,59 @@ export class AnalyticsService {
       });
 
       if (!ingredients || ingredients.length === 0) {
-        return this.generateSyntheticStockoutForecast();
+        return {
+          summary: {
+            critical_count: 0,
+            warning_count: 0,
+            safe_count: 0,
+            total_items: 0,
+            ai_recommendation: 'Belum ada data bahan baku pada cabang ini. Tambahkan bahan baku di menu Inventori untuk memantau prediksi stok.',
+          },
+          items: [],
+        };
       }
 
       const now = new Date();
       const items = ingredients.map((ing) => {
         const totalUsed = ing.movements.reduce((acc, m) => acc + Math.abs(m.quantity_delta), 0);
-        let dailyVelocity = Math.round((totalUsed / 14) * 10) / 10;
-
-        if (dailyVelocity <= 0) {
-          dailyVelocity = Math.max(1.0, Math.round((ing.reorder_level / 5) * 10) / 10);
-        }
+        const dailyVelocity = Math.round((totalUsed / 14) * 10) / 10;
 
         let daysUntilStockout: number;
+        let status: 'critical' | 'warning' | 'safe';
+
         if (ing.stock_qty <= 0) {
           daysUntilStockout = 0;
+          status = 'critical';
+        } else if (dailyVelocity <= 0) {
+          daysUntilStockout = 999;
+          status = ing.stock_qty <= ing.reorder_level ? 'warning' : 'safe';
         } else {
           daysUntilStockout = Math.floor(ing.stock_qty / dailyVelocity);
+          if (daysUntilStockout <= 2) {
+            status = 'critical';
+          } else if (daysUntilStockout <= 6 || ing.stock_qty <= ing.reorder_level) {
+            status = 'warning';
+          } else {
+            status = 'safe';
+          }
         }
 
         const stockoutDate = new Date(now);
-        stockoutDate.setDate(now.getDate() + daysUntilStockout);
+        stockoutDate.setDate(now.getDate() + (daysUntilStockout === 999 ? 30 : daysUntilStockout));
         const y = stockoutDate.getFullYear();
         const m = String(stockoutDate.getMonth() + 1).padStart(2, '0');
         const day = String(stockoutDate.getDate()).padStart(2, '0');
-        const projectedDateStr = `${y}-${m}-${day}`;
-
-        let status: 'critical' | 'warning' | 'safe';
-        if (daysUntilStockout <= 2 || ing.stock_qty <= 0) {
-          status = 'critical';
-        } else if (daysUntilStockout <= 6 || ing.stock_qty <= ing.reorder_level) {
-          status = 'warning';
-        } else {
-          status = 'safe';
-        }
+        const projectedDateStr = daysUntilStockout === 999 ? '> 30 hari' : `${y}-${m}-${day}`;
 
         const maxCapacityRef = Math.max(ing.stock_qty, ing.reorder_level * 3);
         const stockCapacityPct = Math.min(100, Math.max(0, Math.round((ing.stock_qty / maxCapacityRef) * 100)));
 
-        const recommendedReorderQty = Math.max(
-          Math.ceil(dailyVelocity * 7 + ing.reorder_level - ing.stock_qty),
-          Math.ceil(dailyVelocity * 5)
-        );
+        const recommendedReorderQty = dailyVelocity > 0
+          ? Math.max(
+              Math.ceil(dailyVelocity * 7 + ing.reorder_level - ing.stock_qty),
+              Math.ceil(dailyVelocity * 5)
+            )
+          : Math.max(0, ing.reorder_level - ing.stock_qty);
 
         const estimatedRestockCostIdr = recommendedReorderQty * ing.cost_per_unit;
 
@@ -706,16 +717,13 @@ export class AnalyticsService {
         };
       });
 
-      items.sort((a, b) => a.days_until_stockout - b.days_until_stockout);
-
       const criticalCount = items.filter((i) => i.status === 'critical').length;
       const warningCount = items.filter((i) => i.status === 'warning').length;
       const safeCount = items.filter((i) => i.status === 'safe').length;
 
       let aiRecommendation = '';
       if (criticalCount > 0) {
-        const topCritical = items.filter((i) => i.status === 'critical').map((i) => i.ingredient_name).slice(0, 2).join(' dan ');
-        aiRecommendation = `Perhatian: Terdapat ${criticalCount} bahan baku berstatus Kritis (< 3 hari). Prioritaskan pemesanan ${topCritical} hari ini agar operasional tidak terhenti.`;
+        aiRecommendation = `PERINGATAN: ${criticalCount} bahan baku diproyeksikan habis dalam 1-2 hari. Segera buat Purchase Order (PO).`;
       } else if (warningCount > 0) {
         aiRecommendation = `Ada ${warningCount} bahan baku yang mendekati batas reorder (3-6 hari). Jadwalkan pembelian stok sebelum akhir pekan.`;
       } else {
@@ -736,73 +744,6 @@ export class AnalyticsService {
       if (err instanceof AppError) throw err;
       throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat peramalan stok dari database.');
     }
-  }
-
-  /**
-   * Helper fallback simulasi prediksi kehabisan stok
-   */
-  private generateSyntheticStockoutForecast() {
-    const now = new Date();
-    const demoIngredients = [
-      { name: 'Susu UHT Full Cream', unit: 'liter', stock: 6, velocity: 2.6, cost: 22000, reorder: 10 },
-      { name: 'Biji Kopi Espresso Blend', unit: 'kg', stock: 3, velocity: 1.1, cost: 160000, reorder: 5 },
-      { name: 'Sirup Karamel 750ml', unit: 'botol', stock: 2, velocity: 0.4, cost: 85000, reorder: 3 },
-      { name: 'Gula Cair Fruktosa', unit: 'liter', stock: 12, velocity: 1.8, cost: 18000, reorder: 8 },
-      { name: 'Cup Dingin 16oz & Tutup', unit: 'pcs', stock: 120, velocity: 28.0, cost: 450, reorder: 80 },
-      { name: 'Bubuk Cokelat Premium', unit: 'kg', stock: 8, velocity: 0.8, cost: 110000, reorder: 4 },
-      { name: 'Sedotan Ramah Lingkungan', unit: 'pcs', stock: 250, velocity: 26.0, cost: 150, reorder: 100 },
-    ];
-
-    const items = demoIngredients.map((ing, idx) => {
-      const daysLeft = Math.floor(ing.stock / ing.velocity);
-      const stockoutDate = new Date(now);
-      stockoutDate.setDate(now.getDate() + daysLeft);
-
-      let status: 'critical' | 'warning' | 'safe';
-      if (daysLeft <= 2 || ing.stock <= ing.reorder) {
-        status = daysLeft <= 2 ? 'critical' : 'warning';
-      } else {
-        status = 'safe';
-      }
-
-      const recQty = Math.ceil(ing.velocity * 7 + ing.reorder - ing.stock);
-      const y = stockoutDate.getFullYear();
-      const m = String(stockoutDate.getMonth() + 1).padStart(2, '0');
-      const day = String(stockoutDate.getDate()).padStart(2, '0');
-      return {
-        ingredient_id: `mock-ing-${idx + 1}`,
-        ingredient_name: ing.name,
-        unit: ing.unit,
-        outlet_name: 'Cabang Utama',
-        current_stock: ing.stock,
-        reorder_level: ing.reorder,
-        daily_velocity: ing.velocity,
-        days_until_stockout: daysLeft,
-        projected_stockout_date: `${y}-${m}-${day}`,
-        status,
-        stock_capacity_pct: Math.min(100, Math.round((ing.stock / (ing.reorder * 2.5)) * 100)),
-        recommended_reorder_qty: Math.max(recQty, 5),
-        cost_per_unit_idr: ing.cost,
-        estimated_restock_cost_idr: Math.max(recQty, 5) * ing.cost,
-      };
-    });
-
-    items.sort((a, b) => a.days_until_stockout - b.days_until_stockout);
-
-    const criticalCount = items.filter((i) => i.status === 'critical').length;
-    const warningCount = items.filter((i) => i.status === 'warning').length;
-    const safeCount = items.filter((i) => i.status === 'safe').length;
-
-    return {
-      summary: {
-        critical_count: criticalCount,
-        warning_count: warningCount,
-        safe_count: safeCount,
-        total_items: items.length,
-        ai_recommendation: `Perhatian: Terdapat ${criticalCount} bahan baku berstatus Kritis (< 3 hari habis), terutama Susu UHT dan Biji Kopi. Segera lakukan pesanan restock sebelum jam operasional ramai!`,
-      },
-      items,
-    };
   }
 
   /**

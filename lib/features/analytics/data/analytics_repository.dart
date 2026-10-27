@@ -288,8 +288,14 @@ class AnalyticsRepository {
       final data = response.data?['data'] as Map<String, dynamic>;
       return SalesForecastModel.fromJson(data);
     } on AppException {
+      if (_localDb != null) {
+        return await _computeLocalSalesForecast(outletId: outletId, horizonDays: horizon);
+      }
       rethrow;
     } catch (_) {
+      if (_localDb != null) {
+        return await _computeLocalSalesForecast(outletId: outletId, horizonDays: horizon);
+      }
       throw const AppException('Koneksi ke web service terputus. Prediksi penjualan AI tidak dapat dimuat.');
     }
   }
@@ -309,8 +315,14 @@ class AnalyticsRepository {
       final data = response.data?['data'] as Map<String, dynamic>;
       return StockoutForecastModel.fromJson(data);
     } on AppException {
+      if (_localDb != null) {
+        return _computeOfflineStockoutForecast();
+      }
       rethrow;
     } catch (_) {
+      if (_localDb != null) {
+        return _computeOfflineStockoutForecast();
+      }
       throw const AppException('Koneksi ke web service terputus. Prediksi kehabisan stok tidak dapat dimuat.');
     }
   }
@@ -514,9 +526,9 @@ class AnalyticsRepository {
     DateTime endDate;
 
     if (from != null && from.isNotEmpty) {
-      startDate = DateTime.tryParse('T00:00:00.000Z') ?? DateTime.tryParse(from) ?? DateTime.now();
+      startDate = DateTime.tryParse('${from}T00:00:00.000Z') ?? DateTime.tryParse(from) ?? DateTime.now();
       endDate = to != null && to.isNotEmpty
-          ? (DateTime.tryParse('T23:59:59.999Z') ?? DateTime.tryParse(to) ?? DateTime.now())
+          ? (DateTime.tryParse('${to}T23:59:59.999Z') ?? DateTime.tryParse(to) ?? DateTime.now())
           : startDate.add(const Duration(hours: 23, minutes: 59, seconds: 59));
     } else {
       final now = DateTime.now();
@@ -592,5 +604,190 @@ class AnalyticsRepository {
               count: e.value.count,
             ))
         .toList();
+  }
+  static const _indonesianDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+  String _dayNameOf(DateTime dt) => _indonesianDays[dt.weekday - 1];
+
+  StockoutForecastModel _computeOfflineStockoutForecast() {
+    return const StockoutForecastModel(
+      summary: StockoutSummary(
+        criticalCount: 0,
+        warningCount: 0,
+        safeCount: 0,
+        totalItems: 0,
+        aiRecommendation: 'Mode offline: Analisis peramalan stok bahan memerlukan sinkronisasi data inventaris dari server.',
+      ),
+      items: [],
+    );
+  }
+
+  Future<SalesForecastModel> _computeLocalSalesForecast({
+    String? outletId,
+    int horizonDays = 7,
+  }) async {
+    final effectiveHorizon = horizonDays > 0 ? horizonDays : 7;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final histStart = today.subtract(Duration(days: effectiveHorizon));
+
+    // Siapkan kalender histori kontinu
+    final historicalMap = <String, int>{};
+    var currHist = DateTime(histStart.year, histStart.month, histStart.day);
+    while (currHist.isBefore(today)) {
+      final key = '${currHist.year.toString().padLeft(4, '0')}-${currHist.month.toString().padLeft(2, '0')}-${currHist.day.toString().padLeft(2, '0')}';
+      historicalMap[key] = 0;
+      currHist = currHist.add(const Duration(days: 1));
+    }
+
+    if (_localDb != null) {
+      final backupList = await _localDb.getBackupTransactions(outletId: outletId);
+      final pendingRows = await _localDb.getPendingOfflineTransactions();
+      final seenKeys = <String>{};
+
+      for (final tx in backupList) {
+        final idMatch = tx.id.isNotEmpty && seenKeys.contains(tx.id);
+        final reqMatch = tx.clientRequestId != null && tx.clientRequestId!.isNotEmpty && seenKeys.contains(tx.clientRequestId);
+        if (!idMatch && !reqMatch) {
+          if (tx.id.isNotEmpty) seenKeys.add(tx.id);
+          if (tx.clientRequestId != null && tx.clientRequestId!.isNotEmpty) seenKeys.add(tx.clientRequestId!);
+
+          if (tx.status != 'voided') {
+            final key = '${tx.createdAt.year.toString().padLeft(4, '0')}-${tx.createdAt.month.toString().padLeft(2, '0')}-${tx.createdAt.day.toString().padLeft(2, '0')}';
+            if (historicalMap.containsKey(key)) {
+              historicalMap[key] = (historicalMap[key] ?? 0) + tx.totalIdr;
+            }
+          }
+        }
+      }
+
+      for (final row in pendingRows) {
+        final clientReqId = row['client_request_id'] as String?;
+        final rowId = row['id'] as String?;
+        final idMatch = rowId != null && rowId.isNotEmpty && seenKeys.contains(rowId);
+        final reqMatch = clientReqId != null && clientReqId.isNotEmpty && seenKeys.contains(clientReqId);
+
+        if (!idMatch && !reqMatch) {
+          if (rowId != null && rowId.isNotEmpty) seenKeys.add(rowId);
+          if (clientReqId != null && clientReqId.isNotEmpty) seenKeys.add(clientReqId);
+
+          final rowOutlet = row['outlet_id'] as String?;
+          if (outletId != null && outletId.isNotEmpty && rowOutlet != null && rowOutlet.isNotEmpty && rowOutlet != outletId) {
+            continue;
+          }
+
+          final createdAtStr = row['created_at'] as String?;
+          final dt = createdAtStr != null ? DateTime.tryParse(createdAtStr) : DateTime.now();
+          if (dt != null) {
+            final key = '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+            if (historicalMap.containsKey(key)) {
+              final tot = row['total_idr'] as int? ?? 0;
+              historicalMap[key] = (historicalMap[key] ?? 0) + tot;
+            }
+          }
+        }
+      }
+    }
+
+    final historicalPoints = historicalMap.entries.map((e) {
+      final dt = DateTime.tryParse(e.key) ?? DateTime.now();
+      return ForecastPoint(
+        date: e.key,
+        dayName: _dayNameOf(dt),
+        revenueIdr: e.value,
+        lowerBoundIdr: e.value,
+        upperBoundIdr: e.value,
+        isProjected: false,
+      );
+    }).toList();
+
+    final nonZeroPoints = historicalPoints.where((p) => p.revenueIdr > 0).toList();
+    final nonZeroDays = nonZeroPoints.length;
+    final totalHistRev = historicalPoints.fold<int>(0, (s, p) => s + p.revenueIdr);
+    final avgDailyHist = nonZeroDays > 0 ? (totalHistRev / nonZeroDays).round() : 0;
+
+    // Day of week profile
+    final dowTotals = <int, int>{};
+    final dowCounts = <int, int>{};
+    for (final p in historicalPoints) {
+      final dt = DateTime.tryParse(p.date);
+      if (dt != null) {
+        final w = dt.weekday;
+        dowTotals[w] = (dowTotals[w] ?? 0) + p.revenueIdr;
+        dowCounts[w] = (dowCounts[w] ?? 0) + 1;
+      }
+    }
+
+    final isInsufficient = nonZeroDays < 3;
+    final forecastPoints = <ForecastPoint>[];
+    var currFcst = DateTime(today.year, today.month, today.day);
+
+    for (int i = 0; i < effectiveHorizon; i++) {
+      final key = '${currFcst.year.toString().padLeft(4, '0')}-${currFcst.month.toString().padLeft(2, '0')}-${currFcst.day.toString().padLeft(2, '0')}';
+      int predicted;
+      if (isInsufficient) {
+        predicted = avgDailyHist;
+      } else {
+        final w = currFcst.weekday;
+        final count = dowCounts[w] ?? 0;
+        final sum = dowTotals[w] ?? 0;
+        predicted = count > 0 ? (sum / count).round() : avgDailyHist;
+      }
+
+      forecastPoints.add(ForecastPoint(
+        date: key,
+        dayName: _dayNameOf(currFcst),
+        revenueIdr: predicted,
+        lowerBoundIdr: (predicted * 0.8).round(),
+        upperBoundIdr: (predicted * 1.2).round(),
+        isProjected: true,
+      ));
+      currFcst = currFcst.add(const Duration(days: 1));
+    }
+
+    final projectedTotalRevenue = forecastPoints.fold<int>(0, (s, p) => s + p.revenueIdr);
+    final previousPeriodRevenue = totalHistRev;
+    final growthPct = previousPeriodRevenue > 0
+        ? ((projectedTotalRevenue - previousPeriodRevenue) / previousPeriodRevenue * 100)
+        : 0.0;
+    final avgDailyProjected = effectiveHorizon > 0 ? (projectedTotalRevenue ~/ effectiveHorizon) : 0;
+
+    ForecastPoint peakDay = forecastPoints.first;
+    for (final p in forecastPoints) {
+      if (p.revenueIdr > peakDay.revenueIdr) {
+        peakDay = p;
+      }
+    }
+
+    final aiInsight = isInsufficient
+        ? (nonZeroDays == 0
+            ? 'Mode offline: Belum ada data transaksi lokal tersimpan untuk memproyeksikan tren penjualan.'
+            : 'Mode offline: Data transaksi lokal belum mencukupi untuk dekomposisi tren (minimal 3 hari aktif). Menggunakan estimasi rata-rata harian.')
+        : 'Mode offline: Proyeksi dihitung dari rata-rata musiman lokal ($nonZeroDays hari data aktif). Sambungkan ke server untuk model dekomposisi AI holistik.';
+
+    return SalesForecastModel(
+      horizonDays: effectiveHorizon,
+      historical: historicalPoints,
+      forecast: forecastPoints,
+      summary: SalesForecastSummary(
+        projectedTotalRevenueIdr: projectedTotalRevenue,
+        previousPeriodRevenueIdr: previousPeriodRevenue,
+        growthPct: growthPct,
+        avgDailyProjectedIdr: avgDailyProjected,
+        peakProjectedDay: PeakProjectedDay(
+          date: peakDay.date,
+          dayName: peakDay.dayName,
+          revenueIdr: peakDay.revenueIdr,
+        ),
+        aiInsight: aiInsight,
+      ),
+      evaluation: SalesForecastEvaluation(
+        status: isInsufficient ? 'offline_insufficient' : 'offline_local_dow',
+        trainDays: historicalPoints.length,
+        testDays: 0,
+        seasonalNaiveMae: 0.0,
+        modelMae: 0.0,
+        chosenModel: isInsufficient ? 'naive_mean' : 'local_dow_mean',
+      ),
+    );
   }
 }
