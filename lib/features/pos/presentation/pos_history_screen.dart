@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_widgets.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/dashboard_filter_sheet.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/skeleton_list.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
@@ -205,9 +206,6 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                       ownerTitle: 'Filter Riwayat Transaksi',
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppTheme.jadeTosca),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       minimumSize: const Size(0, 32),
@@ -216,8 +214,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                     child: Text('Ubah',
                         style: GoogleFonts.inter(
                             fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.jadeTosca)),
+                            fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -227,6 +224,9 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
             child: AsyncStateView<List<PosTransactionModel>>(
               value: ref.watch(_historyProvider),
               onRetry: () => ref.invalidate(_historyProvider),
+              // Kerangka kartu saat memuat, supaya tidak ada lompatan bentuk
+              // dari spinner ke daftar penuh.
+              skeleton: const SkeletonList(),
               dataBuilder: (list) {
                 if (list.isEmpty) {
                   return const EmptyStateView(
@@ -379,7 +379,7 @@ class _HistoryCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: voided ? const Color(0xFFF8FAFC) : Colors.white,
+        color: voided ? AppTheme.lightBackground : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.darkCardBorder),
       ),
@@ -400,8 +400,8 @@ class _HistoryCard extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: voided
-                      ? const Color(0xFFFEE2E2)
-                      : const Color(0xFFDCFCE7),
+                      ? AppTheme.dangerSurface
+                      : AppTheme.successSurface,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -409,7 +409,7 @@ class _HistoryCard extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: voided
                           ? AppTheme.dangerRed
@@ -431,15 +431,19 @@ class _HistoryCard extends ConsumerWidget {
               alignment: Alignment.centerRight,
               child: OutlinedButton.icon(
                 onPressed: voiding ? null : onVoid,
+                // Merah tua, bukan merah terang. Merah #EF4444 di atas rose
+                // hanya 3,44:1, sedangkan teks 12 pt butuh 4,5:1. Merah
+                // #B91C1C di atas rose yang sama mencapai 5,9:1.
                 icon: const Icon(Icons.undo_rounded,
-                    size: 16, color: AppTheme.dangerRed),
+                    size: 16, color: AppTheme.dangerRedDeep),
                 label: Text('Void',
                     style: GoogleFonts.inter(
-                        fontSize: 12, color: AppTheme.dangerRed)),
+                        fontSize: 12, color: AppTheme.dangerRedDeep)),
                 style: OutlinedButton.styleFrom(
+                  // Tema memberi latar tosca pada tombol sekunder. Ikon dan
+                  // label di sini merah, jadi latarnya diarahkan ke rose.
+                  backgroundColor: AppTheme.dangerSurfacePale,
                   side: const BorderSide(color: AppTheme.dangerRed),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ),

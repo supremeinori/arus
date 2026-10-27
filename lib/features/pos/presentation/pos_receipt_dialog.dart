@@ -19,7 +19,7 @@ class PosReceiptDialog extends StatelessWidget {
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
       ),
       // Batasi lebar dialog HP + tablet (aturan C15).
       content: ConstrainedBox(
@@ -93,7 +93,7 @@ class PosReceiptDialog extends StatelessWidget {
                             'OFFLINE (Tersimpan di SQLite Lokal)',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.amber.shade900),
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber.shade900),
                             ),
                           ),
                         ],
@@ -117,7 +117,7 @@ class PosReceiptDialog extends StatelessWidget {
                             'ONLINE (Tersinkronkan ke Supabase)',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade800),
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green.shade800),
                             ),
                           ),
                         ],
@@ -166,12 +166,12 @@ class PosReceiptDialog extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Diskon', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFDC2626))),
+                  Text('Diskon', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.dangerRedStrong)),
                   MoneyText(
                     transaction.discountIdr,
                     prefix: '- ',
                     maxLines: 1,
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.dangerRedStrong),
                   ),
                 ],
               ),

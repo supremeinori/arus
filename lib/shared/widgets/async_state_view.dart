@@ -14,44 +14,56 @@ class AsyncStateView<T> extends StatelessWidget {
   final VoidCallback? onRetry;
   final String? loadingMessage;
 
+  /// Kerangka bentuk layar saat data masih diambil. Kalau diisi, spinner bawaan
+  /// digantikan kerangka ini. Dipakai layar daftar supaya tidak ada lompatan
+  /// bentuk dari spinner ke daftar penuh.
+  final Widget? skeleton;
+
   const AsyncStateView({
     super.key,
     required this.value,
     required this.dataBuilder,
     this.onRetry,
     this.loadingMessage,
+    this.skeleton,
   });
 
   @override
   Widget build(BuildContext context) {
     return value.when(
       data: (data) => dataBuilder(data),
-      loading: () => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.jadeTosca),
+      loading: () => skeleton != null
+          ? Center(child: skeleton)
+          : Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppTheme.jadeTosca),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      loadingMessage ?? StringsId.loading,
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textMutedDark,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                loadingMessage ?? StringsId.loading,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
       error: (err, stack) {
         final message = err is AppException ? err.message : err.toString();
         final code = err is AppException ? err.code : 'ERROR';

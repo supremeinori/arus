@@ -164,7 +164,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+          side: const BorderSide(color: AppTheme.lightCardBorder, width: AppTheme.hairline),
         ),
         tooltip: 'ARUS AI Companion',
         onPressed: () => showAiCompanionBottomSheet(context, ref),
@@ -186,7 +186,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         decoration: const BoxDecoration(
           color: AppTheme.lightCardSurface,
           border: Border(
-            top: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+            top: BorderSide(color: AppTheme.lightCardBorder, width: AppTheme.hairline),
           ),
         ),
         child: BottomNavigationBar(

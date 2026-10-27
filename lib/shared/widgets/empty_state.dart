@@ -28,21 +28,29 @@ class EmptyStateView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.darkCardSurfaceElevated,
+                color: AppTheme.lightCardSurfaceElevated,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+                border: Border.all(
+                  color: AppTheme.lightCardBorder,
+                  width: AppTheme.hairline,
+                ),
               ),
-              child: Icon(icon, size: 40, color: AppTheme.textMutedDark),
+              // Sebelumnya #64748B di atas #F1F5F9 hanya 4,34:1, tipis untuk
+              // ikon sebesar ini. Dinaikkan ke #334155 supaya ikonnya jelas.
+              child: Icon(icon, size: 40, color: AppTheme.textSecondaryLight),
             ),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+              // maxLines 3 sebelumnya memotong ajakan aksi dengan elipsis.
+              // Pesan kosong harus utuh karena ia yang mengundang langkah
+              // berikutnya, jadi batas barisnya dilepas.
               style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textMutedDark,
+                fontSize: 13.5,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondaryLight,
               ),
             ),
             if (ctaText != null && onCtaPressed != null) ...[

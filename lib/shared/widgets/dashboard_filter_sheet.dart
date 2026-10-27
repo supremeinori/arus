@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../features/analytics/presentation/analytics_provider.dart';
 
 /// Satu sumber filter bisnis untuk Dashboard, Riwayat Transaksi, dan
@@ -35,12 +36,12 @@ class DashboardFilterSheet extends ConsumerStatefulWidget {
 }
 
 class _DashboardFilterSheetState extends ConsumerState<DashboardFilterSheet> {
-  static const _teal = Color(0xFF00A896);
-  static const _tealLight = Color(0xFFE6F6F4);
-  static const _textPrimary = Color(0xFF0F172A);
-  static const _textSecondary = Color(0xFF475569);
-  static const _textMuted = Color(0xFF64748B);
-  static const _border = Color(0xFFE2E8F0);
+  static const _teal = AppTheme.jadeTosca;
+  static const _tealLight = AppTheme.toscaSurface;
+  static const _textPrimary = AppTheme.textPrimaryLight;
+  static const _textSecondary = AppTheme.textSecondaryMid;
+  static const _textMuted = AppTheme.textMutedLight;
+  static const _border = AppTheme.lightCardBorder;
 
   late String? _tempOutletId;
   late DashboardDateFilter _tempDateFilter;
@@ -114,7 +115,7 @@ class _DashboardFilterSheetState extends ConsumerState<DashboardFilterSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
+                color: AppTheme.borderMid,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -175,7 +176,7 @@ class _DashboardFilterSheetState extends ConsumerState<DashboardFilterSheet> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppTheme.lightBackground,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: _border, width: 1.0),
               ),
@@ -248,12 +249,12 @@ class _DashboardFilterSheetState extends ConsumerState<DashboardFilterSheet> {
                   ),
                   selected: isSelected,
                   selectedColor: _teal,
-                  backgroundColor: const Color(0xFFF8FAFC),
+                  backgroundColor: AppTheme.lightBackground,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: BorderSide(
                       color: isSelected ? _teal : _border,
-                      width: 1.0,
+                      width: AppTheme.hairline,
                     ),
                   ),
                   onSelected: (selected) {
@@ -285,12 +286,12 @@ class _DashboardFilterSheetState extends ConsumerState<DashboardFilterSheet> {
                 ),
                 backgroundColor: _tempCustomDate != null
                     ? _tealLight
-                    : const Color(0xFFF8FAFC),
+                    : AppTheme.lightBackground,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
                     color: _tempCustomDate != null ? _teal : _border,
-                    width: 1.0,
+                    width: AppTheme.hairline,
                   ),
                 ),
                 onPressed: _pickCustomCalendarDate,
@@ -306,9 +307,6 @@ class _DashboardFilterSheetState extends ConsumerState<DashboardFilterSheet> {
                 backgroundColor: _teal,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
               ),
               onPressed: _apply,
               child: Text(

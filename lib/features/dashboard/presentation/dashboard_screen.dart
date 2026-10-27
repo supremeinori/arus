@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/dashboard_filter_sheet.dart';
 import '../../analytics/domain/analytics_models.dart';
@@ -20,21 +21,22 @@ import '../../sensors/presentation/sensor_provider.dart';
 import '../../../core/utils/timezone_converter.dart';
 import '../../settings/presentation/currency_provider.dart';
 import '../../settings/presentation/widgets/time_settings_section.dart';
+import '../../shell/presentation/main_shell.dart';
 
 /// Design tokens for Light Mode Owner Dashboard (Wireframe & Anti-AI-Slop Compliant)
 class _DashboardColors {
-  static const bg = Color(0xFFF8FAFC);
-  static const card = Color(0xFFFFFFFF);
-  static const textPrimary = Color(0xFF0F172A); // Slate-900 Navy
-  static const textSecondary = Color(0xFF475569); // Slate-600
-  static const textMuted = Color(0xFF64748B); // Slate-500
-  static const border = Color(0xFFE2E8F0); // Hairline 1px Slate-200
-  static const teal = Color(0xFF00A896); // Modern Jade Tosca
+  static const bg = AppTheme.lightBackground;
+  static const card = AppTheme.lightCardSurface;
+  static const textPrimary = AppTheme.textPrimaryLight; // Slate-900 Navy
+  static const textSecondary = AppTheme.textSecondaryMid; // Slate-600
+  static const textMuted = AppTheme.textMutedLight; // Slate-500
+  static const border = AppTheme.lightCardBorder; // Hairline 1px Slate-200
+  static const teal = AppTheme.jadeTosca; // Modern Jade Tosca
   static const tealLight = Color(0xFFE6F6F4);
-  static const amber = Color(0xFFD97706); // Warm Amber
+  static const amber = AppTheme.warningAmberStrong; // Warm Amber
   static const amberLight = Color(0xFFFEF3C7);
-  static const danger = Color(0xFFEF4444);
-  static const chartGrid = Color(0xFFF1F5F9);
+  static const danger = AppTheme.dangerRed;
+  static const chartGrid = AppTheme.lightCardSurfaceElevated;
 }
 
 class DashboardScreen extends ConsumerWidget {
@@ -249,7 +251,6 @@ class DashboardScreen extends ConsumerWidget {
                 _PeringatanCard(
                   ingredients: lowStockIngredients,
                   isLoading: ingredientsAsync.isLoading,
-                  onViewAll: () => context.push('/inventory'),
                 ),
 
                 // Safe area padding agar tidak tertutup floating AI button & bottom bar
@@ -572,7 +573,7 @@ class _HeroOmzetCard extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9), // Slate-100
+                    color: AppTheme.lightCardSurfaceElevated, // Slate-100
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _DashboardColors.border,
@@ -813,7 +814,7 @@ class _TerlarisCard extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: index == 0
                                 ? _DashboardColors.tealLight
-                                : const Color(0xFFF1F5F9),
+                                : AppTheme.lightCardSurfaceElevated,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           alignment: Alignment.center,
@@ -972,7 +973,7 @@ class _TrenCard extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: isPeak
                                   ? _DashboardColors.teal
-                                  : const Color(0xFFCBD5E1),
+                                  : AppTheme.borderMid,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -983,7 +984,7 @@ class _TrenCard extends StatelessWidget {
                                 ? point.date.substring(point.date.length - 2)
                                 : point.date,
                             style: GoogleFonts.inter(
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: isPeak
                                   ? FontWeight.w700
                                   : FontWeight.w500,
@@ -1010,19 +1011,17 @@ class _TrenCard extends StatelessWidget {
 // API TERSEDIA: GET /api/inventory/ingredients?outlet_id=...
 // Menampilkan bahan dengan stok kritis/habis aktual tanpa dummy data.
 // ============================================================================
-class _PeringatanCard extends StatelessWidget {
+class _PeringatanCard extends ConsumerWidget {
   final List<IngredientModel> ingredients;
   final bool isLoading;
-  final VoidCallback onViewAll;
 
   const _PeringatanCard({
     required this.ingredients,
     required this.isLoading,
-    required this.onViewAll,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final alertItems = ingredients.take(3).toList();
 
     return Container(
@@ -1048,7 +1047,12 @@ class _PeringatanCard extends StatelessWidget {
                 ),
               ),
               InkWell(
-                onTap: onViewAll,
+                onTap: () {
+                  // Switch ke tab Analytics (index 2 untuk owner/manager)
+                  ref.read(shellTabIndexProvider.notifier).state = 2;
+                  // Switch ke tab "Radar Stok Habis" di dalam Analytics (index 1)
+                  ref.read(analyticsActiveTabProvider.notifier).state = 1;
+                },
                 child: Text(
                   'Lihat Semua',
                   style: GoogleFonts.inter(
@@ -1142,27 +1146,6 @@ class _PeringatanCard extends StatelessWidget {
             }),
 
             const SizedBox(height: 6),
-
-            // Tombol Panah Kanan di Pojok Bawah Card (Wireframe: ->)
-            Align(
-              alignment: Alignment.centerRight,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: onViewAll,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF1F5F9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 18,
-                    color: _DashboardColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
           ],
         ],
       ),
@@ -1196,7 +1179,7 @@ class _LoadingCard extends StatelessWidget {
             width: 80,
             height: 12,
             decoration: BoxDecoration(
-              color: const Color(0xFFE2E8F0),
+              color: AppTheme.lightCardBorder,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -1205,7 +1188,7 @@ class _LoadingCard extends StatelessWidget {
             width: 180,
             height: 28,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: AppTheme.lightCardSurfaceElevated,
               borderRadius: BorderRadius.circular(6),
             ),
           ),
@@ -1230,7 +1213,7 @@ class _SkeletonList extends StatelessWidget {
           height: itemHeight,
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: AppTheme.lightBackground,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: _DashboardColors.border, width: 0.8),
           ),
@@ -1260,7 +1243,7 @@ class _SkeletonTrendBars extends StatelessWidget {
                   Container(
                     height: 24.0 + (i * 8.0),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
+                      color: AppTheme.lightCardBorder,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -1269,7 +1252,7 @@ class _SkeletonTrendBars extends StatelessWidget {
                     width: 14,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: AppTheme.lightCardSurfaceElevated,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

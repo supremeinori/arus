@@ -1017,7 +1017,6 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primary,
               minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => _startGame(_selectedMode),
             child: Text(
@@ -1034,8 +1033,6 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(50),
-              side: BorderSide(color: AppTheme.primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => setState(() => _gameState = GameState.lobby),
             child: Text(
@@ -1043,7 +1040,6 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-                color: AppTheme.primary,
               ),
             ),
           ),
@@ -1238,16 +1234,16 @@ class _GameOptionButton extends StatelessWidget {
     if (isAnswerChecked) {
       if (opt.key == correctKey) {
         // Jawaban Benar -> Selalu Hijau
-        buttonColor = const Color(0xFFDCFCE7); // Light green
-        borderColor = const Color(0xFF16A34A);
-        textColor = const Color(0xFF15803D);
-        trailingIcon = const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A));
+        buttonColor = AppTheme.successSurface; // Light green
+        borderColor = AppTheme.successGreenStrong;
+        textColor = AppTheme.successGreenDeep;
+        trailingIcon = const Icon(Icons.check_circle_rounded, color: AppTheme.successGreenStrong);
       } else if (opt.key == selectedOptionKey) {
         // Jawaban Terpilih Tapi Salah -> Merah
-        buttonColor = const Color(0xFFFEE2E2); // Light red
-        borderColor = const Color(0xFFDC2626);
-        textColor = const Color(0xFFB91C1C);
-        trailingIcon = const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626));
+        buttonColor = AppTheme.dangerSurface; // Light red
+        borderColor = AppTheme.dangerRedStrong;
+        textColor = AppTheme.dangerRedDeep;
+        trailingIcon = const Icon(Icons.cancel_rounded, color: AppTheme.dangerRedStrong);
       }
     }
 
@@ -1453,7 +1449,7 @@ class _GyroHoldPanel extends StatelessWidget {
                   Text(
                     '${dir.letter} ${dir.label}',
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textSecondary,
                     ),

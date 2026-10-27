@@ -141,7 +141,7 @@ class _BiometricLockWrapperState extends ConsumerState<BiometricLockWrapper> wit
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
                             fontSize: 13.5,
-                            color: const Color(0xFF64748B),
+                            color: AppTheme.textMutedLight,
                             height: 1.45,
                           ),
                         ),
@@ -150,9 +150,6 @@ class _BiometricLockWrapperState extends ConsumerState<BiometricLockWrapper> wit
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryBlue,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
                             elevation: 0,
                           ),
                           icon: const Icon(Icons.fingerprint_rounded, color: Colors.white, size: 24),

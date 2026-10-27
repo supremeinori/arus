@@ -475,7 +475,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${ref.money(summary.avgDailyProjectedIdr)}/hari',
-                  style: GoogleFonts.inter(color: AppTheme.jadeTosca, fontSize: 10.5, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(color: AppTheme.jadeTosca, fontSize: 11, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -524,7 +524,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   'vs $horizonDays hari lalu',
-                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10.5),
+                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 11),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -563,7 +563,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   ref.money(summary.peakProjectedDay.revenueIdr),
-                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10.5),
+                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 11),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -704,7 +704,7 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                   ),
                   const SizedBox(width: 10),
                   const _LegendIndicator(
-                    color: Color(0xFF0284C7),
+                    color: AppTheme.infoBlue,
                     label: 'Prediksi',
                     isDashed: true,
                   ),
@@ -734,7 +734,7 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
+                          color: activePoint.isProjected ? AppTheme.infoBlue : AppTheme.jadeTosca,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -751,15 +751,15 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: (activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca).withValues(alpha: 0.12),
+                          color: (activePoint.isProjected ? AppTheme.infoBlue : AppTheme.jadeTosca).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           activePoint.isProjected ? 'Prediksi' : 'Aktual',
                           style: GoogleFonts.inter(
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
+                            color: activePoint.isProjected ? AppTheme.infoBlue : AppTheme.jadeTosca,
                           ),
                         ),
                       ),
@@ -774,14 +774,14 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                         style: GoogleFonts.inter(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
+                          color: activePoint.isProjected ? AppTheme.infoBlue : AppTheme.jadeTosca,
                         ),
                       ),
                       if (activePoint.isProjected && activePoint.lowerBoundIdr > 0)
                         Text(
                           'CI: ${ref.money(activePoint.lowerBoundIdr)} - ${ref.money(activePoint.upperBoundIdr)}',
                           style: GoogleFonts.inter(
-                            fontSize: 9.5,
+                            fontSize: 11,
                             color: AppTheme.textMutedDark,
                           ),
                         ),
@@ -964,7 +964,7 @@ class _PredictiveChartPainter extends CustomPainter {
         text: TextSpan(
           text: label,
           style: GoogleFonts.inter(
-            fontSize: 9.5,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: AppTheme.textMutedDark,
           ),
@@ -1026,8 +1026,8 @@ class _PredictiveChartPainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF0284C7).withValues(alpha: 0.14),
-              const Color(0xFF0284C7).withValues(alpha: 0.04),
+              AppTheme.infoBlue.withValues(alpha: 0.14),
+              AppTheme.infoBlue.withValues(alpha: 0.04),
             ],
           ).createShader(Rect.fromLTRB(left, top, right, bottom))
           ..style = PaintingStyle.fill;
@@ -1082,7 +1082,7 @@ class _PredictiveChartPainter extends CustomPainter {
       if (fcstCoords.length > 1) {
         final fcstPath = _buildSmoothPath(fcstCoords);
         final fcstPaint = Paint()
-          ..color = const Color(0xFF0284C7)
+          ..color = AppTheme.infoBlue
           ..strokeWidth = 2.5
           ..style = PaintingStyle.stroke
           ..strokeCap = StrokeCap.round
@@ -1123,7 +1123,7 @@ class _PredictiveChartPainter extends CustomPainter {
     for (int i = 0; i < n; i++) {
       final isProjected = points[i].isProjected;
       final isTouched = touchedIndex == i;
-      final color = isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca;
+      final color = isProjected ? AppTheme.infoBlue : AppTheme.jadeTosca;
 
       if (isTouched) {
         final haloPaint = Paint()
@@ -1161,7 +1161,7 @@ class _PredictiveChartPainter extends CustomPainter {
           text: TextSpan(
             text: label,
             style: GoogleFonts.inter(
-              fontSize: 9.5,
+              fontSize: 11,
               fontWeight: (idx == touchedIndex) ? FontWeight.w700 : FontWeight.w500,
               color: (idx == touchedIndex) ? AppTheme.textPrimaryDark : AppTheme.textMutedDark,
             ),
@@ -1263,7 +1263,7 @@ class _DailyForecastList extends ConsumerWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                    color: AppTheme.infoBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -1272,7 +1272,7 @@ class _DailyForecastList extends ConsumerWidget {
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
-                        color: const Color(0xFF0284C7),
+                        color: AppTheme.infoBlue,
                       ),
                     ),
                   ),
@@ -1490,7 +1490,7 @@ class _StockStatusCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     label,
-                    style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
+                    style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1631,7 +1631,7 @@ class _StockoutItemCard extends ConsumerWidget {
                     children: [
                       Text(
                         'Estimasi Tanggal Habis:',
-                        style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
+                        style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
                       ),
                       Text(
                         item.projectedStockoutDate,
@@ -1649,7 +1649,7 @@ class _StockoutItemCard extends ConsumerWidget {
                   children: [
                     Text(
                       'Rekomendasi Restock:',
-                      style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
+                      style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
                     ),
                     Text(
                       '+${item.recommendedReorderQty} ${item.unit} (${ref.money(item.estimatedRestockCostIdr)})',

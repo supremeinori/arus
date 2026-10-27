@@ -36,7 +36,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
         color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         border: Border(
-          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         ),
       ),
       child: SingleChildScrollView(
@@ -381,7 +381,7 @@ class ShakeSettingsSheet extends ConsumerWidget {
                                 ? '✅ Lolos Threshold'
                                 : '⚠️ Kurang Kuat',
                             style: GoogleFonts.inter(
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: liveForce >= threshold
                                   ? Colors.green.shade700

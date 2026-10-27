@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/skeleton_list.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/outlet_models.dart';
@@ -97,6 +98,9 @@ class _OutletsTab extends StatelessWidget {
     return AsyncStateView<List<OutletModel>>(
       value: outletsAsync,
       onRetry: null,
+      // Kerangka kartu saat memuat, supaya tidak ada lompatan bentuk dari
+      // spinner ke daftar penuh.
+      skeleton: const SkeletonList(),
       dataBuilder: (outlets) {
         if (outlets.isEmpty) {
           return const EmptyStateView(
@@ -142,7 +146,7 @@ class _OutletCard extends StatelessWidget {
       statusColor = AppTheme.dangerRed;
       statusText = 'Kritis';
     } else if (perf?.performanceStatus == 'warning') {
-      statusColor = const Color(0xFFF59E0B);
+      statusColor = AppTheme.warningAmber;
       statusText = 'Perhatian';
     }
 
@@ -152,7 +156,7 @@ class _OutletCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -191,7 +195,7 @@ class _OutletCard extends StatelessWidget {
                             ),
                             child: const Text(
                               'Nonaktif',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.dangerRed),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.dangerRed),
                             ),
                           ),
                         ],
@@ -311,7 +315,7 @@ class _LbsTab extends ConsumerWidget {
               color: AppTheme.darkCardSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -473,9 +477,6 @@ class _LbsTab extends ConsumerWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.jadeTosca,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
                         ),
                         icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                         label: const Text('Buka Detail Cabang Terdekat', maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -520,7 +521,7 @@ class _LbsTab extends ConsumerWidget {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                  side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                 ),
                 child: ListTile(
                   leading: CircleAvatar(

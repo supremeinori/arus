@@ -252,7 +252,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   color: AppTheme.darkCardSurface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                    side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),

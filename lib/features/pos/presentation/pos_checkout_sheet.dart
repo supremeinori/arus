@@ -172,7 +172,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
-          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         ),
       ),
       child: SingleChildScrollView(
@@ -594,7 +594,7 @@ class _QuickAmountChip extends StatelessWidget {
     return ActionChip(
       label: Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textPrimaryDark)),
       backgroundColor: AppTheme.darkCardSurfaceElevated,
-      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+      side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       onPressed: onTap,
     );

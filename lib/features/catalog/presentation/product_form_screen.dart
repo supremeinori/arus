@@ -331,20 +331,20 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: AppTheme.dangerSurfacePale,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFDC2626), width: 1.5),
+                  border: Border.all(color: AppTheme.dangerRedStrong, width: 1.5),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                    const Icon(Icons.error_outline, color: AppTheme.dangerRedStrong, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         widget.errorMessage!,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12.5),
+                        style: GoogleFonts.inter(color: AppTheme.dangerRedStrong, fontSize: 12.5),
                       ),
                     ),
                   ],
@@ -362,11 +362,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                 hintText: 'Contoh: Es Kopi Susu Aren',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                  borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                 ),
               ),
               validator: (val) =>
@@ -388,11 +388,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: 'KOP-03',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                     ),
                     validator: (val) =>
@@ -410,11 +410,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: 'cup',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                     ),
                   ),
@@ -446,11 +446,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                     hintText: 'Pilih Kategori Produk',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                      borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                      borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                     ),
                   ),
                   items: [
@@ -497,11 +497,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: '22000',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                     ),
                     validator: (val) =>
@@ -520,11 +520,11 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                       hintText: 'Otomatis dari resep',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       ),
                     ),
                   ),
@@ -579,14 +579,17 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                         label: const Text('Bahan'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.darkCardSurfaceElevated,
-                          foregroundColor: AppTheme.jadeTosca,
+                          // Tombol abu ini memakai tosca sebagai warna teks.
+                          // Yang jade #00A896 di atas abu hanya 2,72:1, jadi
+                          // dipakai tosca tua #0F766E yang mencapai 5,0:1.
+                          foregroundColor: AppTheme.primaryToskaHover,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: AppTheme.jadeTosca, width: 1),
-                          ),
+                          // Tepi tosca ini tadinya menempel di dalam argumen shape.
+                          // Sudutnya kini ikut tema, tepinya dipindah ke sini supaya
+                          // tampilan tombol tidak ikut hilang.
+                          side: const BorderSide(color: AppTheme.primaryToskaHover, width: AppTheme.hairline),
                         ),
                       ),
                     ],
@@ -680,7 +683,7 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
                                             items: [
                                               const DropdownMenuItem<String?>(
                                                 value: null,
-                                                child: Text('-- Pilih Bahan --', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                                                child: Text('-- Pilih Bahan --', style: TextStyle(color: AppTheme.borderStrong, fontSize: 12)),
                                               ),
                                               ...optionLabels.entries.map((entry) {
                                                 return DropdownMenuItem<String?>(
@@ -766,9 +769,6 @@ class _ProductFormBodyState extends ConsumerState<_ProductFormBody> {
             backgroundColor: AppTheme.jadeTosca,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
           ),
           child: widget.isLoading
               ? const SizedBox(

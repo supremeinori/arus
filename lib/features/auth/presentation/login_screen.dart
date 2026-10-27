@@ -217,7 +217,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [AppTheme.jadeTosca, Color(0xFF0F766E)],
+                          colors: [AppTheme.jadeTosca, AppTheme.primaryToskaHover],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -348,11 +348,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: isLoading ? null : _handleBiometricLogin,
-                    icon: const Icon(
-                      Icons.fingerprint,
-                      color: AppTheme.jadeTosca,
-                      size: 20,
-                    ),
+                    icon: const Icon(Icons.fingerprint, size: 20),
                     label: Text(
                       'Masuk Via Biometrik',
                       maxLines: 1,
@@ -360,19 +356,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.jadeTosca,
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: AppTheme.lightCardSurface,
+                      // Latar dan tepi kini ikut tema tombol sekunder, jadi
+                      // tombol ini tidak lagi satu-satunya yang putih bertepi abu.
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(
-                        color: AppTheme.lightCardBorder,
-                        width: 1.0,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
                     ),
                   ),
 
@@ -416,7 +405,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(
                           color: AppTheme.lightCardBorder,
-                          width: 1.0,
+                          width: AppTheme.hairline,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -441,7 +430,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(
                           color: AppTheme.lightCardBorder,
-                          width: 1.0,
+                          width: AppTheme.hairline,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -466,7 +455,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(
                           color: AppTheme.lightCardBorder,
-                          width: 1.0,
+                          width: AppTheme.hairline,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

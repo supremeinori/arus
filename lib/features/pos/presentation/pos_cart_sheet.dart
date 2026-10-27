@@ -31,7 +31,7 @@ class PosCartSheet extends ConsumerWidget {
         color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         border: Border(
-          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         ),
       ),
       child: Column(

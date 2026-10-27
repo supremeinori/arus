@@ -359,15 +359,15 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0x22EF4444),
+                  color: AppTheme.dangerTint,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFEF4444), width: 1.0),
+                  border: Border.all(color: AppTheme.dangerRed, width: 1.0),
                 ),
                 child: Text(
                   _error!,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(color: const Color(0xFFF87171), fontSize: 12.5),
+                  style: GoogleFonts.inter(color: AppTheme.dangerRedStrong, fontSize: 12.5),
                 ),
               ),
               const SizedBox(height: 16),
@@ -620,9 +620,6 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                           backgroundColor: AppTheme.jadeTosca,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
                         ),
                         onPressed: (_aiLoading || hpp <= 0)
                             ? null
@@ -716,9 +713,11 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                             // c) Tombol sekunder "🤖 Lanjutkan ke Arus AI"
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.jadeTosca,
-                                side: const BorderSide(color: AppTheme.jadeTosca, width: 1.2),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                // Warna dan tepi ikut tema tombol sekunder.
+                                // Sebelumnya jade #00A896, dan di atas latar
+                                // tosca pucat itu hanya 2,86:1.
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                               onPressed: () => _navigateToAiChat(hpp),
                               icon: const Icon(Icons.forum_outlined, size: 16),
@@ -752,7 +751,10 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                         for (final m in [30, 50, 100])
                           OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppTheme.jadeTosca,
+                              // Chip saran ini berlatar abu netral, bukan tosca,
+                              // karena bentuknya chip di dalam form. Warnanya saja
+                              // yang digelapkan, jade di atas abu cuma 2,72:1.
+                              foregroundColor: AppTheme.primaryToskaHover,
                               side: const BorderSide(color: AppTheme.darkCardBorder),
                               backgroundColor: AppTheme.darkCardSurfaceElevated,
                             ),
@@ -823,9 +825,6 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 backgroundColor: AppTheme.jadeTosca,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
               ),
               child: _saving
                   ? const SizedBox(
@@ -856,12 +855,16 @@ class _MenuCreateScreenState extends ConsumerState<MenuCreateScreen> {
                 ),
                 label: Text(_isActive ? 'Nonaktifkan Menu' : 'Aktifkan Menu'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      _isActive ? AppTheme.dangerRed : AppTheme.jadeTosca,
+                  foregroundColor: _isActive
+                      ? AppTheme.dangerRedDeep
+                      : AppTheme.primaryToskaHover,
+                  // Latar mengikuti artinya: rose saat tindakannya menonaktifkan,
+                  // tosca saat mengaktifkan. Tanpa ini tombol merah akan duduk
+                  // di atas latar hijau kebiruan dari tema.
+                  backgroundColor: _isActive
+                      ? AppTheme.dangerSurfacePale
+                      : AppTheme.toscaSurfacePale,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                 ),
               ),
             ],

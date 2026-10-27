@@ -212,7 +212,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
             overflow: TextOverflow.ellipsis,
           ),
           backgroundColor: snapshot.validation.isValid
-              ? const Color(0xFF15803D)
+              ? AppTheme.successGreenDeep
               : AppTheme.dangerRed,
           behavior: SnackBarBehavior.floating,
         ),
@@ -307,7 +307,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: const Color(0xFF15803D),
+          backgroundColor: AppTheme.successGreenDeep,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -352,13 +352,13 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: validation.isValid
-                  ? const Color(0x1810B981)
-                  : const Color(0x18EF4444),
+                  ? AppTheme.successTintSoft
+                  : AppTheme.dangerTintSoft,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: validation.isValid
-                    ? const Color(0x3310B981)
-                    : const Color(0x33EF4444),
+                    ? AppTheme.successTintStrong
+                    : AppTheme.dangerTintStrong,
                 width: 1.0,
               ),
             ),
@@ -427,8 +427,6 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
             child: OutlinedButton.icon(
               onPressed: _isActionLoading ? null : () => _verifyChain(outlet.id),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.jadeTosca,
-                side: const BorderSide(color: AppTheme.jadeTosca),
                 minimumSize: const Size.fromHeight(44),
               ),
               icon: _isActionLoading
@@ -437,7 +435,7 @@ class _SingleChainLedgerViewState extends ConsumerState<_SingleChainLedgerView> 
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppTheme.jadeTosca,
+                        color: AppTheme.primaryToskaHover,
                       ),
                     )
                   : const Icon(Icons.shield_outlined, size: 18),
@@ -532,19 +530,19 @@ class _TransactionBlockCard extends ConsumerWidget {
     final borderColor = isTampered
         ? AppTheme.dangerRed
         : isGenesis
-            ? const Color(0xFFF59E0B)
+            ? AppTheme.warningAmber
             : AppTheme.darkCardBorder;
 
     final badgeColor = isTampered
         ? AppTheme.dangerRed
         : isGenesis
-            ? const Color(0xFFF59E0B)
+            ? AppTheme.warningAmber
             : AppTheme.jadeTosca;
 
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
-      color: isTampered ? const Color(0x18EF4444) : AppTheme.darkCardSurface,
+      color: isTampered ? AppTheme.dangerTintSoft : AppTheme.darkCardSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -585,20 +583,20 @@ class _TransactionBlockCard extends ConsumerWidget {
                       const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: isSale
-                        ? const Color(0x2210B981)
-                        : const Color(0x22EF4444),
+                        ? AppTheme.successTint
+                        : AppTheme.dangerTint,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: isSale ? const Color(0x3310B981) : const Color(0x33EF4444),
+                      color: isSale ? AppTheme.successTintStrong : AppTheme.dangerTintStrong,
                     ),
                   ),
                   child: Text(
                     isSale ? 'SALE' : block.eventType.toUpperCase(),
                     style: GoogleFonts.inter(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: isSale
-                          ? const Color(0xFF34D399)
+                          ? AppTheme.successGreenLight
                           : AppTheme.dangerRed,
                     ),
                   ),
@@ -726,7 +724,7 @@ class _HashLine extends StatelessWidget {
           child: Text(
             '$label:',
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppTheme.textMutedDark,
             ),
@@ -739,7 +737,7 @@ class _HashLine extends StatelessWidget {
                 : value,
             style: TextStyle(
               fontFamily: 'monospace',
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: isPrimary ? FontWeight.w600 : FontWeight.normal,
               color: isPrimary ? AppTheme.textPrimaryDark : AppTheme.textMutedDark,
             ),
@@ -782,7 +780,7 @@ class _ChainConnector extends StatelessWidget {
             Text(
               'Terkunci SHA-256 (Blok #$sourceIndex ➔ Blok #$targetIndex)',
               style: GoogleFonts.inter(
-                fontSize: 10,
+                fontSize: 11,
                 color: AppTheme.jadeTosca,
                 fontWeight: FontWeight.w600,
               ),

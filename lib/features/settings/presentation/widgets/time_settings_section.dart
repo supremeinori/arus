@@ -59,7 +59,7 @@ class TimeSettingsSection extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
             side: const BorderSide(
               color: AppTheme.darkCardBorder,
-              width: 1.0,
+              width: AppTheme.hairline,
             ),
           ),
           child: Column(

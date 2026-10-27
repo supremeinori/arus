@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/skeleton_list.dart';
 import '../domain/notification_models.dart';
 import 'notifications_provider.dart';
 
@@ -86,6 +87,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             child: AsyncStateView<NotificationsResponse>(
               value: notifsAsync,
               onRetry: () => ref.invalidate(notificationsListProvider),
+              // Kerangka kartu saat memuat, supaya tidak ada lompatan bentuk
+              // dari spinner ke daftar penuh.
+              skeleton: const SkeletonList(),
               dataBuilder: (data) {
                 var list = data.notifications;
                 if (_selectedFilter == 'unread') {
@@ -187,10 +191,10 @@ class _NotificationCard extends ConsumerWidget {
       color = AppTheme.dangerRed;
     } else if (item.type == 'target_achieved') {
       icon = Icons.emoji_events_outlined;
-      color = const Color(0xFF10B981);
+      color = AppTheme.successGreen;
     } else if (item.type == 'sales_change') {
       icon = Icons.trending_up_rounded;
-      color = const Color(0xFFF59E0B);
+      color = AppTheme.warningAmber;
     }
 
     return Card(
@@ -201,7 +205,7 @@ class _NotificationCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: item.isRead ? AppTheme.darkCardBorder : AppTheme.jadeTosca.withAlpha(120),
-          width: 1.0,
+          width: AppTheme.hairline,
         ),
       ),
       child: InkWell(

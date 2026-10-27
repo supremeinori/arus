@@ -89,7 +89,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: AppTheme.dangerRedStrong,
         ),
       );
       return;
@@ -136,7 +136,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-          backgroundColor: const Color(0xFF16A34A),
+          backgroundColor: AppTheme.successGreenStrong,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -184,7 +184,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Praktikum Aplikasi Mobile (PAM)',
+                        'Pemrograman Aplikasi Mobile (PAM)',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -195,7 +195,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir (Phase 1)',
+                        'Formulir evaluasi mata kuliah & syarat wajib presentasi tugas akhir',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: AppTheme.textMutedDark,
@@ -220,7 +220,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF16A34A),
+                              color: AppTheme.successGreenStrong,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -257,7 +257,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               hintText: 'Tuliskan kesan Anda di sini...',
               hintStyle: GoogleFonts.inter(
                 fontSize: 12.5,
-                color: const Color(0xFF94A3B8),
+                color: AppTheme.borderStrong,
               ),
               filled: true,
               fillColor: AppTheme.darkCardSurface,
@@ -301,7 +301,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               hintText: 'Tuliskan saran Anda di sini',
               hintStyle: GoogleFonts.inter(
                 fontSize: 12.5,
-                color: const Color(0xFF94A3B8),
+                color: AppTheme.borderStrong,
               ),
               filled: true,
               fillColor: AppTheme.darkCardSurface,

@@ -170,7 +170,7 @@ class _ProductResultCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
       ),
       child: ListTile(
         leading: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
@@ -205,15 +205,15 @@ class _OutletResultCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
       ),
       child: ListTile(
-        leading: const Icon(Icons.storefront_rounded, color: Color(0xFF16A34A)),
+        leading: const Icon(Icons.storefront_rounded, color: AppTheme.successGreenStrong),
         title: Text(o.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13.5), maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(o.address, style: GoogleFonts.inter(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
         trailing: const SizedBox(
           width: 24,
-          child: Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+          child: Icon(Icons.chevron_right_rounded, color: AppTheme.borderStrong),
         ),
         onTap: () => context.push('/outlets/${o.id}'),
       ),

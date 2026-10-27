@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/status_badge.dart';
 import '../data/insights_repository.dart';
 import '../domain/insight_models.dart';
 import 'insights_provider.dart';
@@ -28,7 +27,6 @@ class InsightsScreen extends ConsumerWidget {
               status == 'acknowledged'
                   ? 'Rekomendasi diterima.'
                   : 'Rekomendasi diabaikan.',
-              style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -42,11 +40,10 @@ class InsightsScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               'Gagal mengubah status: $e',
-              style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppTheme.dangerRedStrong,
           ),
         );
       }
@@ -62,7 +59,6 @@ class InsightsScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               'Rule engine selesai mengevaluasi inventaris & transaksi!',
-              style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
@@ -76,11 +72,10 @@ class InsightsScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               'Gagal menjalankan rule engine: $e',
-              style: GoogleFonts.inter(fontSize: 13),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: AppTheme.dangerRedStrong,
           ),
         );
       }
@@ -102,19 +97,13 @@ class InsightsScreen extends ConsumerWidget {
           children: [
             Text(
               'Rekomendasi',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             Text(
               'Keputusan bisnis berbasis data',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                color: AppTheme.textMutedDark,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMutedDark),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -209,17 +198,16 @@ class _SeverityFilters extends ConsumerWidget {
       return ChoiceChip(
         label: Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+              ),
         ),
         selected: selected,
         selectedColor: selectedColor,
         backgroundColor: AppTheme.darkCardSurface,
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         labelStyle: TextStyle(
           color: selected ? Colors.white : AppTheme.textSecondaryDark,
@@ -240,7 +228,7 @@ class _SeverityFilters extends ConsumerWidget {
           const SizedBox(width: 8),
           chip('Kritis', 'critical', AppTheme.dangerRed),
           const SizedBox(width: 8),
-          chip('Peringatan', 'warning', const Color(0xFFF59E0B)),
+          chip('Peringatan', 'warning', AppTheme.warningAmber),
         ],
       ),
     );
@@ -276,10 +264,10 @@ class _InsightCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isCritical ? const Color(0x18EF4444) : AppTheme.darkCardSurface,
+        color: isCritical ? AppTheme.dangerTintSoft : AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCritical ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+          color: isCritical ? AppTheme.dangerTintStrong : AppTheme.darkCardBorder,
           width: 1.0,
         ),
       ),
@@ -297,50 +285,29 @@ class _InsightCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14.5,
-                    color: AppTheme.textPrimaryDark,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimaryDark,
+                      ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
+              StatusBadge(
+                label: item.ruleCode,
+                kind: isCritical ? StatusKind.danger : StatusKind.primary,
+                fontSize: 11,
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isCritical
-                      ? const Color(0x22EF4444)
-                      : AppTheme.darkCardSurfaceElevated,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isCritical
-                        ? const Color(0x33EF4444)
-                        : AppTheme.darkCardBorder,
-                    width: 1.0,
-                  ),
-                ),
-                child: Text(
-                  item.ruleCode,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: isCritical ? AppTheme.dangerRed : AppTheme.jadeTosca,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             item.message,
-            style: GoogleFonts.inter(
-              fontSize: 12.5,
-              color: AppTheme.textSecondaryDark,
-              height: 1.35,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondaryDark,
+                  height: 1.35,
+                ),
           ),
           const SizedBox(height: 10),
 
@@ -352,7 +319,7 @@ class _InsightCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: AppTheme.jadeTosca.withAlpha(100),
-                width: 1,
+                width: AppTheme.hairline,
               ),
             ),
             child: Row(
@@ -367,11 +334,10 @@ class _InsightCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Rekomendasi: ${item.recommendation}',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.jadeTosca,
-                    ),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.jadeTosca,
+                        ),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -389,11 +355,10 @@ class _InsightCard extends StatelessWidget {
                 onPressed: onDismiss,
                 child: Text(
                   'Abaikan',
-                  style: GoogleFonts.inter(
-                    color: AppTheme.textMutedDark,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppTheme.textMutedDark,
+                        fontWeight: FontWeight.w600,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -405,17 +370,13 @@ class _InsightCard extends StatelessWidget {
                   backgroundColor: AppTheme.jadeTosca,
                   minimumSize: const Size(110, 36),
                   visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
                 ),
                 child: Text(
                   'Tindak Lanjuti',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -425,6 +386,17 @@ class _InsightCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+StatusKind _severityToKind(String severity) {
+  switch (severity) {
+    case 'critical':
+      return StatusKind.danger;
+    case 'warning':
+      return StatusKind.warning;
+    default:
+      return StatusKind.primary;
   }
 }
 
@@ -489,32 +461,19 @@ class _InsightSummaryCard extends StatelessWidget {
             children: [
               Text(
                 'Keyakinan',
-                style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textMutedDark,
-                ),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textMutedDark,
+                    ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const Spacer(),
-              Container(
+              StatusBadge(
+                label: confidence.label,
+                kind: _severityToKind(item.severity),
+                fontSize: 11,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: tone.withAlpha(34),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: tone.withAlpha(80), width: 1.0),
-                ),
-                child: Text(
-                  confidence.label,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: tone,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ),
             ],
           ),
@@ -531,12 +490,11 @@ class _InsightSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             item.recommendation,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-              height: 1.35,
-              color: AppTheme.textPrimaryDark,
-            ),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  height: 1.35,
+                  color: AppTheme.textPrimaryDark,
+                ),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -596,13 +554,12 @@ class _SummaryChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondaryDark,
-            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondaryDark,
+                ),
           ),
         ],
       ),
@@ -624,11 +581,10 @@ class _SectionHead extends StatelessWidget {
         children: [
           Text(
             'Semua Rekomendasi',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700,
-              fontSize: 13.5,
-              color: AppTheme.textPrimaryDark,
-            ),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimaryDark,
+                ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -638,15 +594,14 @@ class _SectionHead extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.darkCardSurfaceElevated,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+              border: Border.all(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
             ),
             child: Text(
               '$count',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textSecondaryDark,
-              ),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textSecondaryDark,
+                  ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -677,11 +632,10 @@ class _PipelineNote extends StatelessWidget {
           Expanded(
             child: Text(
               'Rekomendasi mengikuti alur Data → Informasi → Wawasan → Rekomendasi → Keputusan.',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                height: 1.4,
-                color: AppTheme.textMutedDark,
-              ),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    height: 1.4,
+                    color: AppTheme.textMutedDark,
+                  ),
             ),
           ),
         ],

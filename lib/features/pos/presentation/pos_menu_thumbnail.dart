@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 /// Thumbnail menu yang SELALU punya size pasti (gambar atau placeholder)
 /// untuk mencegah hit-test crash dan RenderBox unbounded height.
 class PosMenuThumbnail extends StatelessWidget {
@@ -47,9 +49,9 @@ class PosMenuThumbnail extends StatelessWidget {
 
   Widget _placeholder(IconData icon) {
     return Container(
-      color: const Color(0xFFF1F5F9),
+      color: AppTheme.lightCardSurfaceElevated,
       alignment: Alignment.center,
-      child: Icon(icon, size: (height != null && height! > 50) ? 32 : 20, color: const Color(0xFF94A3B8)),
+      child: Icon(icon, size: (height != null && height! > 50) ? 32 : 20, color: AppTheme.borderStrong),
     );
   }
 }

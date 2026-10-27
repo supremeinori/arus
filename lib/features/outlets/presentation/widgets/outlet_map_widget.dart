@@ -47,7 +47,7 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
       case 'critical':
         return AppTheme.dangerRed;
       case 'warning':
-        return const Color(0xFFF59E0B);
+        return AppTheme.warningAmber;
       case 'optimal':
       default:
         return AppTheme.jadeTosca;
@@ -196,7 +196,9 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
               FloatingActionButton.extended(
                 heroTag: 'btn_center_user',
                 backgroundColor: AppTheme.darkCardSurface,
-                foregroundColor: AppTheme.jadeTosca,
+                // Label putih dengan teks tosca: #00A896 di atas putih hanya
+                // 2,98:1, sedang teks 12 pt butuh 4,5:1.
+                foregroundColor: AppTheme.primaryToskaHover,
                 elevation: 3,
                 icon: const Icon(Icons.my_location_rounded, size: 18),
                 label: const Text('Lokasi Saya', style: TextStyle(fontSize: 12)),
@@ -254,7 +256,7 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
               elevation: 6,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -395,9 +397,6 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                             backgroundColor: AppTheme.jadeTosca,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
                           ),
                           onPressed: () => context.push('/outlets/${_selectedOutlet!.outletId}'),
                           child: const Text('Detail', style: TextStyle(fontSize: 12)),
@@ -700,7 +699,9 @@ class _OutletLocationPickerWidgetState extends ConsumerState<OutletLocationPicke
                     FloatingActionButton.small(
                       heroTag: 'picker_btn_gps',
                       backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      foregroundColor: AppTheme.jadeTosca,
+                      // Ikon #00A896 di atas abu #F1F5F9 hanya 2,72:1, di
+                      // bawah ambang 3:1 untuk elemen grafis.
+                      foregroundColor: AppTheme.primaryToskaHover,
                       elevation: 4,
                       tooltip: 'Gunakan Lokasi GPS Saya Saat Ini',
                       onPressed: _isLocatingGps ? null : _pickCurrentGpsLocation,
@@ -708,7 +709,7 @@ class _OutletLocationPickerWidgetState extends ConsumerState<OutletLocationPicke
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.jadeTosca),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryToskaHover),
                             )
                           : const Icon(Icons.gps_fixed_rounded, size: 18),
                     ),

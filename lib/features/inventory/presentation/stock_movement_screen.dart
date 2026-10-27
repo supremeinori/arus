@@ -55,7 +55,7 @@ class StockMovementScreen extends ConsumerWidget {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                  side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -65,7 +65,7 @@ class StockMovementScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isPositive ? const Color(0x2210B981) : const Color(0x22EF4444),
+                          color: isPositive ? AppTheme.successTint : AppTheme.dangerTint,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         // Arah stok dibaca dari ikon + label, bukan warna saja.
@@ -74,7 +74,7 @@ class StockMovementScreen extends ConsumerWidget {
                           children: [
                             Icon(
                               isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                              color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                              color: isPositive ? AppTheme.successGreen : AppTheme.dangerRed,
                               size: 20,
                             ),
                             const SizedBox(height: 2),
@@ -83,9 +83,9 @@ class StockMovementScreen extends ConsumerWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                fontSize: 9,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                color: isPositive ? AppTheme.successGreen : AppTheme.dangerRed,
                               ),
                             ),
                           ],
@@ -142,7 +142,7 @@ class StockMovementScreen extends ConsumerWidget {
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
-                                color: isPositive ? const Color(0xFF34D399) : const Color(0xFFF87171),
+                                color: isPositive ? AppTheme.successGreenLight : AppTheme.dangerRedStrong,
                               ),
                             ),
                             const SizedBox(height: 4),

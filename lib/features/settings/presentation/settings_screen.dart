@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/auth/biometric_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/timezone_converter.dart';
 import '../../../shared/widgets/settings_tile.dart';
+import '../../../shared/widgets/status_badge.dart';
 import '../../auth/presentation/auth_provider.dart';
 import 'currency_provider.dart';
 
@@ -30,7 +30,7 @@ class SettingsScreen extends ConsumerWidget {
         centerTitle: true,
         title: Text(
           'Pengaturan',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -72,10 +72,7 @@ class SettingsScreen extends ConsumerWidget {
               'Kelola autentikasi sidik jari/wajah dan kunci layar otomatis setelah 5 menit di background.',
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppTheme.textMutedDark,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMutedDark),
             ),
             const SizedBox(height: 12),
             SettingsSectionCard(
@@ -101,20 +98,16 @@ class SettingsScreen extends ConsumerWidget {
                     'Login Sidik Jari (Biometrik)',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
-                      color: AppTheme.textPrimaryDark,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimaryDark,
+                        ),
                   ),
                   subtitle: Text(
                     'Buka kunci dengan sidik jari/wajah & kunci otomatis 5 menit.',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppTheme.textMutedDark,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMutedDark),
                   ),
                   activeThumbColor: AppTheme.jadeTosca,
                   value:
@@ -133,7 +126,6 @@ class SettingsScreen extends ConsumerWidget {
                                 'Sensor biometrik tidak tersedia atau belum didaftarkan di perangkat ini.',
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(color: Colors.white),
                               ),
                             ),
                           );
@@ -157,7 +149,6 @@ class SettingsScreen extends ConsumerWidget {
                               'Login biometrik berhasil diaktifkan.',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(color: Colors.white),
                             ),
                           ),
                         );
@@ -174,7 +165,6 @@ class SettingsScreen extends ConsumerWidget {
                               'Login biometrik dinonaktifkan.',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(color: Colors.white),
                             ),
                           ),
                         );

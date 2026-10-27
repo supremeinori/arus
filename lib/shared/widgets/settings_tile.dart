@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_theme.dart';
 
@@ -12,11 +11,18 @@ class SettingsSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      color: AppTheme.darkCardSurface,
+      elevation: 1,
+      shadowColor: AppTheme.shadowSoft,
+      color: AppTheme.lightCardSurface,
+      // clipBehavior menjaga riak tekan tetap di dalam sudut kartu supaya tepi
+      // bulatnya tidak tertimpa kotak saat baris ditekan.
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        side: const BorderSide(
+          color: AppTheme.lightCardBorder,
+          width: AppTheme.hairline,
+        ),
       ),
       child: Column(children: children),
     );
@@ -33,12 +39,11 @@ class SettingsSectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.inter(
-        fontSize: 11.5,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.4,
-        color: AppTheme.textMutedDark,
-      ),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.4,
+            color: AppTheme.textMutedDark,
+          ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -54,7 +59,7 @@ class SettingsTileDivider extends StatelessWidget {
     return const Divider(
       height: 1,
       indent: 56,
-      color: AppTheme.darkCardBorder,
+      color: AppTheme.lightCardBorder,
     );
   }
 }
@@ -87,10 +92,9 @@ class SettingsNavTile extends StatelessWidget {
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-          fontSize: 13.5,
-        ),
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
       ),
       subtitle: subtitle == null
           ? null
@@ -98,11 +102,10 @@ class SettingsNavTile extends StatelessWidget {
               subtitle!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 11.5,
-                height: 1.35,
-                color: AppTheme.textMutedDark,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    height: 1.35,
+                    color: AppTheme.textMutedDark,
+                  ),
             ),
       trailing:
           trailing ??
@@ -112,56 +115,6 @@ class SettingsNavTile extends StatelessWidget {
             color: AppTheme.textMutedDark,
           ),
       onTap: onTap,
-    );
-  }
-}
-
-/// Chip nilai pengaturan aktif, mis. "IDR" untuk kurs, "WIB" untuk waktu.
-class SettingsValueChip extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-
-  const SettingsValueChip({super.key, required this.label, this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppTheme.darkCardSurfaceElevated,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 12, color: AppTheme.jadeTosca),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.jadeTosca,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        const Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 14,
-          color: AppTheme.textMutedDark,
-        ),
-      ],
     );
   }
 }

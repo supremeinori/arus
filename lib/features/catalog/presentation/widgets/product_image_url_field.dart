@@ -110,14 +110,14 @@ class ProductImageUrlField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(
                   color: AppTheme.darkCardBorder,
-                  width: 1.0,
+                  width: AppTheme.hairline,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(
                   color: AppTheme.darkCardBorder,
-                  width: 1.0,
+                  width: AppTheme.hairline,
                 ),
               ),
             ),
@@ -318,7 +318,7 @@ class _ProductImagePreviewState extends State<ProductImagePreview> {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 9, color: color, height: 1.1),
+            style: GoogleFonts.inter(fontSize: 11, color: color, height: 1.1),
           ),
         ],
       ),

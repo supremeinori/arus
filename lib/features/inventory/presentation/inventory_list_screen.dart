@@ -1,9 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/skeleton_list.dart';
+import '../../../shared/widgets/status_badge.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../outlets/presentation/outlets_provider.dart';
@@ -63,7 +64,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Hapus Bahan Baku?', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        title: Text('Hapus Bahan Baku?', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
         // C15: konten dialog dibatasi + scroll agar tidak overflow.
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -76,7 +77,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   'Apakah Anda yakin ingin menghapus bahan baku “${item.name}” dari cabang ini? Riwayat mutasi dan resep yang bersinggungan akan terpengaruh.',
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 13),
+                  style: Theme.of(ctx).textTheme.bodyMedium,
                 ),
               ],
             ),
@@ -85,12 +86,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMuted)),
+            // Gaya teks diserahkan ke tema supaya seragam dengan tombol Batal lain.
+            child: const Text('Batal'),
           ),
           ElevatedButton(
+            // Tombol hapus tetap merah, tetapi sudut dan gaya teks diserahkan ke tema.
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Hapus', style: GoogleFonts.inter(color: Colors.white)),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -105,7 +108,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppTheme.textPrimaryDark,
-            content: Text('Bahan baku “${item.name}” telah dihapus.', style: GoogleFonts.inter()),
+            content: Text('Bahan baku “${item.name}” telah dihapus.'),
           ),
         );
       }
@@ -128,7 +131,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Guncangan terdeteksi! Memperbarui data bahan baku...',
-                  style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
                 ),
               ],
             ),
@@ -156,7 +159,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         centerTitle: true,
         title: Text(
           isStaff ? 'Stok & Estimasi Porsi' : 'Bahan Baku & Inventaris',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         actions: [
           if (!isStaff)
@@ -186,7 +189,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           ? FloatingActionButton.extended(
               backgroundColor: AppTheme.jadeTosca,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: Text('Tambah Bahan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              label: Text('Tambah Bahan', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
               onPressed: () {
                 final outletName = outletsAsync.value?.firstWhere(
                   (o) => o.id == selectedOutletId,
@@ -206,7 +209,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               decoration: const BoxDecoration(
                 color: AppTheme.darkCardSurface,
                 border: Border(
-                  bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                  bottom: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                 ),
               ),
               child: AsyncStateView(
@@ -224,7 +227,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       'Tidak ada cabang yang ditugaskan.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMutedDark),
                     );
                   }
 
@@ -245,7 +248,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'Pilih Cabang:',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -259,7 +264,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                                 value: o.id,
                                 child: Text(
                                   o.name,
-                                  style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               );
@@ -291,7 +296,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 children: [
                   TextField(
                     controller: _searchController,
-                    style: GoogleFonts.inter(fontSize: 13.5, color: AppTheme.textPrimaryDark),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textPrimaryDark),
                     decoration: InputDecoration(
                       hintText: 'Cari bahan baku (kopi, susu, air)...',
                       prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textMutedDark),
@@ -314,17 +319,43 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
+
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _InventoryFilterChip(label: 'Semua Bahan', value: 'all', isSelected: filterState.status == 'all'),
+                        _InventoryFilterChip(
+                          label: 'Semua Bahan',
+                          value: 'all',
+                          isSelected: filterState.status == 'all',
+                        ),
                         const SizedBox(width: 8),
-                        _InventoryFilterChip(label: 'Stok Aman', value: 'ok', isSelected: filterState.status == 'ok'),
+
+                        _InventoryFilterChip(
+                          label: 'Stok Aman',
+                          value: 'ok',
+                          isSelected: filterState.status == 'ok',
+                        ),
                         const SizedBox(width: 8),
-                        _InventoryFilterChip(label: 'Stok Menipis', value: 'low', isSelected: filterState.status == 'low', icon: Icons.warning_amber_rounded, color: const Color(0xFFF59E0B)),
+
+                        _InventoryFilterChip(
+                          label: 'Stok Menipis',
+                          value: 'low',
+                          isSelected: filterState.status == 'low',
+                          icon: Icons.warning_amber_rounded,
+                          color: AppTheme.warningAmber,
+                        ),
                         const SizedBox(width: 8),
-                        _InventoryFilterChip(label: 'Stok Habis', value: 'out', isSelected: filterState.status == 'out', icon: Icons.cancel_outlined, color: AppTheme.dangerRed),
+
+                        _InventoryFilterChip(
+                          label: 'Stok Habis',
+                          value: 'out',
+                          isSelected: filterState.status == 'out',
+                          icon: Icons.cancel_outlined,
+                          color: AppTheme.dangerRed,
+                        ),
                       ],
                     ),
                   ),
@@ -339,6 +370,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               child: AsyncStateView(
                 value: ingredientsAsync,
                 onRetry: () => ref.invalidate(ingredientsListProvider),
+                // Kerangka kartu saat memuat, supaya tidak ada lompatan bentuk
+                // dari spinner ke daftar penuh.
+                skeleton: const SkeletonList(),
                 dataBuilder: (ingredients) {
                   if (ingredients.isEmpty) {
                     return EmptyStateView(
@@ -459,21 +493,14 @@ class _StatTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textMuted,
-            ),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.textMutedDark),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -0.3,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: color, letterSpacing: -0.3),
           ),
         ],
       ),
@@ -505,19 +532,15 @@ class _InventoryFilterChip extends ConsumerWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(
-          fontSize: 12.5,
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        color: isSelected ? Colors.white : (color ?? AppTheme.textSecondaryDark),
         ),
       ),
       selected: isSelected,
       selectedColor: color ?? AppTheme.jadeTosca,
       backgroundColor: AppTheme.darkCardSurface,
-      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+      side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : (color ?? AppTheme.textSecondaryDark),
-      ),
       onSelected: (selected) {
         if (selected) {
           ref.read(inventoryFilterProvider.notifier).state =
@@ -544,19 +567,23 @@ class _IngredientCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Color cardBorder = AppTheme.darkCardBorder;
-    Color badgeBg = AppTheme.darkCardSurfaceElevated;
-    Color badgeColor = AppTheme.jadeTosca;
-    String badgeText = item.formattedStock;
+    StatusKind stockKind;
+    String stockLabel = item.formattedStock;
+    String statusLabel;
+    StatusKind statusKind;
 
     if (item.isOutOfStock) {
-      cardBorder = const Color(0x33EF4444);
-      badgeBg = const Color(0x22EF4444);
-      badgeColor = const Color(0xFFF87171);
+      stockKind = StatusKind.danger;
+      statusLabel = 'Habis';
+      statusKind = StatusKind.danger;
     } else if (item.isLowStock) {
-      cardBorder = const Color(0x33F59E0B);
-      badgeBg = const Color(0x22F59E0B);
-      badgeColor = const Color(0xFFFBBF24);
+      stockKind = StatusKind.warning;
+      statusLabel = 'Menipis (Batas: ${item.reorderLevel})';
+      statusKind = StatusKind.warning;
+    } else {
+      stockKind = StatusKind.success;
+      statusLabel = 'Aman';
+      statusKind = StatusKind.success;
     }
 
     return Container(
@@ -564,117 +591,179 @@ class _IngredientCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppTheme.darkCardSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cardBorder, width: 1.0),
+        border: Border.all(color: AppTheme.lightCardBorder, width: AppTheme.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.darkCardSurfaceElevated,
-                  borderRadius: BorderRadius.circular(8),
+          // === AREA ATAS (fixed height 96px) ===
+          SizedBox(
+            height: 96,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkCardSurfaceElevated,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.egg_alt_outlined, color: AppTheme.jadeTosca, size: 22),
                 ),
-                child: const Icon(Icons.egg_alt_outlined, color: AppTheme.jadeTosca, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: AppTheme.textPrimaryDark,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimaryDark,
+                            ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Modal: ${ref.money(item.costPerUnit)} / ${item.unit} • Reorder: ${item.reorderLevel} ${item.unit}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 11.5),
-                    ),
-                  ],
+                      const SizedBox(height: 3),
+                      Text(
+                        'Modal: ${ref.money(item.costPerUnit)} / ${item.unit} • Reorder: ${item.reorderLevel} ${item.unit}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textMutedDark,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: cardBorder),
-                ),
-                child: Text(
-                  badgeText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    color: badgeColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
+              ],
+            ),
+          ),
+
+          // Spacing antar area atas & baris aksi
+          const SizedBox(height: 10),
+
+          // === BARIS AKSI (Row FIXED — tidak Wrap) ===
+          // Setiap kolom punya lebar EKSPLISIT → posisi X & Y SELALU SAMA di semua kartu.
+          // Gap antar kolom: 12px (lebih longgar dari 8px sebelumnya).
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Badge stok: mengikuti isi dengan batas maksimum
+              IntrinsicWidth(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 60,
+                    maxWidth: 100,
+                  ),
+                  child: StatusBadge(
+                    label: stockLabel,
+                    kind: stockKind,
+                    fontSize: 12,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
+
+              const SizedBox(width: 8),
+
+              // Badge status: mengambil ruang yang tersedia
               Expanded(
-                child: item.isOutOfStock
-                    ? Text(
-                        'Bahan Baku Habis!',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.dangerRed),
-                      )
-                    : item.isLowStock
-                        ? Text(
-                            'Stok Menipis (Batas: ${item.reorderLevel})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFFFBBF24)),
-                          )
-                        : Text(
-                            'Stok Aman',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF10B981)),
-                          ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textMutedDark),
-                tooltip: 'Edit Bahan',
-                onPressed: onEdit,
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.dangerRed),
-                tooltip: 'Hapus Bahan',
-                onPressed: onDelete,
-              ),
-              const SizedBox(width: 4),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.tune_rounded, size: 15, color: Colors.white),
-                label: Text('Sesuaikan', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.jadeTosca,
-                  minimumSize: const Size(90, 34),
-                  visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 150,
+                    ),
+                    child: StatusBadge(
+                      label: statusLabel,
+                      kind: statusKind,
+                      fontSize: 11,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                    ),
+                  ),
                 ),
-                onPressed: onAdjust,
+              ),
+
+              const SizedBox(width: 4),
+
+              // Tombol edit
+              SizedBox(
+                width: 32,
+                height: 36,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: AppTheme.textMutedDark,
+                  ),
+                  tooltip: 'Edit Bahan',
+                  onPressed: onEdit,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              // Tombol hapus
+              SizedBox(
+                width: 32,
+                height: 36,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: AppTheme.dangerRed,
+                  ),
+                  tooltip: 'Hapus Bahan',
+                  onPressed: onDelete,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+
+              const SizedBox(width: 6),
+
+              // Tombol sesuaikan
+              SizedBox(
+                width: 96,
+                height: 34,
+                child: ElevatedButton.icon(
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    size: 15,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Sesuaikan',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.jadeTosca,
+                    minimumSize: const Size(96, 34),
+                    maximumSize: const Size(96, 34),
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: onAdjust,
+                ),
               ),
             ],
-          ),
+          )
         ],
       ),
     );
@@ -717,91 +806,114 @@ class _StaffPortionView extends ConsumerWidget {
                 color: AppTheme.darkCardSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isZero ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+                  color: isZero ? AppTheme.dangerTintStrong : AppTheme.darkCardBorder,
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: p.imageUrl != null && p.imageUrl!.isNotEmpty
-                        ? Image.network(
-                            p.imageUrl!,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Container(
-                              width: 52,
-                              height: 52,
-                              color: AppTheme.darkCardSurfaceElevated,
-                              child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
-                            ),
-                          )
-                        : Container(
-                            width: 52,
-                            height: 52,
-                            color: AppTheme.darkCardSurfaceElevated,
-                            child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+                  // === AREA ATAS (fixed height 82px) ===
+                  SizedBox(
+                    height: 82,
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          p.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppTheme.textPrimaryDark,
-                          ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                              ? Image.network(
+                                  p.imageUrl!,
+                                  width: 52,
+                                  height: 52,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => Container(
+                                    width: 52,
+                                    height: 52,
+                                    color: AppTheme.darkCardSurfaceElevated,
+                                    child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
+                                  ),
+                                )
+                              : Container(
+                                  width: 52,
+                                  height: 52,
+                                  color: AppTheme.darkCardSurfaceElevated,
+                                  child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
+                                ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${ref.money(p.priceIdr)} • SKU: ${p.sku}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${ref.money(p.priceIdr)} • SKU: ${p.sku}',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMutedDark),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isZero ? const Color(0x22EF4444) : AppTheme.darkCardSurfaceElevated,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isZero ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+
+                  // Spacing antar area atas & badge estimasi
+                  const SizedBox(height: 10),
+
+                  // === BADGE ESTIMASI (Row FIXED — posisi kanan tetap) ===
+                  // Posisi Y-nya FIXED: 92px dari atas kartu (82 + 10).
+                  // Badge diletakkan di kolom kanan dengan lebar tetap 120px,
+                  // di dalam Row yang memenuhi lebar kartu → selalu kanan, tidak bergerak.
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 120,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isZero ? AppTheme.dangerTint : AppTheme.darkCardSurfaceElevated,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isZero ? AppTheme.dangerTintStrong : AppTheme.darkCardBorder,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                isZero ? 'Habis' : '${p.estimatedPortions} Porsi',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: isZero ? AppTheme.dangerRed : AppTheme.jadeTosca,
+                                    ),
+                              ),
+                              Text(
+                                isZero ? 'Bahan Kurang' : 'Estimasi',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: isZero ? AppTheme.dangerRed : AppTheme.textMutedDark,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          isZero ? 'Habis' : '${p.estimatedPortions} Porsi',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isZero ? AppTheme.dangerRed : AppTheme.jadeTosca,
-                          ),
-                        ),
-                        Text(
-                          isZero ? 'Bahan Kurang' : 'Estimasi',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: isZero ? AppTheme.dangerRed : AppTheme.textMutedDark,
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
                 ],
               ),

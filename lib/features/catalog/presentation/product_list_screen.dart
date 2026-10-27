@@ -1,10 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/skeleton_list.dart';
+import '../../../shared/widgets/status_badge.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import 'catalog_provider.dart';
@@ -99,7 +100,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       selected: selectedCategory == null,
                       selectedColor: AppTheme.jadeTosca,
                       backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                      side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
                         color: selectedCategory == null ? Colors.white : AppTheme.textPrimaryDark,
@@ -116,13 +117,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     child: FilterChip(
                       label: const Text('Tampilkan nonaktif'),
                       selected: showInactive,
-                      selectedColor: const Color(0x33EF4444),
+                      selectedColor: AppTheme.dangerTintStrong,
                       backgroundColor: AppTheme.darkCardSurfaceElevated,
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                      side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       labelStyle: TextStyle(
                         color: showInactive
-                            ? const Color(0xFFF87171)
+                            ? AppTheme.dangerRedStrong
                             : AppTheme.textPrimaryDark,
                         fontWeight: showInactive ? FontWeight.w700 : FontWeight.w500,
                       ),
@@ -143,7 +144,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                         selected: selectedCategory == cat.id,
                         selectedColor: AppTheme.jadeTosca,
                         backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                        side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         labelStyle: TextStyle(
                           color: selectedCategory == cat.id ? Colors.white : AppTheme.textPrimaryDark,
@@ -173,6 +174,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               child: AsyncStateView(
                 value: productsState,
                 onRetry: () => ref.refresh(productListProvider),
+                // Kerangka kartu saat memuat, supaya tidak ada lompatan bentuk
+                // dari spinner ke daftar penuh.
+                skeleton: const SkeletonList(),
                 dataBuilder: (products) {
                   if (products.isEmpty) {
                     return const EmptyStateView(
@@ -188,11 +192,18 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                     itemBuilder: (context, index) {
                       final prod = products[index];
 
+                      // Tepi kartu produk dibuat lebih tegas supaya batas tiap
+                      // produk terbaca. Elemen di dalam kartu (kotak gambar, chip
+                      // SKU) tetap hairline Slate-200: batas luar harus lebih
+                      // kuat dari garis di dalamnya (revisi 27 Okt 2026).
                       return Container(
                         decoration: BoxDecoration(
                           color: AppTheme.darkCardSurface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.darkCardBorder, width: 1.0),
+                          border: Border.all(
+                            color: AppTheme.lightCardBorderStrong,
+                            width: AppTheme.hairline,
+                          ),
                         ),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
@@ -248,33 +259,18 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                               prod.name,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 15,
-                                                color: AppTheme.textPrimaryDark,
-                                              ),
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppTheme.textPrimaryDark,
+                                                  ),
                                             ),
                                           ),
                                           if (!prod.isActive) ...[
                                             const SizedBox(width: 6),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0x22EF4444),
-                                                borderRadius: BorderRadius.circular(4),
-                                                border: Border.all(color: const Color(0xFFEF4444)),
-                                              ),
-                                              child: Text(
-                                                'NONAKTIF',
-                                                style: GoogleFonts.inter(
-                                                  color: const Color(0xFFF87171),
-                                                  fontSize: 9.5,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
+                                            StatusBadge.danger(
+                                              label: 'NONAKTIF',
+                                              fontSize: 11,
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             ),
                                           ],
                                         ],
@@ -282,25 +278,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                       const SizedBox(height: 4),
                                       Row(
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.darkCardSurfaceElevated,
-                                              borderRadius: BorderRadius.circular(4),
-                                              border: Border.all(color: AppTheme.darkCardBorder),
-                                            ),
-                                            child: Text(
-                                              prod.sku,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 11,
-                                                color: AppTheme.textMutedDark,
-                                              ),
-                                            ),
+                                          StatusBadge.neutral(
+                                            label: prod.sku,
+                                            fontSize: 11,
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           ),
                                           if (prod.categoryName != null) ...[
                                             const SizedBox(width: 6),
@@ -309,10 +290,9 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                                 '• ${prod.categoryName}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 12,
-                                                  color: AppTheme.textMutedDark,
-                                                ),
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                      color: AppTheme.textMutedDark,
+                                                    ),
                                               ),
                                             ),
                                           ],
@@ -328,62 +308,32 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                                             child: MoneyText(
                                               prod.priceIdr,
                                               maxLines: 1,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppTheme.jadeTosca,
-                                              ),
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppTheme.jadeTosca,
+                                                  ),
                                             ),
                                           ),
                                           if (canManage && prod.costIdr != null)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0x26F59E0B),
-                                                borderRadius: BorderRadius.circular(4),
-                                                border: Border.all(
-                                                  color: const Color(0x40F59E0B),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                'HPP: ${ref.money(prod.costIdr!)}',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 11,
-                                                  color: const Color(0xFFF59E0B),
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
+                                            StatusBadge.warning(
+                                              label: 'HPP: ${ref.money(prod.costIdr!)}',
+                                              fontSize: 11,
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                             ),
                                         ],
                                       ),
                                       const SizedBox(height: 8),
 
                                       // Estimasi Porsi Badge
-                                      Container(
+                                      StatusBadge(
+                                        label: prod.estimatedPortions > 0
+                                            ? 'Estimasi: ${prod.estimatedPortions} Porsi'
+                                            : 'Habis (Bahan Baku Kurang)',
+                                        kind: prod.estimatedPortions > 0
+                                            ? StatusKind.primary
+                                            : StatusKind.danger,
+                                        fontSize: 11,
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: prod.estimatedPortions > 0 ? const Color(0x1F00A896) : const Color(0x26EF4444),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(
-                                            color: prod.estimatedPortions > 0 ? const Color(0x4000A896) : const Color(0x40EF4444),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          prod.estimatedPortions > 0
-                                              ? 'Estimasi: ${prod.estimatedPortions} Porsi'
-                                              : 'Habis (Bahan Baku Kurang)',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            color: prod.estimatedPortions > 0 ? AppTheme.jadeTosca : const Color(0xFFEF4444),
-                                          ),
-                                        ),
                                       ),
                                     ],
                                   ),
@@ -410,7 +360,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
-                side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
               ),
               icon: const Icon(Icons.add),
               label: const Text('Tambah Produk'),

@@ -213,19 +213,19 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFEF2F2),
+                      color: AppTheme.dangerSurfacePale,
                       border: Border(
                         bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.5),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                        const Icon(Icons.error_outline, color: AppTheme.dangerRedStrong, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             chatState.errorMessage!,
-                            style: GoogleFonts.inter(color: const Color(0xFFDC2626), fontSize: 12),
+                            style: GoogleFonts.inter(color: AppTheme.dangerRedStrong, fontSize: 12),
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -308,12 +308,12 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                       foregroundColor: AppTheme.textPrimaryDark,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       alignment: Alignment.centerLeft,
-                      side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      side: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                     ),
-                    icon: const Icon(Icons.help_outline_rounded, size: 16, color: AppTheme.jadeTosca),
+                    // Baris saran ini tetap berlatar putih karena bentuknya
+                    // daftar, bukan tombol sekunder. Ikonnya saja yang digelapkan,
+                    // #00A896 di atas putih hanya 2,98:1.
+                    icon: const Icon(Icons.help_outline_rounded, size: 16, color: AppTheme.primaryToskaHover),
                     label: Text(
                       prompt,
                       style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimaryDark),
@@ -412,11 +412,11 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.verified_outlined, size: 12, color: Color(0xFF22C55E)),
+                          const Icon(Icons.verified_outlined, size: 12, color: AppTheme.successGreen),
                           const SizedBox(width: 4),
                           Text(
                             'Grounded Fact: ${message.factsUsed.length} fakta database',
-                            style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textSecondaryDark),
                           ),
                         ],
                       ),
@@ -434,7 +434,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.tips_and_updates_outlined, size: 14, color: Color(0xFFF59E0B)),
+                          const Icon(Icons.tips_and_updates_outlined, size: 14, color: AppTheme.warningAmber),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -524,7 +524,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
       decoration: const BoxDecoration(
         color: AppTheme.darkCardSurface,
         border: Border(
-          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         ),
       ),
       child: SafeArea(
@@ -551,13 +551,13 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                    borderSide: const BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
                       color: _isDictating ? jadeTosca : AppTheme.darkCardBorder,
-                      width: 1.0,
+                      width: AppTheme.hairline,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
@@ -573,7 +573,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
             IconButton(
               icon: Icon(
                 _isDictating ? Icons.mic : Icons.mic_none_rounded,
-                color: _isDictating ? const Color(0xFFEF4444) : AppTheme.textMutedDark,
+                color: _isDictating ? AppTheme.dangerRed : AppTheme.textMutedDark,
                 size: 24,
               ),
               tooltip: _isDictating ? 'Hentikan Dikte' : 'Dikte Suara (STT)',
@@ -629,12 +629,12 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
 
     switch (voiceState.sessionState) {
       case VoiceSessionState.listening:
-        statusColor = const Color(0xFFEF4444);
+        statusColor = AppTheme.dangerRed;
         statusTitle = 'Mendengarkan...';
         statusIcon = Icons.mic_rounded;
         break;
       case VoiceSessionState.processingFiller:
-        statusColor = const Color(0xFFF59E0B);
+        statusColor = AppTheme.warningAmber;
         statusTitle = 'Menganalisis...';
         statusIcon = Icons.hourglass_top_rounded;
         break;
@@ -776,7 +776,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                         const SizedBox(height: 8),
                         Text(
                           voiceState.errorMessage!,
-                          style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFFEF4444)),
+                          style: GoogleFonts.inter(fontSize: 11, color: AppTheme.dangerRed),
                         ),
                       ],
                     ],
@@ -793,7 +793,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           decoration: const BoxDecoration(
             color: AppTheme.darkCardSurface,
             border: Border(
-              top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+              top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
             ),
           ),
           child: SafeArea(
@@ -812,12 +812,12 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: voiceState.sessionState == VoiceSessionState.listening
-                          ? const Color(0xFFEF4444)
+                          ? AppTheme.dangerRed
                           : jadeTosca,
                       boxShadow: [
                         BoxShadow(
                           color: (voiceState.sessionState == VoiceSessionState.listening
-                                  ? const Color(0xFFEF4444)
+                                  ? AppTheme.dangerRed
                                   : jadeTosca)
                               .withValues(alpha: 0.35),
                           blurRadius: 16,

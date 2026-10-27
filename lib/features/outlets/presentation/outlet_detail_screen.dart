@@ -108,9 +108,6 @@ class _DetailContent extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.dangerRed,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
             onPressed: () async {
               Navigator.of(dialogContext).pop();
@@ -200,7 +197,7 @@ class _DetailContent extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   side: const BorderSide(
                     color: AppTheme.darkCardBorder,
-                    width: 1.0,
+                    width: AppTheme.hairline,
                   ),
                 ),
                 child: Padding(
@@ -218,13 +215,13 @@ class _DetailContent extends ConsumerWidget {
                             ),
                             decoration: BoxDecoration(
                               color: outlet.isActive
-                                  ? const Color(0x2210B981)
-                                  : const Color(0x22EF4444),
+                                  ? AppTheme.successTint
+                                  : AppTheme.dangerTint,
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: outlet.isActive
-                                    ? const Color(0x3310B981)
-                                    : const Color(0x33EF4444),
+                                    ? AppTheme.successTintStrong
+                                    : AppTheme.dangerTintStrong,
                               ),
                             ),
                             child: Text(
@@ -235,8 +232,8 @@ class _DetailContent extends ConsumerWidget {
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: outlet.isActive
-                                    ? const Color(0xFF34D399)
-                                    : const Color(0xFFF87171),
+                                    ? AppTheme.successGreenLight
+                                    : AppTheme.dangerRedStrong,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -411,7 +408,7 @@ class _DetailContent extends ConsumerWidget {
                       label: 'Staf Bertugas',
                       value: '${outlet.assignedUsersCount} Orang',
                       icon: Icons.badge_outlined,
-                      color: const Color(0xFFF59E0B),
+                      color: AppTheme.warningAmber,
                     ),
                   ),
                 ],
@@ -427,7 +424,7 @@ class _DetailContent extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   side: const BorderSide(
                     color: AppTheme.darkCardBorder,
-                    width: 1.0,
+                    width: AppTheme.hairline,
                   ),
                 ),
                 leading: const Icon(
@@ -479,12 +476,13 @@ class _OutletActionBar extends StatelessWidget {
         child: isActive
             ? OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.dangerRed,
+                  foregroundColor: AppTheme.dangerRedDeep,
+                  // Tema sekarang memberi latar tosca pada tombol sekunder.
+                  // Tombol ini merah, jadi latarnya diarahkan ke rose supaya
+                  // tidak merah di atas latar hijau kebiruan.
+                  backgroundColor: AppTheme.dangerSurfacePale,
                   side: const BorderSide(color: AppTheme.dangerRed, width: 1.2),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                 ),
                 icon: const Icon(Icons.power_settings_new_rounded, size: 18),
                 label: const Text(
@@ -500,9 +498,6 @@ class _OutletActionBar extends StatelessWidget {
                   backgroundColor: AppTheme.jadeTosca,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                 ),
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
                 label: const Text(

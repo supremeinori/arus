@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/dashboard_filter_sheet.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -63,7 +64,7 @@ class LeaderboardScreen extends ConsumerWidget {
     final leaderboardAsync = ref.watch(leaderboardProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.lightBackground,
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -74,24 +75,24 @@ class LeaderboardScreen extends ConsumerWidget {
           style: GoogleFonts.inter(
             fontSize: 16.5,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF0F172A),
+            color: AppTheme.textPrimaryLight,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0F172A)),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryLight),
             tooltip: 'Muat Ulang',
             onPressed: () => ref.invalidate(leaderboardProvider),
           ),
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1.0),
-          child: Divider(height: 1.0, color: Color(0xFFE2E8F0)),
+          child: Divider(height: 1.0, color: AppTheme.lightCardBorder),
         ),
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          color: const Color(0xFF00A896),
+          color: AppTheme.jadeTosca,
           onRefresh: () async => ref.invalidate(leaderboardProvider),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -105,14 +106,14 @@ class LeaderboardScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                    border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.analytics_outlined,
                         size: 20,
-                        color: Color(0xFF00A896),
+                        color: AppTheme.jadeTosca,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -124,7 +125,7 @@ class LeaderboardScreen extends ConsumerWidget {
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF64748B),
+                                color: AppTheme.textMutedLight,
                               ),
                             ),
                             Text(
@@ -132,7 +133,7 @@ class LeaderboardScreen extends ConsumerWidget {
                               style: GoogleFonts.inter(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0F172A),
+                                color: AppTheme.textPrimaryLight,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -156,17 +157,17 @@ class LeaderboardScreen extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 7),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: AppTheme.lightCardSurfaceElevated,
                             borderRadius: BorderRadius.circular(8),
                             border:
-                                Border.all(color: const Color(0xFFE2E8F0)),
+                                Border.all(color: AppTheme.lightCardBorder),
                           ),
                           child: Row(
                             children: [
                               const Icon(
                                 Icons.filter_alt_outlined,
                                 size: 16,
-                                color: Color(0xFF0F172A),
+                                color: AppTheme.textPrimaryLight,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -174,7 +175,7 @@ class LeaderboardScreen extends ConsumerWidget {
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF0F172A),
+                                  color: AppTheme.textPrimaryLight,
                                 ),
                               ),
                             ],
@@ -242,7 +243,7 @@ class _LeaderboardPodium extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -270,10 +271,10 @@ class _PodiumColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = item.rank == 1
-        ? const Color(0xFFF59E0B)
+        ? AppTheme.warningAmber
         : item.rank == 2
-            ? const Color(0xFF94A3B8)
-            : const Color(0xFFC2410C);
+            ? AppTheme.borderStrong
+            : AppTheme.warningAmberDeep;
     final double blockHeight = item.rank == 1 ? 64 : (item.rank == 2 ? 50 : 40);
 
     return Padding(
@@ -295,7 +296,7 @@ class _PodiumColumn extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: isWinner ? 12 : 11,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+              color: AppTheme.textPrimaryLight,
               height: 1.25,
             ),
           ),
@@ -323,9 +324,9 @@ class _PodiumColumn extends StatelessWidget {
                 Text(
                   '${item.quantitySold} terjual',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: AppTheme.textMutedLight,
                   ),
                 ),
               ],
@@ -346,19 +347,19 @@ class _LeaderboardItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isTop3 = item.rank <= 3;
     final Color badgeBg = item.rank == 1
-        ? const Color(0xFFFEF3C7) // emas
+        ? AppTheme.warningAmberSurface // emas
         : item.rank == 2
-            ? const Color(0xFFE2E8F0) // perak
+            ? AppTheme.lightCardBorder // perak
             : item.rank == 3
-                ? const Color(0xFFFFEDD5) // perunggu
-                : const Color(0xFFF1F5F9);
+                ? AppTheme.warningAmberSurfaceStrong // perunggu
+                : AppTheme.lightCardSurfaceElevated;
     final Color badgeText = item.rank == 1
-        ? const Color(0xFFB45309)
+        ? AppTheme.warningAmberMid
         : item.rank == 2
-            ? const Color(0xFF475569)
+            ? AppTheme.textSecondaryMid
             : item.rank == 3
-                ? const Color(0xFFC2410C)
-                : const Color(0xFF64748B);
+                ? AppTheme.warningAmberDeep
+                : AppTheme.textMutedLight;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -366,7 +367,7 @@ class _LeaderboardItemCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+        border: Border.all(color: AppTheme.lightCardBorder, width: 1.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -401,7 +402,7 @@ class _LeaderboardItemCard extends ConsumerWidget {
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
+                    color: AppTheme.textPrimaryLight,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -411,7 +412,7 @@ class _LeaderboardItemCard extends ConsumerWidget {
                   item.categoryName,
                   style: GoogleFonts.inter(
                     fontSize: 11.5,
-                    color: const Color(0xFF64748B),
+                    color: AppTheme.textMutedLight,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -431,8 +432,8 @@ class _LeaderboardItemCard extends ConsumerWidget {
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: isTop3
-                      ? const Color(0xFFE6F6F4)
-                      : const Color(0xFFF1F5F9),
+                      ? AppTheme.toscaSurface
+                      : AppTheme.lightCardSurfaceElevated,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -441,8 +442,8 @@ class _LeaderboardItemCard extends ConsumerWidget {
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     color: isTop3
-                        ? const Color(0xFF00A896)
-                        : const Color(0xFF475569),
+                        ? AppTheme.jadeTosca
+                        : AppTheme.textSecondaryMid,
                   ),
                 ),
               ),
@@ -452,7 +453,7 @@ class _LeaderboardItemCard extends ConsumerWidget {
                 style: GoogleFonts.lexend(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  color: AppTheme.textPrimaryLight,
                 ),
               ),
             ],

@@ -345,7 +345,6 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
               backgroundColor: AppTheme.jadeTosca,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: mutationState.isLoading ? null : _handleSubmit,
             child: mutationState.isLoading

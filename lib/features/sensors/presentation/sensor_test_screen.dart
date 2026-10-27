@@ -237,7 +237,7 @@ class _SensorStatusPill extends StatelessWidget {
             Text(
               isActive ? 'Aktif' : 'Nonaktif',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 11,
                 color: isActive ? Colors.green.shade700 : Colors.grey.shade600,
               ),
             ),
@@ -630,9 +630,6 @@ class _ShakeDiagnosticCard extends ConsumerWidget {
                               ? Colors.deepPurple
                               : Colors.deepPurple.shade200,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
                       ),
                       onPressed: () {
                         ref
@@ -671,9 +668,6 @@ class _ShakeDiagnosticCard extends ConsumerWidget {
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                 ),
                 onPressed: () {
                   ref.read(shakeEventProvider.notifier).triggerShake();
@@ -744,10 +738,7 @@ class _BiometricDiagnosticCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    icon: const Icon(
-                      Icons.fingerprint_rounded,
-                      color: AppTheme.jadeTosca,
-                    ),
+                    icon: const Icon(Icons.fingerprint_rounded),
                     label: const Text(
                       'Uji Sidik Jari',
                       style: TextStyle(fontSize: 12),
@@ -758,7 +749,7 @@ class _BiometricDiagnosticCard extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
-                    icon: const Icon(Icons.face_rounded, color: Colors.indigo),
+                    icon: const Icon(Icons.face_rounded),
                     label: const Text(
                       'Uji Face ID',
                       style: TextStyle(fontSize: 12),
@@ -913,9 +904,6 @@ class _BiometricSimulationModal extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                   ),
                   onPressed: () {
                     onResult(
@@ -935,9 +923,6 @@ class _BiometricSimulationModal extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade600,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                   ),
                   onPressed: () {
                     onResult(

@@ -44,8 +44,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           SnackBar(
             content: Text(result.message ?? 'Sinkronisasi selesai.'),
             backgroundColor: result.failedCount == 0
-                ? const Color(0xFF059669)
-                : const Color(0xFFD97706),
+                ? AppTheme.successGreenMid
+                : AppTheme.warningAmberStrong,
           ),
         );
         ref.invalidate(productListProvider);
@@ -118,7 +118,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         shape: const Border(
-          bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          bottom: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         ),
         centerTitle: true,
         leading: Navigator.of(context).canPop()
@@ -173,8 +173,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   SnackBar(
                     content: Text(result.message ?? 'Sinkronisasi selesai.'),
                     backgroundColor: result.failedCount == 0
-                        ? const Color(0xFF059669)
-                        : const Color(0xFFD97706),
+                        ? AppTheme.successGreenMid
+                        : AppTheme.warningAmberStrong,
                   ),
                 );
                 ref.invalidate(productListProvider);
@@ -302,14 +302,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(
                   color: AppTheme.darkCardBorder,
-                  width: 1.0,
+                  width: AppTheme.hairline,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(
                   color: AppTheme.darkCardBorder,
-                  width: 1.0,
+                  width: AppTheme.hairline,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -352,7 +352,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       color: _selectedCategoryId == null
                           ? AppTheme.jadeTosca
                           : AppTheme.darkCardBorder,
-                      width: 1.0,
+                      width: AppTheme.hairline,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -390,7 +390,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           color: isSelected
                               ? AppTheme.jadeTosca
                               : AppTheme.darkCardBorder,
-                          width: 1.0,
+                          width: AppTheme.hairline,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -515,9 +515,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         horizontal: 18,
                         vertical: 10,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
                     ),
                   ),
                 ],
@@ -587,7 +584,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       content: Text(
                         'Maksimal estimasi porsi tercapai ($maxPortions porsi).',
                       ),
-                      backgroundColor: const Color(0xFFD97706),
+                      backgroundColor: AppTheme.warningAmberStrong,
                       duration: const Duration(seconds: 2),
                     ),
                   );
@@ -607,7 +604,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       decoration: const BoxDecoration(
         color: AppTheme.darkCardSurface,
         border: Border(
-          top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+          top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
         ),
       ),
       child: SafeArea(
@@ -662,15 +659,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.jadeTosca,
-                  side: BorderSide(
-                    color: cartState.items.isEmpty
-                        ? AppTheme.darkCardBorder
-                        : AppTheme.jadeTosca,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  // Tinggi disamakan dengan tombol Checkout di sebelahnya.
+                  minimumSize: const Size(0, 44),
                 ),
               ),
             ),
@@ -699,9 +689,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
                 ),
                 textStyle: const TextStyle(
                   fontWeight: FontWeight.w700,
@@ -745,14 +732,14 @@ class _RedesignedProductCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: isOutOfStock
-              ? const Color(0xFFFEF2F2)
+              ? AppTheme.dangerSurfacePale
               : (inCart
-                  ? const Color(0xFFF0FDFA)
+                  ? AppTheme.toscaSurfacePale
                   : AppTheme.darkCardSurface),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isOutOfStock
-                ? const Color(0xFFFCA5A5)
+                ? AppTheme.dangerRedLight
                 : (inCart
                     ? AppTheme.jadeTosca
                     : AppTheme.darkCardBorder),
@@ -789,7 +776,7 @@ class _RedesignedProductCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x33000000),
+                              color: AppTheme.scrim,
                               blurRadius: 4,
                               offset: Offset(0, 2),
                             ),
@@ -798,7 +785,7 @@ class _RedesignedProductCard extends StatelessWidget {
                         child: Text(
                           '$inCartQty di Pesanan',
                           style: GoogleFonts.inter(
-                            fontSize: 9.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -821,7 +808,7 @@ class _RedesignedProductCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: isOutOfStock
-                          ? const Color(0xFFB91C1C)
+                          ? AppTheme.dangerRedDeep
                           : AppTheme.textPrimaryDark,
                     ),
                     maxLines: 1,
@@ -844,8 +831,8 @@ class _RedesignedProductCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: isOutOfStock
-                          ? const Color(0xFFFEE2E2)
-                          : const Color(0xFFCCFBF1),
+                          ? AppTheme.dangerSurface
+                          : AppTheme.toscaSurfaceStrong,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -857,11 +844,11 @@ class _RedesignedProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 9.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: isOutOfStock
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF0F766E),
+                            ? AppTheme.dangerRedStrong
+                            : AppTheme.primaryToskaHover,
                       ),
                     ),
                   ),
@@ -912,7 +899,7 @@ class _RedesignedProductCard extends StatelessWidget {
                                 style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 10.5,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
@@ -1112,7 +1099,7 @@ class _PosCartDesktopPanel extends ConsumerWidget {
             decoration: const BoxDecoration(
               color: AppTheme.darkCardSurfaceElevated,
               border: Border(
-                top: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                top: BorderSide(color: AppTheme.darkCardBorder, width: AppTheme.hairline),
               ),
             ),
             child: Column(
@@ -1170,9 +1157,6 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     minimumSize: const Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                     textStyle: GoogleFonts.inter(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,

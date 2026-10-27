@@ -46,7 +46,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+          side: const BorderSide(color: AppTheme.lightCardBorder, width: AppTheme.hairline),
         ),
         title: Row(
           children: [
@@ -99,9 +99,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               backgroundColor: AppTheme.dangerRed,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -116,7 +113,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                         'Akun ${user.name} berhasil dihapus.',
                         style: GoogleFonts.inter(color: Colors.white),
                       ),
-                      backgroundColor: const Color(0xFF0F172A),
+                      backgroundColor: AppTheme.textPrimaryLight,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
@@ -173,7 +170,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         shape: const Border(
-          bottom: BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+          bottom: BorderSide(color: AppTheme.lightCardBorder, width: AppTheme.hairline),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -290,10 +287,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4), // Emerald-50
+                    color: AppTheme.successSurfacePale, // Emerald-50
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFBBF7D0),
+                      color: AppTheme.successSurfaceStrong,
                       width: 1.0,
                     ),
                   ),
@@ -303,13 +300,13 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF16A34A)
+                          color: AppTheme.successGreenStrong
                               .withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
                           Icons.storefront_rounded,
-                          color: Color(0xFF16A34A),
+                          color: AppTheme.successGreenStrong,
                           size: 20,
                         ),
                       ),
@@ -323,7 +320,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
-                                color: const Color(0xFF14532D),
+                                color: AppTheme.successGreenDeepest,
                               ),
                             ),
                             const SizedBox(height: 3),
@@ -331,7 +328,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                               'Anda dapat menambah, mengedit, dan menghapus kasir khusus untuk cabang $managerOutletName ($managerStaffCount kasir terdaftar).',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: const Color(0xFF166534),
+                                color: AppTheme.successGreenDeep,
                                 height: 1.35,
                               ),
                             ),
@@ -359,7 +356,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       icon: Icons.badge_outlined,
                       label: 'Manager',
                       count: totalManagers.toString(),
-                      color: const Color(0xFFD97706),
+                      color: AppTheme.warningAmberStrong,
                     ),
                     const SizedBox(width: 8),
                     _MetricChip(
@@ -606,7 +603,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       const Icon(
                         Icons.person_search_rounded,
                         size: 48,
-                        color: Color(0xFFCBD5E1),
+                        color: AppTheme.borderMid,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -741,15 +738,15 @@ class _UserCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
+                              color: AppTheme.successSurface,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Aktif',
                               style: GoogleFonts.inter(
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF15803D),
+                                color: AppTheme.successGreenDeep,
                               ),
                             ),
                           ),
@@ -772,14 +769,14 @@ class _UserCard extends StatelessWidget {
                           const Icon(
                             Icons.phone_outlined,
                             size: 12,
-                            color: Color(0xFF94A3B8),
+                            color: AppTheme.borderStrong,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             user.phone!,
                             style: GoogleFonts.inter(
                               fontSize: 11.5,
-                              color: const Color(0xFF64748B),
+                              color: AppTheme.textMutedLight,
                             ),
                           ),
                         ],
@@ -825,7 +822,7 @@ class _UserCard extends StatelessWidget {
                     const Icon(
                       Icons.store_rounded,
                       size: 13,
-                      color: Color(0xFF64748B),
+                      color: AppTheme.textMutedLight,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -834,7 +831,7 @@ class _UserCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF475569),
+                          color: AppTheme.textSecondaryMid,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -918,7 +915,7 @@ class _MetricChip extends StatelessWidget {
                   child: Text(
                     label,
                     style: GoogleFonts.inter(
-                      fontSize: 10.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textMutedLight,
                     ),
@@ -1080,7 +1077,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                 'Data pengguna "${_nameController.text.trim()}" berhasil diperbarui.',
                 style: GoogleFonts.inter(color: Colors.white),
               ),
-              backgroundColor: const Color(0xFF0F172A),
+              backgroundColor: AppTheme.textPrimaryLight,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -1107,7 +1104,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                 'Pengguna baru "${_nameController.text.trim()}" berhasil ditambahkan.',
                 style: GoogleFonts.inter(color: Colors.white),
               ),
-              backgroundColor: const Color(0xFF0F172A),
+              backgroundColor: AppTheme.textPrimaryLight,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -1159,7 +1156,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                   width: 38,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: AppTheme.borderMid,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1275,9 +1272,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(
-                      0xFFF1F5F9,
-                    ), // Slate-100 disabled background
+                    color: AppTheme.lightCardSurfaceElevated, // Slate-100, latar nonaktif
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: AppTheme.lightCardBorder,
@@ -1289,7 +1284,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                       const Icon(
                         Icons.lock_outline_rounded,
                         size: 18,
-                        color: Color(0xFF64748B),
+                        color: AppTheme.textMutedLight,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -1298,7 +1293,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                           style: GoogleFonts.inter(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF334155),
+                            color: AppTheme.textSecondaryLight,
                           ),
                         ),
                       ),
@@ -1308,15 +1303,15 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
+                          color: AppTheme.lightCardBorder,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'Cabang Anda',
                           style: GoogleFonts.inter(
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF475569),
+                            color: AppTheme.textSecondaryMid,
                           ),
                         ),
                       ),
@@ -1328,7 +1323,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: AppTheme.lightBackground,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: AppTheme.lightCardBorder,
@@ -1511,9 +1506,6 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                     backgroundColor: AppTheme.jadeTosca,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                   ),
                   onPressed: _isLoading ? null : _submitForm,
                   child: _isLoading
@@ -1556,20 +1548,20 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
       ),
       prefixIcon: Icon(icon, size: 18, color: AppTheme.textMutedLight),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: AppTheme.lightBackground,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
           color: AppTheme.lightCardBorder,
-          width: 1.0,
+          width: AppTheme.hairline,
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
           color: AppTheme.lightCardBorder,
-          width: 1.0,
+          width: AppTheme.hairline,
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -1599,7 +1591,7 @@ class _RoleSelectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeColor = role == UserRole.manager
-        ? const Color(0xFFD97706) // Warm Amber
+        ? AppTheme.warningAmberStrong // Warm Amber
         : AppTheme.jadeTosca; // Jade Tosca
 
     return InkWell(
@@ -1610,7 +1602,7 @@ class _RoleSelectCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? activeColor.withValues(alpha: 0.10)
-              : const Color(0xFFF8FAFC),
+              : AppTheme.lightBackground,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? activeColor : AppTheme.lightCardBorder,
@@ -1623,7 +1615,7 @@ class _RoleSelectCard extends StatelessWidget {
               role == UserRole.manager
                   ? Icons.badge_outlined
                   : Icons.point_of_sale_rounded,
-              color: isSelected ? activeColor : const Color(0xFF64748B),
+              color: isSelected ? activeColor : AppTheme.textMutedLight,
               size: 20,
             ),
             const SizedBox(width: 8),
@@ -1644,7 +1636,7 @@ class _RoleSelectCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
-                      fontSize: 10.5,
+                      fontSize: 11,
                       color: AppTheme.textMutedLight,
                     ),
                   ),

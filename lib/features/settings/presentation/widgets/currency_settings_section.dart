@@ -60,7 +60,7 @@ class _CurrencySettingsSectionState
           content: Text(
             'Gagal menyimpan mata uang. Periksa koneksi ke server.',
           ),
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: AppTheme.dangerRedStrong,
         ),
       );
     }
@@ -144,7 +144,7 @@ class _CurrencySettingsSectionState
             borderRadius: BorderRadius.circular(12),
             side: const BorderSide(
               color: AppTheme.darkCardBorder,
-              width: 1.0,
+              width: AppTheme.hairline,
             ),
           ),
           child: Column(
@@ -282,7 +282,7 @@ class _CurrencySettingsSectionState
                   Text(
                     ratesAsync.isLoading ? 'Memuat...' : 'Live Rate API',
                     style: GoogleFonts.inter(
-                      fontSize: 10.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.jadeTosca,
                     ),
@@ -338,7 +338,7 @@ class _CurrencySettingsSectionState
                         icon: const Icon(
                           Icons.clear,
                           size: 18,
-                          color: Color(0xFF94A3B8),
+                          color: AppTheme.borderStrong,
                         ),
                         onPressed: _amountController.clear,
                       )
@@ -431,7 +431,9 @@ class _CurrencySettingsSectionState
                       tooltip: 'Tukar Posisi',
                       style: IconButton.styleFrom(
                         backgroundColor: AppTheme.darkCardSurfaceElevated,
-                        foregroundColor: AppTheme.jadeTosca,
+                        // Ikon #00A896 di atas abu #F1F5F9 hanya 2,72:1, di
+                        // bawah ambang 3:1 untuk elemen grafis.
+                        foregroundColor: AppTheme.primaryToskaHover,
                       ),
                       icon: const Icon(Icons.swap_horiz_rounded, size: 22),
                     ),

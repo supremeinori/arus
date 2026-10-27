@@ -142,9 +142,9 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0x22EF4444),
+                    color: AppTheme.dangerTint,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0x33EF4444)),
+                    border: Border.all(color: AppTheme.dangerTintStrong),
                   ),
                   child: Row(
                     children: [
@@ -155,7 +155,7 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
                           _errorMessage!,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFFF87171)),
+                          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.dangerRedStrong),
                         ),
                       ),
                     ],
@@ -240,17 +240,17 @@ class _AddIngredientDialogState extends ConsumerState<AddIngredientDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: Text('Batal', style: GoogleFonts.inter(color: AppTheme.textMutedDark)),
+          // Gaya teks diserahkan ke tema. Sebelumnya di sini dipaksa abu-abu dan
+          // bobot regular, jadi tampil berbeda dari tombol Batal lain.
+          child: const Text('Batal'),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.jadeTosca,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
+          // Sudut 8 di sini berbeda dari 12 milik tema, jadi tombol ini satu-satunya
+          // yang bermata lebih tumpul di dialog. Gaya diserahkan ke tema.
           onPressed: _isLoading ? null : _submit,
           child: _isLoading
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : Text(isEditing ? 'Simpan Perubahan' : 'Tambah Bahan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              : Text(isEditing ? 'Simpan Perubahan' : 'Tambah Bahan'),
         ),
       ],
     );

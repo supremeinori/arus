@@ -8,6 +8,7 @@ import '../../auth/presentation/auth_provider.dart';
 import '../../auth/domain/user_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/settings_tile.dart';
+import '../../../shared/widgets/status_badge.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 import '../../sensors/presentation/shake_settings_sheet.dart';
 import '../../shell/presentation/main_shell.dart';
@@ -135,7 +136,7 @@ class ProfileScreen extends ConsumerWidget {
                 ],
                 SettingsNavTile(
                   icon: Icons.verified_user_outlined,
-                  title: 'Integritas Data (Ledger LBS)',
+                  title: 'Integritas Data',
                   onTap: () => context.push('/integrity'),
                 ),
               ],
