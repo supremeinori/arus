@@ -161,4 +161,33 @@ describe('Analytics Module (Milestone 7)', () => {
     expect(resAllowed.body.data.revenue_idr).toBe(800000);
     expect(resAllowed.body.data).toHaveProperty('gross_profit_idr');
   });
+
+  it('T-ANA-05: Mengambil tren penjualan dengan filter from dan to rentang tanggal kustom', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+      { total_idr: 150000, created_at: new Date('2026-10-02T10:00:00.000Z') },
+    ] as any);
+
+    const res = await request(app)
+      .get('/api/analytics/sales-trend?from=2026-10-01&to=2026-10-03')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(3);
+    expect(res.body.data[0]).toEqual({ date: '2026-10-01', revenue_idr: 0, count: 0 });
+    expect(res.body.data[1]).toEqual({ date: '2026-10-02', revenue_idr: 150000, count: 1 });
+    expect(res.body.data[2]).toEqual({ date: '2026-10-03', revenue_idr: 0, count: 0 });
+  });
+
+  it('T-ANA-06: Manager ditolak dengan 403 jika mengakses tren penjualan outlet di luar wewenangnya', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockManager as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: 'out-mgr' }] as any);
+
+    const res = await request(app)
+      .get('/api/analytics/sales-trend?outlet_id=out-forbidden')
+      .set('Authorization', `Bearer ${managerToken}`);
+
+    expect(res.status).toBe(403);
+  });
 });

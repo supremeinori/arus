@@ -229,9 +229,21 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
               onRetry: () => ref.invalidate(_historyProvider),
               dataBuilder: (list) {
                 if (list.isEmpty) {
-                  return const EmptyStateView(
-                    message: 'Belum ada transaksi pada periode ini.',
-                    icon: Icons.receipt_long_outlined,
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(_historyProvider);
+                      await ref.read(_historyProvider.future);
+                    },
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 80),
+                        EmptyStateView(
+                          message: 'Belum ada transaksi pada periode ini.',
+                          icon: Icons.receipt_long_outlined,
+                        ),
+                      ],
+                    ),
                   );
                 }
                 // Kartu ringkasan total di atas daftar (lihat mockup Riwayat Transaksi).
@@ -243,27 +255,34 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                     .fold<int>(0, (sum, tx) => sum + tx.totalIdr);
                 final qris = totalAll - tunai;
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  itemCount: list.length + 1,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    if (i == 0) {
-                      return _HistorySummaryCard(
-                        totalText: ref.money(totalAll),
-                        tunaiText: ref.money(tunai),
-                        qrisText: ref.money(qris),
-                        count: list.where((tx) => tx.status != 'voided').length,
-                      );
-                    }
-                    final tx = list[i - 1];
-                    return _HistoryCard(
-                      tx: tx,
-                      canVoid: _canVoid,
-                      voiding: _voiding,
-                      onVoid: () => _askVoidReason(tx),
-                    );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(_historyProvider);
+                    await ref.read(_historyProvider.future);
                   },
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    itemCount: list.length + 1,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      if (i == 0) {
+                        return _HistorySummaryCard(
+                          totalText: ref.money(totalAll),
+                          tunaiText: ref.money(tunai),
+                          qrisText: ref.money(qris),
+                          count: list.where((tx) => tx.status != 'voided').length,
+                        );
+                      }
+                      final tx = list[i - 1];
+                      return _HistoryCard(
+                        tx: tx,
+                        canVoid: _canVoid,
+                        voiding: _voiding,
+                        onVoid: () => _askVoidReason(tx),
+                      );
+                    },
+                  ),
                 );
               },
             ),

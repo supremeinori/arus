@@ -101,23 +101,43 @@ export class AnalyticsService {
   }
 
   /**
-   * Tren Penjualan Harian (7 hari terakhir secara default) untuk visualisasi diagram garis.
+   * Tren Penjualan Harian (7 hari terakhir secara default) untuk visualisasi diagram tren.
+   * Mendukung parameter `days` atau `from` dan `to` (format YYYY-MM-DD).
    */
   async getSalesTrend(
     query: {
       outlet_id?: string;
       days?: number;
+      from?: string;
+      to?: string;
     },
     userScope: { role: Role; allowedOutletIds: string[] }
   ) {
-    const days = query.days ?? 7;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - (days - 1));
-    startDate.setHours(0, 0, 0, 0);
+    if (userScope.role !== Role.owner) {
+      if (query.outlet_id && !userScope.allowedOutletIds.includes(query.outlet_id)) {
+        throw new AppError('FORBIDDEN', 403, 'Akses ke outlet ini tidak diizinkan.');
+      }
+    }
+
+    let startDate: Date;
+    let endDate: Date;
+
+    if (query.from || query.to) {
+      const fromStr = query.from || query.to!;
+      const toStr = query.to || query.from!;
+      startDate = new Date(`${fromStr}T00:00:00.000Z`);
+      endDate = new Date(`${toStr}T23:59:59.999Z`);
+    } else {
+      const days = query.days ?? 7;
+      const now = new Date();
+      endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+      startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+      startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+    }
 
     const where: any = {
       status: TxnStatus.completed,
-      created_at: { gte: startDate },
+      created_at: { gte: startDate, lte: endDate },
     };
 
     if (userScope.role !== Role.owner) {
@@ -136,24 +156,24 @@ export class AnalyticsService {
         orderBy: { created_at: 'asc' },
       });
 
-      // Kelompokkan per tanggal lokal (YYYY-MM-DD)
+      // Kelompokkan per tanggal UTC (YYYY-MM-DD)
       const trendMap = new Map<string, { date: string; revenue_idr: number; count: number }>();
 
-      for (let i = 0; i < days; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
+      const curr = new Date(startDate);
+      while (curr <= endDate) {
+        const y = curr.getUTCFullYear();
+        const m = String(curr.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(curr.getUTCDate()).padStart(2, '0');
         const dateStr = `${y}-${m}-${day}`;
         trendMap.set(dateStr, { date: dateStr, revenue_idr: 0, count: 0 });
+        curr.setUTCDate(curr.getUTCDate() + 1);
       }
 
       for (const tx of transactions) {
         const txDate = new Date(tx.created_at);
-        const y = txDate.getFullYear();
-        const m = String(txDate.getMonth() + 1).padStart(2, '0');
-        const day = String(txDate.getDate()).padStart(2, '0');
+        const y = txDate.getUTCFullYear();
+        const m = String(txDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(txDate.getUTCDate()).padStart(2, '0');
         const dateStr = `${y}-${m}-${day}`;
         const entry = trendMap.get(dateStr);
         if (entry) {

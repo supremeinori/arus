@@ -243,9 +243,107 @@ class PosRepository {
       // Tampilkan transaksi pending lokal di paling atas
       return [...unconfirmedPending, ...serverTxList];
     } catch (_) {
-      // OFFLINE: Ambil dari riwayat cache SQLite lokal
-      return await _localDb.getBackupTransactions(outletId: outletId);
+      // OFFLINE: Ambil dari riwayat cache SQLite lokal + antrean pending
+      return await _getLocalTransactions(
+        outletId: outletId,
+        status: status,
+        from: from,
+        to: to,
+      );
     }
+  }
+
+  Future<List<PosTransactionModel>> _getLocalTransactions({
+    String? outletId,
+    String? status,
+    String? from,
+    String? to,
+  }) async {
+    DateTime? startDate;
+    DateTime? endDate;
+    if (from != null && from.isNotEmpty) {
+      startDate = DateTime.tryParse('${from}T00:00:00.000Z') ?? DateTime.tryParse(from);
+    }
+    if (to != null && to.isNotEmpty) {
+      endDate = DateTime.tryParse('${to}T23:59:59.999Z') ?? DateTime.tryParse(to);
+    }
+
+    final backupList = await _localDb.getBackupTransactions(outletId: outletId);
+    final pendingRows = await _localDb.getPendingOfflineTransactions();
+
+    final seenKeys = <String>{};
+    final unconfirmedPending = <PosTransactionModel>[];
+    final confirmedOrBackup = <PosTransactionModel>[];
+
+    for (final row in pendingRows) {
+      final rowOutletId = row['outlet_id'] as String?;
+      if (outletId != null && outletId.isNotEmpty && rowOutletId != null && rowOutletId.isNotEmpty && rowOutletId != outletId) {
+        continue;
+      }
+      final clientReqId = row['client_request_id'] as String?;
+      final rowId = row['id'] as String?;
+
+      if (rowId != null && rowId.isNotEmpty) seenKeys.add(rowId);
+      if (clientReqId != null && clientReqId.isNotEmpty) seenKeys.add(clientReqId);
+
+      final createdAt = DateTime.tryParse(row['created_at'] as String? ?? '') ?? DateTime.now();
+      if (startDate != null && createdAt.isBefore(startDate)) continue;
+      if (endDate != null && createdAt.isAfter(endDate)) continue;
+
+      final rowStatus = row['sync_error'] != null ? 'failed' : 'offline_pending';
+      if (status != null && status.isNotEmpty && rowStatus != status) continue;
+
+      List<PosCartItem> parsedItems = [];
+      try {
+        final rawItems = jsonDecode(row['items_json'] as String) as List<dynamic>;
+        parsedItems = rawItems.map((item) {
+          final m = item as Map<String, dynamic>;
+          return PosCartItem(
+            productId: m['product_id'] as String? ?? '',
+            productName: m['product_name_snapshot'] as String? ?? m['product_name'] as String? ?? '',
+            sku: m['sku'] as String? ?? '',
+            unitPriceIdr: m['unit_price_idr'] as int? ?? 0,
+            quantity: m['quantity'] as int? ?? 1,
+          );
+        }).toList();
+      } catch (_) {}
+
+      unconfirmedPending.add(PosTransactionModel(
+        id: row['id'] as String? ?? '',
+        receiptNo: row['receipt_no'] as String? ?? '',
+        outletId: row['outlet_id'] as String? ?? '',
+        outletName: 'Outlet ARUS',
+        cashierName: row['cashier_name'] as String? ?? 'Kasir Utama',
+        subtotalIdr: row['subtotal_idr'] as int? ?? 0,
+        discountIdr: row['discount_idr'] as int? ?? 0,
+        totalIdr: row['total_idr'] as int? ?? 0,
+        paymentMethod: row['payment_method'] as String? ?? 'cash',
+        paidIdr: row['paid_idr'] as int? ?? 0,
+        changeIdr: row['change_idr'] as int? ?? 0,
+        status: rowStatus,
+        createdAt: createdAt,
+        items: parsedItems,
+        isOfflinePending: true,
+        clientRequestId: clientReqId,
+      ));
+    }
+
+    for (final tx in backupList) {
+      final idMatch = tx.id.isNotEmpty && seenKeys.contains(tx.id);
+      final reqMatch = tx.clientRequestId != null && tx.clientRequestId!.isNotEmpty && seenKeys.contains(tx.clientRequestId);
+      if (!idMatch && !reqMatch) {
+        if (tx.id.isNotEmpty) seenKeys.add(tx.id);
+        if (tx.clientRequestId != null && tx.clientRequestId!.isNotEmpty) seenKeys.add(tx.clientRequestId!);
+
+        if (status != null && status.isNotEmpty && tx.status != status) continue;
+        if (startDate != null && tx.createdAt.isBefore(startDate)) continue;
+        if (endDate != null && tx.createdAt.isAfter(endDate)) continue;
+
+        confirmedOrBackup.add(tx);
+      }
+    }
+
+    return [...unconfirmedPending, ...confirmedOrBackup];
   }
 
   Future<PosTransactionModel> voidTransaction({

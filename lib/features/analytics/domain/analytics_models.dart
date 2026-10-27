@@ -9,6 +9,8 @@ class AnalyticsOverviewModel {
   final int? totalCostIdr;
   final int? grossProfitIdr;
   final int? grossMarginPct;
+  final bool isOffline;
+  final int pendingCount;
 
   const AnalyticsOverviewModel({
     required this.revenueIdr,
@@ -19,9 +21,15 @@ class AnalyticsOverviewModel {
     this.totalCostIdr,
     this.grossProfitIdr,
     this.grossMarginPct,
+    this.isOffline = false,
+    this.pendingCount = 0,
   });
 
-  factory AnalyticsOverviewModel.fromJson(Map<String, dynamic> json) {
+  factory AnalyticsOverviewModel.fromJson(
+    Map<String, dynamic> json, {
+    bool isOffline = false,
+    int pendingCount = 0,
+  }) {
     return AnalyticsOverviewModel(
       revenueIdr: json['revenue_idr'] as int? ?? 0,
       subtotalIdr: json['subtotal_idr'] as int? ?? 0,
@@ -31,6 +39,34 @@ class AnalyticsOverviewModel {
       totalCostIdr: json['total_cost_idr'] as int?,
       grossProfitIdr: json['gross_profit_idr'] as int?,
       grossMarginPct: json['gross_margin_pct'] as int?,
+      isOffline: isOffline,
+      pendingCount: pendingCount,
+    );
+  }
+
+  AnalyticsOverviewModel copyWith({
+    int? revenueIdr,
+    int? subtotalIdr,
+    int? discountIdr,
+    int? transactionCount,
+    int? avgBasketSizeIdr,
+    int? totalCostIdr,
+    int? grossProfitIdr,
+    int? grossMarginPct,
+    bool? isOffline,
+    int? pendingCount,
+  }) {
+    return AnalyticsOverviewModel(
+      revenueIdr: revenueIdr ?? this.revenueIdr,
+      subtotalIdr: subtotalIdr ?? this.subtotalIdr,
+      discountIdr: discountIdr ?? this.discountIdr,
+      transactionCount: transactionCount ?? this.transactionCount,
+      avgBasketSizeIdr: avgBasketSizeIdr ?? this.avgBasketSizeIdr,
+      totalCostIdr: totalCostIdr ?? this.totalCostIdr,
+      grossProfitIdr: grossProfitIdr ?? this.grossProfitIdr,
+      grossMarginPct: grossMarginPct ?? this.grossMarginPct,
+      isOffline: isOffline ?? this.isOffline,
+      pendingCount: pendingCount ?? this.pendingCount,
     );
   }
 

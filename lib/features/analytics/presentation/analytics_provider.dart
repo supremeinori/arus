@@ -219,7 +219,54 @@ final dailyProfitComparisonProvider = Provider.autoDispose<AsyncValue<DailyProfi
 final salesTrendProvider = FutureProvider.autoDispose<List<SalesTrendPoint>>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
   final outletId = getEffectiveOutletId(ref);
-  return repo.getSalesTrend(outletId: outletId, days: 7);
+  final dateFilter = ref.watch(selectedDateFilterProvider);
+  final customDate = ref.watch(selectedCustomDateProvider);
+
+  final now = DateTime.now();
+  String? fromStr;
+  String? toStr;
+  int? days;
+
+  if (customDate != null) {
+    fromStr = DateFormat('yyyy-MM-dd').format(customDate.subtract(const Duration(days: 6)));
+    toStr = DateFormat('yyyy-MM-dd').format(customDate);
+    days = 7;
+  } else {
+    switch (dateFilter) {
+      case DashboardDateFilter.today:
+        fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 6)));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        days = 7;
+        break;
+      case DashboardDateFilter.yesterday:
+        final yesterday = now.subtract(const Duration(days: 1));
+        fromStr = DateFormat('yyyy-MM-dd').format(yesterday.subtract(const Duration(days: 6)));
+        toStr = DateFormat('yyyy-MM-dd').format(yesterday);
+        days = 7;
+        break;
+      case DashboardDateFilter.last7Days:
+        fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 6)));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        days = 7;
+        break;
+      case DashboardDateFilter.last30Days:
+        fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 29)));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        days = 30;
+        break;
+      case DashboardDateFilter.thisMonth:
+        fromStr = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month, 1));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        break;
+    }
+  }
+
+  return repo.getSalesTrend(
+    outletId: outletId,
+    days: days,
+    from: fromStr,
+    to: toStr,
+  );
 });
 
 final peakHoursProvider = FutureProvider.autoDispose<List<PeakHourPoint>>((ref) async {

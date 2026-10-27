@@ -165,6 +165,76 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 14),
 
+                // Banner Status Offline atau Pending Sync
+                if (overviewAsync.valueOrNull?.isOffline == true) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFF59E0B)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cloud_off_rounded, size: 20, color: Color(0xFFB45309)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mode Offline',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                  color: const Color(0xFF92400E),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                (overviewAsync.valueOrNull?.pendingCount ?? 0) > 0
+                                    ? 'Menampilkan data lokal. Ada ${overviewAsync.valueOrNull!.pendingCount} transaksi menunggu sinkronisasi.'
+                                    : 'Menampilkan data lokal perangkat. Data server mungkin belum mencakup perubahan terbaru.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: const Color(0xFF92400E),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ] else if ((overviewAsync.valueOrNull?.pendingCount ?? 0) > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFF59E0B)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.sync_problem_rounded, size: 20, color: Color(0xFFB45309)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Ada ${overviewAsync.valueOrNull!.pendingCount} transaksi lokal menunggu sinkronisasi ke server.',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11.5,
+                              color: const Color(0xFF92400E),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
                 // 2. Hero Card: Omzet + Filter Button (Wireframe: Omzet, Rp.X, Di Cabang pada Hari)
                 // API TERSEDIA: GET /api/analytics/overview?outlet_id=...&from=...&to=...
                 // Menggunakan data asli riil dari response API.
@@ -951,53 +1021,115 @@ class _TrenCard extends StatelessWidget {
           else
             SizedBox(
               height: 120,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: points.map((point) {
-                  final ratio = maxRevenue > 0
-                      ? (point.revenueIdr / maxRevenue)
-                      : 0.1;
-                  final barHeight = math.max(16.0, ratio * 90.0);
-                  final isPeak = maxRevenue > 0 && point.revenueIdr == maxRevenue;
+              child: points.length > 10
+                  ? SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: points.map((point) {
+                          final hasRevenue = point.revenueIdr > 0;
+                          final ratio = maxRevenue > 0
+                              ? (point.revenueIdr / maxRevenue)
+                              : 0.0;
+                          final barHeight = hasRevenue
+                              ? math.max(12.0, ratio * 90.0)
+                              : 4.0;
+                          final isPeak = maxRevenue > 0 && point.revenueIdr == maxRevenue;
 
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          // Bar
-                          Container(
-                            height: barHeight,
-                            decoration: BoxDecoration(
-                              color: isPeak
-                                  ? _DashboardColors.teal
-                                  : const Color(0xFFCBD5E1),
-                              borderRadius: BorderRadius.circular(4),
+                          return SizedBox(
+                            width: 28,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // Bar
+                                  Container(
+                                    height: barHeight,
+                                    decoration: BoxDecoration(
+                                      color: isPeak
+                                          ? _DashboardColors.teal
+                                          : (hasRevenue
+                                              ? const Color(0xFF94A3B8)
+                                              : const Color(0xFFE2E8F0)),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  // Label Hari
+                                  Text(
+                                    point.date.length > 3
+                                        ? point.date.substring(point.date.length - 2)
+                                        : point.date,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: isPeak
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isPeak
+                                          ? _DashboardColors.teal
+                                          : _DashboardColors.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          // Label Hari
-                          Text(
-                            point.date.length > 3
-                                ? point.date.substring(point.date.length - 2)
-                                : point.date,
-                            style: GoogleFonts.inter(
-                              fontSize: 10.5,
-                              fontWeight: isPeak
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isPeak
-                                  ? _DashboardColors.teal
-                                  : _DashboardColors.textMuted,
-                            ),
-                          ),
-                        ],
+                          );
+                        }).toList(),
                       ),
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: points.map((point) {
+                        final hasRevenue = point.revenueIdr > 0;
+                        final ratio = maxRevenue > 0
+                            ? (point.revenueIdr / maxRevenue)
+                            : 0.0;
+                        final barHeight = hasRevenue
+                            ? math.max(12.0, ratio * 90.0)
+                            : 4.0;
+                        final isPeak = maxRevenue > 0 && point.revenueIdr == maxRevenue;
+
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                // Bar
+                                Container(
+                                  height: barHeight,
+                                  decoration: BoxDecoration(
+                                    color: isPeak
+                                        ? _DashboardColors.teal
+                                        : (hasRevenue
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFFE2E8F0)),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                // Label Hari
+                                Text(
+                                  point.date.length > 3
+                                      ? point.date.substring(point.date.length - 2)
+                                      : point.date,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10.5,
+                                    fontWeight: isPeak
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: isPeak
+                                        ? _DashboardColors.teal
+                                        : _DashboardColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                  );
-                }).toList(),
-              ),
             ),
         ],
       ),
