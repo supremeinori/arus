@@ -3,6 +3,7 @@ import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
 import { integrityService } from '../integrity/blockchain.service';
+import { web3AnchorService } from '../integrity/web3_anchor.service';
 import {
   NotificationDraft,
   NotificationsService,
@@ -352,6 +353,13 @@ export class TransactionsService {
         console.warn('[TransactionsService] Push low_stock gagal (diabaikan):', err);
       }
     }
+
+    // Web3 Anchoring: Catat struk ke Ethereum Sepolia di background (Non-blocking)
+    web3AnchorService
+      .anchorReceiptAsync(committedTransaction.receipt_no, committedTransaction.id)
+      .catch((err) => {
+        console.warn('[TransactionsService] Background Web3 anchor error:', err?.message || err);
+      });
 
     return committedTransaction;
   }
