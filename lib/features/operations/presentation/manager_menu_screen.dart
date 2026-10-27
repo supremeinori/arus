@@ -10,7 +10,6 @@ import '../../catalog/presentation/catalog_provider.dart';
 import '../../pos/data/pos_catalog_repository.dart';
 import '../../pos/presentation/pos_catalog_provider.dart';
 import '../../pos/presentation/pos_menu_thumbnail.dart';
-import '../../settings/presentation/currency_provider.dart';
 
 /// Layar Menu & Estimasi Profit untuk Akun Manager (Read-Only).
 ///
@@ -677,7 +676,7 @@ class _ManagerMenuScreenState extends ConsumerState<ManagerMenuScreen> {
               _buildDetailRow(
                 label: 'Estimasi Profit per Porsi',
                 value: profit != null
-                    ? '${MoneyFormatter.format(profit, currency: "IDR")} (${marginPct}%)'
+                    ? '${MoneyFormatter.format(profit, currency: "IDR")} ($marginPct%)'
                     : '-',
                 valueColor: const Color(0xFF10B981),
                 isBold: true,

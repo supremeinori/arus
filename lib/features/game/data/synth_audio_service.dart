@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
@@ -11,14 +10,11 @@ class SynthAudioService {
   SynthAudioService({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
   final AudioPlayer _player;
-  bool _isMuted = false;
-
-  /// Status apakah suara di-mute
-  bool get isMuted => _isMuted;
-  set isMuted(bool val) => _isMuted = val;
+    /// Status apakah suara di-mute
+  bool isMuted = false;
 
   void toggleMute() {
-    _isMuted = !_isMuted;
+    isMuted = !isMuted;
   }
 
   // Pre-cached WAV sound bytes untuk performa instan tanpa latensi
@@ -29,7 +25,7 @@ class SynthAudioService {
 
   /// Memutar sound effect jawaban benar (Arpeggio nada synth cerah C5-E5-G5-C6)
   Future<void> playCorrect() async {
-    if (_isMuted) return;
+    if (isMuted) return;
     try {
       _correctWav ??= SynthWaveGenerator.buildCorrectSound();
       await _player.stop();
@@ -41,7 +37,7 @@ class SynthAudioService {
 
   /// Memutar sound effect jawaban salah (Retro dissonant buzz drop)
   Future<void> playWrong() async {
-    if (_isMuted) return;
+    if (isMuted) return;
     try {
       _wrongWav ??= SynthWaveGenerator.buildWrongSound();
       await _player.stop();
@@ -54,7 +50,7 @@ class SynthAudioService {
   /// Memutar sound effect combo beruntun (Futuristic laser power-up sweep,
   /// dengan frekuensi semakin tinggi seiring naiknya level combo)
   Future<void> playCombo(int comboCount) async {
-    if (_isMuted) return;
+    if (isMuted) return;
     try {
       final clamped = comboCount.clamp(1, 10);
       _comboWavs[clamped] ??= SynthWaveGenerator.buildComboSound(clamped);
@@ -67,7 +63,7 @@ class SynthAudioService {
 
   /// Memutar sound effect selesai permainan (Retro synth victory jingle)
   Future<void> playGameOver() async {
-    if (_isMuted) return;
+    if (isMuted) return;
     try {
       _gameOverWav ??= SynthWaveGenerator.buildGameOverSound();
       await _player.stop();

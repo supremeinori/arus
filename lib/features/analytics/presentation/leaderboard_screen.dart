@@ -423,39 +423,46 @@ class _LeaderboardItemCard extends ConsumerWidget {
           const SizedBox(width: 12),
 
           // Jumlah terjual & omzet
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isTop3
-                      ? const Color(0xFFE6F6F4)
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${item.quantitySold} terjual',
-                  style: GoogleFonts.inter(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
                     color: isTop3
-                        ? const Color(0xFF00A896)
-                        : const Color(0xFF475569),
+                        ? const Color(0xFFE6F6F4)
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${item.quantitySold} terjual',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: isTop3
+                          ? const Color(0xFF00A896)
+                          : const Color(0xFF475569),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                ref.money(item.totalRevenueIdr),
-                style: GoogleFonts.lexend(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                const SizedBox(height: 4),
+                Text(
+                  ref.money(item.totalRevenueIdr),
+                  style: GoogleFonts.lexend(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

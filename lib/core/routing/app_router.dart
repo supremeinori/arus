@@ -14,6 +14,7 @@ import '../../features/inventory/presentation/inventory_list_screen.dart';
 import '../../features/inventory/presentation/stock_movement_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
 import '../../features/operations/presentation/manager_menu_screen.dart';
+import '../../features/operations/presentation/operations_hub_screen.dart';
 import '../../features/outlets/presentation/outlet_detail_screen.dart';
 import '../../features/outlets/presentation/outlet_form_screen.dart';
 import '../../features/outlets/presentation/outlet_list_screen.dart';
@@ -197,6 +198,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/operations',
+        builder: (context, state) => const OperationsHubScreen(),
         routes: [
           GoRoute(
             path: 'menu',

@@ -451,7 +451,7 @@ class _SalesForecastKpis extends ConsumerWidget {
         // Kartu 1: Total Proyeksi
         Expanded(
           child: ShadCard(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -466,7 +466,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                   ref.money(summary.projectedTotalRevenueIdr),
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontSize: 14,
                     color: AppTheme.textPrimaryDark,
                   ),
                   maxLines: 1,
@@ -475,7 +475,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${ref.money(summary.avgDailyProjectedIdr)}/hari',
-                  style: GoogleFonts.inter(color: AppTheme.jadeTosca, fontSize: 10.5, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(color: AppTheme.jadeTosca, fontSize: 10, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -488,7 +488,7 @@ class _SalesForecastKpis extends ConsumerWidget {
         // Kartu 2: Pertumbuhan Model
         Expanded(
           child: ShadCard(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -500,19 +500,20 @@ class _SalesForecastKpis extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                      size: 16,
+                      size: 15,
                       color: isPositive ? AppTheme.successGreen : AppTheme.dangerRed,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     Flexible(
                       child: Text(
                         '${isPositive ? '+' : ''}${summary.growthPct.toStringAsFixed(1)}%',
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          fontSize: 14,
                           color: isPositive ? AppTheme.successGreen : AppTheme.dangerRed,
                         ),
                         maxLines: 1,
@@ -524,7 +525,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   'vs $horizonDays hari lalu',
-                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10.5),
+                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -537,7 +538,7 @@ class _SalesForecastKpis extends ConsumerWidget {
         // Kartu 3: Puncak Penjualan
         Expanded(
           child: ShadCard(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -554,7 +555,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                       : 'Sabtu',
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontSize: 14,
                     color: AppTheme.textPrimaryDark,
                   ),
                   maxLines: 1,
@@ -563,7 +564,7 @@ class _SalesForecastKpis extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   ref.money(summary.peakProjectedDay.revenueIdr),
-                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10.5),
+                  style: GoogleFonts.inter(color: AppTheme.textMutedDark, fontSize: 10),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -686,23 +687,29 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Grafik Proyeksi Omzet',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.5,
-                  color: AppTheme.textPrimaryDark,
+              Expanded(
+                child: Text(
+                  'Grafik Proyeksi Omzet',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    color: AppTheme.textPrimaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               // Legend
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const _LegendIndicator(
                     color: AppTheme.jadeTosca,
                     label: 'Aktual',
                     isDashed: false,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   const _LegendIndicator(
                     color: Color(0xFF0284C7),
                     label: 'Prediksi',
@@ -718,7 +725,7 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
           // Active Touch Info Box
           if (activePoint != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: AppTheme.darkCardSurfaceElevated,
@@ -726,45 +733,52 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                 border: Border.all(color: AppTheme.darkCardBorder),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${activePoint.dayName.isNotEmpty ? "${activePoint.dayName}, " : ""}${activePoint.date}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimaryDark,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: (activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          activePoint.isProjected ? 'Prediksi' : 'Aktual',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
                             color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            '${activePoint.dayName.isNotEmpty ? "${activePoint.dayName}, " : ""}${activePoint.date}',
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimaryDark,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            activePoint.isProjected ? 'Prediksi' : 'Aktual',
+                            style: GoogleFonts.inter(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
@@ -772,18 +786,22 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                       Text(
                         ref.money(activePoint.revenueIdr),
                         style: GoogleFonts.inter(
-                          fontSize: 12.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: activePoint.isProjected ? const Color(0xFF0284C7) : AppTheme.jadeTosca,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (activePoint.isProjected && activePoint.lowerBoundIdr > 0)
                         Text(
                           'CI: ${ref.money(activePoint.lowerBoundIdr)} - ${ref.money(activePoint.upperBoundIdr)}',
                           style: GoogleFonts.inter(
-                            fontSize: 9.5,
+                            fontSize: 9,
                             color: AppTheme.textMutedDark,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),
@@ -797,9 +815,13 @@ class _PredictiveChartCardState extends ConsumerState<_PredictiveChartCard> {
                 children: [
                   const Icon(Icons.touch_app_outlined, size: 14, color: AppTheme.textMutedDark),
                   const SizedBox(width: 6),
-                  Text(
-                    'Sentuh atau geser grafik untuk melihat detail per tanggal',
-                    style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
+                  Expanded(
+                    child: Text(
+                      'Sentuh atau geser grafik untuk melihat detail per tanggal',
+                      style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
@@ -1301,6 +1323,7 @@ class _DailyForecastList extends ConsumerWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   ref.money(f.revenueIdr),
                   style: GoogleFonts.inter(
@@ -1308,6 +1331,8 @@ class _DailyForecastList extends ConsumerWidget {
                     fontSize: 13.5,
                     color: AppTheme.textPrimaryDark,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -1406,15 +1431,20 @@ class _StockoutForecastSection extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Estimasi Runout Bahan (${items.length})',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: AppTheme.textPrimaryDark,
+                    Expanded(
+                      child: Text(
+                        'Estimasi Runout Bahan (${items.length})',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppTheme.textPrimaryDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (activeFilter != 'all')
+                    if (activeFilter != 'all') ...[
+                      const SizedBox(width: 8),
                       InkWell(
                         onTap: () => ref.read(selectedStockoutFilterProvider.notifier).state = 'all',
                         child: Text(
@@ -1424,8 +1454,11 @@ class _StockoutForecastSection extends ConsumerWidget {
                             fontWeight: FontWeight.w600,
                             color: AppTheme.jadeTosca,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -1467,7 +1500,7 @@ class _StockStatusCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? color.withValues(alpha: 0.15) : AppTheme.darkCardSurface,
           borderRadius: BorderRadius.circular(12),
@@ -1502,7 +1535,7 @@ class _StockStatusCard extends StatelessWidget {
               '$count Item',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w800,
-                fontSize: 16,
+                fontSize: 15,
                 color: isSelected ? color : AppTheme.textPrimaryDark,
               ),
               maxLines: 1,
@@ -1593,13 +1626,22 @@ class _StockoutItemCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Stok: ${item.currentStock} ${item.unit} (Min: ${item.reorderLevel})',
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                Expanded(
+                  child: Text(
+                    'Stok: ${item.currentStock} ${item.unit} (Min: ${item.reorderLevel})',
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                Text(
-                  'Laju: ~${item.dailyVelocity} ${item.unit}/hari',
-                  style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.jadeTosca, fontWeight: FontWeight.w600),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Laju: ~${item.dailyVelocity} ${item.unit}/hari',
+                    style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.jadeTosca, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -1632,6 +1674,8 @@ class _StockoutItemCard extends ConsumerWidget {
                       Text(
                         'Estimasi Tanggal Habis:',
                         style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         item.projectedStockoutDate,
@@ -1640,26 +1684,35 @@ class _StockoutItemCard extends ConsumerWidget {
                           fontSize: 12,
                           color: AppTheme.textPrimaryDark,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Rekomendasi Restock:',
-                      style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
-                    ),
-                    Text(
-                      '+${item.recommendedReorderQty} ${item.unit} (${ref.money(item.estimatedRestockCostIdr)})',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: AppTheme.jadeTosca,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Rekomendasi Restock:',
+                        style: GoogleFonts.inter(fontSize: 10.5, color: AppTheme.textMutedDark),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      Text(
+                        '+${item.recommendedReorderQty} ${item.unit} (${ref.money(item.estimatedRestockCostIdr)})',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: AppTheme.jadeTosca,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

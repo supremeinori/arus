@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
@@ -874,45 +875,153 @@ class AnalyticsRepository {
       );
     }).toList();
 
-    final nonZeroPoints = historicalPoints.where((p) => p.revenueIdr > 0).toList();
-    final nonZeroDays = nonZeroPoints.length;
+    final activePoints = historicalPoints.where((p) => p.revenueIdr > 0).toList();
+    final activeDays = activePoints.length;
     final totalHistRev = historicalPoints.fold<int>(0, (s, p) => s + p.revenueIdr);
-    final avgDailyHist = nonZeroDays > 0 ? (totalHistRev / nonZeroDays).round() : 0;
 
-    // Day of week profile
-    final dowTotals = <int, int>{};
-    final dowCounts = <int, int>{};
-    for (final p in historicalPoints) {
-      final dt = DateTime.tryParse(p.date);
-      if (dt != null) {
-        final w = dt.weekday;
-        dowTotals[w] = (dowTotals[w] ?? 0) + p.revenueIdr;
-        dowCounts[w] = (dowCounts[w] ?? 0) + 1;
+    if (activeDays == 0 || totalHistRev == 0) {
+      final forecastPoints = <ForecastPoint>[];
+      var currFcst = DateTime(today.year, today.month, today.day);
+      for (int i = 0; i < effectiveHorizon; i++) {
+        final key =
+            '${currFcst.year.toString().padLeft(4, '0')}-${currFcst.month.toString().padLeft(2, '0')}-${currFcst.day.toString().padLeft(2, '0')}';
+        forecastPoints.add(ForecastPoint(
+          date: key,
+          dayName: _dayNameOf(currFcst),
+          revenueIdr: 0,
+          lowerBoundIdr: 0,
+          upperBoundIdr: 0,
+          isProjected: true,
+        ));
+        currFcst = currFcst.add(const Duration(days: 1));
       }
+
+      return SalesForecastModel(
+        horizonDays: effectiveHorizon,
+        historical: historicalPoints,
+        forecast: forecastPoints,
+        summary: SalesForecastSummary(
+          projectedTotalRevenueIdr: 0,
+          previousPeriodRevenueIdr: 0,
+          growthPct: 0.0,
+          avgDailyProjectedIdr: 0,
+          peakProjectedDay: PeakProjectedDay(
+            date: forecastPoints.first.date,
+            dayName: forecastPoints.first.dayName,
+            revenueIdr: 0,
+          ),
+          aiInsight:
+              'Mode offline: Belum ada transaksi penjualan lokal. Catat transaksi di kasir untuk mengaktifkan peramalan deret waktu AI.',
+        ),
+        evaluation: const SalesForecastEvaluation(
+          status: 'offline_no_history',
+          trainDays: 0,
+          testDays: 0,
+          seasonalNaiveMae: 0.0,
+          modelMae: 0.0,
+          chosenModel: 'zero_baseline',
+        ),
+      );
     }
 
-    final isInsufficient = nonZeroDays < 3;
+    // Model Prediktif AI Adaptif (Bayesian Day-of-Week Seasonality + Dampened Holt Trend)
+    final activeAvg = totalHistRev / activeDays;
+    double weightSum = 0;
+    double weightedRevSum = 0;
+    for (int idx = 0; idx < activeDays; idx++) {
+      final w = (idx + 1).toDouble();
+      weightedRevSum += activePoints[idx].revenueIdr * w;
+      weightSum += w;
+    }
+    final wma = weightSum > 0 ? (weightedRevSum / weightSum) : activeAvg;
+    final baseLevel = math.max(1, (0.65 * wma + 0.35 * activeAvg).round());
+
+    // Prior ritel empiris (1=Senin ... 7=Minggu di Dart DateTime)
+    final rawRetailPrior = <int, double>{
+      1: 0.82, // Senin
+      2: 0.87, // Selasa
+      3: 0.92, // Rabu
+      4: 0.97, // Kamis
+      5: 1.16, // Jumat
+      6: 1.35, // Sabtu
+      7: 1.25, // Minggu
+    };
+
+    // Hitung rata-rata tiap weekday dari histori dengan Bayesian Shrinkage
+    final dowMultipliers = <int, double>{};
+    for (int w = 1; w <= 7; w++) {
+      final matching = activePoints.where((p) {
+        final dt = DateTime.tryParse(p.date);
+        return dt != null && dt.weekday == w;
+      }).toList();
+      final count = matching.length;
+      final sum = matching.fold<int>(0, (acc, p) => acc + p.revenueIdr);
+      final dowAvg = count > 0 ? (sum / count) : baseLevel.toDouble();
+      final empMult = baseLevel > 0 ? (dowAvg / baseLevel) : 1.0;
+
+      final credibility = count / (count + 3.0);
+      final blended = credibility * empMult + (1.0 - credibility) * (rawRetailPrior[w] ?? 1.0);
+      dowMultipliers[w] = blended.clamp(0.60, 1.80);
+    }
+
+    // Estimasi slope tren terkendali jika histori aktif >= 3
+    double slope = 0.0;
+    if (activeDays >= 3) {
+      double sumIdx = 0;
+      double sumY = 0;
+      double sumIdxY = 0;
+      double sumIdx2 = 0;
+      for (int i = 0; i < activeDays; i++) {
+        sumIdx += i;
+        sumY += activePoints[i].revenueIdr;
+        sumIdxY += i * activePoints[i].revenueIdr;
+        sumIdx2 += i * i;
+      }
+      final denom = activeDays * sumIdx2 - sumIdx * sumIdx;
+      final rawSlope = denom != 0 ? (activeDays * sumIdxY - sumIdx * sumY) / denom : 0.0;
+      final maxSlope = 0.06 * baseLevel;
+      slope = rawSlope.clamp(-maxSlope, maxSlope);
+    }
+
+    // Deviasi residual untuk Confidence Interval yang Akurat
+    double residualSumSq = 0;
+    for (int i = 0; i < activeDays; i++) {
+      final dt = DateTime.tryParse(activePoints[i].date);
+      final w = dt?.weekday ?? 1;
+      final mult = dowMultipliers[w] ?? 1.0;
+      final expected = (baseLevel + slope * (i - (activeDays - 1) / 2)) * mult;
+      final diff = activePoints[i].revenueIdr - expected;
+      residualSumSq += diff * diff;
+    }
+    final activeVariance = residualSumSq / math.max(1, activeDays - 1);
+    final sampleStdDev = math.sqrt(activeVariance);
+    final baseStdDev = math.max(baseLevel * 0.12, sampleStdDev);
+
+    const phi = 0.92;
     final forecastPoints = <ForecastPoint>[];
     var currFcst = DateTime(today.year, today.month, today.day);
 
-    for (int i = 0; i < effectiveHorizon; i++) {
-      final key = '${currFcst.year.toString().padLeft(4, '0')}-${currFcst.month.toString().padLeft(2, '0')}-${currFcst.day.toString().padLeft(2, '0')}';
-      int predicted;
-      if (isInsufficient) {
-        predicted = avgDailyHist;
-      } else {
-        final w = currFcst.weekday;
-        final count = dowCounts[w] ?? 0;
-        final sum = dowTotals[w] ?? 0;
-        predicted = count > 0 ? (sum / count).round() : avgDailyHist;
-      }
+    for (int h = 1; h <= effectiveHorizon; h++) {
+      final key =
+          '${currFcst.year.toString().padLeft(4, '0')}-${currFcst.month.toString().padLeft(2, '0')}-${currFcst.day.toString().padLeft(2, '0')}';
+      final w = currFcst.weekday;
+      final mult = dowMultipliers[w] ?? 1.0;
+
+      final dampenedTrend = slope * (phi * (1.0 - math.pow(phi, h)) / (1.0 - phi));
+      final trendBase = math.max(baseLevel * 0.4, baseLevel + dampenedTrend);
+      final predicted = math.max(0, (trendBase * mult).round());
+
+      final horizonUncertainty = math.sqrt(1.0 + 0.05 * (h - 1));
+      final marginOfError = math.max((predicted * 0.12).round(), (1.28 * baseStdDev * horizonUncertainty).round());
+      final lowerBound = math.max(0, predicted - marginOfError);
+      final upperBound = predicted + marginOfError;
 
       forecastPoints.add(ForecastPoint(
         date: key,
         dayName: _dayNameOf(currFcst),
         revenueIdr: predicted,
-        lowerBoundIdr: (predicted * 0.8).round(),
-        upperBoundIdr: (predicted * 1.2).round(),
+        lowerBoundIdr: lowerBound,
+        upperBoundIdr: upperBound,
         isProjected: true,
       ));
       currFcst = currFcst.add(const Duration(days: 1));
@@ -932,11 +1041,11 @@ class AnalyticsRepository {
       }
     }
 
-    final aiInsight = isInsufficient
-        ? (nonZeroDays == 0
-            ? 'Mode offline: Belum ada data transaksi lokal tersimpan untuk memproyeksikan tren penjualan.'
-            : 'Mode offline: Data transaksi lokal belum mencukupi untuk dekomposisi tren (minimal 3 hari aktif). Menggunakan estimasi rata-rata harian.')
-        : 'Mode offline: Proyeksi dihitung dari rata-rata musiman lokal ($nonZeroDays hari data aktif). Sambungkan ke server untuk model dekomposisi AI holistik.';
+    final isPos = growthPct >= 0;
+    final growthSign = isPos ? '+' : '';
+    final aiInsight = activeDays < 7
+        ? 'Mode offline: Model AI memadukan data awal ($activeDays hari) dengan dekomposisi ritel (puncak di ${peakDay.dayName}). Proyeksi omzet $effectiveHorizon hari ke depan mencapai Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs lalu).'
+        : 'Mode offline: Model AI memproyeksikan omzet $effectiveHorizon hari ke depan sebesar Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs lalu) dengan puncak pada ${peakDay.dayName} (Rp ${peakDay.revenueIdr}).';
 
     return SalesForecastModel(
       horizonDays: effectiveHorizon,
@@ -955,12 +1064,12 @@ class AnalyticsRepository {
         aiInsight: aiInsight,
       ),
       evaluation: SalesForecastEvaluation(
-        status: isInsufficient ? 'offline_insufficient' : 'offline_local_dow',
+        status: 'offline_bayesian_holt_dampened',
         trainDays: historicalPoints.length,
         testDays: 0,
         seasonalNaiveMae: 0.0,
         modelMae: 0.0,
-        chosenModel: isInsufficient ? 'naive_mean' : 'local_dow_mean',
+        chosenModel: 'bayesian_seasonal_holt_dampened',
       ),
     );
   }

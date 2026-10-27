@@ -1082,6 +1082,8 @@ class _TrenCard extends StatelessWidget {
                                           ? _DashboardColors.teal
                                           : _DashboardColors.textMuted,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
@@ -1135,6 +1137,8 @@ class _TrenCard extends StatelessWidget {
                                         ? _DashboardColors.teal
                                         : _DashboardColors.textMuted,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),

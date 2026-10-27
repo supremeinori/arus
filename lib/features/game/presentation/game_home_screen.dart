@@ -833,7 +833,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     child: Image.network(
                       currentQ.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(
+                      errorBuilder: (context, error, stackTrace) => const Center(
                         child: Icon(Icons.fastfood_rounded, size: 54, color: AppTheme.textMuted),
                       ),
                     ),
@@ -1328,7 +1328,7 @@ class _Game2WayOptionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (statusIcon != null) statusIcon,
+                ?statusIcon,
               ],
             ),
             const SizedBox(height: 10),
