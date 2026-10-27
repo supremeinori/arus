@@ -100,10 +100,11 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
             .toList(),
       );
 
-      // Reset keranjang + refresh stok katalog & riwayat
+      // Reset keranjang + refresh stok katalog & riwayat & shift
       ref.read(posCartProvider.notifier).clearCart();
       ref.invalidate(posCatalogProvider);
       ref.invalidate(posHistoryProvider);
+      ref.invalidate(shiftSummaryProvider);
       ref.invalidate(salesForecastProvider);
       ref.invalidate(stockoutForecastProvider);
       ref.invalidate(analyticsOverviewProvider);
@@ -135,6 +136,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         ref.read(posCartProvider.notifier).clearCart();
         ref.invalidate(posCatalogProvider);
         ref.invalidate(posHistoryProvider);
+        ref.invalidate(shiftSummaryProvider);
         ref.invalidate(salesForecastProvider);
         ref.invalidate(stockoutForecastProvider);
         ref.invalidate(analyticsOverviewProvider);

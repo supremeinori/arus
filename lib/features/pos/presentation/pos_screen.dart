@@ -15,6 +15,7 @@ import 'pos_menu_thumbnail.dart';
 import 'pos_catalog_provider.dart';
 import 'pos_checkout_sheet.dart';
 import '../data/pos_catalog_repository.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -49,6 +50,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           ),
         );
         ref.invalidate(productListProvider);
+        ref.invalidate(posCatalogProvider);
+        ref.invalidate(posHistoryProvider);
+        ref.invalidate(shiftSummaryProvider);
       }
     } catch (_) {
       // Offline safe fallback
@@ -178,6 +182,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ),
                 );
                 ref.invalidate(productListProvider);
+                ref.invalidate(posCatalogProvider);
+                ref.invalidate(posHistoryProvider);
+                ref.invalidate(shiftSummaryProvider);
               } catch (e) {
                 messenger.showSnackBar(
                   SnackBar(

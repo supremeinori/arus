@@ -9,6 +9,7 @@ import '../../analytics/presentation/analytics_provider.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../analytics/domain/analytics_models.dart';
 import '../../settings/presentation/currency_provider.dart';
+import '../../../core/sync/sync_service.dart';
 
 class ShiftSummaryScreen extends ConsumerWidget {
   const ShiftSummaryScreen({super.key});
@@ -47,14 +48,24 @@ class ShiftSummaryScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimaryDark),
             tooltip: 'Refresh Shift',
-            onPressed: () => ref.invalidate(shiftSummaryProvider),
+            onPressed: () async {
+              try {
+                await ref.read(syncServiceProvider).syncPendingTransactions();
+              } catch (_) {}
+              ref.invalidate(shiftSummaryProvider);
+            },
           ),
         ],
       ),
       body: RefreshIndicator(
         color: AppTheme.jadeTosca,
         backgroundColor: AppTheme.darkCardSurfaceElevated,
-        onRefresh: () async => ref.invalidate(shiftSummaryProvider),
+        onRefresh: () async {
+          try {
+            await ref.read(syncServiceProvider).syncPendingTransactions();
+          } catch (_) {}
+          ref.invalidate(shiftSummaryProvider);
+        },
         child: CustomScrollView(
           slivers: [
             SliverPadding(
@@ -111,7 +122,12 @@ class ShiftSummaryScreen extends ConsumerWidget {
                   // Shift Card Data
                   AsyncStateView<ShiftSummaryModel>(
                     value: shiftAsync,
-                    onRetry: () => ref.invalidate(shiftSummaryProvider),
+                    onRetry: () async {
+                      try {
+                        await ref.read(syncServiceProvider).syncPendingTransactions();
+                      } catch (_) {}
+                      ref.invalidate(shiftSummaryProvider);
+                    },
                     dataBuilder: (shift) => _ShiftMetrics(shift: shift),
                   ),
                   const SizedBox(height: 16),
@@ -158,8 +174,105 @@ class _ShiftMetrics extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!shift.isDataAvailable) {
+      return ShadCard(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Icon(Icons.cloud_off_rounded, size: 36, color: Color(0xFFD97706)),
+            const SizedBox(height: 10),
+            Text(
+              'Data Shift Belum Tersedia Offline',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: AppTheme.textPrimaryDark,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Belum ada transaksi lokal yang tercatat di perangkat ini untuk hari ini. Hubungkan perangkat ke internet untuk memuat data server atau lakukan transaksi baru.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppTheme.textMutedDark,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
+        if (shift.isOffline) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFF59E0B)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.cloud_off_rounded, color: Color(0xFFB45309), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mode Offline',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: const Color(0xFFB45309),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Menampilkan penjualan dari data lokal perangkat ini. Angka belum mencakup perubahan dari perangkat lain.',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          color: const Color(0xFF92400E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (shift.pendingCount > 0) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.jadeTosca.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.sync_rounded, color: AppTheme.jadeTosca, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${shift.pendingCount} transaksi lokal menunggu sinkronisasi.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.jadeTosca,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         _ShiftMetricTile(
           title: 'Total Penjualan Shift Hari Ini',
           value: ref.money(shift.todayRevenueIdr),

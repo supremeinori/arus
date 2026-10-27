@@ -95,12 +95,18 @@ class ShiftSummaryModel {
   final int cashRevenueIdr;
   final int qrisRevenueIdr;
   final int transactionCount;
+  final bool isOffline;
+  final int pendingCount;
+  final bool isDataAvailable;
 
   const ShiftSummaryModel({
     required this.todayRevenueIdr,
     required this.cashRevenueIdr,
     required this.qrisRevenueIdr,
     required this.transactionCount,
+    this.isOffline = false,
+    this.pendingCount = 0,
+    this.isDataAvailable = true,
   });
 
   factory ShiftSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -109,11 +115,11 @@ class ShiftSummaryModel {
       cashRevenueIdr: json['cash_revenue_idr'] as int? ?? 0,
       qrisRevenueIdr: json['qris_revenue_idr'] as int? ?? 0,
       transactionCount: json['transaction_count'] as int? ?? 0,
+      isOffline: json['is_offline'] as bool? ?? false,
+      pendingCount: json['pending_count'] as int? ?? 0,
+      isDataAvailable: json['is_data_available'] as bool? ?? true,
     );
   }
-
-
-
 }
 
 // =========================================================================
