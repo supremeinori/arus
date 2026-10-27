@@ -55,6 +55,8 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
 
   void _fitCameraToBounds(LatLng origin, LatLng destination, List<LatLng> routePoints) {
     if (!mounted) return;
+    if (origin.latitude.isNaN || origin.longitude.isNaN || 
+        destination.latitude.isNaN || destination.longitude.isNaN) return;
     try {
       final points = <LatLng>[origin, destination, ...routePoints];
       final bounds = LatLngBounds.fromPoints(points);
@@ -129,7 +131,7 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
       }
     }
 
-    // Remove auto-listen camera fit in build method to avoid Infinity/NaN toInt during tests or rapid layout pass
+    // Watch route provider for selected outlet (if any)
     AsyncValue<RoadRouteModel>? routeAsync;
     if (_selectedOutlet != null) {
       final targetLatLng = LatLng(_selectedOutlet!.latitude, _selectedOutlet!.longitude);
@@ -212,25 +214,27 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                       child: GestureDetector(
                         onTap: () {
                           if (!mounted || _isLocatingOrRouting) return;
+                          final perfModel = perf ??
+                              OutletPerformanceModel(
+                                outletId: item.id,
+                                name: item.name,
+                                address: item.address,
+                                latitude: item.latitude,
+                                longitude: item.longitude,
+                                timezone: item.timezone,
+                                revenue30dIdr: 0,
+                                transactionCount30d: 0,
+                                lowStockCount: 0,
+                                performanceStatus: 'optimal',
+                              );
+                          final targetLatLng = LatLng(item.latitude, item.longitude);
                           setState(() {
-                            _selectedOutlet = perf ??
-                                OutletPerformanceModel(
-                                  outletId: item.id,
-                                  name: item.name,
-                                  address: item.address,
-                                  latitude: item.latitude,
-                                  longitude: item.longitude,
-                                  timezone: item.timezone,
-                                  revenue30dIdr: 0,
-                                  transactionCount30d: 0,
-                                  lowStockCount: 0,
-                                  performanceStatus: 'optimal',
-                                );
+                            _selectedOutlet = perfModel;
                           });
-                          // Fit camera to show both user location and selected outlet + route
-                          Future.delayed(const Duration(milliseconds: 300), () {
+                          // Initial fit with straight line, then refit when route loads
+                          _fitCameraToBounds(userLatLng, targetLatLng, []);
+                          Future.delayed(const Duration(milliseconds: 400), () {
                             if (mounted && _selectedOutlet != null) {
-                              final targetLatLng = LatLng(_selectedOutlet!.latitude, _selectedOutlet!.longitude);
                               final routeAsync = ref.read(selectedRouteProvider((userLatLng, targetLatLng)));
                               routeAsync.whenData((route) {
                                 if (mounted && route.points.isNotEmpty) {
@@ -341,7 +345,6 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
 
                         if (nearest != null) {
                           final targetLatLng = LatLng(nearest.latitude, nearest.longitude);
-                          _mapController.move(targetLatLng, 14.5);
                           final perf = perfMap[nearest.id];
                           if (mounted) {
                             setState(() {
@@ -358,17 +361,6 @@ class _OutletMapWidgetState extends ConsumerState<OutletMapWidget> {
                                     lowStockCount: 0,
                                     performanceStatus: 'optimal',
                                   );
-                            });
-                            // Fit camera to show both user location and selected outlet + route
-                            Future.delayed(const Duration(milliseconds: 300), () {
-                              if (mounted && _selectedOutlet != null) {
-                                final routeAsync = ref.read(selectedRouteProvider((userLatLng, targetLatLng)));
-                                routeAsync.whenData((route) {
-                                  if (mounted && route.points.isNotEmpty) {
-                                    _fitCameraToBounds(userLatLng, targetLatLng, route.points);
-                                  }
-                                });
-                              }
                             });
                           }
                         } else {
