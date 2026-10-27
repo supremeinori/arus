@@ -49,7 +49,10 @@ export class PosService {
       );
 
       // Product unavailable if it has recipes but some required ingredient missing at this branch
-      const hasMissingIngredient = recipes.length > 0 && relevant.length < recipes.length;
+      const requiredIngredientNames = new Set(recipes.map((r) => r.ingredient?.name).filter(Boolean));
+      const availableIngredientNames = new Set(relevant.map((r) => r.ingredient?.name).filter(Boolean));
+      const hasMissingIngredient =
+        requiredIngredientNames.size > 0 && availableIngredientNames.size < requiredIngredientNames.size;
 
       let maxPortions = 0;
       let unitCostIdr = 0;

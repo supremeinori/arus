@@ -158,10 +158,130 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Bahan Baku & Inventaris'), findsOneWidget);
+      expect(find.text('Pilih Cabang:'), findsOneWidget);
+      expect(find.byType(DropdownButton<String>), findsOneWidget);
       expect(find.text('Biji Kopi Arabika'), findsOneWidget);
       expect(find.textContaining('500 gram'), findsOneWidget);
       expect(find.textContaining('Rp 150 / gram'), findsOneWidget);
       expect(find.text('Tambah Bahan'), findsOneWidget);
+    });
+
+    testWidgets('InventoryListScreen untuk Manager TIDAK bisa memilih cabang (terkunci pada cabang penugasan oleh Owner)', (tester) async {
+      const managerUser = UserModel(
+        id: 'u-mgr-1',
+        name: 'Doni Manager',
+        email: 'doni@arus.com',
+        role: UserRole.manager,
+        outlets: [
+          OutletSummary(
+            id: 'out-jogja-1',
+            name: 'ARUS Malioboro',
+            timezone: 'Asia/Jakarta',
+            address: 'Jl. Malioboro No. 12',
+          ),
+        ],
+      );
+
+      final sampleIngredient = IngredientModel(
+        id: 'ing-1',
+        outletId: 'out-jogja-1',
+        outletName: 'ARUS Malioboro',
+        name: 'Biji Kopi House Blend',
+        unit: 'gram',
+        stockQty: 850,
+        reorderLevel: 200,
+        costPerUnit: 180,
+        status: 'ok',
+        updatedAt: DateTime.now(),
+      );
+
+      final allOutlets = [
+        OutletModel(
+          id: 'out-jogja-1',
+          name: 'ARUS Malioboro',
+          address: 'Jl. Malioboro No. 12',
+          latitude: -7.7928,
+          longitude: 110.3660,
+          timezone: 'Asia/Jakarta',
+          isActive: true,
+          createdAt: DateTime.now(),
+        ),
+        OutletModel(
+          id: 'out-jogja-2',
+          name: 'ARUS Seturan',
+          address: 'Jl. Seturan No. 88',
+          latitude: -7.7710,
+          longitude: 110.4090,
+          timezone: 'Asia/Jakarta',
+          isActive: true,
+          createdAt: DateTime.now(),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith((ref) => AuthNotifierMock(AuthState.authenticated(managerUser))),
+            outletsListProvider.overrideWith((ref) async => allOutlets),
+            ingredientsListProvider.overrideWith((ref) async => [sampleIngredient]),
+            shakeEventProvider.overrideWith((ref) => MockShakeEventNotifier()),
+          ],
+          child: const MaterialApp(
+            home: InventoryListScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // 1. Manager TIDAK boleh melihat dropdown 'Pilih Cabang:'
+      expect(find.text('Pilih Cabang:'), findsNothing);
+      expect(find.byType(DropdownButton<String>), findsNothing);
+
+      // 2. Manager melihat indikator cabang ditugaskan yang terkunci
+      expect(find.text('Cabang Ditugaskan:'), findsOneWidget);
+      expect(find.text('ARUS Malioboro'), findsOneWidget);
+      expect(find.text('Terkunci'), findsOneWidget);
+      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+
+      // 3. Manager TIDAK dapat melihat cabang lain di selector (misal ARUS Seturan)
+      expect(find.text('ARUS Seturan'), findsNothing);
+
+      // 4. Data bahan baku untuk cabang penugasan tetap muncul
+      expect(find.text('Biji Kopi House Blend'), findsOneWidget);
+      expect(find.textContaining('850 gram'), findsOneWidget);
+      expect(find.text('Tambah Bahan'), findsOneWidget);
+    });
+
+    testWidgets('InventoryListScreen untuk Manager yang belum di-assign cabang menampilkan pesan peringatan', (tester) async {
+      const managerNoOutlet = UserModel(
+        id: 'u-mgr-2',
+        name: 'Randi Manager',
+        email: 'randi@arus.com',
+        role: UserRole.manager,
+        outlets: [], // Belum di-assign
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith((ref) => AuthNotifierMock(AuthState.authenticated(managerNoOutlet))),
+            outletsListProvider.overrideWith((ref) async => []),
+            ingredientsListProvider.overrideWith((ref) async => []),
+            shakeEventProvider.overrideWith((ref) => MockShakeEventNotifier()),
+          ],
+          child: const MaterialApp(
+            home: InventoryListScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Manager tidak punya dropdown dan melihat pesan bahwa belum ditugaskan oleh Owner
+      expect(find.text('Pilih Cabang:'), findsNothing);
+      expect(find.byType(DropdownButton<String>), findsNothing);
+      expect(find.text('Belum ada cabang yang ditugaskan oleh Owner.'), findsOneWidget);
     });
   });
 }

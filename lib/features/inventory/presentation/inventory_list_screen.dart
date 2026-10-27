@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
@@ -151,6 +151,20 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final ingredientsAsync = ref.watch(ingredientsListProvider);
     final outletsAsync = ref.watch(outletsListProvider);
 
+    // Untuk Manager: Cabang selalu terkunci pada cabang yang di-assign oleh Owner (tidak bisa memilih cabang lain)
+    final assignedOutlet = isManager && user != null && user.outlets.isNotEmpty
+        ? user.outlets.first
+        : null;
+    final effectiveOutletId = isManager
+        ? assignedOutlet?.id
+        : selectedOutletId;
+
+    if (isManager && assignedOutlet != null && selectedOutletId != assignedOutlet.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(selectedOutletFilterProvider.notifier).state = assignedOutlet.id;
+      });
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
@@ -160,14 +174,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
-          if (!isStaff)
+          if (!isStaff && effectiveOutletId != null)
             IconButton(
               icon: const Icon(Icons.history_rounded, color: AppTheme.textPrimaryDark),
               tooltip: 'Riwayat Mutasi',
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => StockMovementScreen(outletId: selectedOutletId),
+                    builder: (_) => StockMovementScreen(outletId: effectiveOutletId),
                   ),
                 );
               },
@@ -183,24 +197,26 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           ),
         ],
       ),
-      floatingActionButton: (!isStaff && selectedOutletId != null)
+      floatingActionButton: (!isStaff && effectiveOutletId != null)
           ? FloatingActionButton.extended(
               backgroundColor: AppTheme.jadeTosca,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
               label: Text('Tambah Bahan', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
               onPressed: () {
-                final outletName = outletsAsync.value?.firstWhere(
-                  (o) => o.id == selectedOutletId,
-                  orElse: () => outletsAsync.value!.first,
-                ).name ?? 'Cabang Terpilih';
-                _openAddIngredientDialog(selectedOutletId, outletName);
+                final outletName = isManager
+                    ? (assignedOutlet?.name ?? 'Cabang Penugasan')
+                    : (outletsAsync.value?.firstWhere(
+                        (o) => o.id == effectiveOutletId,
+                        orElse: () => outletsAsync.value!.first,
+                      ).name ?? 'Cabang Terpilih');
+                _openAddIngredientDialog(effectiveOutletId, outletName);
               },
             )
           : null,
       body: Column(
         children: [
-          // Outlet Selector Bar untuk Owner & Manager
-          if (!isStaff)
+          // 1. Outlet Selector Bar khusus Owner: Bisa memilih antar cabang
+          if (isOwner)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -213,25 +229,18 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               child: AsyncStateView(
                 value: outletsAsync,
                 dataBuilder: (allOutlets) {
-                  // Jika Manager, batasi pilihan hanya ke assigned outlets
-                  final availableOutlets = isOwner
-                      ? allOutlets
-                      : (isManager && user != null
-                          ? allOutlets.where((o) => user.outlets.any((uo) => uo.id == o.id)).toList()
-                          : allOutlets);
-
-                  if (availableOutlets.isEmpty) {
+                  if (allOutlets.isEmpty) {
                     return Text(
-                      'Tidak ada cabang yang ditugaskan.',
+                      'Tidak ada cabang.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
                     );
                   }
 
-                  final currentOutletId = selectedOutletId != null && availableOutlets.any((o) => o.id == selectedOutletId)
+                  final currentOutletId = selectedOutletId != null && allOutlets.any((o) => o.id == selectedOutletId)
                       ? selectedOutletId
-                      : availableOutlets.first.id;
+                      : allOutlets.first.id;
 
                   // Pastikan state selected terisi
                   if (selectedOutletId != currentOutletId) {
@@ -255,7 +264,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                             dropdownColor: AppTheme.darkCardSurface,
                             isExpanded: true,
                             value: currentOutletId,
-                            items: availableOutlets.map((o) {
+                            items: allOutlets.map((o) {
                               return DropdownMenuItem<String>(
                                 value: o.id,
                                 child: Text(
@@ -278,6 +287,69 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   );
                 },
               ),
+            )
+          // 2. Bar Cabang Khusus Manager: Terkunci pada 1 cabang penugasan oleh Owner (TIDAK BISA MEMILIH CABANG)
+          else if (isManager)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: AppTheme.darkCardSurface,
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                ),
+              ),
+              child: assignedOutlet != null
+                  ? Row(
+                      children: [
+                        const Icon(Icons.storefront_rounded, size: 20, color: AppTheme.jadeTosca),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Cabang Ditugaskan:',
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            assignedOutlet.name,
+                            style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppTheme.jadeTosca.withValues(alpha: 0.3), width: 1.0),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.lock_outline_rounded, size: 12, color: AppTheme.jadeTosca),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Terkunci',
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 20, color: Colors.amber),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Belum ada cabang yang ditugaskan oleh Owner.',
+                            style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           const Divider(height: 1),
 
@@ -347,14 +419,16 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                           ? 'Tidak ada bahan baku dengan filter ini.'
                           : 'Belum ada bahan baku di cabang ini.',
                       icon: Icons.kitchen_outlined,
-                      ctaText: selectedOutletId != null ? 'Tambah Bahan Baku' : null,
-                      onCtaPressed: selectedOutletId != null
+                      ctaText: effectiveOutletId != null ? 'Tambah Bahan Baku' : null,
+                      onCtaPressed: effectiveOutletId != null
                           ? () {
-                              final outletName = outletsAsync.value?.firstWhere(
-                                (o) => o.id == selectedOutletId,
-                                orElse: () => outletsAsync.value!.first,
-                              ).name ?? 'Cabang Terpilih';
-                              _openAddIngredientDialog(selectedOutletId, outletName);
+                              final outletName = isManager
+                                  ? (assignedOutlet?.name ?? 'Cabang Penugasan')
+                                  : (outletsAsync.value?.firstWhere(
+                                      (o) => o.id == effectiveOutletId,
+                                      orElse: () => outletsAsync.value!.first,
+                                    ).name ?? 'Cabang Terpilih');
+                              _openAddIngredientDialog(effectiveOutletId, outletName);
                             }
                           : null,
                     );
@@ -375,7 +449,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                         final item = ingredients[index - 1];
                         return _IngredientCard(
                           item: item,
-                          onEdit: () => _openAddIngredientDialog(selectedOutletId ?? '', item.outletName, item),
+                          onEdit: () => _openAddIngredientDialog(effectiveOutletId ?? item.outletId, item.outletName, item),
                           onDelete: () => _confirmDeleteIngredient(item),
                           onAdjust: () => _openAdjustmentDialog(item),
                         );

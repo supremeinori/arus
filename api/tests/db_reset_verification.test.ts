@@ -9,45 +9,33 @@ describe('ARUS — Database Reset & Authorization Verification', { timeout: 3500
     await prisma.blockchainRecord.deleteMany();
     await prisma.transactionItem.deleteMany();
     await prisma.transaction.deleteMany();
-    await prisma.inventoryMovement.deleteMany();
-    await prisma.productRecipe.deleteMany();
-    await prisma.ingredient.deleteMany();
-    await prisma.product.deleteMany();
-    await prisma.productCategory.deleteMany();
   });
 
   afterAll(async () => {
     await prisma.blockchainRecord.deleteMany();
     await prisma.transactionItem.deleteMany();
     await prisma.transaction.deleteMany();
-    await prisma.inventoryMovement.deleteMany();
-    await prisma.productRecipe.deleteMany();
-    await prisma.ingredient.deleteMany();
-    await prisma.product.deleteMany();
-    await prisma.productCategory.deleteMany();
   });
 
-  it('1. Verifikasi kebersihan database: seluruh data bisnis lama 0', async () => {
+  it('1. Verifikasi data seeder: 10 produk menu, 52 bahan baku, 0 transaksi bisnis', async () => {
     const counts = {
       transactions: await prisma.transaction.count(),
       transactionItems: await prisma.transactionItem.count(),
-      movements: await prisma.inventoryMovement.count(),
-      ingredients: await prisma.ingredient.count(),
       products: await prisma.product.count(),
       categories: await prisma.productCategory.count(),
+      ingredients: await prisma.ingredient.count(),
+      recipes: await prisma.productRecipe.count(),
       blockchainRecords: await prisma.blockchainRecord.count(),
       notifications: await prisma.notification.count(),
-      feedback: await prisma.feedback.count(),
     };
 
     expect(counts.transactions).toBe(0);
     expect(counts.transactionItems).toBe(0);
-    expect(counts.movements).toBe(0);
-    expect(counts.ingredients).toBe(0);
-    expect(counts.products).toBe(0);
-    expect(counts.categories).toBe(0);
     expect(counts.blockchainRecords).toBe(0);
-    expect(counts.notifications).toBe(0);
+    expect(counts.products).toBe(10);
+    expect(counts.categories).toBe(3);
+    expect(counts.ingredients).toBe(52);
+    expect(counts.recipes).toBeGreaterThan(0);
   });
 
   it('2. Verifikasi 4 cabang dan IANA Timezone', async () => {
@@ -255,17 +243,9 @@ describe('ARUS — Database Reset & Authorization Verification', { timeout: 3500
     const k1Token = resK1.body.data.access_token;
 
     const yogya = (await prisma.outlet.findUnique({ where: { name: 'Yogyakarta' } }))!;
-    const ts = Date.now();
-    const cat = await prisma.productCategory.create({ data: { name: `Kategori Test E2E ${ts}` } });
-    const prod = await prisma.product.create({
-      data: {
-        name: `Kopi Test E2E ${ts}`,
-        sku: `TEST-E2E-${ts}`,
-        price_idr: 15000,
-        category_id: cat.id,
-      },
-    });
+    const prod = (await prisma.product.findFirst({ where: { is_active: true } }))!;
 
+    const ts = Date.now();
     const clientRequestId = `b2c3d4e5-f6a1-4b2c-9d3e-${ts.toString().slice(-12).padStart(12, '0')}`;
 
     // 1. Transaksi pertama
@@ -276,7 +256,7 @@ describe('ARUS — Database Reset & Authorization Verification', { timeout: 3500
         client_request_id: clientRequestId,
         outlet_id: yogya.id,
         payment_method: 'cash',
-        paid_idr: 15000,
+        paid_idr: prod.price_idr,
         items: [{ product_id: prod.id, quantity: 1 }],
       });
     expect(resTx1.status).toBe(201);
@@ -291,7 +271,7 @@ describe('ARUS — Database Reset & Authorization Verification', { timeout: 3500
         client_request_id: clientRequestId,
         outlet_id: yogya.id,
         payment_method: 'cash',
-        paid_idr: 15000,
+        paid_idr: prod.price_idr,
         items: [{ product_id: prod.id, quantity: 1 }],
       });
     expect([200, 201]).toContain(resTx2.status);
@@ -301,12 +281,10 @@ describe('ARUS — Database Reset & Authorization Verification', { timeout: 3500
     const count = await prisma.transaction.count();
     expect(count).toBe(1);
 
-    // Cleanup: Bersihkan data test agar database kembali 100% bersih
+    // Cleanup: Bersihkan transaksi test
     await prisma.blockchainRecord.deleteMany();
     await prisma.transactionItem.deleteMany();
     await prisma.transaction.deleteMany();
-    await prisma.product.deleteMany();
-    await prisma.productCategory.deleteMany();
 
     const finalCount = await prisma.transaction.count();
     expect(finalCount).toBe(0);

@@ -131,7 +131,16 @@ export class TransactionsService {
         );
 
         // Jika produk memiliki resep, pastikan seluruh bahan resep wajib ada di cabang ini
-        if (product.recipes.length > 0 && relevantRecipes.length < product.recipes.length) {
+        const requiredIngredientNames = new Set(
+          product.recipes.map((r) => r.ingredient?.name).filter(Boolean)
+        );
+        const availableIngredientNames = new Set(
+          relevantRecipes.map((r) => r.ingredient?.name).filter(Boolean)
+        );
+        if (
+          requiredIngredientNames.size > 0 &&
+          availableIngredientNames.size < requiredIngredientNames.size
+        ) {
           throw new AppError(
             'INVENTORY_INSUFFICIENT',
             400,
