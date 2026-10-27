@@ -76,7 +76,11 @@ ${JSON.stringify(facts, null, 2)}
 6. Berikan rekomendasi keputusan bisnis (DSS) yang masuk akal dan didukung oleh fakta tersebut.
 
 Format Output:
-Selain jawaban lengkap bernuansa analitis (format Markdown untuk tampilan layar), sertakan juga TEPAT DI BAGIAN PALING AKHIR satu ringkasan lisan 1-2 kalimat yang ramah, ringkas, santai, dan BEBAS DARI SIMBOL MARKDOWN (*, #, -, bullet, tabel) serta menyebutkan angka dengan natural agar dapat dibacakan oleh suara wanita Gadis (TTS). Awali bagian ringkasan tersebut dengan penanda persis:
+- Sajikan jawaban yang bersih, rapi, profesional, dan nyaman dibaca (struktur eksekutif).
+- Gunakan format tebal (**kata**) HANYA untuk penekanan metrik angka penting, nama cabang, atau kesimpulan kunci. Hindari penggunaan tanda bintang (*) secara berlebihan atau tidak teratur.
+- Gunakan daftar berurutan (1., 2.) atau bullet poin tanda hubung (-) yang rapi dan teratur untuk perincian.
+- Hindari menyisipkan simbol-simbol markdown liar atau asteris yang tidak berpasangan.
+- Selain jawaban lengkap bernuansa analitis (format Markdown bersih untuk tampilan layar), sertakan juga TEPAT DI BAGIAN PALING AKHIR satu ringkasan lisan 1-2 kalimat yang ramah, ringkas, santai, dan BEBAS DARI SIMBOL MARKDOWN (*, #, -, bullet, tabel) serta menyebutkan angka dengan natural agar dapat dibacakan oleh suara wanita Gadis (TTS). Awali bagian ringkasan tersebut dengan penanda persis:
 [VOICE_SUMMARY]: <ringkasan suara 1-2 kalimat>`;
 
       const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];

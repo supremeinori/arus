@@ -79,9 +79,17 @@ class OperationsHubScreen extends ConsumerWidget {
               if (isOwner)
                 _OperationTile(
                   title: 'Produk',
-                  subtitle: 'Menu & harga',
+                  subtitle: 'Kelola menu & harga',
                   icon: Icons.restaurant_menu_rounded,
                   onTap: () => context.push('/catalog'),
+                )
+              else
+                _OperationTile(
+                  title: 'Menu',
+                  subtitle: 'Daftar menu & estimasi profit',
+                  icon: Icons.restaurant_menu_rounded,
+                  highlighted: true,
+                  onTap: () => context.push('/operations/menu'),
                 ),
               _OperationTile(
                 title: 'Inventaris',

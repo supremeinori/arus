@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/sync/sync_service.dart';
+import '../../../core/utils/money_formatter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/catalog_provider.dart';
@@ -874,6 +875,46 @@ class _RedesignedProductCard extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 8),
+
+                  // Signature Badge ARUS: Estimasi Profit (jika HPP tersedia untuk akun manajemen)
+                  if (catalogItem.product.costIdr != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0x1F10B981),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: const Color(0x4010B981),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.trending_up_rounded,
+                            size: 11,
+                            color: Color(0xFF10B981),
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              'Profit: ${MoneyFormatter.format(catalogItem.product.priceIdr - catalogItem.product.costIdr!, currency: "IDR")} (${catalogItem.product.priceIdr > 0 ? (((catalogItem.product.priceIdr - catalogItem.product.costIdr!) / catalogItem.product.priceIdr) * 100).round() : 0}%)',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
 
                   // 3. Konten Bawah: Harga & Tombol + ADD
                   Row(
