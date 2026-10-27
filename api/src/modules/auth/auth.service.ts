@@ -49,32 +49,14 @@ export class AuthService {
 
     let user: any = null;
     try {
-      if (email.includes('@')) {
-        user = await prisma.user.findUnique({
-          where: { email },
-          include: {
-            outlets: {
-              include: { outlet: true },
-            },
+      user = await prisma.user.findUnique({
+        where: { email },
+        include: {
+          outlets: {
+            include: { outlet: true },
           },
-        });
-      }
-      if (!user) {
-        user = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { email },
-              { email: `${email}@arus.com` },
-              { email: `${email}@arus.demo` },
-            ],
-          },
-          include: {
-            outlets: {
-              include: { outlet: true },
-            },
-          },
-        });
-      }
+        },
+      });
     } catch (err: any) {
       if (err instanceof AppError) throw err;
       throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memproses login.');

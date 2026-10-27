@@ -11,8 +11,7 @@ import {
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = loginSchema.parse(req.body);
-    const identifier = (data.email || data.username || '').toString();
-    const result = await authService.login(identifier, data.password, req.headers['user-agent']);
+    const result = await authService.login(data.email, data.password, req.headers['user-agent']);
     res.status(200).json({ data: result });
   } catch (err) {
     next(err);

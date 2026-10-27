@@ -35,7 +35,7 @@ void main() {
       await tester.tap(find.text('Kasir'));
       await tester.pump();
 
-      expect(find.text('kasir1'), findsOneWidget);
+      expect(find.text('kasir1@arus.com'), findsOneWidget);
     });
 
     testWidgets('MainShell untuk Staff menampilkan 4 tab (Beranda, Kasir, Stok, Profil)', (tester) async {

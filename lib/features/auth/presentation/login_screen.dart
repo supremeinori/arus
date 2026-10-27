@@ -23,7 +23,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'owner');
+  final _emailController = TextEditingController(text: 'owner@arus.com');
   final _passwordController = TextEditingController(text: '12345678');
   late final TextEditingController _serverController;
   bool _obscurePassword = true;
@@ -387,7 +387,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('owner', '12345678'),
+                        onPressed: () => _fillAccount('owner@arus.com', '12345678'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.storefront, size: 16, color: AppTheme.jadeTosca),
@@ -395,7 +395,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('manager1', '12345678'),
+                        onPressed: () => _fillAccount('manager1@arus.com', '12345678'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
@@ -403,7 +403,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('kasir1', '12345678'),
+                        onPressed: () => _fillAccount('kasir1@arus.com', '12345678'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
@@ -411,7 +411,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('kasir2', '12345678'),
+                        onPressed: () => _fillAccount('kasir2@arus.com', '12345678'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
@@ -419,7 +419,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('kasir3', '12345678'),
+                        onPressed: () => _fillAccount('kasir3@arus.com', '12345678'),
                       ),
                       ActionChip(
                         avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
@@ -427,7 +427,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         backgroundColor: AppTheme.lightCardSurface,
                         side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () => _fillAccount('kasir4', '12345678'),
+                        onPressed: () => _fillAccount('kasir4@arus.com', '12345678'),
                       ),
                     ],
                   ),
