@@ -377,33 +377,33 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
                         ActionChip(
                           backgroundColor: AppTheme.darkCardSurfaceElevated,
                           side: const BorderSide(color: AppTheme.darkCardBorder),
-                          label: const Text('Jogja (Malioboro)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          label: const Text('Yogyakarta', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                           onPressed: () {
-                            ref.read(userCoordinatesProvider.notifier).state = (-7.7828, 110.3670);
+                            ref.read(userCoordinatesProvider.notifier).state = (-7.797068, 110.370529);
                           },
                         ),
                         ActionChip(
                           backgroundColor: AppTheme.darkCardSurfaceElevated,
                           side: const BorderSide(color: AppTheme.darkCardBorder),
-                          label: const Text('Jakarta (Sudirman)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          label: const Text('Denpasar', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                           onPressed: () {
-                            ref.read(userCoordinatesProvider.notifier).state = (-6.2146, 106.8215);
+                            ref.read(userCoordinatesProvider.notifier).state = (-8.670458, 115.212629);
                           },
                         ),
                         ActionChip(
                           backgroundColor: AppTheme.darkCardSurfaceElevated,
                           side: const BorderSide(color: AppTheme.darkCardBorder),
-                          label: const Text('Bali (Canggu)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          label: const Text('Jayapura', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                           onPressed: () {
-                            ref.read(userCoordinatesProvider.notifier).state = (-8.6500, 115.1300);
+                            ref.read(userCoordinatesProvider.notifier).state = (-2.533710, 140.718130);
                           },
                         ),
                         ActionChip(
                           backgroundColor: AppTheme.darkCardSurfaceElevated,
                           side: const BorderSide(color: AppTheme.darkCardBorder),
-                          label: const Text('London (UK)', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
+                          label: const Text('London', style: TextStyle(color: AppTheme.textPrimaryDark, fontSize: 12)),
                           onPressed: () {
-                            ref.read(userCoordinatesProvider.notifier).state = (51.5074, -0.1278);
+                            ref.read(userCoordinatesProvider.notifier).state = (51.507351, -0.127758);
                           },
                         ),
                         ActionChip(
@@ -412,12 +412,13 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
                           avatar: const Icon(Icons.gps_fixed, size: 14, color: AppTheme.jadeTosca),
                           label: const Text('GPS Riil', style: TextStyle(color: AppTheme.jadeTosca, fontSize: 12, fontWeight: FontWeight.bold)),
                           onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
                             try {
                               final gps = await fetchCurrentGpsLocation();
                               ref.read(userCoordinatesProvider.notifier).state = gps;
                             } catch (e) {
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                messenger.showSnackBar(
                                   SnackBar(content: Text('GPS Error: $e'), backgroundColor: AppTheme.dangerRed),
                                 );
                               }
@@ -503,17 +504,39 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 14),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.jadeTosca,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppTheme.jadeTosca),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              icon: const Icon(Icons.alt_route_rounded, size: 16, color: AppTheme.jadeTosca),
+                              label: const Text('Rute Peta', style: TextStyle(color: AppTheme.jadeTosca, fontSize: 13, fontWeight: FontWeight.bold)),
+                              onPressed: () {
+                                ref.read(selectedLbsOutletIdProvider.notifier).state = nearest.id;
+                              },
+                            ),
                           ),
-                        ),
-                        icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                        label: const Text('Buka Detail Cabang Terdekat', maxLines: 1, overflow: TextOverflow.ellipsis),
-                        onPressed: () => context.push('/outlets/${nearest.id}'),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.jadeTosca,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                              label: const Text('Detail', maxLines: 1, overflow: TextOverflow.ellipsis),
+                              onPressed: () => context.push('/outlets/${nearest.id}'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -524,7 +547,7 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
 
             // 3. Peta Interaktif LBS
             Container(
-              height: 280,
+              height: 380,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
@@ -547,24 +570,89 @@ class _LbsTabState extends ConsumerState<_LbsTab> {
             const SizedBox(height: 10),
             ...result.allOutletsSorted.map((item) {
               final localTime = lbsLocalTimeDisplay(item.timezone);
+              final selectedOutletId = ref.watch(selectedLbsOutletIdProvider);
+              final isSelected = selectedOutletId == item.id;
 
               return Card(
-                color: AppTheme.darkCardSurface,
+                color: isSelected ? AppTheme.darkCardSurfaceElevated : AppTheme.darkCardSurface,
                 margin: const EdgeInsets.only(bottom: 8),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
-                ),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.darkCardSurfaceElevated,
-                    child: const Icon(Icons.location_on, color: AppTheme.jadeTosca, size: 20),
+                  side: BorderSide(
+                    color: isSelected ? AppTheme.jadeTosca : AppTheme.darkCardBorder,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
-                  title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text('${item.distanceKm.toStringAsFixed(1)} km • $localTime', style: const TextStyle(color: AppTheme.textMutedDark), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: const SizedBox(width: 24, child: Icon(Icons.chevron_right, size: 18, color: AppTheme.textMutedDark)),
-                  onTap: () => context.push('/outlets/${item.id}'),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: isSelected
+                            ? AppTheme.jadeTosca.withAlpha(40)
+                            : AppTheme.darkCardSurfaceElevated,
+                        child: Icon(
+                          Icons.location_on,
+                          color: isSelected ? AppTheme.jadeTosca : AppTheme.textSecondaryDark,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimaryDark),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${item.distanceKm.toStringAsFixed(1)} km • $localTime',
+                              style: const TextStyle(color: AppTheme.textMutedDark, fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: isSelected ? AppTheme.jadeTosca : AppTheme.darkCardBorder,
+                          ),
+                          backgroundColor: isSelected ? AppTheme.jadeTosca.withAlpha(25) : null,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: const Size(0, 32),
+                        ),
+                        icon: Icon(
+                          Icons.alt_route_rounded,
+                          size: 14,
+                          color: isSelected ? AppTheme.jadeTosca : AppTheme.textSecondaryDark,
+                        ),
+                        label: Text(
+                          isSelected ? 'Rute Aktif' : 'Lihat Rute',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? AppTheme.jadeTosca : AppTheme.textSecondaryDark,
+                          ),
+                        ),
+                        onPressed: () {
+                          ref.read(selectedLbsOutletIdProvider.notifier).state = item.id;
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right, size: 20, color: AppTheme.textMutedDark),
+                        tooltip: 'Detail Cabang',
+                        onPressed: () => context.push('/outlets/${item.id}'),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }),

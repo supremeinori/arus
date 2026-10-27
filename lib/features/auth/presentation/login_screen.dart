@@ -23,8 +23,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'owner@arus.demo');
-  final _passwordController = TextEditingController(text: 'Demo1234');
+  final _emailController = TextEditingController(text: 'owner');
+  final _passwordController = TextEditingController(text: '12345678');
   late final TextEditingController _serverController;
   bool _obscurePassword = true;
 
@@ -273,15 +273,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   AppTextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    labelText: 'Alamat Email',
-                    hintText: 'nama@email.com',
-                    prefixIcon: Icons.email_outlined,
+                    labelText: 'Username atau Email',
+                    hintText: 'owner, kasir1, dll',
+                    prefixIcon: Icons.person_outline_rounded,
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
-                        return 'Email wajib diisi';
+                        return 'Username atau email wajib diisi';
                       }
-                      if (!val.contains('@')) {
-                        return 'Format email tidak valid';
+                      if (val.trim().length < 3) {
+                        return 'Minimal 3 karakter';
                       }
                       return null;
                     },
@@ -382,79 +382,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     alignment: WrapAlignment.center,
                     children: [
                       ActionChip(
-                        avatar: const Icon(
-                          Icons.star,
-                          size: 16,
-                          color: AppTheme.jadeTosca,
-                        ),
-                        label: Text(
-                          'Owner',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            color: AppTheme.textPrimaryLight,
-                          ),
-                        ),
+                        avatar: const Icon(Icons.star, size: 16, color: AppTheme.jadeTosca),
+                        label: Text('Owner', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11.5, color: AppTheme.textPrimaryLight)),
                         backgroundColor: AppTheme.lightCardSurface,
-                        side: const BorderSide(
-                          color: AppTheme.lightCardBorder,
-                          width: 1.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        onPressed: () =>
-                            _fillAccount('owner@arus.demo', 'Demo1234'),
+                        side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onPressed: () => _fillAccount('owner', '12345678'),
                       ),
                       ActionChip(
-                        avatar: const Icon(
-                          Icons.storefront,
-                          size: 16,
-                          color: AppTheme.jadeTosca,
-                        ),
-                        label: Text(
-                          'Manager',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            color: AppTheme.textPrimaryLight,
-                          ),
-                        ),
+                        avatar: const Icon(Icons.storefront, size: 16, color: AppTheme.jadeTosca),
+                        label: Text('Manager', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11.5, color: AppTheme.textPrimaryLight)),
                         backgroundColor: AppTheme.lightCardSurface,
-                        side: const BorderSide(
-                          color: AppTheme.lightCardBorder,
-                          width: 1.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        onPressed: () =>
-                            _fillAccount('manager@arus.demo', 'Demo1234'),
+                        side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onPressed: () => _fillAccount('manager1', '12345678'),
                       ),
                       ActionChip(
-                        avatar: const Icon(
-                          Icons.point_of_sale,
-                          size: 16,
-                          color: AppTheme.jadeTosca,
-                        ),
-                        label: Text(
-                          'Kasir',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            color: AppTheme.textPrimaryLight,
-                          ),
-                        ),
+                        avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
+                        label: Text('Kasir', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11.5, color: AppTheme.textPrimaryLight)),
                         backgroundColor: AppTheme.lightCardSurface,
-                        side: const BorderSide(
-                          color: AppTheme.lightCardBorder,
-                          width: 1.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        onPressed: () =>
-                            _fillAccount('staff@arus.demo', 'Demo1234'),
+                        side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onPressed: () => _fillAccount('kasir1', '12345678'),
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
+                        label: Text('Kasir Denpasar', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11.5, color: AppTheme.textPrimaryLight)),
+                        backgroundColor: AppTheme.lightCardSurface,
+                        side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onPressed: () => _fillAccount('kasir2', '12345678'),
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
+                        label: Text('Kasir Jayapura', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11.5, color: AppTheme.textPrimaryLight)),
+                        backgroundColor: AppTheme.lightCardSurface,
+                        side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onPressed: () => _fillAccount('kasir3', '12345678'),
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.point_of_sale, size: 16, color: AppTheme.jadeTosca),
+                        label: Text('Kasir London', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 11.5, color: AppTheme.textPrimaryLight)),
+                        backgroundColor: AppTheme.lightCardSurface,
+                        side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        onPressed: () => _fillAccount('kasir4', '12345678'),
                       ),
                     ],
                   ),

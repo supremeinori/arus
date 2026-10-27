@@ -60,13 +60,25 @@ export class UsersService {
     return this.inMemorySettings[userId];
   }
 
-  async listUsers(query: { role?: Role; is_active?: boolean; q?: string; page?: number; page_size?: number }) {
+  async listUsers(
+    query: { role?: Role; is_active?: boolean; q?: string; page?: number; page_size?: number },
+    userScope?: { role: Role; allowedOutletIds: string[] }
+  ) {
     const page = query.page ?? 1;
     const pageSize = Math.min(query.page_size ?? 20, 100);
     const skip = (page - 1) * pageSize;
 
     const where: any = {};
-    if (query.role) where.role = query.role;
+    if (userScope?.role === Role.manager) {
+      where.role = Role.staff;
+      where.outlets = {
+        some: {
+          outlet_id: { in: userScope.allowedOutletIds },
+        },
+      };
+    } else if (query.role) {
+      where.role = query.role;
+    }
     if (typeof query.is_active === 'boolean') where.is_active = query.is_active;
     if (query.q) {
       where.OR = [
@@ -112,13 +124,23 @@ export class UsersService {
     };
   }
 
-  async createUser(data: {
-    name: string;
-    email: string;
-    password: string;
-    role: Role;
-    outlet_ids: string[];
-  }) {
+  async createUser(
+    data: {
+      name: string;
+      email: string;
+      password: string;
+      role: Role;
+      outlet_ids: string[];
+    },
+    userScope?: { role: Role; allowedOutletIds: string[] }
+  ) {
+    if (userScope?.role === Role.manager) {
+      data.role = Role.staff;
+      const invalidOutlets = data.outlet_ids.filter((id) => !userScope.allowedOutletIds.includes(id));
+      if (invalidOutlets.length > 0 || data.outlet_ids.length === 0) {
+        throw new AppError('FORBIDDEN', 403, 'Manager hanya dapat menambahkan kasir di cabang sendiri.');
+      }
+    }
     const existing = await prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
     });
@@ -166,8 +188,20 @@ export class UsersService {
       role?: Role;
       is_active?: boolean;
       outlet_ids?: string[];
-    }
+    },
+    userScope?: { role: Role; allowedOutletIds: string[] }
   ) {
+    if (userScope?.role === Role.manager) {
+      if (data.role && data.role !== Role.staff) {
+        throw new AppError('FORBIDDEN', 403, 'Manager tidak dapat mengubah role pengguna ke selain staf.');
+      }
+      if (data.outlet_ids) {
+        const invalid = data.outlet_ids.filter((oid) => !userScope.allowedOutletIds.includes(oid));
+        if (invalid.length > 0) {
+          throw new AppError('FORBIDDEN', 403, 'Manager hanya dapat menugaskan pengguna di cabang sendiri.');
+        }
+      }
+    }
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) {
       throw new AppError('NOT_FOUND', 404, 'Pengguna tidak ditemukan.');

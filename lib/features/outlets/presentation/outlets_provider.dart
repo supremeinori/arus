@@ -86,6 +86,9 @@ final nearestOutletProvider = FutureProvider.autoDispose<NearestOutletResult>((r
   return repo.getNearestOutlet(lat, lng);
 });
 
+/// Outlet ID yang sedang dipilih pada peta LBS untuk menampilkan rute dari posisi owner
+final selectedLbsOutletIdProvider = StateProvider<String?>((ref) => null);
+
 class OutletMutationState {
   final bool isLoading;
   final String? error;

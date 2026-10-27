@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../auth/presentation/auth_provider.dart';
-import '../../auth/domain/user_model.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../data/inventory_repository.dart';
 import '../domain/inventory_models.dart';

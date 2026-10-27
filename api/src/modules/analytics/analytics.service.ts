@@ -1,6 +1,7 @@
 import { PrismaClient, Role, TxnStatus, PaymentMethod } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
+import { getStartOfDayInTimezone, getEndOfDayInTimezone } from '../../shared/timezone';
 
 export class AnalyticsService {
   /**
@@ -233,15 +234,33 @@ export class AnalyticsService {
    * Ringkasan Shift Kasir Hari Ini (SC05).
    */
   async getShiftSummary(cashierId: string, outletId?: string) {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    let tz = 'Asia/Jakarta';
+    let resolvedOutletId = outletId;
+
+    if (resolvedOutletId) {
+      const outlet = await prisma.outlet.findUnique({
+        where: { id: resolvedOutletId },
+        select: { timezone: true },
+      });
+      if (outlet?.timezone) tz = outlet.timezone;
+    } else {
+      const userOutlet = await prisma.userOutlet.findFirst({
+        where: { user_id: cashierId },
+        include: { outlet: { select: { id: true, timezone: true } } },
+      });
+      if (userOutlet?.outlet?.timezone) tz = userOutlet.outlet.timezone;
+      if (userOutlet?.outlet?.id && !resolvedOutletId) resolvedOutletId = userOutlet.outlet.id;
+    }
+
+    const todayStart = getStartOfDayInTimezone(tz);
+    const todayEnd = getEndOfDayInTimezone(tz);
 
     const where: any = {
       cashier_id: cashierId,
       status: TxnStatus.completed,
-      created_at: { gte: todayStart },
+      created_at: { gte: todayStart, lte: todayEnd },
     };
-    if (outletId) where.outlet_id = outletId;
+    if (resolvedOutletId) where.outlet_id = resolvedOutletId;
 
     const [aggregate, cashAggregate, qrisAggregate, transactionsCount, latestTransactions] = await Promise.all([
       prisma.transaction.aggregate({

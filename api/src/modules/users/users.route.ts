@@ -10,8 +10,8 @@ router.get('/users/me/settings', requireAuth, getUserSettings);
 router.patch('/users/me/settings', requireAuth, updateUserSettings);
 
 // User administration (Owner only)
-router.get('/users', requireAuth, requireRole([Role.owner]), listUsers);
-router.post('/users', requireAuth, requireRole([Role.owner]), createUser);
-router.patch('/users/:id', requireAuth, requireRole([Role.owner]), updateUser);
+router.get('/users', requireAuth, requireRole([Role.owner, Role.manager]), listUsers);
+router.post('/users', requireAuth, requireRole([Role.owner, Role.manager]), createUser);
+router.patch('/users/:id', requireAuth, requireRole([Role.owner, Role.manager]), updateUser);
 
 export default router;

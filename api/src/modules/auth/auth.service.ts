@@ -14,9 +14,12 @@ export class AuthService {
    * `User.display_currency` (sumber kebenaran), sisanya default aplikasi.
    */
   private buildSettings(user: any) {
+    const primaryTz =
+      user?.outlets?.[0]?.outlet?.timezone ||
+      user?.outlets?.[0]?.timezone;
     return {
       display_currency: user?.display_currency ?? DEFAULT_DISPLAY_CURRENCY,
-      display_timezone: 'Asia/Jakarta',
+      display_timezone: primaryTz || 'Asia/Jakarta',
       biometric_enabled: false,
       shake_refresh_enabled: true,
       tilt_enabled: true,
@@ -46,14 +49,32 @@ export class AuthService {
 
     let user: any = null;
     try {
-      user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          outlets: {
-            include: { outlet: true },
+      if (email.includes('@')) {
+        user = await prisma.user.findUnique({
+          where: { email },
+          include: {
+            outlets: {
+              include: { outlet: true },
+            },
           },
-        },
-      });
+        });
+      }
+      if (!user) {
+        user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email },
+              { email: `${email}@arus.com` },
+              { email: `${email}@arus.demo` },
+            ],
+          },
+          include: {
+            outlets: {
+              include: { outlet: true },
+            },
+          },
+        });
+      }
     } catch (err: any) {
       if (err instanceof AppError) throw err;
       throw new AppError('DATABASE_ERROR', 503, 'Koneksi ke database terputus. Gagal memproses login.');

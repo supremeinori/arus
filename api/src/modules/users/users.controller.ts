@@ -32,7 +32,9 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
     const page_size = req.query.page_size ? parseInt(req.query.page_size as string, 10) : 20;
 
-    const result = await usersService.listUsers({ role, is_active, q, page, page_size });
+    const user = (req as any).user;
+    const allowedOutletIds = (req as any).userOutlets || [];
+    const result = await usersService.listUsers({ role, is_active, q, page, page_size }, { role: user.role, allowedOutletIds });
     res.status(200).json({ data: result.users, meta: result.meta });
   } catch (err) {
     next(err);
@@ -42,7 +44,9 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
 export async function createUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = createUserSchema.parse(req.body);
-    const result = await usersService.createUser(data);
+    const user = (req as any).user;
+    const allowedOutletIds = (req as any).userOutlets || [];
+    const result = await usersService.createUser(data, { role: user.role, allowedOutletIds });
     res.status(201).json({ data: result });
   } catch (err) {
     next(err);
@@ -52,7 +56,9 @@ export async function createUser(req: Request, res: Response, next: NextFunction
 export async function updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = updateUserSchema.parse(req.body);
-    const result = await usersService.updateUser(req.params.id, data);
+    const user = (req as any).user;
+    const allowedOutletIds = (req as any).userOutlets || [];
+    const result = await usersService.updateUser(req.params.id, data, { role: user.role, allowedOutletIds });
     res.status(200).json({ data: result });
   } catch (err) {
     next(err);

@@ -29,9 +29,7 @@ export class OutletsService {
 
     if (!isOwner) {
       where.is_active = true;
-      if (user.role !== Role.manager) {
-        where.id = { in: userOutlets };
-      }
+      where.id = { in: userOutlets };
     }
 
     try {
@@ -66,7 +64,12 @@ export class OutletsService {
     }
   }
 
-  async getOutletById(id: string) {
+  async getOutletById(id: string, user?: { id: string; role: Role }, userOutlets?: string[]) {
+    if (user && user.role !== Role.owner) {
+      if (!userOutlets || !userOutlets.includes(id)) {
+        throw new AppError('NOT_FOUND', 404, 'Data outlet tidak ditemukan atau di luar wewenang Anda.');
+      }
+    }
     const outlet = await prisma.outlet.findUnique({
       where: { id },
       include: {

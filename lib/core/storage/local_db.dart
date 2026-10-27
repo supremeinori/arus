@@ -111,7 +111,7 @@ class LocalDatabase {
 
     return await sql.openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         // 1. Sesi User & Pengaturan Utilitas
         await db.execute('''
@@ -290,6 +290,19 @@ class LocalDatabase {
           } catch (_) {}
           try {
             await db.execute('ALTER TABLE backup_transactions ADD COLUMN raw_json TEXT');
+          } catch (_) {}
+        }
+
+        if (oldVersion < 4) {
+          // Reset antrean transaksi offline lama, struk lama, dan cache lama agar transaksi yang sudah dihapus tidak muncul atau tersinkron kembali
+          try {
+            await db.delete('offline_transactions');
+            await db.delete('backup_transactions');
+            await db.delete('cached_categories');
+            await db.delete('cached_products');
+            await db.delete('backup_products');
+            await db.delete('daily_analytics_cache');
+            await db.delete('local_session_settings');
           } catch (_) {}
         }
       },

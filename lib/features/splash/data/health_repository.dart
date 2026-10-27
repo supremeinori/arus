@@ -41,10 +41,10 @@ class HealthRepository {
       return HealthStatus.fromJson(data);
     } catch (_) {
       return HealthStatus(
-        status: 'standalone-demo',
-        db: 'mock-offline',
+        status: 'offline',
+        db: 'disconnected',
         time: DateTime.now().toIso8601String(),
-        version: '2.4.0',
+        version: '1.0.0',
       );
     }
   }

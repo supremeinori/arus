@@ -1,4 +1,4 @@
-import { PrismaClient, Role, MovementType } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -13,14 +13,25 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 export async function main() {
-  console.log('🌱 Menjalankan Seeder Ringkas ARUS (Minimal & Cepat)...');
+  console.log('🚀 Memulai Database Reset & Cleanup ARUS...');
 
-  // 1. CLEANUP DATABASE
-  console.log('🧹 Membersihkan tabel database...');
+  // 0. VERIFIKASI ENVIRONMENT & KEAMANAN TARGET DATABASE
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  console.log(`🔍 Memeriksa environment target database: ${nodeEnv}`);
+  if (nodeEnv === 'production' && !process.env.FORCE_RESET_CONFIRMATION) {
+    throw new Error(
+      '❌ OPERASI DIBATALKAN: Target database terdeteksi sebagai PRODUCTION tanpa konfirmasi eksplisit! Harap set FORCE_RESET_CONFIRMATION=true jika benar-benar dikehendaki.'
+    );
+  }
+
+  // 1. RESET DATABASE: Hapus seluruh data bisnis lama & dummy
+  console.log('🧹 Menghapus seluruh data bisnis lama: transaksi, riwayat shift, mutasi, stok lama, dan data dummy...');
   await prisma.gameSession.deleteMany();
   await prisma.aiChatLog.deleteMany();
   await prisma.feedback.deleteMany();
   await prisma.notification.deleteMany();
+  await prisma.deviceToken.deleteMany();
+  await prisma.refreshToken.deleteMany();
   await prisma.blockchainRecord.deleteMany();
   await prisma.transactionItem.deleteMany();
   await prisma.transaction.deleteMany();
@@ -32,189 +43,200 @@ export async function main() {
   await prisma.userOutlet.deleteMany();
   await prisma.outlet.deleteMany();
   await prisma.user.deleteMany();
+  console.log('✨ Database berhasil dibersihkan.');
 
-  // 2. USERS (1 Owner, 1 Manager, 1 Staff)
-  console.log('👥 Membuat pengguna utama...');
-  const passwordHash = await hashPassword('Demo1234');
+  // 2. BUAT EMPAT CABANG DENGAN IANA TIMEZONE
+  console.log('🏢 Membuat 4 Cabang ARUS sesuai spesifikasi IANA Timezone...');
+  const outletYogyakarta = await prisma.outlet.create({
+    data: {
+      name: 'Yogyakarta',
+      address: 'Jl. Malioboro No. 12, Sosromenduran, Gedong Tengen, Kota Yogyakarta, D.I. Yogyakarta 55271',
+      latitude: -7.797068,
+      longitude: 110.370529,
+      timezone: 'Asia/Jakarta',
+      is_active: true,
+    },
+  });
 
+  const outletDenpasar = await prisma.outlet.create({
+    data: {
+      name: 'Denpasar',
+      address: 'Jl. Gatot Subroto Barat No. 88, Pemecutan Kaja, Kec. Denpasar Utara, Kota Denpasar, Bali 80118',
+      latitude: -8.670458,
+      longitude: 115.212629,
+      timezone: 'Asia/Makassar',
+      is_active: true,
+    },
+  });
+
+  const outletJayapura = await prisma.outlet.create({
+    data: {
+      name: 'Jayapura',
+      address: 'Jl. Percetakan Negara No. 5, Gurabesi, Kec. Jayapura Utara, Kota Jayapura, Papua 99111',
+      latitude: -2.533710,
+      longitude: 140.718130,
+      timezone: 'Asia/Jayapura',
+      is_active: true,
+    },
+  });
+
+  const outletLondon = await prisma.outlet.create({
+    data: {
+      name: 'London',
+      address: '10 Oxford Street, Fitzrovia, London W1D 1AW, United Kingdom',
+      latitude: 51.507351,
+      longitude: -0.127758,
+      timezone: 'Europe/London',
+      is_active: true,
+    },
+  });
+
+  console.log('✅ 4 Cabang berhasil dibuat:');
+  console.log(`   - Yogyakarta (${outletYogyakarta.timezone}) [ID: ${outletYogyakarta.id}]`);
+  console.log(`   - Denpasar   (${outletDenpasar.timezone}) [ID: ${outletDenpasar.id}]`);
+  console.log(`   - Jayapura   (${outletJayapura.timezone}) [ID: ${outletJayapura.id}]`);
+  console.log(`   - London     (${outletLondon.timezone}) [ID: ${outletLondon.id}]`);
+
+  // 3. BUAT ENAM AKUN PENGGUNA (Password awal: 12345678, Argon2id)
+  console.log('👥 Membuat 6 akun autentikasi dengan Argon2 password hash...');
+  const passwordHash = await hashPassword('12345678');
+
+  // Akun 1: Owner (Akses semua cabang)
   const owner = await prisma.user.create({
     data: {
-      name: 'Rina Kartika (Owner)',
-      email: 'owner@arus.demo',
+      name: 'Owner ARUS',
+      email: 'owner@arus.com',
       password_hash: passwordHash,
       role: Role.owner,
-      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      display_currency: 'IDR',
+      is_active: true,
     },
   });
 
-  const manager = await prisma.user.create({
+  // Akun 2: Manager 1 (Cabang yang ditugaskan: Yogyakarta)
+  const manager1 = await prisma.user.create({
     data: {
-      name: 'Budi Santoso (Manager)',
-      email: 'manager@arus.demo',
+      name: 'Manager 1',
+      email: 'manager1@arus.com',
       password_hash: passwordHash,
       role: Role.manager,
-      avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      display_currency: 'IDR',
+      is_active: true,
     },
   });
+  await prisma.userOutlet.create({
+    data: { user_id: manager1.id, outlet_id: outletYogyakarta.id },
+  });
 
-  const staff = await prisma.user.create({
+  // Akun 3: Kasir 1 (Yogyakarta)
+  const kasir1 = await prisma.user.create({
     data: {
-      name: 'Siti Rahma (Kasir)',
-      email: 'staff@arus.demo',
+      name: 'Kasir 1 (Yogyakarta)',
+      email: 'kasir1@arus.com',
       password_hash: passwordHash,
       role: Role.staff,
-      avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+      display_currency: 'IDR',
+      is_active: true,
     },
   });
+  await prisma.userOutlet.create({
+    data: { user_id: kasir1.id, outlet_id: outletYogyakarta.id },
+  });
 
-  // 3. OUTLET UTAMA
-  console.log('🏢 Membuat Cabang Outlet Utama...');
-  const outlet = await prisma.outlet.create({
+  // Akun 4: Kasir 2 (Denpasar)
+  const kasir2 = await prisma.user.create({
     data: {
-      name: 'ARUS Coffee Sudirman',
-      address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
-      latitude: -6.2088,
-      longitude: 106.8456,
-      timezone: 'Asia/Jakarta',
+      name: 'Kasir 2 (Denpasar)',
+      email: 'kasir2@arus.com',
+      password_hash: passwordHash,
+      role: Role.staff,
+      display_currency: 'IDR',
+      is_active: true,
     },
   });
-
-  await prisma.userOutlet.createMany({
-    data: [
-      { user_id: manager.id, outlet_id: outlet.id },
-      { user_id: staff.id, outlet_id: outlet.id },
-    ],
+  await prisma.userOutlet.create({
+    data: { user_id: kasir2.id, outlet_id: outletDenpasar.id },
   });
 
-  // 4. KATEGORI & 3 MENU UTAMA
-  console.log('☕ Membuat 3 Menu Jualan...');
-  const catCoffee = await prisma.productCategory.create({ data: { name: 'Kopi & Espresso' } });
-
-  const americano = await prisma.product.create({
+  // Akun 5: Kasir 3 (Jayapura)
+  const kasir3 = await prisma.user.create({
     data: {
-      sku: 'BEV-AME-01',
-      name: 'Americano Dingin',
-      price_idr: 18000,
-      image_url: 'https://images.unsplash.com/photo-1551030173-122aabc4489c?auto=format&fit=crop&w=500&q=80',
-      category_id: catCoffee.id,
+      name: 'Kasir 3 (Jayapura)',
+      email: 'kasir3@arus.com',
+      password_hash: passwordHash,
+      role: Role.staff,
+      display_currency: 'IDR',
+      is_active: true,
     },
   });
+  await prisma.userOutlet.create({
+    data: { user_id: kasir3.id, outlet_id: outletJayapura.id },
+  });
 
-  const cappuccino = await prisma.product.create({
+  // Akun 6: Kasir 4 (London)
+  const kasir4 = await prisma.user.create({
     data: {
-      sku: 'BEV-CAP-01',
-      name: 'Cappuccino Hangat',
-      price_idr: 24000,
-      image_url: 'https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&w=500&q=80',
-      category_id: catCoffee.id,
+      name: 'Kasir 4 (London)',
+      email: 'kasir4@arus.com',
+      password_hash: passwordHash,
+      role: Role.staff,
+      display_currency: 'GBP',
+      is_active: true,
     },
   });
-
-  const kopiSusu = await prisma.product.create({
-    data: {
-      sku: 'BEV-AREN-01',
-      name: 'Es Kopi Susu Gula Aren',
-      price_idr: 22000,
-      image_url: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=500&q=80',
-      category_id: catCoffee.id,
-    },
+  await prisma.userOutlet.create({
+    data: { user_id: kasir4.id, outlet_id: outletLondon.id },
   });
 
-  // 5. BAHAN BAKU (INGREDIENTS) DI CABANG
-  console.log('📦 Membuat 4 Bahan Baku Pokok di Cabang...');
-  const ingKopi = await prisma.ingredient.create({
-    data: {
-      outlet_id: outlet.id,
-      name: 'Biji Kopi Arabika House Blend',
-      unit: 'gram',
-      stock_qty: 3000,
-      reorder_level: 500,
-      cost_per_unit: 150,
-    },
-  });
+  console.log('✅ 6 Akun berhasil dibuat:');
+  console.log('   - Owner:    owner (owner@arus.com)    -> Semua Cabang');
+  console.log('   - Manager:  manager1 (manager1@arus.com) -> Yogyakarta');
+  console.log('   - Kasir 1:  kasir1 (kasir1@arus.com)   -> Yogyakarta');
+  console.log('   - Kasir 2:  kasir2 (kasir2@arus.com)   -> Denpasar');
+  console.log('   - Kasir 3:  kasir3 (kasir3@arus.com)   -> Jayapura');
+  console.log('   - Kasir 4:  kasir4 (kasir4@arus.com)   -> London');
 
-  const ingAir = await prisma.ingredient.create({
-    data: {
-      outlet_id: outlet.id,
-      name: 'Air Mineral Purified',
-      unit: 'ml',
-      stock_qty: 25000,
-      reorder_level: 2000,
-      cost_per_unit: 2,
-    },
-  });
+  // 4. VERIFIKASI KEBERSIHAN DATABASE
+  console.log('\n📊 Ringkasan Jumlah Data Database Setelah Reset:');
+  const counts = {
+    users: await prisma.user.count(),
+    outlets: await prisma.outlet.count(),
+    userOutlets: await prisma.userOutlet.count(),
+    categories: await prisma.productCategory.count(),
+    products: await prisma.product.count(),
+    ingredients: await prisma.ingredient.count(),
+    recipes: await prisma.productRecipe.count(),
+    movements: await prisma.inventoryMovement.count(),
+    transactions: await prisma.transaction.count(),
+    transactionItems: await prisma.transactionItem.count(),
+    blockchainRecords: await prisma.blockchainRecord.count(),
+    notifications: await prisma.notification.count(),
+    deviceTokens: await prisma.deviceToken.count(),
+    refreshTokens: await prisma.refreshToken.count(),
+    aiChatLogs: await prisma.aiChatLog.count(),
+    gameSessions: await prisma.gameSession.count(),
+  };
 
-  const ingSusu = await prisma.ingredient.create({
-    data: {
-      outlet_id: outlet.id,
-      name: 'Susu Fresh Milk UHT',
-      unit: 'ml',
-      stock_qty: 5000,
-      reorder_level: 1000,
-      cost_per_unit: 20,
-    },
-  });
+  console.table(counts);
 
-  const ingAren = await prisma.ingredient.create({
-    data: {
-      outlet_id: outlet.id,
-      name: 'Gula Aren Cair Asli',
-      unit: 'ml',
-      stock_qty: 2000,
-      reorder_level: 300,
-      cost_per_unit: 35,
-    },
-  });
-
-  // Catat stok awal ke mutasi
-  const ings = [ingKopi, ingAir, ingSusu, ingAren];
-  for (const ing of ings) {
-    await prisma.inventoryMovement.create({
-      data: {
-        outlet_id: outlet.id,
-        ingredient_id: ing.id,
-        movement_type: MovementType.restock,
-        quantity_delta: ing.stock_qty,
-        quantity_after: ing.stock_qty,
-        note: 'Stok awal bahan baku sistem',
-        created_by: owner.id,
-      },
-    });
+  if (
+    counts.transactions === 0 &&
+    counts.transactionItems === 0 &&
+    counts.ingredients === 0 &&
+    counts.movements === 0 &&
+    counts.blockchainRecords === 0 &&
+    counts.outlets === 4 &&
+    counts.users === 6
+  ) {
+    console.log('🎉 VERIFIKASI SUKSES: Database bersih, 4 cabang & 6 akun siap digunakan!');
+  } else {
+    throw new Error('❌ Verifikasi gagal: Kondisi data akhir tidak sesuai target!');
   }
-
-  // 6. RESEP MENU (PRODUCT RECIPES)
-  console.log('📖 Menghubungkan Resep Menu...');
-  // Americano: 20g Kopi + 180ml Air
-  await prisma.productRecipe.createMany({
-    data: [
-      { product_id: americano.id, ingredient_id: ingKopi.id, amount_needed: 20 },
-      { product_id: americano.id, ingredient_id: ingAir.id, amount_needed: 180 },
-    ],
-  });
-
-  // Cappuccino: 20g Kopi + 150ml Susu
-  await prisma.productRecipe.createMany({
-    data: [
-      { product_id: cappuccino.id, ingredient_id: ingKopi.id, amount_needed: 20 },
-      { product_id: cappuccino.id, ingredient_id: ingSusu.id, amount_needed: 150 },
-    ],
-  });
-
-  // Es Kopi Susu Gula Aren: 20g Kopi + 120ml Susu + 30ml Gula Aren
-  await prisma.productRecipe.createMany({
-    data: [
-      { product_id: kopiSusu.id, ingredient_id: ingKopi.id, amount_needed: 20 },
-      { product_id: kopiSusu.id, ingredient_id: ingSusu.id, amount_needed: 120 },
-      { product_id: kopiSusu.id, ingredient_id: ingAren.id, amount_needed: 30 },
-    ],
-  });
-
-  console.log('✅ Seeding ringkas selesai dengan sukses!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Gagal menjalankan seeder:', e);
+    console.error('❌ Gagal menjalankan database reset & seed:', e);
     process.exit(1);
   })
   .finally(async () => {

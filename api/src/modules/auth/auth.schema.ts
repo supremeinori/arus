@@ -1,9 +1,15 @@
 import { z } from 'zod';
 
-export const loginSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
-  password: z.string().min(1, 'Password tidak boleh kosong'),
-});
+export const loginSchema = z
+  .object({
+    email: z.string().min(1, 'Email atau username tidak boleh kosong').optional(),
+    username: z.string().min(1, 'Username tidak boleh kosong').optional(),
+    password: z.string().min(1, 'Password tidak boleh kosong'),
+  })
+  .refine((data) => Boolean(data.email || data.username), {
+    message: 'Email atau username tidak boleh kosong',
+    path: ['email'],
+  });
 
 export const refreshSchema = z.object({
   refresh_token: z.string().min(1, 'Refresh token tidak boleh kosong'),
