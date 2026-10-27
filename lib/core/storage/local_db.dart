@@ -782,8 +782,33 @@ class LocalDatabase {
     for (final r in rows) {
       try {
         final rawJson = r['raw_json'] as String?;
+        final colPortions = r['estimated_portions'] as int? ?? 0;
+        final colStock = r['stock_quantity'] as int? ?? 0;
+        final availablePortions = colPortions > 0 ? colPortions : colStock;
+
         if (rawJson != null && rawJson.isNotEmpty) {
-          products.add(ProductModel.fromJson(jsonDecode(rawJson) as Map<String, dynamic>));
+          final baseProduct = ProductModel.fromJson(jsonDecode(rawJson) as Map<String, dynamic>);
+          final updatedOutletStock = baseProduct.outletStock.isNotEmpty
+              ? baseProduct.outletStock
+                  .map((s) => ProductOutletStock(
+                        outletId: s.outletId,
+                        outletName: s.outletName,
+                        quantity: availablePortions,
+                        reorderLevel: s.reorderLevel,
+                      ))
+                  .toList()
+              : [
+                  ProductOutletStock(
+                    outletId: 'local',
+                    outletName: 'Lokal',
+                    quantity: availablePortions,
+                  )
+                ];
+
+          products.add(baseProduct.copyWith(
+            estimatedPortions: colPortions,
+            outletStock: updatedOutletStock,
+          ));
         } else {
           products.add(ProductModel(
             id: r['id'] as String,
@@ -796,11 +821,12 @@ class LocalDatabase {
             categoryName: r['category_name'] as String?,
             imageUrl: r['image_url'] as String?,
             isActive: (r['is_active'] as int? ?? 1) == 1,
+            estimatedPortions: colPortions,
             outletStock: [
               ProductOutletStock(
                 outletId: 'local',
                 outletName: 'Lokal',
-                quantity: r['stock_quantity'] as int? ?? 0,
+                quantity: availablePortions,
               )
             ],
           ));
@@ -822,18 +848,82 @@ class LocalDatabase {
         _webProductsStore[idx]['estimated_portions'] = newPortions;
         _webProductsStore[idx]['stock_quantity'] = newStock;
         if (_webProductsStore[idx]['inventory'] is List && (_webProductsStore[idx]['inventory'] as List).isNotEmpty) {
-          (_webProductsStore[idx]['inventory'] as List).first['quantity'] = newPortions;
+          for (final inv in (_webProductsStore[idx]['inventory'] as List)) {
+            if (inv is Map<String, dynamic>) {
+              inv['quantity'] = newPortions;
+            }
+          }
+        }
+        if (_webProductsStore[idx]['outlet_stock'] is List && (_webProductsStore[idx]['outlet_stock'] as List).isNotEmpty) {
+          for (final stk in (_webProductsStore[idx]['outlet_stock'] as List)) {
+            if (stk is Map<String, dynamic>) {
+              stk['quantity'] = newPortions;
+            }
+          }
         }
       }
       return;
     }
 
-    await db.rawUpdate('''
-      UPDATE cached_products 
-      SET estimated_portions = MAX(0, estimated_portions - ?),
-          stock_quantity = MAX(0, stock_quantity - ?) 
-      WHERE id = ?
-    ''', [quantity, quantity, productId]);
+    final rows = await db.query(
+      'cached_products',
+      columns: ['id', 'estimated_portions', 'stock_quantity', 'raw_json'],
+      where: 'id = ?',
+      whereArgs: [productId],
+      limit: 1,
+    );
+
+    if (rows.isNotEmpty) {
+      final row = rows.first;
+      final curPortions = row['estimated_portions'] as int? ?? 0;
+      final curStock = row['stock_quantity'] as int? ?? 0;
+      final newPortions = (curPortions - quantity).clamp(0, 999999999);
+      final newStock = (curStock - quantity).clamp(0, 999999999);
+
+      String? updatedRawJson;
+      final rawJsonStr = row['raw_json'] as String?;
+      if (rawJsonStr != null && rawJsonStr.isNotEmpty) {
+        try {
+          final map = jsonDecode(rawJsonStr) as Map<String, dynamic>;
+          map['estimated_portions'] = newPortions;
+          map['stock_quantity'] = newStock;
+          if (map['inventory'] is List && (map['inventory'] as List).isNotEmpty) {
+            for (final inv in (map['inventory'] as List)) {
+              if (inv is Map<String, dynamic>) {
+                inv['quantity'] = newPortions;
+              }
+            }
+          }
+          if (map['outlet_stock'] is List && (map['outlet_stock'] as List).isNotEmpty) {
+            for (final stk in (map['outlet_stock'] as List)) {
+              if (stk is Map<String, dynamic>) {
+                stk['quantity'] = newPortions;
+              }
+            }
+          }
+          updatedRawJson = jsonEncode(map);
+        } catch (_) {}
+      }
+
+      await db.update(
+        'cached_products',
+        {
+          'estimated_portions': newPortions,
+          'stock_quantity': newStock,
+          if (updatedRawJson != null) 'raw_json': updatedRawJson,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+    } else {
+      await db.rawUpdate('''
+        UPDATE cached_products 
+        SET estimated_portions = MAX(0, estimated_portions - ?),
+            stock_quantity = MAX(0, stock_quantity - ?) 
+        WHERE id = ?
+      ''', [quantity, quantity, productId]);
+    }
 
     try {
       await db.rawUpdate('''

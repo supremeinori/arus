@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/app_exception.dart';
 import '../../../core/storage/local_db.dart';
 import '../../../core/utils/uuid_generator.dart';
 import '../domain/pos_models.dart';
@@ -57,6 +58,22 @@ class PosRepository {
       );
 
       return transaction;
+    } on AppException catch (appErr) {
+      if (appErr.statusCode != null &&
+          appErr.statusCode! >= 400 &&
+          appErr.statusCode! < 500) {
+        throw Exception(appErr.message);
+      }
+      return await _saveLocalOfflineTransaction(
+        clientRequestId: clientRequestId,
+        outletId: outletId,
+        paymentMethod: paymentMethod,
+        paidIdr: paidIdr,
+        discountIdr: discountIdr,
+        items: items,
+        cashierName: cashierName,
+        outletName: outletName,
+      );
     } on DioException catch (dioErr) {
       // Jika respons 4xx dari server (misal validasi input atau stok tidak cukup),
       // lemparkan pesan kesalahan langsung ke kasir.

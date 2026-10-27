@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/network/app_exception.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/uuid_generator.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../analytics/presentation/analytics_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../catalog/presentation/catalog_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../data/pos_repository.dart';
 import 'pos_catalog_provider.dart';
@@ -104,6 +106,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
       ref.read(posCartProvider.notifier).clearCart();
       ref.invalidate(posCatalogProvider);
       ref.invalidate(posHistoryProvider);
+      ref.invalidate(productListProvider);
       ref.invalidate(shiftSummaryProvider);
       ref.invalidate(salesForecastProvider);
       ref.invalidate(stockoutForecastProvider);
@@ -119,6 +122,14 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         );
       }
     } catch (e) {
+      if (e is AppException && e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.message;
+        });
+        return;
+      }
+
       // Fallback offline: simpan ke antrean SQLite lokal (reuse clientRequestId stabil)
       try {
         final user = ref.read(authProvider).user;
@@ -136,6 +147,7 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         ref.read(posCartProvider.notifier).clearCart();
         ref.invalidate(posCatalogProvider);
         ref.invalidate(posHistoryProvider);
+        ref.invalidate(productListProvider);
         ref.invalidate(shiftSummaryProvider);
         ref.invalidate(salesForecastProvider);
         ref.invalidate(stockoutForecastProvider);

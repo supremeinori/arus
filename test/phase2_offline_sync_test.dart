@@ -7,6 +7,7 @@ import 'package:arus/features/catalog/domain/product_model.dart';
 import 'package:arus/features/pos/data/pos_catalog_repository.dart';
 import 'package:arus/features/pos/data/pos_repository.dart';
 import 'package:arus/features/pos/domain/pos_models.dart';
+import 'package:arus/features/pos/presentation/pos_provider.dart';
 
 // Mock ApiClient for testing
 class MockApiClient extends Fake implements ApiClient {
@@ -156,9 +157,53 @@ void main() {
       final updatedProduct = cachedList.firstWhere((p) => p.id == 'prod-stock-1');
       expect(updatedProduct.estimatedPortions, equals(7));
 
+      // Verifikasi katalog POS offline langsung merefleksikan sisa stok (maxPortions = 7) tanpa perlu sync
+      final catalogRepo = PosCatalogRepository(offlineClient, localDb);
+      final catalog1 = await catalogRepo.getCatalog('out-sudirman');
+      final catalogItem1 = catalog1.firstWhere((c) => c.product.id == 'prod-stock-1');
+      expect(catalogItem1.maxPortions, equals(7));
+      expect(catalogItem1.isAvailable, isTrue);
+
+      // Transaksi kedua: beli sisa seluruh stok (7 porsi) secara offline
+      const secondRequestId = 'req-unique-uuid-67890';
+      await posRepo.createTransaction(
+        clientRequestId: secondRequestId,
+        outletId: 'out-sudirman',
+        paymentMethod: 'cash',
+        paidIdr: 175000,
+        discountIdr: 0,
+        items: [
+          const PosCartItem(
+            productId: 'prod-stock-1',
+            productName: 'Matcha Latte',
+            sku: 'SKU-002',
+            unitPriceIdr: 25000,
+            quantity: 7,
+          ),
+        ],
+      );
+
+      // Verifikasi stok lokal langsung 0 (habis) secara instan tanpa perlu sync
+      final cachedList2 = await localDb.getCachedProducts();
+      final updatedProduct2 = cachedList2.firstWhere((p) => p.id == 'prod-stock-1');
+      expect(updatedProduct2.estimatedPortions, equals(0));
+
+      // Verifikasi katalog POS offline langsung menandai produk Habis (isAvailable: false, maxPortions: 0)
+      final catalog2 = await catalogRepo.getCatalog('out-sudirman');
+      final catalogItem2 = catalog2.firstWhere((c) => c.product.id == 'prod-stock-1');
+      expect(catalogItem2.maxPortions, equals(0));
+      expect(catalogItem2.isAvailable, isFalse);
+
+      // Verifikasi keranjang POS menolak penambahan produk yang sudah habis
+      final cartNotifier = PosCartNotifier();
+      final addResult = cartNotifier.addProduct(catalogItem2.product, maxPortions: catalogItem2.maxPortions);
+      expect(addResult, isFalse);
+      expect(cartNotifier.state.items.isEmpty, isTrue);
+
       // Verifikasi antrean pending transaksi lokal berisi transaksi ini
       final pendingList = await localDb.getPendingOfflineTransactions();
       expect(pendingList.any((t) => t['client_request_id'] == stableRequestId), isTrue);
+      expect(pendingList.any((t) => t['client_request_id'] == secondRequestId), isTrue);
     });
 
     test('T-PHASE2-03: PosRepository.getTransactions menggabungkan transaksi pending offline ke riwayat saat online', () async {

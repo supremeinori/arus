@@ -79,13 +79,16 @@ class PosCatalogRepository {
       if (_localDb != null) {
         final cached = await _localDb.getCachedProducts();
         if (cached.isNotEmpty) {
-          return cached.map((p) => PosCatalogItem(
-            product: p,
-            isAvailable: p.estimatedPortions > 0 || (p.outletStock.isNotEmpty && p.outletStock.any((s) => s.quantity > 0)),
-            maxPortions: p.estimatedPortions > 0
+          return cached.map((p) {
+            final effectivePortions = p.estimatedPortions > 0
                 ? p.estimatedPortions
-                : (p.outletStock.isNotEmpty ? p.outletStock.first.quantity : 0),
-          )).toList();
+                : (p.outletStock.isNotEmpty ? p.outletStock.first.quantity : 0);
+            return PosCatalogItem(
+              product: p,
+              isAvailable: effectivePortions > 0 && p.isActive,
+              maxPortions: effectivePortions,
+            );
+          }).toList();
         }
       }
       rethrow;
