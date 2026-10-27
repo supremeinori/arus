@@ -210,32 +210,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   // App Brand Header
                   Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppTheme.jadeTosca, Color(0xFF0F766E)],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.jadeTosca.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.insights_rounded,
-                        color: Colors.white,
-                        size: 34,
-                      ),
+                    child: Image.asset(
+                      'assets/images/app_logo_mark.png',
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
                   Text(
                     'Masuk ke ${StringsId.appName}',
                     textAlign: TextAlign.center,

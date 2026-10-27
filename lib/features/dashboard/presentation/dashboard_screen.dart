@@ -350,38 +350,50 @@ class _WireframeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Wordmark "Arus" + sapaan pemilik akun
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Brand Logo + Wordmark "Arus" + sapaan pemilik akun
+          Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(text: 'Ar'),
-                    TextSpan(
-                      text: 'us',
-                      style: GoogleFonts.inter(color: _DashboardColors.teal),
-                    ),
-                  ],
-                ),
-                style: GoogleFonts.inter(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: _DashboardColors.textPrimary,
-                  letterSpacing: -0.4,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Image.asset(
+                'assets/images/app_logo_mark.png',
+                width: 36,
+                height: 36,
+                fit: BoxFit.contain,
               ),
-              Text(
-                greeting,
-                style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  color: _DashboardColors.textSecondary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(text: 'Ar'),
+                        TextSpan(
+                          text: 'us',
+                          style: GoogleFonts.inter(color: _DashboardColors.teal),
+                        ),
+                      ],
+                    ),
+                    style: GoogleFonts.inter(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: _DashboardColors.textPrimary,
+                      letterSpacing: -0.4,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    greeting,
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      color: _DashboardColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
