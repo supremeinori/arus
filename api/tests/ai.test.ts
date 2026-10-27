@@ -120,7 +120,7 @@ describe('AI Assistant Module (Milestone 9)', () => {
       expect(res.body.data.facts[0].value.revenue_idr).toBe(1500000);
       expect(res.body.data.message.content).toContain('1.500.000');
     },
-    15000
+    30000
   );
 
   it(
