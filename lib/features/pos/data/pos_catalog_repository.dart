@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_db.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../catalog/domain/product_model.dart';
@@ -43,7 +44,8 @@ class PosCatalogItem {
 
 final posCatalogRepositoryProvider = Provider<PosCatalogRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  return PosCatalogRepository(apiClient);
+  final localDb = ref.watch(localDbProvider);
+  return PosCatalogRepository(apiClient, localDb);
 });
 
 /// Repository khusus endpoint /api/pos/* (katalog kasir, checkout, void).
@@ -51,16 +53,43 @@ final posCatalogRepositoryProvider = Provider<PosCatalogRepository>((ref) {
 /// mode offline — modul ini hanya menambah jalur online sesuai spek.
 class PosCatalogRepository {
   final ApiClient _client;
+  final LocalDatabase? _localDb;
 
-  PosCatalogRepository(this._client);
+  PosCatalogRepository(this._client, [this._localDb]);
 
   Future<List<PosCatalogItem>> getCatalog(String outletId) async {
-    final res = await _client.get<Map<String, dynamic>>(
-      '/pos/catalog',
-      queryParameters: {'outlet_id': outletId},
-    );
-    final list = res.data?['data'] as List<dynamic>? ?? [];
-    return list.map((e) => PosCatalogItem.fromJson(e as Map<String, dynamic>)).toList();
+    try {
+      final res = await _client.get<Map<String, dynamic>>(
+        '/pos/catalog',
+        queryParameters: {'outlet_id': outletId},
+      );
+      final list = res.data?['data'] as List<dynamic>? ?? [];
+      final catalogItems = list
+          .map((e) => PosCatalogItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      // Perbarui cache produk lokal untuk ketersediaan offline POS
+      if (_localDb != null && catalogItems.isNotEmpty) {
+        final products = catalogItems.map((item) => item.product).toList();
+        await _localDb.cacheProducts(products);
+      }
+      return catalogItems;
+    } catch (e) {
+      // OFFLINE FALLBACK: muat dari SQLite cached_products
+      if (_localDb != null) {
+        final cached = await _localDb.getCachedProducts();
+        if (cached.isNotEmpty) {
+          return cached.map((p) => PosCatalogItem(
+            product: p,
+            isAvailable: p.estimatedPortions > 0 || (p.outletStock.isNotEmpty && p.outletStock.any((s) => s.quantity > 0)),
+            maxPortions: p.estimatedPortions > 0
+                ? p.estimatedPortions
+                : (p.outletStock.isNotEmpty ? p.outletStock.first.quantity : 0),
+          )).toList();
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<PosTransactionModel> checkout({

@@ -519,6 +519,25 @@ class LocalDatabase {
     } catch (_) {}
   }
 
+  Future<void> clearLocalDatabase() async {
+    final db = await database;
+    _webSessionStore.clear();
+    _webCategoriesStore.clear();
+    _webProductsStore.clear();
+    _webTransactionsStore.clear();
+    _webOfflineTxQueue.clear();
+    if (db != null) {
+      try {
+        await db.delete('local_session_settings');
+        await db.delete('cached_categories');
+        await db.delete('cached_products');
+        await db.delete('backup_products');
+        await db.delete('offline_transactions');
+        await db.delete('backup_transactions');
+      } catch (_) {}
+    }
+  }
+
   Future<void> clearSession([String? userId]) async {
     final db = await database;
     if (db == null) {
@@ -759,9 +778,22 @@ class LocalDatabase {
   }
 
   Future<void> decrementLocalStock(String productId, int quantity) async {
-    if (kIsWeb) return;
     final db = await database;
-    if (db == null) return;
+    if (db == null) {
+      final idx = _webProductsStore.indexWhere((p) => p['id'] == productId);
+      if (idx >= 0) {
+        final curPortions = _webProductsStore[idx]['estimated_portions'] as int? ?? 0;
+        final curStock = _webProductsStore[idx]['stock_quantity'] as int? ?? 0;
+        final newPortions = curPortions > quantity ? curPortions - quantity : 0;
+        final newStock = curStock > quantity ? curStock - quantity : 0;
+        _webProductsStore[idx]['estimated_portions'] = newPortions;
+        _webProductsStore[idx]['stock_quantity'] = newStock;
+        if (_webProductsStore[idx]['inventory'] is List && (_webProductsStore[idx]['inventory'] as List).isNotEmpty) {
+          (_webProductsStore[idx]['inventory'] as List).first['quantity'] = newPortions;
+        }
+      }
+      return;
+    }
 
     await db.rawUpdate('''
       UPDATE cached_products 
@@ -807,6 +839,9 @@ class LocalDatabase {
         'created_at': transaction.createdAt.toIso8601String(),
         'is_synced': isSynced ? 1 : 0,
       });
+      for (final item in transaction.items) {
+        await decrementLocalStock(item.productId, item.quantity);
+      }
       await backupTransaction({
         'transaction_id': transaction.id,
         'receipt_no': transaction.receiptNo,
@@ -919,7 +954,16 @@ class LocalDatabase {
 
   Future<void> markTransactionSyncError(String clientRequestId, String error) async {
     final db = await database;
-    if (db == null) return;
+    if (db == null) {
+      final item = _webOfflineTxQueue.firstWhere(
+        (tx) => tx['client_request_id'] == clientRequestId,
+        orElse: () => {},
+      );
+      if (item.isNotEmpty) {
+        item['sync_error'] = error;
+      }
+      return;
+    }
 
     await db.update(
       'offline_transactions',
@@ -955,10 +999,10 @@ class LocalDatabase {
     ''');
   }
 
-  Future<List<PosTransactionModel>> getBackupTransactions() async {
+  Future<List<PosTransactionModel>> getBackupTransactions({String? outletId}) async {
     final db = await database;
     if (db == null) {
-      return _webTransactionsStore.map((m) {
+      var list = _webTransactionsStore.map((m) {
         if (m['raw_json'] != null) {
           return PosTransactionModel.fromJson(jsonDecode(m['raw_json'] as String));
         }
@@ -978,6 +1022,10 @@ class LocalDatabase {
           createdAt: DateTime.tryParse(m['created_at'] as String? ?? '') ?? DateTime.now(),
         );
       }).toList();
+      if (outletId != null && outletId.isNotEmpty) {
+        list = list.where((tx) => tx.outletId.isEmpty || tx.outletId == outletId).toList();
+      }
+      return list;
     }
 
     final rows = await db.query(
@@ -1011,6 +1059,9 @@ class LocalDatabase {
           ));
         }
       } catch (_) {}
+    }
+    if (outletId != null && outletId.isNotEmpty) {
+      return result.where((tx) => tx.outletId.isEmpty || tx.outletId == outletId).toList();
     }
     return result;
   }

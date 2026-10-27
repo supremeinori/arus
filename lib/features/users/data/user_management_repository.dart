@@ -237,7 +237,7 @@ class UserManagementRepository {
 
       final index = _memoryUsers.indexWhere((user) => user.id == id);
       if (index != -1) {
-        _memoryUsers[index] = _memoryUsers[index].copyWith(isActive: false);
+        _memoryUsers.removeAt(index);
         await _persist();
       }
       return;

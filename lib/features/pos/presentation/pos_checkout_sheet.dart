@@ -83,8 +83,10 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
       _errorMessage = null;
     });
 
+    // Idempotency: gunakan clientRequestId yang stabil dan sama persis baik online maupun fallback offline
+    final clientRequestId = UuidGenerator.v4();
+
     try {
-      final clientRequestId = UuidGenerator.v4();
       final posRepo = ref.read(posCatalogRepositoryProvider);
 
       final transaction = await posRepo.checkout(
@@ -116,12 +118,12 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
         );
       }
     } catch (e) {
-      // Fallback offline: simpan ke antrean SQLite lokal (jalur lama)
+      // Fallback offline: simpan ke antrean SQLite lokal (reuse clientRequestId stabil)
       try {
         final user = ref.read(authProvider).user;
         final offlineRepo = ref.read(posRepositoryProvider);
         final transaction = await offlineRepo.createTransaction(
-          clientRequestId: UuidGenerator.v4(),
+          clientRequestId: clientRequestId,
           outletId: outletId,
           paymentMethod: cartState.paymentMethod,
           paidIdr: paidAmount,
@@ -131,8 +133,12 @@ class _PosCheckoutSheetState extends ConsumerState<PosCheckoutSheet> {
           outletName: user?.outlets.isNotEmpty == true ? user!.outlets.first.name : null,
         );
         ref.read(posCartProvider.notifier).clearCart();
+        ref.invalidate(posCatalogProvider);
+        ref.invalidate(posHistoryProvider);
         ref.invalidate(salesForecastProvider);
         ref.invalidate(stockoutForecastProvider);
+        ref.invalidate(analyticsOverviewProvider);
+        ref.invalidate(salesTrendProvider);
         if (mounted) {
           Navigator.of(context).pop();
           showDialog(

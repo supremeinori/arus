@@ -376,6 +376,31 @@ class _HistoryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final voided = tx.status == 'voided';
+    final isPending = tx.isOfflinePending || tx.status == 'offline_pending';
+    final isFailed = tx.status == 'failed';
+
+    Color badgeBg;
+    Color badgeTextColor;
+    String badgeText;
+
+    if (voided) {
+      badgeBg = const Color(0xFFFEE2E2);
+      badgeTextColor = AppTheme.dangerRed;
+      badgeText = 'VOID';
+    } else if (isFailed) {
+      badgeBg = const Color(0xFFFEE2E2);
+      badgeTextColor = AppTheme.dangerRed;
+      badgeText = '${_historyTimeFmt.format(tx.createdAt)} • Gagal Sinkron';
+    } else if (isPending) {
+      badgeBg = const Color(0xFFFEF3C7);
+      badgeTextColor = const Color(0xFFB45309);
+      badgeText = '${_historyTimeFmt.format(tx.createdAt)} • Menunggu Sinkron';
+    } else {
+      badgeBg = const Color(0xFFDCFCE7);
+      badgeTextColor = Colors.green.shade800;
+      badgeText = '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}';
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -399,21 +424,17 @@ class _HistoryCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: voided
-                      ? const Color(0xFFFEE2E2)
-                      : const Color(0xFFDCFCE7),
+                  color: badgeBg,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  voided ? 'VOID' : '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}',
+                  badgeText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: voided
-                          ? AppTheme.dangerRed
-                          : Colors.green.shade800),
+                      color: badgeTextColor),
                 ),
               ),
             ],
@@ -425,7 +446,7 @@ class _HistoryCard extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
           ),
-          if (!voided && canVoid) ...[
+          if (!voided && !isPending && !isFailed && canVoid) ...[
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,

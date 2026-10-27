@@ -71,7 +71,7 @@ export async function main() {
   console.log('🏢 Membuat Cabang Outlet Utama...');
   const outlet = await prisma.outlet.create({
     data: {
-      name: 'ARUS Coffee Sudirman HQ',
+      name: 'ARUS Coffee Sudirman',
       address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
       latitude: -6.2088,
       longitude: 106.8456,

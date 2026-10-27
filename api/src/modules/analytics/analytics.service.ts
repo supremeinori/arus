@@ -66,22 +66,9 @@ export class AnalyticsService {
       aggregate = result[0];
       transactionsCount = result[1];
       items = result[2];
-    } catch (_) {
-      // Database offline/unreachable: kembalikan data ringkasan demo realistis
-      return {
-        revenue_idr: 14500000,
-        subtotal_idr: 14750000,
-        discount_idr: 250000,
-        transaction_count: 342,
-        avg_basket_size_idr: 42397,
-        ...(userScope.role !== Role.staff
-          ? {
-              total_cost_idr: 4567500,
-              gross_profit_idr: 9932500,
-              gross_margin_pct: 68,
-            }
-          : {}),
-      };
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat ringkasan analitik dari database.');
     }
 
     const totalRevenue = aggregate._sum?.total_idr ?? 0;
@@ -176,23 +163,9 @@ export class AnalyticsService {
       }
 
       return Array.from(trendMap.values());
-    } catch (_) {
-      // Database offline fallback: 7 hari data tren demo
-      const trend = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${day}`;
-        trend.push({
-          date: dateStr,
-          revenue_idr: 1800000 + ((i * 7) % 5) * 250000 + (i === 0 ? 450000 : 0),
-          count: 38 + ((i * 3) % 4) * 8,
-        });
-      }
-      return trend;
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat tren penjualan dari database.');
     }
   }
 
@@ -230,17 +203,9 @@ export class AnalyticsService {
       }
 
       return hours;
-    } catch (_) {
-      // Demo peak hours fallback: jam makan siang (11-14) dan pulang kerja (17-20)
-      return Array.from({ length: 24 }, (_, i) => {
-        const count = i >= 11 && i <= 14 ? 35 : i >= 17 && i <= 20 ? 42 : (i >= 8 && i <= 21 ? 12 : 0);
-        return {
-          hour: i,
-          label: `${i.toString().padStart(2, '0')}:00`,
-          transaction_count: count,
-          total_revenue_idr: count * 42000,
-        };
-      });
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat data jam ramai dari database.');
     }
   }
 
@@ -538,8 +503,9 @@ export class AnalyticsService {
               : `Model memprediksi tren omzet ${growthPct}%. Pertimbangkan promo paket hemat atau campaign di jam-jam sepi.`,
         },
       };
-    } catch (_) {
-      return this.generateSyntheticForecast(horizonDays);
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat peramalan penjualan dari database.');
     }
   }
 
@@ -746,8 +712,9 @@ export class AnalyticsService {
         },
         items,
       };
-    } catch (_) {
-      return this.generateSyntheticStockoutForecast();
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat peramalan stok dari database.');
     }
   }
 

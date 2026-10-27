@@ -97,7 +97,7 @@ class OperationsHubScreen extends ConsumerWidget {
                 onTap: () => _openAccountManager(context, ref),
               ),
               _OperationTile(
-                title: 'Minigames',
+                title: 'Hiburan',
                 subtitle: 'Guess the Menu',
                 icon: Icons.sports_esports_outlined,
                 onTap: () => context.push('/game'),

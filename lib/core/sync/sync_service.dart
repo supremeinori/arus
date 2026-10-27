@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
@@ -88,6 +89,19 @@ class SyncService {
           } else {
             failed++;
           }
+        } on DioException catch (dioErr) {
+          failed++;
+          String errorMsg = dioErr.message ?? 'Network error';
+          final responseData = dioErr.response?.data;
+          if (responseData is Map) {
+            if (responseData['error'] is Map) {
+              errorMsg = responseData['error']['message'] ?? errorMsg;
+            } else if (responseData['message'] != null) {
+              errorMsg = responseData['message'].toString();
+            }
+          }
+          debugPrint('Sync failed for $clientRequestId: $errorMsg');
+          await _localDb.markTransactionSyncError(clientRequestId, errorMsg);
         } catch (e) {
           failed++;
           debugPrint('Sync failed for $clientRequestId: $e');
