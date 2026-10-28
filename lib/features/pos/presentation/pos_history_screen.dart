@@ -14,6 +14,7 @@ import '../../settings/presentation/currency_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../domain/pos_models.dart';
 import 'pos_catalog_provider.dart';
+import 'pos_receipt_dialog.dart';
 
 /// Format jam struk riwayat — top-level, bukan di build (aturan E21).
 final _historyTimeFmt = DateFormat('HH:mm');
@@ -113,6 +114,18 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
     } finally {
       if (mounted) setState(() => _voiding = false);
     }
+  }
+
+  void _showTransactionDetail(PosTransactionModel tx) {
+    showDialog(
+      context: context,
+      builder: (ctx) => PosReceiptDialog(
+        transaction: tx,
+        isDetailMode: true,
+        canVoid: _canVoid,
+        onVoid: () => _askVoidReason(tx),
+      ),
+    );
   }
 
   @override
@@ -377,6 +390,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                         canVoid: _canVoid,
                         voiding: _voiding,
                         onVoid: () => _askVoidReason(tx),
+                        onDetail: () => _showTransactionDetail(tx),
                       );
                     },
                   ),
@@ -481,12 +495,14 @@ class _HistoryCard extends ConsumerWidget {
   final bool canVoid;
   final bool voiding;
   final VoidCallback onVoid;
+  final VoidCallback onDetail;
 
   const _HistoryCard({
     required this.tx,
     required this.canVoid,
     required this.voiding,
     required this.onVoid,
+    required this.onDetail,
   });
 
   @override
@@ -517,71 +533,106 @@ class _HistoryCard extends ConsumerWidget {
       badgeText = '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}';
     }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: voided ? const Color(0xFFF8FAFC) : Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onDetail,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.darkCardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: voided ? const Color(0xFFF8FAFC) : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.darkCardBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(tx.receiptNo,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700, fontSize: 13)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(tx.receiptNo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      badgeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: badgeTextColor),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badgeText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: badgeTextColor),
-                ),
+              const SizedBox(height: 4),
+              Text(
+                '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${ref.money(tx.totalIdr)}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onDetail,
+                    icon: const Icon(Icons.receipt_long_outlined,
+                        size: 15, color: AppTheme.jadeTosca),
+                    label: Text('Detail',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.jadeTosca)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppTheme.jadeTosca),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  if (!voided && !isPending && !isFailed && canVoid) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: voiding ? null : onVoid,
+                      icon: const Icon(Icons.undo_rounded,
+                          size: 15, color: AppTheme.dangerRed),
+                      label: Text('Void',
+                          style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.dangerRed)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppTheme.dangerRed),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${ref.money(tx.totalIdr)}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
-          ),
-          if (!voided && !isPending && !isFailed && canVoid) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: voiding ? null : onVoid,
-                icon: const Icon(Icons.undo_rounded,
-                    size: 16, color: AppTheme.dangerRed),
-                label: Text('Void',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: AppTheme.dangerRed)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppTheme.dangerRed),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

@@ -59,6 +59,23 @@ export class TransactionsController {
       next(err);
     }
   }
+
+  async getTransactionById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user!;
+      const allowedOutletIds = req.userOutlets || [];
+      const { id } = req.params;
+
+      const transaction = await transactionsService.getTransactionById(id, {
+        role: user.role,
+        allowedOutletIds,
+      });
+
+      res.status(200).json({ data: transaction });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const transactionsController = new TransactionsController();

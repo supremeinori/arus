@@ -14,6 +14,9 @@ router.post('/transactions', (req, res, next) => transactionsController.createTr
 // 2. GET /api/transactions - Riwayat transaksi
 router.get('/transactions', (req, res, next) => transactionsController.listTransactions(req, res, next));
 
+// 2b. GET /api/transactions/:id - Detail transaksi spesifik (Semua Role: Owner, Manager, Staff)
+router.get('/transactions/:id', (req, res, next) => transactionsController.getTransactionById(req, res, next));
+
 // 3. POST /api/transactions/:id/void - Pembatalan / Refund (Khusus Owner & Manager)
 router.post(
   '/transactions/:id/void',

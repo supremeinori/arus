@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/ai_assistant/presentation/ai_home_screen.dart';
+import '../../features/auth/domain/user_model.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -80,6 +81,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOwnerRestrictedRoute = state.matchedLocation.startsWith('/outlets') ||
           state.matchedLocation.startsWith('/catalog');
       if (isAuthenticated && isOwnerRestrictedRoute && !authState.isOwner) {
+        return '/shell';
+      }
+
+      // Batasi akses AI Assistant hanya untuk Owner dan Manager (SRS Section 2.2)
+      final isAiRestrictedRoute = state.matchedLocation.startsWith('/ai');
+      if (isAuthenticated && isAiRestrictedRoute && (authState.user?.role == UserRole.staff)) {
         return '/shell';
       }
 

@@ -13,6 +13,8 @@ import 'package:arus/features/pos/data/pos_repository.dart';
 import 'package:arus/features/pos/domain/pos_models.dart';
 import 'package:arus/features/pos/presentation/pos_catalog_provider.dart';
 import 'package:arus/features/pos/presentation/pos_history_screen.dart';
+import 'package:arus/features/pos/presentation/pos_receipt_dialog.dart';
+import 'package:arus/features/shell/presentation/main_shell.dart';
 
 class MockApiClient extends Fake implements ApiClient {
   final Map<String, dynamic>? Function(String path, {Map<String, dynamic>? queryParameters})? onGet;
@@ -412,6 +414,109 @@ void main() {
 
       // Verify selectedDateFilterProvider updated to last7Days
       expect(container.read(selectedDateFilterProvider), DashboardDateFilter.last7Days);
+
+      container.dispose();
+    });
+
+    testWidgets('PosHistoryScreen displays Detail button and opens detail dialog when tapped', (tester) async {
+      final mockClient = MockApiClient(
+        onGet: (path, {queryParameters}) {
+          if (path == '/transactions') {
+            return {
+              'data': [
+                {
+                  'id': 'tx_detail_001',
+                  'receipt_no': 'REC-DETAIL-001',
+                  'outlet_id': 'outlet_pahlawan',
+                  'outlet_name': 'Cabang Pahlawan',
+                  'cashier_name': 'Siti Kasir',
+                  'subtotal_idr': 50000,
+                  'discount_idr': 5000,
+                  'total_idr': 45000,
+                  'payment_method': 'cash',
+                  'paid_idr': 50000,
+                  'change_idr': 5000,
+                  'status': 'completed',
+                  'created_at': DateTime.now().toIso8601String(),
+                  'items': [
+                    {
+                      'product_id': 'prod_kopi',
+                      'product_name_snapshot': 'Kopi Susu Aren',
+                      'sku': 'KOP-01',
+                      'unit_price_idr': 25000,
+                      'quantity': 2,
+                    }
+                  ],
+                }
+              ]
+            };
+          }
+          return null;
+        },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith((ref) => FakeAuthNotifier(AuthState.authenticated(mockCashierUser))),
+          posRepositoryProvider.overrideWith((ref) => PosRepository(mockClient, localDb)),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: PosHistoryScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Ensure transaction card and Detail button exist
+      expect(find.text('REC-DETAIL-001'), findsOneWidget);
+      expect(find.text('Detail'), findsOneWidget);
+
+      // Tap Detail button
+      await tester.tap(find.text('Detail'));
+      await tester.pumpAndSettle();
+
+      // Verify detail dialog is shown
+      expect(find.byType(PosReceiptDialog), findsOneWidget);
+      expect(find.text('Detail Transaksi'), findsOneWidget);
+      expect(find.textContaining('Kopi Susu Aren'), findsOneWidget);
+      expect(find.text('Tutup'), findsOneWidget);
+
+      // Close dialog
+      await tester.tap(find.text('Tutup'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PosReceiptDialog), findsNothing);
+
+      container.dispose();
+    });
+
+    testWidgets('MainShell hides AI companion FAB for cashier role', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith((ref) => FakeAuthNotifier(AuthState.authenticated(mockCashierUser))),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: MainShell(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Staff/Kasir role must NOT see the AI companion floating button
+      expect(find.byTooltip('ARUS AI Companion'), findsNothing);
+      expect(find.byType(FloatingActionButton), findsNothing);
 
       container.dispose();
     });

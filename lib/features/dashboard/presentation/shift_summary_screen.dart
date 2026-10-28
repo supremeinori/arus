@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../core/theme/app_theme.dart';
@@ -307,6 +308,31 @@ class _ShiftMetrics extends ConsumerWidget {
           value: '${shift.transactionCount} Transaksi',
           icon: Icons.check_circle_outline_rounded,
           color: const Color(0xFFA855F7),
+          subtitle: 'Ketuk untuk melihat riwayat & detail struk',
+          onTap: () => context.push('/pos/history'),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => context.push('/pos/history'),
+            icon: const Icon(Icons.receipt_long_outlined, size: 18, color: AppTheme.jadeTosca),
+            label: Text(
+              'Buka Riwayat & Detail Transaksi',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.jadeTosca,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppTheme.jadeTosca),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -320,6 +346,8 @@ class _ShiftMetricTile extends StatelessWidget {
   final IconData icon;
   final Color color;
   final bool isPrimary;
+  final String? subtitle;
+  final VoidCallback? onTap;
 
   const _ShiftMetricTile({
     required this.title,
@@ -327,11 +355,13 @@ class _ShiftMetricTile extends StatelessWidget {
     required this.icon,
     required this.color,
     this.isPrimary = false,
+    this.subtitle,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ShadCard(
+    final cardContent = ShadCard(
       padding: EdgeInsets.all(isPrimary ? 18 : 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,6 +389,12 @@ class _ShiftMetricTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppTheme.textMutedDark,
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -372,8 +408,33 @@ class _ShiftMetricTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: AppTheme.jadeTosca,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: cardContent,
+        ),
+      );
+    }
+    return cardContent;
   }
 }

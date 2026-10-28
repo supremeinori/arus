@@ -572,6 +572,37 @@ export class TransactionsService {
       },
     };
   }
+
+  /**
+   * Mengambil detail satu transaksi berdasarkan ID.
+   * Dapat diakses oleh semua role (Owner, Manager, Staff) sesuai cakupan outlet.
+   */
+  async getTransactionById(
+    transactionId: string,
+    userScope: { role: Role; allowedOutletIds: string[] }
+  ) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        items: true,
+        outlet: { select: { id: true, name: true } },
+        cashier: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!transaction) {
+      throw new AppError('NOT_FOUND', 404, 'Transaksi tidak ditemukan.');
+    }
+
+    if (
+      userScope.role !== Role.owner &&
+      !userScope.allowedOutletIds.includes(transaction.outlet_id)
+    ) {
+      throw new AppError('NOT_FOUND', 404, 'Transaksi tidak ditemukan atau di luar wewenang Anda.');
+    }
+
+    return transaction;
+  }
 }
 
 export const transactionsService = new TransactionsService();
