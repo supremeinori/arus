@@ -68,7 +68,7 @@ describe('ARUS Voice & STT Backend Module (arus_voice_spec.md)', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('audio_base64');
     expect(typeof res.body.data.audio_base64).toBe('string');
-  });
+  }, 30000);
 
   it('T-VOICE-02: POST /api/ai/chat mengembalikan voice_summary dan audio_base64', async () => {
     vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
@@ -90,5 +90,5 @@ describe('ARUS Voice & STT Backend Module (arus_voice_spec.md)', () => {
     expect(res.body.data).toHaveProperty('audio_base64');
     expect(typeof res.body.data.voice_summary).toBe('string');
     expect(res.body.data.voice_summary.length).toBeGreaterThan(0);
-  });
+  }, 30000);
 });

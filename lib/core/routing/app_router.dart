@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/ai_assistant/presentation/ai_home_screen.dart';
+import '../../features/auth/domain/user_model.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -13,6 +14,8 @@ import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/inventory/presentation/inventory_list_screen.dart';
 import '../../features/inventory/presentation/stock_movement_screen.dart';
 import '../../features/notifications/presentation/notification_screen.dart';
+import '../../features/operations/presentation/manager_menu_screen.dart';
+import '../../features/operations/presentation/operations_hub_screen.dart';
 import '../../features/outlets/presentation/outlet_detail_screen.dart';
 import '../../features/outlets/presentation/outlet_form_screen.dart';
 import '../../features/outlets/presentation/outlet_list_screen.dart';
@@ -78,6 +81,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOwnerRestrictedRoute = state.matchedLocation.startsWith('/outlets') ||
           state.matchedLocation.startsWith('/catalog');
       if (isAuthenticated && isOwnerRestrictedRoute && !authState.isOwner) {
+        return '/shell';
+      }
+
+      // Batasi akses AI Assistant hanya untuk Owner dan Manager (SRS Section 2.2)
+      final isAiRestrictedRoute = state.matchedLocation.startsWith('/ai');
+      if (isAuthenticated && isAiRestrictedRoute && (authState.user?.role == UserRole.staff)) {
         return '/shell';
       }
 
@@ -172,6 +181,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/catalog',
         builder: (context, state) => const ProductListScreen(),
+
         routes: [
           GoRoute(
             path: 'new',
@@ -190,6 +200,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                     MenuCreateScreen(productId: state.pathParameters['id']),
               ),
             ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/operations',
+        builder: (context, state) => const OperationsHubScreen(),
+        routes: [
+          GoRoute(
+            path: 'menu',
+            builder: (context, state) => const ManagerMenuScreen(),
           ),
         ],
       ),

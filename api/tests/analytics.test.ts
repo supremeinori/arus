@@ -25,6 +25,9 @@ vi.mock('../src/config/db', () => {
       transactionItem: {
         findMany: vi.fn(),
       },
+      ingredient: {
+        findMany: vi.fn(),
+      },
     },
   };
 });
@@ -160,5 +163,107 @@ describe('Analytics Module (Milestone 7)', () => {
     expect(resAllowed.status).toBe(200);
     expect(resAllowed.body.data.revenue_idr).toBe(800000);
     expect(resAllowed.body.data).toHaveProperty('gross_profit_idr');
+  });
+
+  it('T-ANA-05: Mengambil tren penjualan dengan filter from dan to rentang tanggal kustom', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+      { total_idr: 150000, created_at: new Date('2026-10-02T10:00:00.000Z') },
+    ] as any);
+
+    const res = await request(app)
+      .get('/api/analytics/sales-trend?from=2026-10-01&to=2026-10-03')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(3);
+    expect(res.body.data[0]).toEqual({ date: '2026-10-01', revenue_idr: 0, count: 0 });
+    expect(res.body.data[1]).toEqual({ date: '2026-10-02', revenue_idr: 150000, count: 1 });
+    expect(res.body.data[2]).toEqual({ date: '2026-10-03', revenue_idr: 0, count: 0 });
+  });
+
+  it('T-ANA-06: Manager ditolak dengan 403 jika mengakses tren penjualan outlet di luar wewenangnya', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockManager as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: 'out-mgr' }] as any);
+
+    const res = await request(app)
+      .get('/api/analytics/sales-trend?outlet_id=out-forbidden')
+      .set('Authorization', `Bearer ${managerToken}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('T-ANA-07: Sales forecasting dengan data historis kosong mengembalikan status insufficient_history tanpa data palsu', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/analytics/forecast/sales?horizon=7')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.evaluation.status).toBe('insufficient_history');
+    expect(res.body.data.evaluation.data_points_count).toBe(0);
+    expect(res.body.data.summary.projected_total_revenue_idr).toBe(0);
+    expect(res.body.data.summary.ai_insight).toContain('Belum ada data transaksi penjualan');
+    // Seluruh nilai historis adalah 0 aktual, tidak ada angka palsu
+    expect(res.body.data.historical.every((h: any) => h.revenue_idr === 0)).toBe(true);
+  });
+
+  it('T-ANA-08: Sales forecasting dengan data historis memadai melakukan holdout backtesting terhadap baseline', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+
+    const now = new Date();
+    const mockTxList = [];
+    for (let i = 25; i >= 1; i--) {
+      const d = new Date(now);
+      d.setUTCDate(now.getUTCDate() - i);
+      mockTxList.push({
+        total_idr: 200000 + (i % 5) * 50000,
+        created_at: d,
+      });
+    }
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue(mockTxList as any);
+
+    const res = await request(app)
+      .get('/api/analytics/forecast/sales?horizon=7')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.evaluation.status).toBe('evaluated');
+    expect(res.body.data.evaluation).toHaveProperty('model_mae_idr');
+    expect(res.body.data.evaluation).toHaveProperty('baseline_mae_idr');
+    expect(res.body.data.forecast).toHaveLength(7);
+    expect(res.body.data.summary.projected_total_revenue_idr).toBeGreaterThan(0);
+    expect(res.body.data.summary.ai_insight).toContain('Evaluasi holdout MAE');
+  });
+
+  it('T-ANA-09: Stockout forecasting mengembalikan daftar kosong jika outlet belum memiliki bahan baku tanpa data sintetis', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.ingredient.findMany).mockResolvedValue([]);
+
+    const res = await request(app)
+      .get('/api/analytics/forecast/stockout')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.items).toEqual([]);
+    expect(res.body.data.summary.total_items).toBe(0);
+    expect(res.body.data.summary.ai_recommendation).toContain('Belum ada data bahan baku pada cabang ini');
+  });
+
+  it('T-ANA-10: Manager ditolak 403 jika mengakses peramalan penjualan outlet di luar wewenangnya', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockManager as any);
+    vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([{ outlet_id: 'out-mgr' }] as any);
+
+    const res = await request(app)
+      .get('/api/analytics/forecast/sales?outlet_id=out-forbidden')
+      .set('Authorization', `Bearer ${managerToken}`);
+
+    expect(res.status).toBe(403);
   });
 });

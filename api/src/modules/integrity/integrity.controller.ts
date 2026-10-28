@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { integrityService } from './blockchain.service';
+import { web3AnchorService } from './web3_anchor.service';
 import { verifyOutletScope } from '../../middleware/auth';
 import { AppError } from '../../shared/errors';
 
@@ -101,6 +102,60 @@ export class IntegrityController {
     }
   }
 
+  /**
+   * Status integrasi Web3 Ethereum Sepolia
+   */
+  async getWeb3Status(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.status(200).json({
+        success: true,
+        data: web3AnchorService.getStatus(),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * Verifikasi langsung ke smart contract Sepolia
+   */
+  async verifyWeb3Receipt(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { receiptNo } = req.params;
+      if (!receiptNo) {
+        throw new AppError('BAD_REQUEST', 400, 'Nomor struk wajib disertakan.');
+      }
+
+      const result = await web3AnchorService.verifyReceiptOnChain(receiptNo);
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * Trigger manual untuk anchor struk ke Sepolia
+   */
+  async anchorWeb3Receipt(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { receiptNo, transactionId } = req.body;
+      if (!receiptNo) {
+        throw new AppError('BAD_REQUEST', 400, 'Nomor struk wajib disertakan.');
+      }
+
+      await web3AnchorService.anchorReceiptAsync(receiptNo, transactionId);
+
+      res.status(200).json({
+        success: true,
+        message: `Proses pencatatan struk ${receiptNo} ke Sepolia telah dijadwalkan di background.`,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const integrityController = new IntegrityController();

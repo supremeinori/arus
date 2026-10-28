@@ -8,6 +8,7 @@ import '../../features/catalog/domain/category_model.dart';
 import '../../features/catalog/domain/product_model.dart';
 import '../../features/pos/domain/pos_models.dart';
 import '../utils/money_formatter.dart';
+import '../utils/datetime_utils.dart';
 
 final localDbProvider = Provider<LocalDatabase>((ref) {
   return LocalDatabase.instance;
@@ -111,7 +112,7 @@ class LocalDatabase {
 
     return await sql.openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         // 1. Sesi User & Pengaturan Utilitas
         await db.execute('''
@@ -214,6 +215,15 @@ class LocalDatabase {
             created_at TEXT NOT NULL
           )
         ''');
+
+        // 6. Cache Analitik Harian & Dashboard (Offline Daily Fallback)
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS daily_analytics_cache (
+            cache_key TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -283,6 +293,19 @@ class LocalDatabase {
             await db.execute('ALTER TABLE backup_transactions ADD COLUMN raw_json TEXT');
           } catch (_) {}
         }
+
+        if (oldVersion < 4) {
+          // Reset antrean transaksi offline lama, struk lama, dan cache lama agar transaksi yang sudah dihapus tidak muncul atau tersinkron kembali
+          try {
+            await db.delete('offline_transactions');
+            await db.delete('backup_transactions');
+            await db.delete('cached_categories');
+            await db.delete('cached_products');
+            await db.delete('backup_products');
+            await db.delete('daily_analytics_cache');
+            await db.delete('local_session_settings');
+          } catch (_) {}
+        }
       },
       onOpen: (db) async {
         // Defensive self-healing check: pastikan kolom status & raw_json selalu ada
@@ -322,6 +345,15 @@ class LocalDatabase {
         } catch (_) {}
         try {
           await db.execute('ALTER TABLE local_session_settings ADD COLUMN refresh_token TEXT');
+        } catch (_) {}
+        try {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS daily_analytics_cache (
+              cache_key TEXT PRIMARY KEY,
+              payload TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            )
+          ''');
         } catch (_) {}
       },
     );
@@ -517,6 +549,27 @@ class LocalDatabase {
         );
       }
     } catch (_) {}
+  }
+
+  Future<void> clearLocalDatabase() async {
+    final db = await database;
+    _webSessionStore.clear();
+    _webCategoriesStore.clear();
+    _webProductsStore.clear();
+    _webTransactionsStore.clear();
+    _webOfflineTxQueue.clear();
+    _webDailyAnalyticsCache.clear();
+    if (db != null) {
+      try {
+        await db.delete('local_session_settings');
+        await db.delete('cached_categories');
+        await db.delete('cached_products');
+        await db.delete('backup_products');
+        await db.delete('offline_transactions');
+        await db.delete('backup_transactions');
+        await db.delete('daily_analytics_cache');
+      } catch (_) {}
+    }
   }
 
   Future<void> clearSession([String? userId]) async {
@@ -730,8 +783,33 @@ class LocalDatabase {
     for (final r in rows) {
       try {
         final rawJson = r['raw_json'] as String?;
+        final colPortions = r['estimated_portions'] as int? ?? 0;
+        final colStock = r['stock_quantity'] as int? ?? 0;
+        final availablePortions = colPortions > 0 ? colPortions : colStock;
+
         if (rawJson != null && rawJson.isNotEmpty) {
-          products.add(ProductModel.fromJson(jsonDecode(rawJson) as Map<String, dynamic>));
+          final baseProduct = ProductModel.fromJson(jsonDecode(rawJson) as Map<String, dynamic>);
+          final updatedOutletStock = baseProduct.outletStock.isNotEmpty
+              ? baseProduct.outletStock
+                  .map((s) => ProductOutletStock(
+                        outletId: s.outletId,
+                        outletName: s.outletName,
+                        quantity: availablePortions,
+                        reorderLevel: s.reorderLevel,
+                      ))
+                  .toList()
+              : [
+                  ProductOutletStock(
+                    outletId: 'local',
+                    outletName: 'Lokal',
+                    quantity: availablePortions,
+                  )
+                ];
+
+          products.add(baseProduct.copyWith(
+            estimatedPortions: colPortions,
+            outletStock: updatedOutletStock,
+          ));
         } else {
           products.add(ProductModel(
             id: r['id'] as String,
@@ -744,11 +822,12 @@ class LocalDatabase {
             categoryName: r['category_name'] as String?,
             imageUrl: r['image_url'] as String?,
             isActive: (r['is_active'] as int? ?? 1) == 1,
+            estimatedPortions: colPortions,
             outletStock: [
               ProductOutletStock(
                 outletId: 'local',
                 outletName: 'Lokal',
-                quantity: r['stock_quantity'] as int? ?? 0,
+                quantity: availablePortions,
               )
             ],
           ));
@@ -759,16 +838,93 @@ class LocalDatabase {
   }
 
   Future<void> decrementLocalStock(String productId, int quantity) async {
-    if (kIsWeb) return;
     final db = await database;
-    if (db == null) return;
+    if (db == null) {
+      final idx = _webProductsStore.indexWhere((p) => p['id'] == productId);
+      if (idx >= 0) {
+        final curPortions = _webProductsStore[idx]['estimated_portions'] as int? ?? 0;
+        final curStock = _webProductsStore[idx]['stock_quantity'] as int? ?? 0;
+        final newPortions = curPortions > quantity ? curPortions - quantity : 0;
+        final newStock = curStock > quantity ? curStock - quantity : 0;
+        _webProductsStore[idx]['estimated_portions'] = newPortions;
+        _webProductsStore[idx]['stock_quantity'] = newStock;
+        if (_webProductsStore[idx]['inventory'] is List && (_webProductsStore[idx]['inventory'] as List).isNotEmpty) {
+          for (final inv in (_webProductsStore[idx]['inventory'] as List)) {
+            if (inv is Map<String, dynamic>) {
+              inv['quantity'] = newPortions;
+            }
+          }
+        }
+        if (_webProductsStore[idx]['outlet_stock'] is List && (_webProductsStore[idx]['outlet_stock'] as List).isNotEmpty) {
+          for (final stk in (_webProductsStore[idx]['outlet_stock'] as List)) {
+            if (stk is Map<String, dynamic>) {
+              stk['quantity'] = newPortions;
+            }
+          }
+        }
+      }
+      return;
+    }
 
-    await db.rawUpdate('''
-      UPDATE cached_products 
-      SET estimated_portions = MAX(0, estimated_portions - ?),
-          stock_quantity = MAX(0, stock_quantity - ?) 
-      WHERE id = ?
-    ''', [quantity, quantity, productId]);
+    final rows = await db.query(
+      'cached_products',
+      columns: ['id', 'estimated_portions', 'stock_quantity', 'raw_json'],
+      where: 'id = ?',
+      whereArgs: [productId],
+      limit: 1,
+    );
+
+    if (rows.isNotEmpty) {
+      final row = rows.first;
+      final curPortions = row['estimated_portions'] as int? ?? 0;
+      final curStock = row['stock_quantity'] as int? ?? 0;
+      final newPortions = (curPortions - quantity).clamp(0, 999999999);
+      final newStock = (curStock - quantity).clamp(0, 999999999);
+
+      String? updatedRawJson;
+      final rawJsonStr = row['raw_json'] as String?;
+      if (rawJsonStr != null && rawJsonStr.isNotEmpty) {
+        try {
+          final map = jsonDecode(rawJsonStr) as Map<String, dynamic>;
+          map['estimated_portions'] = newPortions;
+          map['stock_quantity'] = newStock;
+          if (map['inventory'] is List && (map['inventory'] as List).isNotEmpty) {
+            for (final inv in (map['inventory'] as List)) {
+              if (inv is Map<String, dynamic>) {
+                inv['quantity'] = newPortions;
+              }
+            }
+          }
+          if (map['outlet_stock'] is List && (map['outlet_stock'] as List).isNotEmpty) {
+            for (final stk in (map['outlet_stock'] as List)) {
+              if (stk is Map<String, dynamic>) {
+                stk['quantity'] = newPortions;
+              }
+            }
+          }
+          updatedRawJson = jsonEncode(map);
+        } catch (_) {}
+      }
+
+      await db.update(
+        'cached_products',
+        {
+          'estimated_portions': newPortions,
+          'stock_quantity': newStock,
+          if (updatedRawJson != null) 'raw_json': updatedRawJson,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+    } else {
+      await db.rawUpdate('''
+        UPDATE cached_products 
+        SET estimated_portions = MAX(0, estimated_portions - ?),
+            stock_quantity = MAX(0, stock_quantity - ?) 
+        WHERE id = ?
+      ''', [quantity, quantity, productId]);
+    }
 
     try {
       await db.rawUpdate('''
@@ -807,6 +963,9 @@ class LocalDatabase {
         'created_at': transaction.createdAt.toIso8601String(),
         'is_synced': isSynced ? 1 : 0,
       });
+      for (final item in transaction.items) {
+        await decrementLocalStock(item.productId, item.quantity);
+      }
       await backupTransaction({
         'transaction_id': transaction.id,
         'receipt_no': transaction.receiptNo,
@@ -919,7 +1078,16 @@ class LocalDatabase {
 
   Future<void> markTransactionSyncError(String clientRequestId, String error) async {
     final db = await database;
-    if (db == null) return;
+    if (db == null) {
+      final item = _webOfflineTxQueue.firstWhere(
+        (tx) => tx['client_request_id'] == clientRequestId,
+        orElse: () => {},
+      );
+      if (item.isNotEmpty) {
+        item['sync_error'] = error;
+      }
+      return;
+    }
 
     await db.update(
       'offline_transactions',
@@ -955,10 +1123,10 @@ class LocalDatabase {
     ''');
   }
 
-  Future<List<PosTransactionModel>> getBackupTransactions() async {
+  Future<List<PosTransactionModel>> getBackupTransactions({String? outletId}) async {
     final db = await database;
     if (db == null) {
-      return _webTransactionsStore.map((m) {
+      var list = _webTransactionsStore.map((m) {
         if (m['raw_json'] != null) {
           return PosTransactionModel.fromJson(jsonDecode(m['raw_json'] as String));
         }
@@ -975,9 +1143,13 @@ class LocalDatabase {
           paidIdr: m['total_idr'] as int? ?? 0,
           changeIdr: 0,
           status: m['status'] as String? ?? 'completed',
-          createdAt: DateTime.tryParse(m['created_at'] as String? ?? '') ?? DateTime.now(),
+          createdAt: parseToDeviceLocal(m['created_at']),
         );
       }).toList();
+      if (outletId != null && outletId.isNotEmpty) {
+        list = list.where((tx) => tx.outletId.isEmpty || tx.outletId == outletId).toList();
+      }
+      return list;
     }
 
     final rows = await db.query(
@@ -1007,11 +1179,61 @@ class LocalDatabase {
             paidIdr: r['total_idr'] as int? ?? 0,
             changeIdr: 0,
             status: r['status'] as String? ?? 'completed',
-            createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+            createdAt: parseToDeviceLocal(r['created_at']),
           ));
         }
       } catch (_) {}
     }
+    if (outletId != null && outletId.isNotEmpty) {
+      return result.where((tx) => tx.outletId.isEmpty || tx.outletId == outletId).toList();
+    }
     return result;
+  }
+
+  // ========================================================
+  // 6. DAILY ANALYTICS & DASHBOARD CACHE (OFFLINE FALLBACK)
+  // ========================================================
+  final Map<String, Map<String, dynamic>> _webDailyAnalyticsCache = {};
+
+  Future<void> saveDailyAnalyticsCache({
+    required String cacheKey,
+    required String payload,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final db = await database;
+    if (db == null) {
+      _webDailyAnalyticsCache[cacheKey] = {
+        'cache_key': cacheKey,
+        'payload': payload,
+        'updated_at': now,
+      };
+      return;
+    }
+
+    await db.insert(
+      'daily_analytics_cache',
+      {
+        'cache_key': cacheKey,
+        'payload': payload,
+        'updated_at': now,
+      },
+      conflictAlgorithm: sql.ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<String?> getDailyAnalyticsCache(String cacheKey) async {
+    final db = await database;
+    if (db == null) {
+      return _webDailyAnalyticsCache[cacheKey]?['payload'] as String?;
+    }
+
+    final rows = await db.query(
+      'daily_analytics_cache',
+      where: 'cache_key = ?',
+      whereArgs: [cacheKey],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['payload'] as String?;
   }
 }

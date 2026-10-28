@@ -3,6 +3,7 @@ import { PaymentMethod, PrismaClient, Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
 import { integrityService } from '../integrity/blockchain.service';
+import { web3AnchorService } from '../integrity/web3_anchor.service';
 import {
   NotificationDraft,
   NotificationsService,
@@ -129,6 +130,24 @@ export class TransactionsService {
         const relevantRecipes = product.recipes.filter(
           (r) => r.ingredient && r.ingredient.outlet_id === targetOutletId
         );
+
+        // Jika produk memiliki resep, pastikan seluruh bahan resep wajib ada di cabang ini
+        const requiredIngredientNames = new Set(
+          product.recipes.map((r) => r.ingredient?.name).filter(Boolean)
+        );
+        const availableIngredientNames = new Set(
+          relevantRecipes.map((r) => r.ingredient?.name).filter(Boolean)
+        );
+        if (
+          requiredIngredientNames.size > 0 &&
+          availableIngredientNames.size < requiredIngredientNames.size
+        ) {
+          throw new AppError(
+            'INVENTORY_INSUFFICIENT',
+            400,
+            `Produk "${product.name}" tidak dapat dipesan karena bahan baku tidak lengkap di cabang ini.`
+          );
+        }
 
         // Hitung modal HPP menu dari total modal bahan baku resep
         const unitCostIdr = relevantRecipes.reduce((sum, r) => {
@@ -334,6 +353,13 @@ export class TransactionsService {
         console.warn('[TransactionsService] Push low_stock gagal (diabaikan):', err);
       }
     }
+
+    // Web3 Anchoring: Catat struk ke Ethereum Sepolia di background (Non-blocking)
+    web3AnchorService
+      .anchorReceiptAsync(committedTransaction.receipt_no, committedTransaction.id)
+      .catch((err) => {
+        console.warn('[TransactionsService] Background Web3 anchor error:', err?.message || err);
+      });
 
     return committedTransaction;
   }
@@ -545,6 +571,37 @@ export class TransactionsService {
         total,
       },
     };
+  }
+
+  /**
+   * Mengambil detail satu transaksi berdasarkan ID.
+   * Dapat diakses oleh semua role (Owner, Manager, Staff) sesuai cakupan outlet.
+   */
+  async getTransactionById(
+    transactionId: string,
+    userScope: { role: Role; allowedOutletIds: string[] }
+  ) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: {
+        items: true,
+        outlet: { select: { id: true, name: true } },
+        cashier: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!transaction) {
+      throw new AppError('NOT_FOUND', 404, 'Transaksi tidak ditemukan.');
+    }
+
+    if (
+      userScope.role !== Role.owner &&
+      !userScope.allowedOutletIds.includes(transaction.outlet_id)
+    ) {
+      throw new AppError('NOT_FOUND', 404, 'Transaksi tidak ditemukan atau di luar wewenang Anda.');
+    }
+
+    return transaction;
   }
 }
 

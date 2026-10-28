@@ -29,9 +29,7 @@ export class OutletsService {
 
     if (!isOwner) {
       where.is_active = true;
-      if (user.role !== Role.manager) {
-        where.id = { in: userOutlets };
-      }
+      where.id = { in: userOutlets };
     }
 
     try {
@@ -60,49 +58,18 @@ export class OutletsService {
         assigned_users_count: o._count.users,
         created_at: o.created_at,
       }));
-    } catch (_) {
-      return [
-        {
-          id: 'out-001',
-          name: 'Kopi Arus - Sudirman (HQ)',
-          address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat',
-          latitude: -6.21462,
-          longitude: 106.82155,
-          timezone: 'Asia/Jakarta',
-          is_active: true,
-          inventory_count: 18,
-          assigned_users_count: 5,
-          created_at: new Date(),
-        },
-        {
-          id: 'out-002',
-          name: 'Kopi Arus - Senopati',
-          address: 'Jl. Senopati No. 12, Jakarta Selatan',
-          latitude: -6.2301,
-          longitude: 106.8122,
-          timezone: 'Asia/Jakarta',
-          is_active: true,
-          inventory_count: 15,
-          assigned_users_count: 4,
-          created_at: new Date(),
-        },
-        {
-          id: 'out-003',
-          name: 'Kopi Arus - Canggu',
-          address: 'Jl. Pantai Batu Bolong, Bali',
-          latitude: -8.65,
-          longitude: 115.13,
-          timezone: 'Asia/Makassar',
-          is_active: true,
-          inventory_count: 12,
-          assigned_users_count: 3,
-          created_at: new Date(),
-        },
-      ];
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal mengambil data outlet dari database.');
     }
   }
 
-  async getOutletById(id: string) {
+  async getOutletById(id: string, user?: { id: string; role: Role }, userOutlets?: string[]) {
+    if (user && user.role !== Role.owner) {
+      if (!userOutlets || !userOutlets.includes(id)) {
+        throw new AppError('NOT_FOUND', 404, 'Data outlet tidak ditemukan atau di luar wewenang Anda.');
+      }
+    }
     const outlet = await prisma.outlet.findUnique({
       where: { id },
       include: {

@@ -14,9 +14,12 @@ export class AuthService {
    * `User.display_currency` (sumber kebenaran), sisanya default aplikasi.
    */
   private buildSettings(user: any) {
+    const primaryTz =
+      user?.outlets?.[0]?.outlet?.timezone ||
+      user?.outlets?.[0]?.timezone;
     return {
       display_currency: user?.display_currency ?? DEFAULT_DISPLAY_CURRENCY,
-      display_timezone: 'Asia/Jakarta',
+      display_timezone: primaryTz || 'Asia/Jakarta',
       biometric_enabled: false,
       shake_refresh_enabled: true,
       tilt_enabled: true,

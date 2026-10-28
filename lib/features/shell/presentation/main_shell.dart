@@ -158,30 +158,32 @@ class _MainShellState extends ConsumerState<MainShell> {
         index: safeIndex,
         children: pages,
       ),
-      // Global Floating Action Button untuk AI Companion (Selalu ada di mana pun)
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.lightCardSurface,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppTheme.lightCardBorder, width: AppTheme.hairline),
-        ),
-        tooltip: 'ARUS AI Companion',
-        onPressed: () => showAiCompanionBottomSheet(context, ref),
-        child: ClipOval(
-          child: Image.asset(
-            'assets/images/ai_mascot.png',
-            width: 40,
-            height: 40,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => const Icon(
-              Icons.auto_awesome_rounded,
-              size: 26,
-              color: AppTheme.jadeTosca,
+      // Global Floating Action Button untuk AI Companion (Hanya Owner & Manager, disembunyikan untuk Kasir / Staff)
+      floatingActionButton: isStaff
+          ? null
+          : FloatingActionButton(
+              backgroundColor: AppTheme.lightCardSurface,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: AppTheme.lightCardBorder, width: 1.0),
+              ),
+              tooltip: 'ARUS AI Companion',
+              onPressed: () => showAiCompanionBottomSheet(context, ref),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/ai_mascot.png',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 26,
+                    color: AppTheme.jadeTosca,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppTheme.lightCardSurface,

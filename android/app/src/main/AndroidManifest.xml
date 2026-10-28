@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <!-- Notifikasi push FCM (Android 13+ wajib runtime permission) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Location permissions for LBS / GPS (geolocator) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="ARUS"
         android:name="${applicationName}"
@@ -34,6 +37,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Channel default notifikasi FCM. Channel dibuat saat runtime oleh
+             NotificationService dengan importance tinggi (heads-up + suara).
+             Tanpa meta-data ini FCM memakai fallback channel dengan importance
+             rendah sehingga notifikasi tidak muncul sebagai heads-up. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="arus_push_high" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

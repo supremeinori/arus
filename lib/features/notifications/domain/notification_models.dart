@@ -1,3 +1,5 @@
+import '../../../core/utils/datetime_utils.dart';
+
 class NotificationModel {
   final String id;
   final String userId;
@@ -26,8 +28,7 @@ class NotificationModel {
   bool get isRead => isReadFlag || readAt != null;
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
-    final createdAt =
-        DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now();
+    final createdAt = parseToDeviceLocal(json['created_at']);
     return NotificationModel(
       id: json['id'] as String? ?? '',
       userId: json['user_id'] as String? ?? '',
@@ -37,7 +38,7 @@ class NotificationModel {
       body: json['body'] as String? ?? '',
       payload: json['payload'] as Map<String, dynamic>?,
       readAt: json['read_at'] != null
-          ? DateTime.tryParse(json['read_at'] as String)
+          ? parseToDeviceLocal(json['read_at'])
           : null,
       createdAt: createdAt,
       // Backend (Prisma) memakai kolom is_read.

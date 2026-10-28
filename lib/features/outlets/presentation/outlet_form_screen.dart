@@ -244,8 +244,8 @@ class _OutletFormScreenState extends ConsumerState<OutletFormScreen> {
 
             // Peta Interaktif
             OutletLocationPickerWidget(
-              initialLatitude: _selectedLat,
-              initialLongitude: _selectedLng,
+              initialLatitude: _selectedLat ?? -7.7828,
+              initialLongitude: _selectedLng ?? 110.3670,
               onLocationSelected: _handleLocationSelected,
             ),
 

@@ -27,12 +27,14 @@ export class AnalyticsController {
     try {
       const user = req.user!;
       const allowedOutletIds = req.userOutlets || [];
-      const { outlet_id, days } = req.query;
+      const { outlet_id, days, from, to } = req.query;
 
       const data = await analyticsService.getSalesTrend(
         {
           outlet_id: outlet_id as string,
           days: days ? parseInt(days as string, 10) : undefined,
+          from: from as string,
+          to: to as string,
         },
         { role: user.role, allowedOutletIds }
       );

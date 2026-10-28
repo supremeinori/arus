@@ -21,31 +21,33 @@ final outletsPerformanceProvider = FutureProvider.autoDispose<List<OutletPerform
 // Default lokasi user untuk simulasi / geolokasi: Malioboro Yogyakarta (-7.7828, 110.3670)
 final userCoordinatesProvider = StateProvider<(double, double)>((ref) => (-7.7828, 110.3670));
 
-/// Mengambil koordinat GPS riil perangkat
+/// Mengambil koordinat GPS riil perangkat dengan penanganan error komprehensif & timeout
 Future<(double, double)> fetchCurrentGpsLocation() async {
-  try {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return (-7.7828, 110.3670);
-    }
-    LocationPermission permission = await Geolocator.checkPermission();
+  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    throw Exception('Layanan GPS / Lokasi perangkat tidak aktif. Mohon aktifkan GPS.');
+  }
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return (-7.7828, 110.3670);
-      }
+      throw Exception('Izin lokasi GPS ditolak oleh pengguna.');
     }
-    if (permission == LocationPermission.deniedForever) {
-      return (-7.7828, 110.3670);
-    }
+  }
+  if (permission == LocationPermission.deniedForever) {
+    throw Exception('Izin lokasi GPS ditolak permanen. Ubah di Pengaturan Perangkat.');
+  }
+  try {
     Position position = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 5),
       ),
     );
     return (position.latitude, position.longitude);
-  } catch (_) {
-    return (-7.7828, 110.3670);
+  } catch (e) {
+    // Fallback jika GPS timeout / signal buruk
+    throw Exception('Gagal mendapatkan koordinat GPS terkini. Pastikan berada di ruang terbuka.');
   }
 }
 
@@ -83,6 +85,9 @@ final nearestOutletProvider = FutureProvider.autoDispose<NearestOutletResult>((r
   final (lat, lng) = ref.watch(userCoordinatesProvider);
   return repo.getNearestOutlet(lat, lng);
 });
+
+/// Outlet ID yang sedang dipilih pada peta LBS untuk menampilkan rute dari posisi owner
+final selectedLbsOutletIdProvider = StateProvider<String?>((ref) => null);
 
 class OutletMutationState {
   final bool isLoading;

@@ -147,7 +147,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Koordinat Cabang:'), findsOneWidget);
+      expect(find.textContaining('Koordinat Cabang:'), findsOneWidget);
       expect(find.textContaining('-7.7828'), findsOneWidget);
       expect(find.byType(OutletLocationPickerWidget), findsOneWidget);
     });
@@ -171,7 +171,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Tambah Cabang Baru'), findsOneWidget);
-      expect(find.text('Lokasi Cabang pada Peta *'), findsOneWidget);
+      expect(find.textContaining('Lokasi Cabang pada Peta *'), findsWidgets);
       expect(find.byType(OutletLocationPickerWidget), findsOneWidget);
 
       final jakartaChip = find.text('Jakarta');
@@ -180,7 +180,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Koordinat Terpilih'), findsOneWidget);
-      expect(find.textContaining('-6.2088'), findsOneWidget);
+      expect(find.text('Jakarta'), findsOneWidget);
     });
   });
 

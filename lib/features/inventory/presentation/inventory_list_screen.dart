@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -7,6 +8,7 @@ import '../../../shared/widgets/skeleton_list.dart';
 import '../../../shared/widgets/status_badge.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 import '../../outlets/presentation/outlets_provider.dart';
 import '../../catalog/presentation/catalog_provider.dart';
 import '../data/inventory_repository.dart';
@@ -149,9 +151,23 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final isManager = user?.role == UserRole.manager;
 
     final filterState = ref.watch(inventoryFilterProvider);
-    final selectedOutletId = ref.watch(selectedInventoryOutletProvider);
+    final selectedOutletId = ref.watch(selectedOutletFilterProvider);
     final ingredientsAsync = ref.watch(ingredientsListProvider);
     final outletsAsync = ref.watch(outletsListProvider);
+
+    // Untuk Manager: Cabang selalu terkunci pada cabang yang di-assign oleh Owner (tidak bisa memilih cabang lain)
+    final assignedOutlet = isManager && user != null && user.outlets.isNotEmpty
+        ? user.outlets.first
+        : null;
+    final effectiveOutletId = isManager
+        ? assignedOutlet?.id
+        : selectedOutletId;
+
+    if (isManager && assignedOutlet != null && selectedOutletId != assignedOutlet.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(selectedOutletFilterProvider.notifier).state = assignedOutlet.id;
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -162,14 +178,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         actions: [
-          if (!isStaff)
+          if (!isStaff && effectiveOutletId != null)
             IconButton(
               icon: const Icon(Icons.history_rounded, color: AppTheme.textPrimaryDark),
               tooltip: 'Riwayat Mutasi',
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => StockMovementScreen(outletId: selectedOutletId),
+                    builder: (_) => StockMovementScreen(outletId: effectiveOutletId),
                   ),
                 );
               },
@@ -185,24 +201,26 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           ),
         ],
       ),
-      floatingActionButton: (!isStaff && selectedOutletId != null)
+      floatingActionButton: (!isStaff && effectiveOutletId != null)
           ? FloatingActionButton.extended(
               backgroundColor: AppTheme.jadeTosca,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
               label: Text('Tambah Bahan', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
               onPressed: () {
-                final outletName = outletsAsync.value?.firstWhere(
-                  (o) => o.id == selectedOutletId,
-                  orElse: () => outletsAsync.value!.first,
-                ).name ?? 'Cabang Terpilih';
-                _openAddIngredientDialog(selectedOutletId, outletName);
+                final outletName = isManager
+                    ? (assignedOutlet?.name ?? 'Cabang Penugasan')
+                    : (outletsAsync.value?.firstWhere(
+                        (o) => o.id == effectiveOutletId,
+                        orElse: () => outletsAsync.value!.first,
+                      ).name ?? 'Cabang Terpilih');
+                _openAddIngredientDialog(effectiveOutletId, outletName);
               },
             )
           : null,
       body: Column(
         children: [
-          // Outlet Selector Bar untuk Owner & Manager
-          if (!isStaff)
+          // 1. Outlet Selector Bar khusus Owner: Bisa memilih antar cabang
+          if (isOwner)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -215,30 +233,23 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               child: AsyncStateView(
                 value: outletsAsync,
                 dataBuilder: (allOutlets) {
-                  // Jika Manager, batasi pilihan hanya ke assigned outlets
-                  final availableOutlets = isOwner
-                      ? allOutlets
-                      : (isManager && user != null
-                          ? allOutlets.where((o) => user.outlets.any((uo) => uo.id == o.id)).toList()
-                          : allOutlets);
-
-                  if (availableOutlets.isEmpty) {
+                  if (allOutlets.isEmpty) {
                     return Text(
-                      'Tidak ada cabang yang ditugaskan.',
+                      'Tidak ada cabang.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMutedDark),
                     );
                   }
 
-                  final currentOutletId = selectedOutletId != null && availableOutlets.any((o) => o.id == selectedOutletId)
+                  final currentOutletId = selectedOutletId != null && allOutlets.any((o) => o.id == selectedOutletId)
                       ? selectedOutletId
-                      : availableOutlets.first.id;
+                      : allOutlets.first.id;
 
                   // Pastikan state selected terisi
                   if (selectedOutletId != currentOutletId) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ref.read(selectedInventoryOutletProvider.notifier).state = currentOutletId;
+                      ref.read(selectedOutletFilterProvider.notifier).state = currentOutletId;
                     });
                   }
 
@@ -259,7 +270,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                             dropdownColor: AppTheme.darkCardSurface,
                             isExpanded: true,
                             value: currentOutletId,
-                            items: availableOutlets.map((o) {
+                            items: allOutlets.map((o) {
                               return DropdownMenuItem<String>(
                                 value: o.id,
                                 child: Text(
@@ -271,7 +282,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                             }).toList(),
                             onChanged: (val) {
                               if (val != null) {
-                                ref.read(selectedInventoryOutletProvider.notifier).state = val;
+                                ref.read(selectedOutletFilterProvider.notifier).state = val;
                                 ref.invalidate(ingredientsListProvider);
                               }
                             },
@@ -282,6 +293,69 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   );
                 },
               ),
+            )
+          // 2. Bar Cabang Khusus Manager: Terkunci pada 1 cabang penugasan oleh Owner (TIDAK BISA MEMILIH CABANG)
+          else if (isManager)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: AppTheme.darkCardSurface,
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0),
+                ),
+              ),
+              child: assignedOutlet != null
+                  ? Row(
+                      children: [
+                        const Icon(Icons.storefront_rounded, size: 20, color: AppTheme.jadeTosca),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Cabang Ditugaskan:',
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            assignedOutlet.name,
+                            style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.textPrimaryDark),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.jadeTosca.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppTheme.jadeTosca.withValues(alpha: 0.3), width: 1.0),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.lock_outline_rounded, size: 12, color: AppTheme.jadeTosca),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Terkunci',
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 20, color: Colors.amber),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Belum ada cabang yang ditugaskan oleh Owner.',
+                            style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMutedDark),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           const Divider(height: 1),
 
@@ -380,14 +454,16 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                           ? 'Tidak ada bahan baku dengan filter ini.'
                           : 'Belum ada bahan baku di cabang ini.',
                       icon: Icons.kitchen_outlined,
-                      ctaText: selectedOutletId != null ? 'Tambah Bahan Baku' : null,
-                      onCtaPressed: selectedOutletId != null
+                      ctaText: effectiveOutletId != null ? 'Tambah Bahan Baku' : null,
+                      onCtaPressed: effectiveOutletId != null
                           ? () {
-                              final outletName = outletsAsync.value?.firstWhere(
-                                (o) => o.id == selectedOutletId,
-                                orElse: () => outletsAsync.value!.first,
-                              ).name ?? 'Cabang Terpilih';
-                              _openAddIngredientDialog(selectedOutletId, outletName);
+                              final outletName = isManager
+                                  ? (assignedOutlet?.name ?? 'Cabang Penugasan')
+                                  : (outletsAsync.value?.firstWhere(
+                                      (o) => o.id == effectiveOutletId,
+                                      orElse: () => outletsAsync.value!.first,
+                                    ).name ?? 'Cabang Terpilih');
+                              _openAddIngredientDialog(effectiveOutletId, outletName);
                             }
                           : null,
                     );
@@ -408,7 +484,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                         final item = ingredients[index - 1];
                         return _IngredientCard(
                           item: item,
-                          onEdit: () => _openAddIngredientDialog(selectedOutletId ?? '', item.outletName, item),
+                          onEdit: () => _openAddIngredientDialog(effectiveOutletId ?? item.outletId, item.outletName, item),
                           onDelete: () => _confirmDeleteIngredient(item),
                           onAdjust: () => _openAdjustmentDialog(item),
                         );
@@ -773,154 +849,374 @@ class _IngredientCard extends ConsumerWidget {
   // E23: sebagai widget class (bukan helper _build*).
 }
 
+final _staffInventoryTabProvider = StateProvider.autoDispose<int>((ref) => 0);
+
 class _StaffPortionView extends ConsumerWidget {
   const _StaffPortionView();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentTab = ref.watch(_staffInventoryTabProvider);
+    final user = ref.watch(authProvider).user;
+    final branchName = user?.outlets.isNotEmpty == true ? user!.outlets.first.name : 'Cabang Penugasan';
     final productsAsync = ref.watch(productListProvider);
+    final ingredientsAsync = ref.watch(ingredientsListProvider);
 
-    // E24: loading/error/data lewat satu AsyncStateView.
-    return AsyncStateView(
-      value: productsAsync,
-      onRetry: () => ref.invalidate(productListProvider),
-      dataBuilder: (products) {
-        if (products.isEmpty) {
-          return const EmptyStateView(
-            message: 'Tidak ada menu terdaftar.',
-            icon: Icons.coffee_outlined,
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: products.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, idx) {
-            final p = products[idx];
-            final isZero = p.estimatedPortions <= 0;
-
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.darkCardSurface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isZero ? AppTheme.dangerTintStrong : AppTheme.darkCardBorder,
+    return Column(
+      children: [
+        // Header Info Cabang Kasir
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: const BoxDecoration(
+            color: AppTheme.darkCardSurface,
+            border: Border(bottom: BorderSide(color: AppTheme.darkCardBorder, width: 1.0)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.storefront_outlined, size: 16, color: AppTheme.jadeTosca),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Stok Cabang: $branchName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryDark),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // === AREA ATAS (fixed height 82px) ===
-                  SizedBox(
-                    height: 82,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: p.imageUrl != null && p.imageUrl!.isNotEmpty
-                              ? Image.network(
-                                  p.imageUrl!,
-                                  width: 52,
-                                  height: 52,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => Container(
-                                    width: 52,
-                                    height: 52,
-                                    color: AppTheme.darkCardSurfaceElevated,
-                                    child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
-                                  ),
-                                )
-                              : Container(
-                                  width: 52,
-                                  height: 52,
-                                  color: AppTheme.darkCardSurfaceElevated,
-                                  child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
-                                ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                p.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.textPrimaryDark),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${ref.money(p.priceIdr)} • SKU: ${p.sku}',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textMutedDark),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Spacing antar area atas & badge estimasi
-                  const SizedBox(height: 10),
-
-                  // === BADGE ESTIMASI (Row FIXED — posisi kanan tetap) ===
-                  // Posisi Y-nya FIXED: 92px dari atas kartu (82 + 10).
-                  // Badge diletakkan di kolom kanan dengan lebar tetap 120px,
-                  // di dalam Row yang memenuhi lebar kartu → selalu kanan, tidak bergerak.
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isZero ? AppTheme.dangerTint : AppTheme.darkCardSurfaceElevated,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isZero ? AppTheme.dangerTintStrong : AppTheme.darkCardBorder,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                isZero ? 'Habis' : '${p.estimatedPortions} Porsi',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isZero ? AppTheme.dangerRed : AppTheme.jadeTosca,
-                                    ),
-                              ),
-                              Text(
-                                isZero ? 'Bahan Kurang' : 'Estimasi',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: isZero ? AppTheme.dangerRed : AppTheme.textMutedDark,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.jadeTosca.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Kasir Realtime',
+                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.jadeTosca),
+                ),
               ),
-            );
-          },
-        );
-      },
+            ],
+          ),
+        ),
+
+        // Tab Selector Kasir: Estimasi Porsi Menu vs Stok Bahan Baku Cabang
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: const Center(
+                    child: Text('Estimasi Porsi Menu', maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                  selected: currentTab == 0,
+                  onSelected: (selected) {
+                    if (selected) ref.read(_staffInventoryTabProvider.notifier).state = 0;
+                  },
+                  backgroundColor: AppTheme.darkCardSurface,
+                  selectedColor: AppTheme.jadeTosca,
+                  labelStyle: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: currentTab == 0 ? Colors.white : AppTheme.textSecondaryDark,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ChoiceChip(
+                  label: const Center(
+                    child: Text('Stok Bahan Baku', maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                  selected: currentTab == 1,
+                  onSelected: (selected) {
+                    if (selected) ref.read(_staffInventoryTabProvider.notifier).state = 1;
+                  },
+                  backgroundColor: AppTheme.darkCardSurface,
+                  selectedColor: AppTheme.jadeTosca,
+                  labelStyle: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: currentTab == 1 ? Colors.white : AppTheme.textSecondaryDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Konten Tab
+        Expanded(
+          child: currentTab == 0
+              ? AsyncStateView(
+                  value: productsAsync,
+                  onRetry: () => ref.invalidate(productListProvider),
+                  dataBuilder: (products) {
+                    if (products.isEmpty) {
+                      return const EmptyStateView(
+                        message: 'Belum ada menu yang terdaftar.',
+                        icon: Icons.coffee_outlined,
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      color: AppTheme.jadeTosca,
+                      onRefresh: () async {
+                        ref.invalidate(productListProvider);
+                        ref.invalidate(ingredientsListProvider);
+                      },
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: products.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, idx) {
+                          final p = products[idx];
+                          final isZero = p.estimatedPortions <= 0;
+
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.darkCardSurface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isZero ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                                          ? Image.network(
+                                              p.imageUrl!,
+                                              width: 52,
+                                              height: 52,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) => Container(
+                                                width: 52,
+                                                height: 52,
+                                                color: AppTheme.darkCardSurfaceElevated,
+                                                child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
+                                              ),
+                                            )
+                                          : Container(
+                                              width: 52,
+                                              height: 52,
+                                              color: AppTheme.darkCardSurfaceElevated,
+                                              child: const Icon(Icons.coffee_rounded, color: AppTheme.jadeTosca),
+                                            ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            p.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                              color: AppTheme.textPrimaryDark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${ref.money(p.priceIdr)} • SKU: ${p.sku}',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isZero ? const Color(0x22EF4444) : AppTheme.darkCardSurfaceElevated,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isZero ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            isZero ? '0 Porsi' : '${p.estimatedPortions} Porsi',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: isZero ? AppTheme.dangerRed : AppTheme.jadeTosca,
+                                            ),
+                                          ),
+                                          Text(
+                                            isZero ? 'Habis' : 'Estimasi',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: isZero ? AppTheme.dangerRed : AppTheme.textMutedDark,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (isZero) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x15EF4444),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.info_outline, size: 14, color: AppTheme.dangerRed),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            p.recipes.isEmpty
+                                                ? 'Belum ada resep bahan baku yang dihubungkan ke produk ini.'
+                                                : 'Bahan baku cabang belum lengkap/habis untuk membuat menu ini.',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(fontSize: 11, color: AppTheme.dangerRed),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                )
+              : AsyncStateView(
+                  value: ingredientsAsync,
+                  onRetry: () => ref.invalidate(ingredientsListProvider),
+                  dataBuilder: (ingredients) {
+                    if (ingredients.isEmpty) {
+                      return EmptyStateView(
+                        message: 'Belum ada bahan baku fisik yang terdaftar di $branchName.',
+                        icon: Icons.kitchen_outlined,
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      color: AppTheme.jadeTosca,
+                      onRefresh: () async {
+                        ref.invalidate(ingredientsListProvider);
+                        ref.invalidate(productListProvider);
+                      },
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: ingredients.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, idx) {
+                          final item = ingredients[idx];
+                          final isOut = item.isOutOfStock;
+                          final isLow = item.isLowStock;
+
+                          Color badgeColor = const Color(0xFF10B981);
+                          String badgeText = 'Stok Aman';
+                          if (isOut) {
+                            badgeColor = AppTheme.dangerRed;
+                            badgeText = 'Habis';
+                          } else if (isLow) {
+                            badgeColor = const Color(0xFFFBBF24);
+                            badgeText = 'Menipis';
+                          }
+
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.darkCardSurface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isOut ? const Color(0x33EF4444) : AppTheme.darkCardBorder,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.darkCardSurfaceElevated,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.egg_alt_outlined,
+                                    color: isOut ? AppTheme.dangerRed : AppTheme.jadeTosca,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppTheme.textPrimaryDark,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Sisa: ${item.formattedStock} • Min: ${item.reorderLevel} ${item.unit}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(fontSize: 11.5, color: AppTheme.textMutedDark),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Text(
+                                    badgeText,
+                                    style: GoogleFonts.inter(
+                                      color: badgeColor,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

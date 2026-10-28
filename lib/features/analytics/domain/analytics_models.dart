@@ -9,6 +9,8 @@ class AnalyticsOverviewModel {
   final int? totalCostIdr;
   final int? grossProfitIdr;
   final int? grossMarginPct;
+  final bool isOffline;
+  final int pendingCount;
 
   const AnalyticsOverviewModel({
     required this.revenueIdr,
@@ -19,9 +21,15 @@ class AnalyticsOverviewModel {
     this.totalCostIdr,
     this.grossProfitIdr,
     this.grossMarginPct,
+    this.isOffline = false,
+    this.pendingCount = 0,
   });
 
-  factory AnalyticsOverviewModel.fromJson(Map<String, dynamic> json) {
+  factory AnalyticsOverviewModel.fromJson(
+    Map<String, dynamic> json, {
+    bool isOffline = false,
+    int pendingCount = 0,
+  }) {
     return AnalyticsOverviewModel(
       revenueIdr: json['revenue_idr'] as int? ?? 0,
       subtotalIdr: json['subtotal_idr'] as int? ?? 0,
@@ -31,6 +39,34 @@ class AnalyticsOverviewModel {
       totalCostIdr: json['total_cost_idr'] as int?,
       grossProfitIdr: json['gross_profit_idr'] as int?,
       grossMarginPct: json['gross_margin_pct'] as int?,
+      isOffline: isOffline,
+      pendingCount: pendingCount,
+    );
+  }
+
+  AnalyticsOverviewModel copyWith({
+    int? revenueIdr,
+    int? subtotalIdr,
+    int? discountIdr,
+    int? transactionCount,
+    int? avgBasketSizeIdr,
+    int? totalCostIdr,
+    int? grossProfitIdr,
+    int? grossMarginPct,
+    bool? isOffline,
+    int? pendingCount,
+  }) {
+    return AnalyticsOverviewModel(
+      revenueIdr: revenueIdr ?? this.revenueIdr,
+      subtotalIdr: subtotalIdr ?? this.subtotalIdr,
+      discountIdr: discountIdr ?? this.discountIdr,
+      transactionCount: transactionCount ?? this.transactionCount,
+      avgBasketSizeIdr: avgBasketSizeIdr ?? this.avgBasketSizeIdr,
+      totalCostIdr: totalCostIdr ?? this.totalCostIdr,
+      grossProfitIdr: grossProfitIdr ?? this.grossProfitIdr,
+      grossMarginPct: grossMarginPct ?? this.grossMarginPct,
+      isOffline: isOffline ?? this.isOffline,
+      pendingCount: pendingCount ?? this.pendingCount,
     );
   }
 
@@ -95,12 +131,18 @@ class ShiftSummaryModel {
   final int cashRevenueIdr;
   final int qrisRevenueIdr;
   final int transactionCount;
+  final bool isOffline;
+  final int pendingCount;
+  final bool isDataAvailable;
 
   const ShiftSummaryModel({
     required this.todayRevenueIdr,
     required this.cashRevenueIdr,
     required this.qrisRevenueIdr,
     required this.transactionCount,
+    this.isOffline = false,
+    this.pendingCount = 0,
+    this.isDataAvailable = true,
   });
 
   factory ShiftSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -109,11 +151,11 @@ class ShiftSummaryModel {
       cashRevenueIdr: json['cash_revenue_idr'] as int? ?? 0,
       qrisRevenueIdr: json['qris_revenue_idr'] as int? ?? 0,
       transactionCount: json['transaction_count'] as int? ?? 0,
+      isOffline: json['is_offline'] as bool? ?? false,
+      pendingCount: json['pending_count'] as int? ?? 0,
+      isDataAvailable: json['is_data_available'] as bool? ?? true,
     );
   }
-
-
-
 }
 
 // =========================================================================
@@ -204,17 +246,48 @@ class SalesForecastSummary {
 
 }
 
+class SalesForecastEvaluation {
+  final String status;
+  final int trainDays;
+  final int testDays;
+  final double seasonalNaiveMae;
+  final double modelMae;
+  final String chosenModel;
+
+  const SalesForecastEvaluation({
+    required this.status,
+    this.trainDays = 0,
+    this.testDays = 0,
+    this.seasonalNaiveMae = 0.0,
+    this.modelMae = 0.0,
+    this.chosenModel = '',
+  });
+
+  factory SalesForecastEvaluation.fromJson(Map<String, dynamic> json) {
+    return SalesForecastEvaluation(
+      status: json['status'] as String? ?? 'unknown',
+      trainDays: (json['train_days'] as num?)?.toInt() ?? 0,
+      testDays: (json['test_days'] as num?)?.toInt() ?? 0,
+      seasonalNaiveMae: (json['seasonal_naive_mae'] as num?)?.toDouble() ?? 0.0,
+      modelMae: (json['model_mae'] as num?)?.toDouble() ?? 0.0,
+      chosenModel: json['chosen_model'] as String? ?? '',
+    );
+  }
+}
+
 class SalesForecastModel {
   final int horizonDays;
   final List<ForecastPoint> historical;
   final List<ForecastPoint> forecast;
   final SalesForecastSummary summary;
+  final SalesForecastEvaluation? evaluation;
 
   const SalesForecastModel({
     required this.horizonDays,
     required this.historical,
     required this.forecast,
     required this.summary,
+    this.evaluation,
   });
 
   factory SalesForecastModel.fromJson(Map<String, dynamic> json) {
@@ -226,6 +299,9 @@ class SalesForecastModel {
       historical: histList.map((e) => ForecastPoint.fromJson(e as Map<String, dynamic>)).toList(),
       forecast: fcstList.map((e) => ForecastPoint.fromJson(e as Map<String, dynamic>)).toList(),
       summary: SalesForecastSummary.fromJson(json['summary'] as Map<String, dynamic>? ?? {}),
+      evaluation: json['evaluation'] != null && json['evaluation'] is Map<String, dynamic>
+          ? SalesForecastEvaluation.fromJson(json['evaluation'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

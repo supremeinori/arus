@@ -40,7 +40,7 @@ vi.mock('../src/config/db', () => {
 describe('Auth & RBAC Module (Milestone 3)', () => {
   const mockOwner = {
     id: 'a0000000-0000-0000-0000-000000000001',
-    email: 'owner@arus.demo',
+    email: 'owner@arus.com',
     name: 'Rina Kartika',
     password_hash: '$argon2id$v=19$m=19456,t=2,p=1$fakehash',
     role: Role.owner,
@@ -83,13 +83,13 @@ describe('Auth & RBAC Module (Milestone 3)', () => {
 
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'owner@arus.demo', password: 'ValidPassword1' });
+        .send({ email: 'owner@arus.com', password: 'ValidPassword1' });
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('data');
       expect(res.body.data).toHaveProperty('access_token');
       expect(res.body.data).toHaveProperty('refresh_token');
-      expect(res.body.data.user.email).toBe('owner@arus.demo');
+      expect(res.body.data.user.email).toBe('owner@arus.com');
       expect(res.body.data.user.role).toBe('owner');
     });
 
@@ -100,7 +100,7 @@ describe('Auth & RBAC Module (Milestone 3)', () => {
 
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'owner@arus.demo', password: 'WrongPassword' });
+        .send({ email: 'owner@arus.com', password: 'WrongPassword' });
 
       expect(res.status).toBe(401);
       expect(res.body).toHaveProperty('error');
@@ -116,7 +116,7 @@ describe('Auth & RBAC Module (Milestone 3)', () => {
 
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'owner@arus.demo', password: 'AnyPassword' });
+        .send({ email: 'owner@arus.com', password: 'AnyPassword' });
 
       expect(res.status).toBe(423);
       expect(res.body.error.code).toBe('AUTH_LOCKED');

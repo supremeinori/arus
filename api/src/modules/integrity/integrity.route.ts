@@ -5,7 +5,15 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 
 const router = Router();
 
-// Seluruh endpoint integritas wajib terautentikasi
+/**
+ * Verifikasi Publik Smart Contract Sepolia (Bisa diakses tanpa login oleh siapapun/konsumen)
+ */
+router.get(
+  '/integrity/web3/public-verify/:receiptNo',
+  (req, res, next) => integrityController.verifyWeb3Receipt(req, res, next)
+);
+
+// Seluruh endpoint integritas di bawah ini wajib terautentikasi
 router.use('/integrity', requireAuth, requireRole([Role.owner, Role.manager]));
 
 /**
@@ -33,6 +41,24 @@ router.post(
 router.post(
   '/integrity/blockchain/recover',
   (req, res, next) => integrityController.recoverChain(req, res, next)
+);
+
+// ==========================================
+// MODUL WEB3 PUBLIC BLOCKCHAIN (ETHEREUM SEPOLIA)
+// ==========================================
+router.get(
+  '/integrity/web3/status',
+  (req, res, next) => integrityController.getWeb3Status(req, res, next)
+);
+
+router.get(
+  '/integrity/web3/verify/:receiptNo',
+  (req, res, next) => integrityController.verifyWeb3Receipt(req, res, next)
+);
+
+router.post(
+  '/integrity/web3/anchor',
+  (req, res, next) => integrityController.anchorWeb3Receipt(req, res, next)
 );
 
 export default router;

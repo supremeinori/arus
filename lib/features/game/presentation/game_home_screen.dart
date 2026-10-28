@@ -1,11 +1,13 @@
 ﻿import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../data/game_repository.dart';
+import '../data/synth_audio_service.dart';
 import '../domain/tilt_direction.dart';
 import '../../sensors/presentation/sensor_provider.dart';
 
@@ -17,11 +19,7 @@ enum _GyroSensorState { initializing, ready, unavailable }
 class GameHomeScreen extends ConsumerStatefulWidget {
   const GameHomeScreen({super.key, this.clock});
 
-  /// Sumber waktu untuk logika kontrol gyroscope (hold-to-answer).
-  ///
-  /// `null` (default) memakai jam dinding aplikasi. Parameter ini adalah seam
-  /// untuk pengujian, sehingga durasi tahan 3 detik dapat diverifikasi tanpa
-  /// menunggu waktu nyata.
+  /// Sumber waktu seam untuk pengujian.
   final DateTime Function()? clock;
 
   @override
@@ -39,6 +37,13 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   int _correctCount = 0;
   int _totalDurationSec = 0;
 
+  // Sistem Combo Beruntun
+  int _comboStreak = 0;
+  int _maxComboStreak = 0;
+
+  // Layanan Sintesis Audio Synth Procedural
+  final SynthAudioService _synthAudio = SynthAudioService();
+
   // Timer per soal (10 detik)
   static const int _timePerQuestion = 10;
   int _remainingSeconds = _timePerQuestion;
@@ -49,20 +54,16 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   String? _selectedOptionKey;
   bool _isAnswerChecked = false;
 
-  // Gyroscope Hold-to-Answer
-  // Aturan main: miringkan HP ke satu arah lalu tahan selama 3 detik.
-  //   Atas (A) | Kanan (B) | Kiri (C) | Bawah (D)
-  static const Duration _gyroPollInterval = Duration(milliseconds: 40);
+  // Gyroscope 2-Arah (Miring Kiri & Miring Kanan) — Respon Instan & Debounce
+  static const Duration _gyroPollInterval = Duration(milliseconds: 30);
   static const Duration _gyroSensorTimeout = Duration(milliseconds: 2500);
 
-  final TiltHoldTracker _gyroTracker = TiltHoldTracker();
-  final ValueNotifier<double> _gyroProgress = ValueNotifier<double>(0);
+  final TiltInstantTrigger _gyroTrigger = TiltInstantTrigger(threshold: kTilt2WayThreshold);
   Timer? _gyroPollTimer;
-  TiltDirection? _gyroDirection; // arah yang sedang ditahan (untuk UI)
-  bool _gyroAnswerLocked = false; // jawaban sudah terkunci via gyroscope
+  Tilt2WayDirection? _liveTiltDirection; // untuk visual highlight real-time di tombol
   _GyroSensorState _gyroSensorState = _GyroSensorState.initializing;
-  DateTime? _lastGyroSampleAt; // timestamp sampel sensor terakhir
-  int _gyroStalePolls = 0; // jumlah polling tanpa sampel sensor baru
+  DateTime? _lastGyroSampleAt;
+  int _gyroStalePolls = 0;
 
   // Data Sesi Selesai
   bool _isNewHighScore = false;
@@ -76,24 +77,16 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   }
 
   // ==========================================
-  // GYROSCOPE HOLD-TO-ANSWER
+  // GYROSCOPE 2-ARAH (RESPON INSTAN + DEBOUNCE)
   // ==========================================
 
-  /// Mulai monitoring sensor selama gameplay berjalan.
-  ///
-  /// Poll (bukan listener hardware baru) membaca state provider gyro yang
-  /// sudah ada, sehingga tidak ada duplikasi listener sensor.
   void _startGyroPolling() {
     _stopGyroPolling();
     if (_gameState != GameState.playing) return;
-    // Seed timestamp sampel terakhir: sensor baru dianggap "siap" setelah ada
-    // sampel baru masuk, sehingga perangkat tanpa sensor terdeteksi sebagai
-    // tidak tersedia (fallback ke tombol sentuh).
     _lastGyroSampleAt = ref.read(gyroscopeProvider).timestamp;
     _gyroPollTimer = Timer.periodic(_gyroPollInterval, (_) => _pollGyro());
   }
 
-  /// Hentikan monitoring sensor & reset seluruh status gyro.
   void _stopGyroPolling() {
     _gyroPollTimer?.cancel();
     _gyroPollTimer = null;
@@ -103,28 +96,18 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
     _gyroStalePolls = 0;
   }
 
-  /// Reset status gyro (ganti soal / timeout / selesai / keluar).
-  ///
-  /// Status ketersediaan sensor tidak di-reset di sini: antar soal sensor tetap
-  /// hidup, jadi tidak perlu mengulang deteksi (menghindari kedipan UI).
   void _resetGyroState() {
-    _gyroTracker.reset();
-    _gyroProgress.value = 0;
-    _gyroDirection = null;
-    _gyroAnswerLocked = false;
+    _gyroTrigger.reset();
+    _liveTiltDirection = null;
   }
 
-  /// Baca sampel sensor terbaru, perbarui progres tahan, dan kunci jawaban
-  /// bila arah sudah dipertahankan selama [_gyroHoldDuration].
   void _pollGyro() {
     if (!mounted) return;
     if (_gameState != GameState.playing || _isAnswerChecked) return;
 
     final reading = ref.read(gyroscopeProvider);
-    final now = _now;
 
-    // Timestamp hanya maju bila ada event sensor masuk -> dipakai untuk
-    // mendeteksi sensor tidak tersedia (fallback ke kontrol sentuh).
+    // Deteksi ketersediaan sensor
     if (reading.timestamp != _lastGyroSampleAt) {
       _lastGyroSampleAt = reading.timestamp;
       _gyroStalePolls = 0;
@@ -132,15 +115,10 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
         setState(() => _gyroSensorState = _GyroSensorState.ready);
       }
     } else {
-      // Tidak ada sampel baru selama [_gyroSensorTimeout] -> sensor dianggap
-      // mati/tidak tersedia, pemain tetap bisa menjawab lewat tombol sentuh.
-      // Dihitung dari jumlah polling (bukan timestamp) agar tidak bergantung
-      // pada sumber jam.
       _gyroStalePolls++;
       if (_gyroStalePolls >= _gyroSensorStalePollLimit &&
           _gyroSensorState != _GyroSensorState.unavailable) {
         setState(() => _gyroSensorState = _GyroSensorState.unavailable);
-        // Batalkan tahan yang sedang berjalan: arah terakhir sudah basi.
         _resetGyroState();
       }
     }
@@ -148,72 +126,42 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
     if (_gyroSensorState != _GyroSensorState.ready) return;
     if (!_gyroControlEnabled) return;
 
-    final detected = detectTiltDirection(
-      pitch: reading.pitch,
-      roll: reading.roll,
-      activeDirection: _gyroTracker.direction,
-    );
-
-    final changed = _gyroTracker.update(detected: detected, now: now);
-    _gyroProgress.value = _gyroTracker.progressAt(now);
-
-    if (changed) {
-      setState(() {
-        _gyroDirection = _gyroTracker.direction;
-        _gyroAnswerLocked = _gyroTracker.isLocked;
-      });
+    // 1. Highlight visual kemiringan secara real-time
+    final currentTilt = detect2WayTilt(roll: reading.roll, threshold: 14.0);
+    if (currentTilt != _liveTiltDirection) {
+      setState(() => _liveTiltDirection = currentTilt);
     }
 
-    if (_gyroTracker.isLocked) {
-      _lockGyroAnswer();
+    // 2. INPUT KEMIRINGAN LANGSUNG (INSTAN TANPA TAHAN 3 DETIK) + DEBOUNCE
+    final triggeredDirection = _gyroTrigger.update(roll: reading.roll);
+    if (triggeredDirection != null) {
+      _handleInstantGyroAnswer(triggeredDirection);
     }
   }
 
-  /// Kunci jawaban hasil tahan gyroscope.
-  ///
-  /// Pemeriksaan jawaban & penghitungan skor memakai alur yang sama dengan
-  /// tombol sentuh (`_selectOption`).
-  void _lockGyroAnswer() {
-    final direction = _gyroTracker.lockedDirection;
-    if (direction == null) return;
-    if (_questions.isEmpty) return;
-    if (_currentQuestionIndex >= _questions.length) return;
-
+  void _handleInstantGyroAnswer(Tilt2WayDirection direction) {
+    if (_questions.isEmpty || _currentQuestionIndex >= _questions.length) return;
     final options = _questions[_currentQuestionIndex].options;
-    if (direction.optionIndex >= options.length) {
-      _gyroTracker.reset();
-      return;
+    final idx = direction.optionIndex;
+    if (idx < options.length) {
+      _selectOption(options[idx].key);
     }
-
-    // Jawab lewat alur validasi & skor yang sama dengan tombol sentuh.
-    _selectOption(options[direction.optionIndex].key);
-
-    // Tracker dikunci ulang agar tidak ada jawaban ganda untuk soal ini.
-    _gyroTracker.reset();
-    _gyroProgress.value = 1.0;
   }
 
-  /// Kontrol miring mengikuti pengaturan sensor pengguna (default: aktif).
   bool get _gyroControlEnabled {
     final settings = ref.read(sensorSettingsProvider).valueOrNull;
     return settings?.tiltEnabled ?? true;
   }
 
-  /// Jumlah polling tanpa sampel baru yang menandai sensor tidak tersedia.
   int get _gyroSensorStalePollLimit =>
-      (_gyroSensorTimeout.inMilliseconds / _gyroPollInterval.inMilliseconds)
-          .ceil();
-
-  /// Sumber waktu kontrol gyroscope (jam dinding, atau clock yang disuntikkan
-  /// pada pengujian).
-  DateTime get _now => widget.clock?.call() ?? DateTime.now();
+      (_gyroSensorTimeout.inMilliseconds / _gyroPollInterval.inMilliseconds).ceil();
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
     _sessionTimer?.cancel();
     _stopGyroPolling();
-    _gyroProgress.dispose();
+    _synthAudio.dispose();
     super.dispose();
   }
 
@@ -233,6 +181,47 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
     }
   }
 
+  /// Memformat soal agar selalu memiliki tepat 2 opsi:
+  /// Opsi 1 (Kiri / A) dan Opsi 2 (Kanan / B).
+  List<GameQuestionModel> _formatTwoChoiceQuestions(List<GameQuestionModel> rawQuestions) {
+    final rng = math.Random();
+    return rawQuestions.map((q) {
+      if (q.options.length == 2) return q;
+
+      // Ambil jawaban benar
+      final correctOpt = q.options.firstWhere(
+        (o) => o.key == q.correctOptionKey,
+        orElse: () => q.options.first,
+      );
+
+      // Ambil 1 opsi pengecoh secara acak
+      final distractors = q.options.where((o) => o.key != q.correctOptionKey).toList();
+      final chosenDistractor = distractors.isNotEmpty
+          ? distractors[rng.nextInt(distractors.length)]
+          : GameQuestionOption(key: 'opt_distractor', label: 'Pengecoh', value: 'Pengecoh');
+
+      // Acak posisi kiri vs kanan (agar jawaban benar tidak selalu di kiri)
+      final bool correctOnLeft = rng.nextBool();
+      final leftOpt = correctOnLeft ? correctOpt : chosenDistractor;
+      final rightOpt = correctOnLeft ? chosenDistractor : correctOpt;
+
+      final twoOptions = [
+        GameQuestionOption(key: leftOpt.key, label: leftOpt.label, value: leftOpt.value),
+        GameQuestionOption(key: rightOpt.key, label: rightOpt.label, value: rightOpt.value),
+      ];
+
+      return GameQuestionModel(
+        questionNo: q.questionNo,
+        productId: q.productId,
+        imageUrl: q.imageUrl,
+        categoryName: q.categoryName,
+        promptTitle: q.promptTitle,
+        options: twoOptions,
+        correctOptionKey: q.correctOptionKey,
+      );
+    }).toList();
+  }
+
   Future<void> _startGame(String mode) async {
     setState(() {
       _selectedMode = mode;
@@ -242,6 +231,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
       _currentScore = 0;
       _correctCount = 0;
       _totalDurationSec = 0;
+      _comboStreak = 0;
+      _maxComboStreak = 0;
       _selectedOptionKey = null;
       _isAnswerChecked = false;
     });
@@ -260,9 +251,11 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
         return;
       }
 
+      final formattedQuestions = _formatTwoChoiceQuestions(list);
+
       if (mounted) {
         setState(() {
-          _questions = list;
+          _questions = formattedQuestions;
           _gameState = GameState.playing;
         });
         _startSessionTimer();
@@ -309,19 +302,23 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   void _onTimeOut() {
     _resetGyroState();
     HapticFeedback.mediumImpact();
+
+    // Waktu habis = reset combo & putar SFX salah
+    _comboStreak = 0;
+    _synthAudio.playWrong();
+
     setState(() {
       _remainingSeconds = 0;
       _isAnswerChecked = true;
     });
 
-    // Waktu habis = Salah, jeda 1.2 detik lalu lanjut
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) _goToNextQuestion();
     });
   }
 
   void _selectOption(String optionKey) {
-    if (_isAnswerChecked) return; // Cegah klik ganda
+    if (_isAnswerChecked) return; // Cegah double trigger
 
     _countdownTimer?.cancel();
     final currentQ = _questions[_currentQuestionIndex];
@@ -329,11 +326,27 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
 
     if (isCorrect) {
       HapticFeedback.lightImpact();
+      _comboStreak++;
+      if (_comboStreak > _maxComboStreak) {
+        _maxComboStreak = _comboStreak;
+      }
+
+      // Skor: 100 dasar + bonus waktu + bonus combo
       final timeBonus = _remainingSeconds * 10;
-      _currentScore += (100 + timeBonus);
+      final comboBonus = _comboStreak > 1 ? (_comboStreak - 1) * 25 : 0;
+      _currentScore += (100 + timeBonus + comboBonus);
       _correctCount++;
+
+      // Audio Feedback Synth
+      if (_comboStreak > 1) {
+        _synthAudio.playCombo(_comboStreak);
+      } else {
+        _synthAudio.playCorrect();
+      }
     } else {
       HapticFeedback.heavyImpact();
+      _comboStreak = 0;
+      _synthAudio.playWrong();
     }
 
     setState(() {
@@ -362,6 +375,9 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
     _sessionTimer?.cancel();
     _stopGyroPolling();
 
+    // Sound effect selesai game
+    _synthAudio.playGameOver();
+
     setState(() {
       _gameState = GameState.loading;
     });
@@ -383,7 +399,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
           _isNewHighScore = isHigh;
           _gameState = GameState.result;
         });
-        _loadUserStats(); // Refresh skor tertinggi
+        _loadUserStats();
       }
     } catch (_) {
       if (mounted) {
@@ -409,6 +425,33 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _synthAudio.isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+              color: _synthAudio.isMuted ? AppTheme.textMuted : AppTheme.primary,
+            ),
+            tooltip: _synthAudio.isMuted ? 'Nyalakan Audio Synth' : 'Matikan Audio (Mute)',
+            onPressed: () {
+              setState(() {
+                _synthAudio.toggleMute();
+              });
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _synthAudio.isMuted
+                        ? 'Audio synth dimatikan (Muted)'
+                        : 'Audio synth aktif (Unmuted)',
+                  ),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
         leading: _gameState == GameState.playing
             ? IconButton(
                 icon: const Icon(Icons.close),
@@ -416,11 +459,8 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Keluar dari Kuis?', maxLines: 2, overflow: TextOverflow.ellipsis),
-                      content: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 320),
-                        child: const Text('Progres kuis saat ini akan dibatalkan.'),
-                      ),
+                      title: const Text('Keluar dari Kuis?'),
+                      content: const Text('Progres kuis saat ini akan dibatalkan.'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
@@ -458,16 +498,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
       case GameState.lobby:
         return _buildLobbyView();
       case GameState.loading:
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: AppTheme.primary),
-              const SizedBox(height: 16),
-              const Text('Menyiapkan soal kuis dari katalog...'),
-            ],
-          ),
-        );
+        return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
       case GameState.playing:
         return _buildPlayingView();
       case GameState.result:
@@ -476,92 +507,101 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   }
 
   // ==========================================
-  // VIEW 1: LOBBY & PILIH MODE
+  // VIEW 1: LOBBY
   // ==========================================
   Widget _buildLobbyView() {
-    return RefreshIndicator(
-      onRefresh: _loadUserStats,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Banner Judul
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppTheme.primary, const Color(0xFF1E3A8A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primary.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Banner Maskot Game
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF0D9488)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.sports_esports_rounded, color: Colors.white, size: 28),
-                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'MINI GAME POS • 2-ARAH GYRO',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Text(
-                        'Mini Game POS',
+                        'Guess the Menu',
                         style: GoogleFonts.inter(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Miringkan HP ke KIRI atau KANAN untuk menjawab instan dengan sound effect synth!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          height: 1.3,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Guess the Menu! 🎯',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Asah ingatan kasir terhadap visual menu & harga jual resmi outlet secara interaktif.',
-                    style: GoogleFonts.inter(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Kartu Skor Tertinggi (Personal Best)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Rekor Terbaik Anda',
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
-                if (_isLoadingStats)
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(
+                    Icons.sports_esports_rounded,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
+          ),
+          const SizedBox(height: 20),
+
+          // High Score Stats Cards
+          Text(
+            'Rekor Terbaik Anda',
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          if (_isLoadingStats)
+            const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+          else
             Row(
               children: [
                 Expanded(
@@ -569,147 +609,72 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     icon: Icons.image_search_rounded,
                     title: 'Tebak Nama',
                     score: _userStats?.bestGuessName ?? 0,
-                    color: AppTheme.jadeTosca,
+                    color: AppTheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _GameStatCard(
-                    icon: Icons.payments_rounded,
+                    icon: Icons.payments_outlined,
                     title: 'Tebak Harga',
                     score: _userStats?.bestGuessPrice ?? 0,
-                    color: AppTheme.warningAmber,
+                    color: const Color(0xFF059669),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            // Pilihan Mode Permainan
-            Text(
-              'Pilih Mode Permainan',
-              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
+          // Pilihan Mode Permainan
+          Text(
+            'Pilih Mode Permainan',
+            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
 
-            _GameModeCard(
-              modeKey: 'guess_name',
-              icon: Icons.fastfood_rounded,
-              title: 'Mode 1: Tebak Nama Menu',
-              desc: 'Tampilkan foto makanan/minuman, tebak nama produk yang tepat dari 4 pilihan.',
-              badgeText: '5 Soal · 10 Detik/Soal',
-              color: AppTheme.jadeTosca,
-              onTap: _startGame,
-            ),
-            const SizedBox(height: 12),
+          _GameModeCard(
+            modeKey: 'guess_name',
+            icon: Icons.fastfood_rounded,
+            title: 'Mode 1: Tebak Nama Menu',
+            desc: 'Lihat gambar produk POS lalu miringkan HP ke kiri atau kanan untuk memilih nama menu yang tepat.',
+            badgeText: '5 Soal • 2 Pilihan Instan',
+            color: AppTheme.primary,
+            onTap: _startGame,
+          ),
+          const SizedBox(height: 12),
 
-            _GameModeCard(
-              modeKey: 'guess_price',
-              icon: Icons.price_check_rounded,
-              title: 'Mode 2: Tebak Harga Jual',
-              desc: 'Lihat foto & nama menu kasir, tebak harga resmi yang terdaftar di POS.',
-              badgeText: '5 Soal · Uji Hafalan Kasir',
-              color: AppTheme.warningAmber,
-              onTap: _startGame,
-            ),
-            const SizedBox(height: 24),
-
-            // Riwayat Permainan
-            if (_userStats != null && _userStats!.recentSessions.isNotEmpty) ...[
-              Text(
-                'Riwayat Permainan Terakhir',
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 10),
-              // List kecil & tetap (<=5 item): render langsung tanpa ListView
-              // bersarang (aturan A2/A5) agar SingleChildScrollView induk
-              // tetap satu-satunya scrollable.
-              ..._userStats!.recentSessions.take(5).map((s) {
-                final isName = s.mode == 'guess_name';
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.lightCardBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: isName
-                              ? AppTheme.jadeTosca.withValues(alpha: 0.12)
-                              : AppTheme.warningAmber.withValues(alpha: 0.14),
-                          child: Icon(
-                            isName ? Icons.fastfood_rounded : Icons.price_check_rounded,
-                            size: 18,
-                            color: isName ? AppTheme.jadeTosca : AppTheme.warningAmber,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isName ? 'Tebak Nama Menu' : 'Tebak Harga Jual',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              Text(
-                                '${s.correctCount}/5 Benar · ${s.durationSec}s',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          '${s.score} Poin',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primary,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ],
-        ),
+          _GameModeCard(
+            modeKey: 'guess_price',
+            icon: Icons.price_check_rounded,
+            title: 'Mode 2: Tebak Harga Jual',
+            desc: 'Hafalkan harga kasir POS! Miringkan HP ke kiri atau kanan untuk menebak harga jual yang tepat.',
+            badgeText: '5 Soal • 2 Pilihan Instan',
+            color: const Color(0xFF059669),
+            onTap: _startGame,
+          ),
+        ],
       ),
     );
   }
 
   // ==========================================
-  // VIEW 2: GAMEPLAY (5 SOAL DENGAN TIMER)
+  // VIEW 2: GAMEPLAY (2 PILIHAN INSTAN + COMBO)
   // ==========================================
   Widget _buildPlayingView() {
-    if (_questions.isEmpty) return const SizedBox.shrink();
+    if (_questions.isEmpty || _currentQuestionIndex >= _questions.length) {
+      return const SizedBox.shrink();
+    }
 
     final currentQ = _questions[_currentQuestionIndex];
     final timerProgress = _remainingSeconds / _timePerQuestion;
-    final gyroEnabled =
-        ref.watch(sensorSettingsProvider).valueOrNull?.tiltEnabled ?? true;
+    final gyroEnabled = _gyroControlEnabled;
 
     return Column(
       children: [
-        // Header Info Soal, Skor, & Timer Bar
+        // Header Status Permainan & Combo
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
           child: Column(
             children: [
               Row(
@@ -717,22 +682,18 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                 children: [
                   Text(
                     'Soal ${_currentQuestionIndex + 1} dari ${_questions.length}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                      fontSize: 13.5,
                       color: AppTheme.textPrimaryLight,
                     ),
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: AppTheme.warningAmber, size: 20),
+                      const Icon(Icons.star_rounded, color: AppTheme.warningAmber, size: 18),
                       const SizedBox(width: 4),
                       Text(
                         '$_currentScore Poin',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
@@ -743,75 +704,118 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
+
+              // Animated Combo Streak Banner
+              if (_comboStreak >= 2) ...[
+                AnimatedScale(
+                  scale: _comboStreak >= 2 ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.elasticOut,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x33F59E0B),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'COMBO ${_comboStreak}X BERUNTUN! (+${(_comboStreak - 1) * 25} Bonus)',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               // Progress Bar Waktu Hitung Mundur (10 detik)
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
                   value: timerProgress,
-                  minHeight: 8,
+                  minHeight: 7,
                   backgroundColor: AppTheme.lightCardBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _remainingSeconds <= 3 ? AppTheme.error : AppTheme.primary,
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  '⏱️ Sisa Waktu: $_remainingSeconds detik',
+                  '⏱️ Sisa Waktu: $_remainingSeconds dtk',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: _remainingSeconds <= 3 ? AppTheme.error : AppTheme.textSecondary,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
-              // Kontrol Gyroscope Hold-to-Answer (indikator arah + progres tahan)
-              _GyroHoldPanel(
+              // Panel Gyroscope 2-Arah (Miring Kiri & Miring Kanan)
+              _Gyro2WayPanel(
                 enabled: gyroEnabled,
                 sensorState: _gyroSensorState,
-                direction: _gyroDirection,
-                locked: _gyroAnswerLocked,
-                progress: _gyroProgress,
+                liveTilt: _liveTiltDirection,
+                isAnswerChecked: _isAnswerChecked,
               ),
             ],
           ),
         ),
 
-        // Area Soal & Foto Menu
+        // Area Foto Menu & Pertanyaan
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
             child: Column(
               children: [
                 // Badge Kategori
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: AppTheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     currentQ.categoryName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       color: AppTheme.primary,
-                      fontSize: 12,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // Card Gambar Menu
                 Container(
                   width: double.infinity,
-                  height: 200,
+                  height: 180,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -830,46 +834,59 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                       currentQ.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(Icons.fastfood_rounded, size: 64, color: AppTheme.textMuted),
+                        child: Icon(Icons.fastfood_rounded, size: 54, color: AppTheme.textMuted),
                       ),
-                      loadingBuilder: (ctx, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                      },
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
                 // Judul Pertanyaan
                 Text(
                   currentQ.promptTitle,
                   textAlign: TextAlign.center,
-                  maxLines: 4,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
-                    fontSize: _selectedMode == 'guess_price' ? 18 : 15,
+                    fontSize: _selectedMode == 'guess_price' ? 17 : 14.5,
                     color: AppTheme.textPrimaryLight,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // 4 Tombol Pilihan Ganda (huruf A/B/C/D sesuai posisi)
-                ...currentQ.options.asMap().entries.map((entry) {
-                  final opt = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _GameOptionButton(
-                      opt: opt,
-                      letter: String.fromCharCode(65 + entry.key),
-                      correctKey: currentQ.correctOptionKey,
-                      isAnswerChecked: _isAnswerChecked,
-                      selectedOptionKey: _selectedOptionKey,
-                      onSelect: _selectOption,
-                    ),
-                  );
-                }),
+                // DUA PILIHAN JAWABAN (KIRI vs KANAN)
+                if (currentQ.options.length >= 2) ...[
+                  Row(
+                    children: [
+                      // Opsi 1: Miring Kiri
+                      Expanded(
+                        child: _Game2WayOptionCard(
+                          direction: Tilt2WayDirection.left,
+                          opt: currentQ.options[0],
+                          isHighlighted: _liveTiltDirection == Tilt2WayDirection.left && !_isAnswerChecked,
+                          correctKey: currentQ.correctOptionKey,
+                          isAnswerChecked: _isAnswerChecked,
+                          selectedOptionKey: _selectedOptionKey,
+                          onSelect: _selectOption,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Opsi 2: Miring Kanan
+                      Expanded(
+                        child: _Game2WayOptionCard(
+                          direction: Tilt2WayDirection.right,
+                          opt: currentQ.options[1],
+                          isHighlighted: _liveTiltDirection == Tilt2WayDirection.right && !_isAnswerChecked,
+                          correctKey: currentQ.correctOptionKey,
+                          isAnswerChecked: _isAnswerChecked,
+                          selectedOptionKey: _selectedOptionKey,
+                          onSelect: _selectOption,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -897,21 +914,21 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           // Ikon Trofi
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
               color: AppTheme.warningAmber.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.emoji_events_rounded,
-              size: 72,
+              size: 64,
               color: AppTheme.warningAmber,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           if (_isNewHighScore) ...[
             Container(
@@ -946,22 +963,20 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             badgeTitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: 14.5,
               fontWeight: FontWeight.w700,
               color: badgeColor,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Card Skor Utama
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -980,7 +995,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                   'Total Skor Anda',
                   style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   '$_currentScore',
                   style: GoogleFonts.inter(
@@ -989,7 +1004,7 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                     color: AppTheme.primary,
                   ),
                 ),
-                const Divider(height: 32),
+                const Divider(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -1000,46 +1015,203 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
                       color: AppTheme.jadeTosca,
                     ),
                     _GameResultMetric(
-                      label: 'Waktu Bermain',
-                      value: '${_totalDurationSec}s',
-                      icon: Icons.timer_rounded,
-                      color: AppTheme.warningAmber,
+                      label: 'Combo Beruntun',
+                      value: '$_maxComboStreak x 🔥',
+                      icon: Icons.local_fire_department_rounded,
+                      color: const Color(0xFFF59E0B),
+                    ),
+                    _GameResultMetric(
+                      label: 'Total Waktu',
+                      value: '$_totalDurationSec dtk',
+                      icon: Icons.timer_outlined,
+                      color: AppTheme.primary,
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // Tombol Aksi
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              minimumSize: const Size.fromHeight(50),
-            ),
-            onPressed: () => _startGame(_selectedMode),
-            child: Text(
-              'Main Lagi 🔁',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: Colors.white,
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _gameState = GameState.lobby),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: AppTheme.lightCardBorder),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Menu Utama', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _startGame(_selectedMode),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text(
+                    'Main Lagi 🔁',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Panel status gyroscope 2-arah (Kiri & Kanan) dengan visual live indicator
+class _Gyro2WayPanel extends StatelessWidget {
+  final bool enabled;
+  final _GyroSensorState sensorState;
+  final Tilt2WayDirection? liveTilt;
+  final bool isAnswerChecked;
+
+  const _Gyro2WayPanel({
+    required this.enabled,
+    required this.sensorState,
+    required this.liveTilt,
+    required this.isAnswerChecked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) {
+      return _buildNotice(
+        icon: Icons.screen_rotation_rounded,
+        text: 'Kontrol miring nonaktif. Gunakan tombol sentuh.',
+        color: AppTheme.textSecondary,
+      );
+    }
+
+    if (sensorState == _GyroSensorState.unavailable) {
+      return _buildNotice(
+        icon: Icons.touch_app_rounded,
+        text: 'Sensor tidak tersedia. Gunakan tombol sentuh.',
+        color: AppTheme.error,
+      );
+    }
+
+    if (sensorState == _GyroSensorState.initializing) {
+      return _buildNotice(
+        icon: Icons.sensors_rounded,
+        text: 'Mengaktifkan sensor gyroscope...',
+        color: AppTheme.textSecondary,
+      );
+    }
+
+    if (isAnswerChecked) {
+      return _buildNotice(
+        icon: Icons.check_circle_rounded,
+        text: 'Jawaban terkunci.',
+        color: AppTheme.successGreen,
+      );
+    }
+
+    // Sensor aktif: Tampilkan kontrol 2-arah
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.lightCardSurfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.lightCardBorder),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildDirectionPill(
+            direction: Tilt2WayDirection.left,
+            isActive: liveTilt == Tilt2WayDirection.left,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'atau',
+              style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textMuted),
             ),
           ),
-          const SizedBox(height: 12),
+          _buildDirectionPill(
+            direction: Tilt2WayDirection.right,
+            isActive: liveTilt == Tilt2WayDirection.right,
+          ),
+        ],
+      ),
+    );
+  }
 
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
+  Widget _buildDirectionPill({
+    required Tilt2WayDirection direction,
+    required bool isActive,
+  }) {
+    final isLeft = direction == Tilt2WayDirection.left;
+    final color = isActive ? AppTheme.jadeTosca : AppTheme.textSecondary;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isActive ? AppTheme.jadeTosca.withValues(alpha: 0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isActive ? AppTheme.jadeTosca : Colors.transparent,
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLeft) Icon(Icons.arrow_back_rounded, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            isLeft ? '⬅️ Miring Kiri' : 'Miring Kanan ➡️',
+            style: GoogleFonts.inter(
+              fontSize: 10.5,
+              fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+              color: color,
             ),
-            onPressed: () => setState(() => _gameState = GameState.lobby),
+          ),
+          if (!isLeft) Icon(Icons.arrow_forward_rounded, size: 12, color: color),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotice({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.lightCardSurfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.lightCardBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Flexible(
             child: Text(
-              'Kembali ke Menu Game',
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
           ),
@@ -1049,7 +1221,139 @@ class _GameHomeScreenState extends ConsumerState<GameHomeScreen> {
   }
 }
 
-/// Kartu skor rekor per mode (aturan E23: widget class const, bukan helper).
+/// Kartu pilihan jawaban 2-arah (Miring Kiri atau Miring Kanan)
+class _Game2WayOptionCard extends StatelessWidget {
+  final Tilt2WayDirection direction;
+  final GameQuestionOption opt;
+  final bool isHighlighted;
+  final String correctKey;
+  final bool isAnswerChecked;
+  final String? selectedOptionKey;
+  final ValueChanged<String> onSelect;
+
+  const _Game2WayOptionCard({
+    required this.direction,
+    required this.opt,
+    required this.isHighlighted,
+    required this.correctKey,
+    required this.isAnswerChecked,
+    required this.selectedOptionKey,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color cardColor = isHighlighted ? const Color(0xFFF0FDFA) : Colors.white;
+    Color borderColor = isHighlighted ? AppTheme.jadeTosca : AppTheme.lightCardBorder;
+    Color textColor = AppTheme.textPrimaryLight;
+    Widget? statusIcon;
+
+    if (isAnswerChecked) {
+      if (opt.key == correctKey) {
+        cardColor = const Color(0xFFDCFCE7);
+        borderColor = const Color(0xFF16A34A);
+        textColor = const Color(0xFF15803D);
+        statusIcon = const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18);
+      } else if (opt.key == selectedOptionKey) {
+        cardColor = const Color(0xFFFEE2E2);
+        borderColor = const Color(0xFFDC2626);
+        textColor = const Color(0xFFB91C1C);
+        statusIcon = const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626), size: 18);
+      }
+    }
+
+    final isLeft = direction == Tilt2WayDirection.left;
+
+    return InkWell(
+      onTap: isAnswerChecked ? null : () => onSelect(opt.key),
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: borderColor,
+            width: isHighlighted || (isAnswerChecked && opt.key == correctKey) ? 2.0 : 1.2,
+          ),
+          boxShadow: isHighlighted
+              ? [
+                  BoxShadow(
+                    color: AppTheme.jadeTosca.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header Arah & Huruf Opsi
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: isHighlighted
+                        ? AppTheme.jadeTosca
+                        : AppTheme.lightCardSurfaceElevated,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isLeft)
+                        Icon(
+                          Icons.arrow_back_rounded,
+                          size: 11,
+                          color: isHighlighted ? Colors.white : AppTheme.textSecondary,
+                        ),
+                      Text(
+                        isLeft ? ' KIRI (${direction.letter})' : '(${direction.letter}) KANAN ',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          color: isHighlighted ? Colors.white : AppTheme.textSecondary,
+                        ),
+                      ),
+                      if (!isLeft)
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 11,
+                          color: isHighlighted ? Colors.white : AppTheme.textSecondary,
+                        ),
+                    ],
+                  ),
+                ),
+                ?statusIcon,
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Teks Pilihan Jawaban
+            Text(
+              opt.label,
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 13.5,
+                color: textColor,
+                height: 1.25,
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _GameStatCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -1066,7 +1370,7 @@ class _GameStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -1075,29 +1379,24 @@ class _GameStatCard extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 20,
+            radius: 18,
             backgroundColor: color.withValues(alpha: 0.12),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 10.5),
                 ),
-                const SizedBox(height: 2),
                 Text(
                   '$score Poin',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontSize: 13.5,
                     color: AppTheme.textPrimaryLight,
                   ),
                 ),
@@ -1110,7 +1409,6 @@ class _GameStatCard extends StatelessWidget {
   }
 }
 
-/// Kartu mode permainan (aturan E23: widget class const, bukan helper).
 class _GameModeCard extends StatelessWidget {
   final String modeKey;
   final IconData icon;
@@ -1141,57 +1439,41 @@ class _GameModeCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 24,
+              radius: 22,
               backgroundColor: color.withValues(alpha: 0.12),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     desc,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: AppTheme.textMuted, fontSize: 12, height: 1.3),
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 11.5, height: 1.3),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       badgeText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         color: color,
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1199,7 +1481,7 @@ class _GameModeCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.textMuted),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
           ],
         ),
       ),
@@ -1207,331 +1489,6 @@ class _GameModeCard extends StatelessWidget {
   }
 }
 
-class _GameOptionButton extends StatelessWidget {
-  final GameQuestionOption opt;
-  final String letter;
-  final String correctKey;
-  final bool isAnswerChecked;
-  final String? selectedOptionKey;
-  final ValueChanged<String> onSelect;
-
-  const _GameOptionButton({
-    required this.opt,
-    required this.letter,
-    required this.correctKey,
-    required this.isAnswerChecked,
-    required this.selectedOptionKey,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Color buttonColor = Colors.white;
-    Color textColor = AppTheme.textPrimaryLight;
-    Color borderColor = AppTheme.lightCardBorder;
-    Widget? trailingIcon;
-
-    if (isAnswerChecked) {
-      if (opt.key == correctKey) {
-        // Jawaban Benar -> Selalu Hijau
-        buttonColor = AppTheme.successSurface; // Light green
-        borderColor = AppTheme.successGreenStrong;
-        textColor = AppTheme.successGreenDeep;
-        trailingIcon = const Icon(Icons.check_circle_rounded, color: AppTheme.successGreenStrong);
-      } else if (opt.key == selectedOptionKey) {
-        // Jawaban Terpilih Tapi Salah -> Merah
-        buttonColor = AppTheme.dangerSurface; // Light red
-        borderColor = AppTheme.dangerRedStrong;
-        textColor = AppTheme.dangerRedDeep;
-        trailingIcon = const Icon(Icons.cancel_rounded, color: AppTheme.dangerRedStrong);
-      }
-    }
-
-    return InkWell(
-      onTap: isAnswerChecked ? null : () => onSelect(opt.key),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: buttonColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 1.5),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppTheme.lightCardSurfaceElevated,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                letter,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                opt.label,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: textColor,
-                ),
-              ),
-            ),
-            ?trailingIcon,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Panel indikator kontrol gyroscope hold-to-answer (aturan E23: widget class const).
-///
-/// Menampilkan:
-///   - status ketersediaan sensor (fallback ke tombol sentuh)
-///   - legenda 4 arah (Atas A / Kanan B / Kiri C / Bawah D)
-///   - arah yang sedang ditahan + progress bar + hitung mundur
-class _GyroHoldPanel extends StatelessWidget {
-  final bool enabled;
-  final _GyroSensorState sensorState;
-  final TiltDirection? direction;
-  final bool locked;
-  final ValueListenable<double> progress;
-
-  const _GyroHoldPanel({
-    required this.enabled,
-    required this.sensorState,
-    required this.direction,
-    required this.locked,
-    required this.progress,
-  });
-
-  static IconData _iconFor(TiltDirection direction) {
-    switch (direction) {
-      case TiltDirection.up:
-        return Icons.keyboard_arrow_up_rounded;
-      case TiltDirection.right:
-        return Icons.keyboard_arrow_right_rounded;
-      case TiltDirection.left:
-        return Icons.keyboard_arrow_left_rounded;
-      case TiltDirection.down:
-        return Icons.keyboard_arrow_down_rounded;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!enabled) {
-      return _buildNotice(
-        icon: Icons.screen_rotation_rounded,
-        text: 'Kontrol miring nonaktif (Pengaturan > Sensor). Gunakan tombol jawaban.',
-        color: AppTheme.textSecondary,
-      );
-    }
-
-    switch (sensorState) {
-      case _GyroSensorState.initializing:
-        return _buildNotice(
-          icon: Icons.sensors_rounded,
-          text: 'Mengaktifkan sensor gyroscope...',
-          color: AppTheme.textSecondary,
-        );
-      case _GyroSensorState.unavailable:
-        return _buildNotice(
-          icon: Icons.touch_app_rounded,
-          text: 'Sensor tidak tersedia. Gunakan tombol jawaban.',
-          color: AppTheme.error,
-        );
-      case _GyroSensorState.ready:
-        break;
-    }
-
-    if (locked) {
-      return _buildNotice(
-        icon: Icons.check_circle_rounded,
-        text: 'Jawaban terkunci lewat gyroscope.',
-        color: AppTheme.successGreen,
-      );
-    }
-
-    final dir = direction;
-    if (dir == null) {
-      return _buildLegend();
-    }
-    return _buildHold(dir);
-  }
-
-  Widget _buildNotice({
-    required IconData icon,
-    required String text,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.lightCardSurfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.lightCardBorder),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegend() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.lightCardSurfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.lightCardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.screen_rotation_rounded,
-                  size: 16, color: AppTheme.primary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Miringkan HP & tahan 3 detik untuk menjawab',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 10,
-            runSpacing: 4,
-            children: TiltDirection.values.map((dir) {
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_iconFor(dir), size: 14, color: AppTheme.primary),
-                  const SizedBox(width: 2),
-                  Text(
-                    '${dir.letter} ${dir.label}',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHold(TiltDirection dir) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(_iconFor(dir), size: 18, color: AppTheme.primary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Tahan: ${dir.label} (${dir.letter})',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ),
-              ValueListenableBuilder<double>(
-                valueListenable: progress,
-                builder: (context, value, _) {
-                  final remaining = (kTiltHoldDuration.inMilliseconds *
-                          (1 - value) /
-                          1000)
-                      .ceil();
-                  return Text(
-                    '$remaining dtk',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.primary,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ValueListenableBuilder<double>(
-            valueListenable: progress,
-            builder: (context, value, _) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: value,
-                  minHeight: 6,
-                  backgroundColor: AppTheme.lightCardBorder,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(AppTheme.primary),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Metrik hasil permainan (aturan E23: widget class const, bukan helper).
 class _GameResultMetric extends StatelessWidget {
   final String label;
   final String value;
@@ -1549,22 +1506,15 @@ class _GameResultMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 6),
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 4),
         Text(
           value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-          ),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15),
         ),
         Text(
           label,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+          style: TextStyle(color: AppTheme.textMuted, fontSize: 10.5),
         ),
       ],
     );

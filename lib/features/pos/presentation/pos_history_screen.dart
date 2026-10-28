@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +15,7 @@ import '../../settings/presentation/currency_provider.dart';
 import '../data/pos_catalog_repository.dart';
 import '../domain/pos_models.dart';
 import 'pos_catalog_provider.dart';
+import 'pos_receipt_dialog.dart';
 
 /// Format jam struk riwayat — top-level, bukan di build (aturan E21).
 final _historyTimeFmt = DateFormat('HH:mm');
@@ -116,6 +117,18 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
     }
   }
 
+  void _showTransactionDetail(PosTransactionModel tx) {
+    showDialog(
+      context: context,
+      builder: (ctx) => PosReceiptDialog(
+        transaction: tx,
+        isDetailMode: true,
+        canVoid: _canVoid,
+        onVoid: () => _askVoidReason(tx),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
@@ -168,7 +181,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
       body: Column(
         children: [
           // Baris filter aktif (cabang + periode) — hanya pada mode dashboard.
-          if (widget.useDashboardFilters && isOwner)
+          // Aktif untuk semua role
             Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Container(
@@ -203,7 +216,7 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                       selectedDateFilter: selectedDateFilter,
                       selectedCustomDate: selectedCustomDate,
                       isManager: isOutletLocked,
-                      ownerTitle: 'Filter Riwayat Transaksi',
+                      ownerTitle: isOwner ? 'Filter Riwayat Transaksi' : 'Filter Periode Waktu',
                     ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
@@ -220,6 +233,200 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
               ),
             ),
           ),
+          // Filter Periode Cepat (Hari Ini, 7 Hari, 30 Hari, dll)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final filter in DashboardDateFilter.values) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          filter.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: (selectedCustomDate == null && selectedDateFilter == filter)
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: (selectedCustomDate == null && selectedDateFilter == filter)
+                                ? Colors.white
+                                : AppTheme.textSecondaryDark,
+                          ),
+                        ),
+                        selected: selectedCustomDate == null && selectedDateFilter == filter,
+                        selectedColor: AppTheme.jadeTosca,
+                        backgroundColor: AppTheme.darkCardSurfaceElevated,
+                        side: BorderSide(
+                          color: (selectedCustomDate == null && selectedDateFilter == filter)
+                              ? AppTheme.jadeTosca
+                              : AppTheme.darkCardBorder,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        showCheckmark: false,
+                        onSelected: (selected) {
+                          if (selected) {
+                            ref.read(selectedCustomDateProvider.notifier).state = null;
+                            ref.read(selectedDateFilterProvider.notifier).state = filter;
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                  ActionChip(
+                    avatar: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 13,
+                      color: selectedCustomDate != null ? Colors.white : AppTheme.textSecondaryDark,
+                    ),
+                    label: Text(
+                      selectedCustomDate != null
+                          ? DateFormat('d MMM yyyy', 'id_ID').format(selectedCustomDate)
+                          : 'Kalender',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: selectedCustomDate != null ? FontWeight.w600 : FontWeight.w500,
+                        color: selectedCustomDate != null ? Colors.white : AppTheme.textSecondaryDark,
+                      ),
+                    ),
+                    backgroundColor: selectedCustomDate != null
+                        ? AppTheme.jadeTosca
+                        : AppTheme.darkCardSurfaceElevated,
+                    side: BorderSide(
+                      color: selectedCustomDate != null
+                          ? AppTheme.jadeTosca
+                          : AppTheme.darkCardBorder,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedCustomDate ?? now,
+                        firstDate: DateTime(2020),
+                        lastDate: now,
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.jadeTosca,
+                                onPrimary: Colors.white,
+                                surface: AppTheme.darkCardSurfaceElevated,
+                                onSurface: AppTheme.textPrimaryDark,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        ref.read(selectedCustomDateProvider.notifier).state = picked;
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Filter Periode Cepat (Hari Ini, 7 Hari, 30 Hari, dll)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final filter in DashboardDateFilter.values) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          filter.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: (selectedCustomDate == null && selectedDateFilter == filter)
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: (selectedCustomDate == null && selectedDateFilter == filter)
+                                ? Colors.white
+                                : AppTheme.textSecondaryDark,
+                          ),
+                        ),
+                        selected: selectedCustomDate == null && selectedDateFilter == filter,
+                        selectedColor: AppTheme.jadeTosca,
+                        backgroundColor: AppTheme.darkCardSurfaceElevated,
+                        side: BorderSide(
+                          color: (selectedCustomDate == null && selectedDateFilter == filter)
+                              ? AppTheme.jadeTosca
+                              : AppTheme.darkCardBorder,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        showCheckmark: false,
+                        onSelected: (selected) {
+                          if (selected) {
+                            ref.read(selectedCustomDateProvider.notifier).state = null;
+                            ref.read(selectedDateFilterProvider.notifier).state = filter;
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                  ActionChip(
+                    avatar: Icon(
+                      Icons.calendar_today_rounded,
+                      size: 13,
+                      color: selectedCustomDate != null ? Colors.white : AppTheme.textSecondaryDark,
+                    ),
+                    label: Text(
+                      selectedCustomDate != null
+                          ? DateFormat('d MMM yyyy', 'id_ID').format(selectedCustomDate)
+                          : 'Kalender',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: selectedCustomDate != null ? FontWeight.w600 : FontWeight.w500,
+                        color: selectedCustomDate != null ? Colors.white : AppTheme.textSecondaryDark,
+                      ),
+                    ),
+                    backgroundColor: selectedCustomDate != null
+                        ? AppTheme.jadeTosca
+                        : AppTheme.darkCardSurfaceElevated,
+                    side: BorderSide(
+                      color: selectedCustomDate != null
+                          ? AppTheme.jadeTosca
+                          : AppTheme.darkCardBorder,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedCustomDate ?? now,
+                        firstDate: DateTime(2020),
+                        lastDate: now,
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.jadeTosca,
+                                onPrimary: Colors.white,
+                                surface: AppTheme.darkCardSurfaceElevated,
+                                onSurface: AppTheme.textPrimaryDark,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        ref.read(selectedCustomDateProvider.notifier).state = picked;
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: AsyncStateView<List<PosTransactionModel>>(
               value: ref.watch(_historyProvider),
@@ -229,9 +436,21 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
               skeleton: const SkeletonList(),
               dataBuilder: (list) {
                 if (list.isEmpty) {
-                  return const EmptyStateView(
-                    message: 'Belum ada transaksi pada periode ini.',
-                    icon: Icons.receipt_long_outlined,
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(_historyProvider);
+                      await ref.read(_historyProvider.future);
+                    },
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 80),
+                        EmptyStateView(
+                          message: 'Belum ada transaksi pada periode ini.',
+                          icon: Icons.receipt_long_outlined,
+                        ),
+                      ],
+                    ),
                   );
                 }
                 // Kartu ringkasan total di atas daftar (lihat mockup Riwayat Transaksi).
@@ -243,27 +462,35 @@ class _PosHistoryScreenState extends ConsumerState<PosHistoryScreen> {
                     .fold<int>(0, (sum, tx) => sum + tx.totalIdr);
                 final qris = totalAll - tunai;
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  itemCount: list.length + 1,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    if (i == 0) {
-                      return _HistorySummaryCard(
-                        totalText: ref.money(totalAll),
-                        tunaiText: ref.money(tunai),
-                        qrisText: ref.money(qris),
-                        count: list.where((tx) => tx.status != 'voided').length,
-                      );
-                    }
-                    final tx = list[i - 1];
-                    return _HistoryCard(
-                      tx: tx,
-                      canVoid: _canVoid,
-                      voiding: _voiding,
-                      onVoid: () => _askVoidReason(tx),
-                    );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(_historyProvider);
+                    await ref.read(_historyProvider.future);
                   },
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    itemCount: list.length + 1,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      if (i == 0) {
+                        return _HistorySummaryCard(
+                          totalText: ref.money(totalAll),
+                          tunaiText: ref.money(tunai),
+                          qrisText: ref.money(qris),
+                          count: list.where((tx) => tx.status != 'voided').length,
+                        );
+                      }
+                      final tx = list[i - 1];
+                      return _HistoryCard(
+                        tx: tx,
+                        canVoid: _canVoid,
+                        voiding: _voiding,
+                        onVoid: () => _askVoidReason(tx),
+                        onDetail: () => _showTransactionDetail(tx),
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -365,90 +592,144 @@ class _HistoryCard extends ConsumerWidget {
   final bool canVoid;
   final bool voiding;
   final VoidCallback onVoid;
+  final VoidCallback onDetail;
 
   const _HistoryCard({
     required this.tx,
     required this.canVoid,
     required this.voiding,
     required this.onVoid,
+    required this.onDetail,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final voided = tx.status == 'voided';
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: voided ? AppTheme.lightBackground : Colors.white,
+    final isPending = tx.isOfflinePending || tx.status == 'offline_pending';
+    final isFailed = tx.status == 'failed';
+
+    Color badgeBg;
+    Color badgeTextColor;
+    String badgeText;
+
+    if (voided) {
+      badgeBg = const Color(0xFFFEE2E2);
+      badgeTextColor = AppTheme.dangerRed;
+      badgeText = 'VOID';
+    } else if (isFailed) {
+      badgeBg = const Color(0xFFFEE2E2);
+      badgeTextColor = AppTheme.dangerRed;
+      badgeText = '${_historyTimeFmt.format(tx.createdAt)} • Gagal Sinkron';
+    } else if (isPending) {
+      badgeBg = const Color(0xFFFEF3C7);
+      badgeTextColor = const Color(0xFFB45309);
+      badgeText = '${_historyTimeFmt.format(tx.createdAt)} • Menunggu Sinkron';
+    } else {
+      badgeBg = const Color(0xFFDCFCE7);
+      badgeTextColor = Colors.green.shade800;
+      badgeText = '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}';
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onDetail,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.darkCardBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: voided ? const Color(0xFFF8FAFC) : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.darkCardBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(tx.receiptNo,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700, fontSize: 13)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(tx.receiptNo,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      badgeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: badgeTextColor),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: voided
-                      ? AppTheme.dangerSurface
-                      : AppTheme.successSurface,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  voided ? 'VOID' : '${_historyTimeFmt.format(tx.createdAt)} • ${tx.status}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: voided
-                          ? AppTheme.dangerRed
-                          : Colors.green.shade800),
-                ),
+              const SizedBox(height: 4),
+              Text(
+                '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${ref.money(tx.totalIdr)}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: onDetail,
+                    icon: const Icon(Icons.receipt_long_outlined,
+                        size: 15, color: AppTheme.jadeTosca),
+                    label: Text('Detail',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.jadeTosca)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppTheme.jadeTosca),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  if (!voided && !isPending && !isFailed && canVoid) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: voiding ? null : onVoid,
+                      icon: const Icon(Icons.undo_rounded,
+                          size: 15, color: AppTheme.dangerRed),
+                      label: Text('Void',
+                          style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.dangerRed)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppTheme.dangerRed),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${tx.items.fold(0, (s, e) => s + e.quantity)} item • ${tx.cashierName} • ${ref.money(tx.totalIdr)}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
-          ),
-          if (!voided && canVoid) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: voiding ? null : onVoid,
-                // Merah tua, bukan merah terang. Merah #EF4444 di atas rose
-                // hanya 3,44:1, sedangkan teks 12 pt butuh 4,5:1. Merah
-                // #B91C1C di atas rose yang sama mencapai 5,9:1.
-                icon: const Icon(Icons.undo_rounded,
-                    size: 16, color: AppTheme.dangerRedDeep),
-                label: Text('Void',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: AppTheme.dangerRedDeep)),
-                style: OutlinedButton.styleFrom(
-                  // Tema memberi latar tosca pada tombol sekunder. Ikon dan
-                  // label di sini merah, jadi latarnya diarahkan ke rose.
-                  backgroundColor: AppTheme.dangerSurfacePale,
-                  side: const BorderSide(color: AppTheme.dangerRed),
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

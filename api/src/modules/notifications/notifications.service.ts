@@ -101,30 +101,9 @@ export class NotificationsService {
         unread_count: unreadCount,
         notifications,
       };
-    } catch (_) {
-      return {
-        unread_count: 2,
-        notifications: [
-          {
-            id: 'notif-001',
-            user_id: userId,
-            title: 'Peringatan Stok Kritis!',
-            body: 'Stok Susu Fresh Milk di Sudirman (HQ) tersisa 3 liter (ambang batas: 10 liter).',
-            type: 'low_stock',
-            is_read: false,
-            created_at: new Date(),
-          },
-          {
-            id: 'notif-002',
-            user_id: userId,
-            title: 'Target Harian Tercapai 🚀',
-            body: 'Outlet Senopati telah mencapai 105% dari target penjualan harian Rp 2.500.000.',
-            type: 'target_achieved',
-            is_read: false,
-            created_at: new Date(Date.now() - 3600000),
-          },
-        ],
-      };
+    } catch (err: unknown) {
+      if (err instanceof AppError) throw err;
+      throw new AppError('DATABASE_ERROR', 500, 'Gagal memuat notifikasi dari database.');
     }
   }
 

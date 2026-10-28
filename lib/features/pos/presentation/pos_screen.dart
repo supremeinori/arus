@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/sync/sync_service.dart';
+import '../../../core/utils/money_formatter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/catalog_provider.dart';
@@ -15,6 +16,7 @@ import 'pos_menu_thumbnail.dart';
 import 'pos_catalog_provider.dart';
 import 'pos_checkout_sheet.dart';
 import '../data/pos_catalog_repository.dart';
+import '../../analytics/presentation/analytics_provider.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -49,6 +51,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           ),
         );
         ref.invalidate(productListProvider);
+        ref.invalidate(posCatalogProvider);
+        ref.invalidate(posHistoryProvider);
+        ref.invalidate(shiftSummaryProvider);
       }
     } catch (_) {
       // Offline safe fallback
@@ -178,6 +183,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ),
                 );
                 ref.invalidate(productListProvider);
+                ref.invalidate(posCatalogProvider);
+                ref.invalidate(posHistoryProvider);
+                ref.invalidate(shiftSummaryProvider);
               } catch (e) {
                 messenger.showSnackBar(
                   SnackBar(
@@ -855,6 +863,46 @@ class _RedesignedProductCard extends StatelessWidget {
 
                   const SizedBox(height: 8),
 
+                  // Signature Badge ARUS: Estimasi Profit (jika HPP tersedia untuk akun manajemen)
+                  if (catalogItem.product.costIdr != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0x1F10B981),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: const Color(0x4010B981),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.trending_up_rounded,
+                            size: 11,
+                            color: Color(0xFF10B981),
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              'Profit: ${MoneyFormatter.format(catalogItem.product.priceIdr - catalogItem.product.costIdr!, currency: "IDR")} (${catalogItem.product.priceIdr > 0 ? (((catalogItem.product.priceIdr - catalogItem.product.costIdr!) / catalogItem.product.priceIdr) * 100).round() : 0}%)',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+
                   // 3. Konten Bawah: Harga & Tombol + ADD
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1019,6 +1067,13 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                     separatorBuilder: (_, _) => const Divider(height: 12, color: AppTheme.darkCardBorder),
                     itemBuilder: (context, i) {
                       final item = cartState.items[i];
+                      final catalogItems = ref.watch(posCatalogProvider).valueOrNull ?? [];
+                      final catalogItem = catalogItems.cast<PosCatalogItem?>().firstWhere(
+                        (c) => c?.product.id == item.productId,
+                        orElse: () => null,
+                      );
+                      final maxPortions = catalogItem?.maxPortions ?? 0;
+                      final isMaxReached = maxPortions > 0 && item.quantity >= maxPortions;
                       return Row(
                         children: [
                           Expanded(
@@ -1062,8 +1117,28 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline, size: 18, color: AppTheme.jadeTosca),
-                            onPressed: () => notifier.addProductById(item.productId),
+                            icon: Icon(
+                              Icons.add_circle_outline,
+                              size: 18,
+                              color: isMaxReached ? AppTheme.textMutedDark : AppTheme.jadeTosca,
+                            ),
+                            onPressed: () {
+                              final error = notifier.incrementProductWithValidation(
+                                item.productId,
+                                maxPortions: maxPortions,
+                                productName: item.productName,
+                              );
+                              if (error != null) {
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(error),
+                                    backgroundColor: const Color(0xFFD97706),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
                             tooltip: 'Tambah',
                             visualDensity: VisualDensity.compact,
                           ),

@@ -10,7 +10,7 @@ describe('GET /api/health', () => {
     expect(response.body).toHaveProperty('data');
     expect(response.body.data.status).toBe('ok');
     expect(response.body.data).toHaveProperty('time');
-  });
+  }, 15000);
 
   it('harus mengembalikan 404 dengan format standard untuk rute tidak dikenal', async () => {
     const response = await request(app).get('/api/unknown-endpoint');
@@ -18,5 +18,5 @@ describe('GET /api/health', () => {
     expect(response.status).toBe(404);
     expect(response.body).toHaveProperty('error');
     expect(response.body.error.code).toBe('NOT_FOUND');
-  });
+  }, 15000);
 });

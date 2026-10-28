@@ -98,8 +98,8 @@ class DailyProfitComparisonModel {
     return ((todayRevenue - yesterdayRevenue) / yesterdayRevenue.abs()) * 100;
   }
 
-  int get todayProfit => today.grossProfitIdr ?? (todayRevenue * 0.4).round();
-  int get yesterdayProfit => yesterday.grossProfitIdr ?? (yesterdayRevenue * 0.4).round();
+  int get todayProfit => today.grossProfitIdr ?? (today.grossMarginPct != null && today.revenueIdr > 0 ? (today.revenueIdr * today.grossMarginPct! / 100).round() : 0);
+  int get yesterdayProfit => yesterday.grossProfitIdr ?? (yesterday.grossMarginPct != null && yesterday.revenueIdr > 0 ? (yesterday.revenueIdr * yesterday.grossMarginPct! / 100).round() : 0);
   int get profitDiff => todayProfit - yesterdayProfit;
   double get profitPctChange {
     if (yesterdayProfit == 0) return todayProfit > 0 ? 100.0 : 0.0;
@@ -187,12 +187,15 @@ final dailyProfitComparisonProvider = Provider.autoDispose<AsyncValue<DailyProfi
   // Ambil data kemarin dari sales trend jika tersedia
   final yesterdayPoint = trend.where((p) => p.date == yesterdayStr).firstOrNull;
 
-  final yesterdayRevenue = yesterdayPoint?.revenueIdr ?? (overview.revenueIdr * 0.88).round();
-  final yesterdayCount = yesterdayPoint?.count ?? (overview.transactionCount * 0.9).round();
+  // Jika data kemarin tidak tersedia, gunakan data hari ini (0% perubahan) — TIDAK memfabrikasi angka.
+  final yesterdayRevenue = yesterdayPoint?.revenueIdr ?? overview.revenueIdr;
+  final yesterdayCount = yesterdayPoint?.count ?? overview.transactionCount;
 
   final marginFraction = (overview.grossMarginPct != null && overview.grossMarginPct! > 0)
       ? (overview.grossMarginPct! / 100.0)
-      : 0.4;
+      : (overview.grossProfitIdr != null && overview.revenueIdr > 0)
+          ? (overview.grossProfitIdr! / overview.revenueIdr)
+          : 0.0;
   final yesterdayProfit = (yesterdayRevenue * marginFraction).round();
 
   final yesterdayModel = AnalyticsOverviewModel(
@@ -216,7 +219,54 @@ final dailyProfitComparisonProvider = Provider.autoDispose<AsyncValue<DailyProfi
 final salesTrendProvider = FutureProvider.autoDispose<List<SalesTrendPoint>>((ref) async {
   final repo = ref.watch(analyticsRepositoryProvider);
   final outletId = getEffectiveOutletId(ref);
-  return repo.getSalesTrend(outletId: outletId, days: 7);
+  final dateFilter = ref.watch(selectedDateFilterProvider);
+  final customDate = ref.watch(selectedCustomDateProvider);
+
+  final now = DateTime.now();
+  String? fromStr;
+  String? toStr;
+  int? days;
+
+  if (customDate != null) {
+    fromStr = DateFormat('yyyy-MM-dd').format(customDate.subtract(const Duration(days: 6)));
+    toStr = DateFormat('yyyy-MM-dd').format(customDate);
+    days = 7;
+  } else {
+    switch (dateFilter) {
+      case DashboardDateFilter.today:
+        fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 6)));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        days = 7;
+        break;
+      case DashboardDateFilter.yesterday:
+        final yesterday = now.subtract(const Duration(days: 1));
+        fromStr = DateFormat('yyyy-MM-dd').format(yesterday.subtract(const Duration(days: 6)));
+        toStr = DateFormat('yyyy-MM-dd').format(yesterday);
+        days = 7;
+        break;
+      case DashboardDateFilter.last7Days:
+        fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 6)));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        days = 7;
+        break;
+      case DashboardDateFilter.last30Days:
+        fromStr = DateFormat('yyyy-MM-dd').format(now.subtract(const Duration(days: 29)));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        days = 30;
+        break;
+      case DashboardDateFilter.thisMonth:
+        fromStr = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month, 1));
+        toStr = DateFormat('yyyy-MM-dd').format(now);
+        break;
+    }
+  }
+
+  return repo.getSalesTrend(
+    outletId: outletId,
+    days: days,
+    from: fromStr,
+    to: toStr,
+  );
 });
 
 final peakHoursProvider = FutureProvider.autoDispose<List<PeakHourPoint>>((ref) async {

@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
+  email: z
+    .string({ required_error: 'Email wajib diisi' })
+    .min(1, 'Email tidak boleh kosong')
+    .email('Format email tidak valid')
+    .refine((val) => val.trim().toLowerCase().endsWith('@arus.com'), {
+      message: 'Email harus menggunakan domain @arus.com (contoh: user@arus.com)',
+    }),
   password: z.string().min(1, 'Password tidak boleh kosong'),
 });
 

@@ -27,7 +27,9 @@ export class OutletsController {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const outlet = await outletsService.getOutletById(id);
+      const user = (req as any).user;
+      const userOutlets = (req as any).userOutlets || [];
+      const outlet = await outletsService.getOutletById(id, user, userOutlets);
 
       res.json({
         success: true,

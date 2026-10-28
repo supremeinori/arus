@@ -7,7 +7,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../notifications/presentation/notifications_provider.dart';
-import '../../users/presentation/user_management_provider.dart';
 
 class OperationsHubScreen extends ConsumerWidget {
   const OperationsHubScreen({super.key});
@@ -84,9 +83,16 @@ class OperationsHubScreen extends ConsumerWidget {
               if (isOwner)
                 _OperationTile(
                   title: 'Produk',
-                  subtitle: 'Menu & harga',
+                  subtitle: 'Kelola menu & harga',
                   icon: Icons.restaurant_menu_rounded,
                   onTap: () => context.push('/catalog'),
+                )
+              else
+                _OperationTile(
+                  title: 'Menu',
+                  subtitle: 'Daftar menu & estimasi profit',
+                  icon: Icons.restaurant_menu_rounded,
+                  onTap: () => context.push('/operations/menu'),
                 ),
               _OperationTile(
                 title: 'Inventaris',
@@ -101,7 +107,13 @@ class OperationsHubScreen extends ConsumerWidget {
                 onTap: () => context.push('/users'),
               ),
               _OperationTile(
-                title: 'Minigames',
+                title: 'Riwayat Transaksi',
+                subtitle: 'Daftar struk & detail penjualan',
+                icon: Icons.receipt_long_outlined,
+                onTap: () => context.push('/pos/history?scope=dashboard'),
+              ),
+              _OperationTile(
+                title: 'Hiburan',
                 subtitle: 'Guess the Menu',
                 icon: Icons.sports_esports_outlined,
                 onTap: () => context.push('/game'),

@@ -1094,7 +1094,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
               phone: _phoneController.text.trim(),
               password: _passwordController.text.trim().isNotEmpty
                   ? _passwordController.text.trim()
-                  : 'Demo1234',
+                  : '12345678',
             );
         if (mounted) {
           Navigator.pop(context);
@@ -1464,7 +1464,7 @@ class _UserFormSheetState extends ConsumerState<_UserFormSheet> {
                 decoration: _inputDecoration(
                   hint: isEditing
                       ? 'Biarkan kosong untuk mempertahankan password lama'
-                      : 'Minimal 6 karakter (Default: Demo1234)',
+                      : 'Minimal 6 karakter (Default: 12345678)',
                   icon: Icons.lock_outline_rounded,
                 ),
                 validator: (val) {

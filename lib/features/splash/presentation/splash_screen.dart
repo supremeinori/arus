@@ -205,29 +205,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               children: [
                 const Spacer(),
                 // App Logo & Brand Identity
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: AppTheme.jadeTosca,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.jadeTosca.withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.insights_rounded,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                  ),
+                Image.asset(
+                  'assets/images/app_logo_mark.png',
+                  width: 96,
+                  height: 96,
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Text(
                   StringsId.appName,
                   style: GoogleFonts.inter(

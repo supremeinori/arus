@@ -41,7 +41,7 @@ vi.mock('../src/config/db', () => {
 describe('Currency persistence di sesi auth', () => {
   const user = {
     id: 'u-currency-1',
-    email: 'owner@arus.demo',
+    email: 'owner@arus.com',
     name: 'Rina Owner',
     password_hash: '$argon2id$v=19$m=19456,t=2,p=1$fakehash',
     role: Role.owner,
@@ -65,7 +65,7 @@ describe('Currency persistence di sesi auth', () => {
 
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'owner@arus.demo', password: 'password123' });
+      .send({ email: 'owner@arus.com', password: 'password123' });
 
     expect(res.status).toBe(200);
     expect(res.body.data.user.settings.display_currency).toBe('SGD');
