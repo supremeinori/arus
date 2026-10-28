@@ -70,10 +70,11 @@ ATURAN WAJIB GROUNDED DATA (ANTI-HALUSINASI MUTLAK):
 1. Anda HANYA BOLEH menggunakan angka omset, jumlah transaksi, basket size, margin, stok, nama produk, dan nama cabang yang TERCANTUM EKSPLISIT pada FAKTA DATA BISNIS berikut:
 ${JSON.stringify(facts, null, 2)}
 2. DILARANG KERAS mengarang angka, membuat estimasi fiktif di luar data di atas, atau menyebut produk/cabang yang tidak ada dalam data.
-3. Jika fakta menunjukkan bahwa suatu cabang atau periode memiliki 0 transaksi atau belum ada data penjualan/stok, nyatakan dengan jujur dan transparan bahwa data transaksi belum tercatat di database untuk cabang/periode tersebut.
-4. Jika pengguna meminta perbandingan antarcabang, bandingkan angka masing-masing cabang secara adil dan objektif sesuai data fakta.
-5. Sertakan angka konkrit dalam format rupiah (misal Rp 22.524.000) dan sebutkan nama cabang serta periode yang relevan.
-6. Berikan rekomendasi keputusan bisnis (DSS) yang masuk akal dan didukung oleh fakta tersebut.
+3. Jika fakta menunjukkan bahwa suatu cabang atau periode memiliki 0 transaksi atau belum ada data penjualan/stok, nyatakan dengan jujur dan transparan bahwa data transaksi belum tercatat di database untuk cabang/periode tersebut, dan manfaatkan data konteks riwayat/inventaris terkini yang disertakan untuk memberi gambaran yang bermanfaat.
+4. Jika pengguna adalah Owner, sajikan ringkasan bisnis secara holistik untuk seluruh cabang atau perbandingan antarcabang. Jika pengguna adalah Manager, fokuskan analisis hanya pada cabang wewenang Manager.
+5. Jika pengguna menanyakan ringkasan, evaluasi harian (misal: "kemarin gimana", "ringkasan", "performa"), jelaskan metrik kunci (omset, transaksi, produk terlaris, status stok) secara terstruktur dan berikan rekomendasi keputusan bisnis (DSS).
+6. Sertakan angka konkrit dalam format rupiah (misal Rp 22.524.000) dan sebutkan nama cabang serta periode yang relevan.
+7. Berikan rekomendasi keputusan bisnis (DSS) yang masuk akal dan didukung oleh fakta tersebut.
 
 Format Output:
 - Sajikan jawaban yang bersih, rapi, profesional, dan nyaman dibaca (struktur eksekutif).
@@ -206,14 +207,37 @@ Format Output:
       lower.includes('antar cabang') ||
       lower.includes('paling ramai') ||
       lower.includes('paling tinggi') ||
+      lower.includes('tertinggi') ||
+      lower.includes('terendah') ||
       lower.includes('mana yang') ||
       lower.includes('cabang mana') ||
       lower.includes('semua cabang') ||
       lower.includes('seluruh cabang') ||
+      lower.includes('semua gerai') ||
       lower.includes('rekap cabang');
+
+    const hasSummaryKeyword =
+      lower.includes('ringkas') ||
+      lower.includes('rekap') ||
+      lower.includes('laporan') ||
+      lower.includes('performa') ||
+      lower.includes('kinerja') ||
+      lower.includes('evaluasi') ||
+      lower.includes('kondisi') ||
+      lower.includes('keadaan') ||
+      lower.includes('kemarin gimana') ||
+      lower.includes('gimana kemarin') ||
+      lower.includes('hari ini gimana') ||
+      lower.includes('gimana hari ini') ||
+      lower.includes('overview') ||
+      lower.includes('summary');
 
     const hasBusinessKeyword =
       hasComparisonKeyword ||
+      hasSummaryKeyword ||
+      lower.includes('kemarin') ||
+      lower.includes('hari ini') ||
+      lower.includes('transaksi') ||
       lower.includes('jual') ||
       lower.includes('omset') ||
       lower.includes('pendapatan') ||
@@ -294,6 +318,7 @@ Format Output:
     let currentTopic: string | null = null;
     let evaluatedBusinessFacts: EvaluatedBusinessFacts | null = null;
     let facts: Array<{ type: string; title: string; value: any }> = [];
+    let activeManagerNotice: string | undefined;
 
     if (!isChitChatOrCasual) {
       if (hasBusinessProcessKeyword) {
@@ -430,7 +455,8 @@ Format Output:
         };
       }
 
-      const timeWindow = aiBusinessEngine.resolveTimeWindow(userMessage);
+      const tz = outletScope.targetOutlets[0]?.timezone || 'Asia/Jakarta';
+      const timeWindow = aiBusinessEngine.resolveTimeWindow(userMessage, tz);
       evaluatedBusinessFacts = await aiBusinessEngine.evaluateBusinessFacts(
         userMessage,
         currentTopic || 'sales',
@@ -439,6 +465,11 @@ Format Output:
         userScope,
         outletScope.isComparison
       );
+
+      if (outletScope.managerNotice) {
+        activeManagerNotice = outletScope.managerNotice;
+        evaluatedBusinessFacts.manager_notice = outletScope.managerNotice;
+      }
 
       facts = aiBusinessEngine.buildFactsList(evaluatedBusinessFacts);
 
@@ -484,6 +515,9 @@ Format Output:
       } else {
         aiResponseText = liveGeminiText.trim();
         voiceSummary = cleanVoiceSummaryText(aiResponseText);
+      }
+      if (activeManagerNotice && !aiResponseText.includes('Sebagai Manager, wewenang akses Anda dibatasi')) {
+        aiResponseText = `${activeManagerNotice}\n\n${aiResponseText}`;
       }
       suggestionText = 'Analisis di atas disusun secara cerdas oleh Google Gemini berbasis data aktual database.';
     } else if (currentTopic === 'chitchat' || facts.length === 0) {

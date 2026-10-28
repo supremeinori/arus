@@ -21,10 +21,15 @@ async function main() {
 
   // 2. BERSIHIN DATA LAMA (Hati-hati, dari paling child ke parent, USER & OUTLET AMAN)
   console.log('🧹 Membersihkan data transaksi dan katalog lama...');
-  await prisma.blockchainRecord.deleteMany();
-  await prisma.transactionItem.deleteMany();
-  await prisma.transaction.deleteMany();
-  await prisma.inventoryMovement.deleteMany();
+  const existingTxCount = await prisma.transaction.count();
+  if (existingTxCount > 0 && process.env.CONFIRM_WIPE_TRANSACTIONS !== 'true') {
+    console.log(`🛡️ Menemukan ${existingTxCount} transaksi di database. Pembersihan transaksi dilewati.`);
+  } else {
+    await prisma.blockchainRecord.deleteMany();
+    await prisma.transactionItem.deleteMany();
+    await prisma.transaction.deleteMany();
+    await prisma.inventoryMovement.deleteMany();
+  }
   await prisma.productRecipe.deleteMany();
   await prisma.product.deleteMany();
   await prisma.ingredient.deleteMany();

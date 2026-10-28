@@ -269,4 +269,125 @@ describe('AI Assistant Module (Milestone 9)', () => {
     },
     15000
   );
+
+  it(
+    'T-AI-06: Owner dapat menanyakan ringkasan performa kemarin untuk seluruh cabang (multi-branch konsolidasi)',
+    async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+      const mockOutlets = [
+        { id: 'out-1', name: 'Yogyakarta', timezone: 'Asia/Jakarta' },
+        { id: 'out-2', name: 'Denpasar', timezone: 'Asia/Makassar' },
+      ];
+      vi.mocked(prisma.outlet.findMany).mockResolvedValue(mockOutlets as any);
+
+      vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
+        _sum: { total_idr: 5000000, subtotal_idr: 5000000, discount_idr: 0 },
+      } as any);
+      vi.mocked(prisma.transaction.count).mockResolvedValue(25);
+      vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+        { id: 'tx-1', outlet_id: 'out-1', total_idr: 3000000, subtotal_idr: 3000000, discount_idr: 0, created_at: new Date() },
+        { id: 'tx-2', outlet_id: 'out-2', total_idr: 2000000, subtotal_idr: 2000000, discount_idr: 0, created_at: new Date() },
+      ] as any);
+      vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([
+        { product_name_snapshot: 'Espresso', quantity: 20, unit_price_idr: 15000, line_total_idr: 300000, transaction: { outlet_id: 'out-1' } },
+      ] as any);
+
+      const res = await request(app)
+        .post('/api/ai/chat')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          message: 'kemarin gimana penjualan semua cabang?',
+        });
+
+      expect(res.status).toBe(200);
+      const overviewFact = res.body.data.facts.find((f: any) => f.type === 'analytics_overview');
+      expect(overviewFact).toBeDefined();
+      expect(overviewFact.value.period).toBe('Kemarin');
+      expect(overviewFact.value.branches_count).toBe(2);
+
+      const comparisonFact = res.body.data.facts.find((f: any) => f.type === 'branch_comparison');
+      expect(comparisonFact).toBeDefined();
+      expect(comparisonFact.value.branches).toHaveLength(2);
+      expect(res.body.data.reply_text).toContain('Yogyakarta');
+      expect(res.body.data.reply_text).toContain('Denpasar');
+    },
+    15000
+  );
+
+  it(
+    'T-AI-07: Role Manager yang menanyakan kemarin / ringkasan hanya dibatasi pada cabang miliknya',
+    async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockManager as any);
+      vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([
+        { user_id: mockManager.id, outlet_id: 'out-jogja' },
+      ] as any);
+      vi.mocked(prisma.outlet.findMany).mockResolvedValue([
+        { id: 'out-jogja', name: 'Yogyakarta HQ', timezone: 'Asia/Jakarta' },
+        { id: 'out-bali', name: 'Denpasar', timezone: 'Asia/Makassar' },
+      ] as any);
+
+      vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
+        _sum: { total_idr: 1200000, subtotal_idr: 1200000, discount_idr: 0 },
+      } as any);
+      vi.mocked(prisma.transaction.count).mockResolvedValue(8);
+      vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+        { id: 'tx-1', outlet_id: 'out-jogja', total_idr: 1200000, subtotal_idr: 1200000, discount_idr: 0, created_at: new Date() },
+      ] as any);
+      vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([]);
+
+      const res = await request(app)
+        .post('/api/ai/chat')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({
+          message: 'kemarin gimana penjualan di cabang?',
+        });
+
+      expect(res.status).toBe(200);
+      const overviewFact = res.body.data.facts.find((f: any) => f.type === 'analytics_overview');
+      expect(overviewFact).toBeDefined();
+      expect(overviewFact.value.branches_analyzed).toEqual(['Yogyakarta HQ']);
+      // Manager tidak boleh menerima perbandingan cabang lain
+      const comparisonFact = res.body.data.facts.find((f: any) => f.type === 'branch_comparison');
+      expect(comparisonFact).toBeUndefined();
+      expect(res.body.data.reply_text).toContain('Yogyakarta HQ');
+      expect(res.body.data.reply_text).not.toContain('Denpasar');
+    },
+    15000
+  );
+
+  it(
+    'T-AI-08: Role Manager yang menanyakan semua cabang diberi tahu batas wewenangnya dan disajikan data cabangnya',
+    async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockManager as any);
+      vi.mocked(prisma.userOutlet.findMany).mockResolvedValue([
+        { user_id: mockManager.id, outlet_id: 'out-jogja' },
+      ] as any);
+      vi.mocked(prisma.outlet.findMany).mockResolvedValue([
+        { id: 'out-jogja', name: 'Yogyakarta HQ', timezone: 'Asia/Jakarta' },
+        { id: 'out-bali', name: 'Denpasar', timezone: 'Asia/Makassar' },
+      ] as any);
+
+      vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
+        _sum: { total_idr: 1200000, subtotal_idr: 1200000, discount_idr: 0 },
+      } as any);
+      vi.mocked(prisma.transaction.count).mockResolvedValue(8);
+      vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+        { id: 'tx-1', outlet_id: 'out-jogja', total_idr: 1200000, subtotal_idr: 1200000, discount_idr: 0, created_at: new Date() },
+      ] as any);
+      vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([]);
+
+      const res = await request(app)
+        .post('/api/ai/chat')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({
+          message: 'bagaimana omset semua cabang kemarin?',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.reply_text).toContain('Sebagai Manager, wewenang akses Anda dibatasi khusus untuk cabang');
+      expect(res.body.data.reply_text).toContain('Yogyakarta HQ');
+      expect(res.body.data.reply_text).not.toContain('Denpasar');
+    },
+    15000
+  );
 });

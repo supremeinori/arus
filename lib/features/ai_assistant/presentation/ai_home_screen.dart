@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/auth_state.dart';
 import '../domain/ai_models.dart';
 import '../domain/voice_models.dart';
@@ -30,13 +31,6 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
   bool _isDictating = false;
   final Set<String> _copiedMessageIds = {};
   Timer? _copyResetTimer;
-
-  final List<String> _quickPrompts = [
-    'Bagaimana ringkasan penjualan hari ini?',
-    'Ada berapa sih gerai kita dan lokasinya di mana?',
-    'Apakah ada produk yang butuh restock segera?',
-    'Menu apa yang paling laris minggu ini?',
-  ];
 
   @override
   void initState() {
@@ -99,13 +93,105 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     }
 
     final auth = ref.read(authProvider);
-    final outletId = _selectedOutletId ??
-        (auth.user?.outlets.isNotEmpty == true ? auth.user!.outlets.first.id : null);
+    final isOwner = auth.isOwner;
+    final outletId = isOwner
+        ? _selectedOutletId
+        : (_selectedOutletId ?? (auth.user?.outlets.isNotEmpty == true ? auth.user!.outlets.first.id : null));
 
     ref.read(aiChatProvider.notifier).sendMessage(text, outletId: outletId).then((_) {
       _scrollToBottom();
     });
     _scrollToBottom();
+  }
+
+  void _showBranchSelectorSheet(BuildContext context, List<OutletSummary> outlets) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.darkCardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.storefront_rounded, color: AppTheme.jadeTosca, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pilih Cakupan Cabang AI',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: AppTheme.darkCardBorder),
+                ListTile(
+                  leading: const Icon(Icons.language_rounded, color: AppTheme.jadeTosca),
+                  title: Text(
+                    'Semua Cabang (Global)',
+                    style: GoogleFonts.inter(
+                      fontWeight: _selectedOutletId == null ? FontWeight.w700 : FontWeight.w500,
+                      color: _selectedOutletId == null ? AppTheme.jadeTosca : AppTheme.textPrimaryDark,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Analisis agregasi & perbandingan seluruh gerai aktif',
+                    style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
+                  ),
+                  trailing: _selectedOutletId == null
+                      ? const Icon(Icons.check_circle_rounded, color: AppTheme.jadeTosca)
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedOutletId = null;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+                ...outlets.map((outlet) {
+                  final isSelected = _selectedOutletId == outlet.id;
+                  return ListTile(
+                    leading: const Icon(Icons.store_mall_directory_outlined, color: AppTheme.textMutedDark),
+                    title: Text(
+                      outlet.name,
+                      style: GoogleFonts.inter(
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected ? AppTheme.jadeTosca : AppTheme.textPrimaryDark,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Zona: ${outlet.timezone}',
+                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMutedDark),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle_rounded, color: AppTheme.jadeTosca)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _selectedOutletId = outlet.id;
+                      });
+                      Navigator.pop(ctx);
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _toggleDictation() async {
@@ -225,8 +311,10 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     final chatState = ref.watch(aiChatProvider);
     final authState = ref.watch(authProvider);
     final outlets = authState.user?.outlets ?? [];
+    final isOwner = authState.isOwner;
 
-    if (_selectedOutletId == null && outlets.isNotEmpty) {
+    // For manager: automatically assign their branch
+    if (!isOwner && _selectedOutletId == null && outlets.isNotEmpty) {
       _selectedOutletId = outlets.first.id;
     }
 
@@ -260,12 +348,52 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (outlets.isNotEmpty)
-              Text(
-                'Cabang: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
-                style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 2),
+            if (isOwner)
+              InkWell(
+                onTap: () => _showBranchSelectorSheet(context, outlets),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _selectedOutletId == null ? Icons.language_rounded : Icons.store_mall_directory_rounded,
+                        size: 13,
+                        color: AppTheme.jadeTosca,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _selectedOutletId == null
+                            ? 'Semua Cabang (Global)'
+                            : outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.jadeTosca,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Icon(Icons.arrow_drop_down_rounded, size: 16, color: AppTheme.jadeTosca),
+                    ],
+                  ),
+                ),
+              )
+            else if (outlets.isNotEmpty)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.store_mall_directory_rounded, size: 12, color: AppTheme.textMutedDark),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Cabang: ${outlets.firstWhere((o) => o.id == _selectedOutletId, orElse: () => outlets.first).name}',
+                    style: GoogleFonts.inter(fontSize: 11, color: AppTheme.textMutedDark),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
           ],
         ),
@@ -311,7 +439,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
                   ),
                 Expanded(
                   child: chatState.messages.isEmpty && !chatState.isLoading
-                      ? _buildEmptyState()
+                      ? _buildEmptyState(isOwner: isOwner)
                       : _buildMessageList(chatState.messages, chatState.isLoading),
                 ),
                 _buildInputBar(chatState.isLoading),
@@ -320,7 +448,21 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({required bool isOwner}) {
+    final prompts = isOwner
+        ? [
+            'Bagaimana ringkasan penjualan semua cabang kemarin?',
+            'Bandingkan performa antarcabang saat ini',
+            'Menu apa yang paling laris di seluruh cabang?',
+            'Bahan baku apa yang butuh restock segera?',
+          ]
+        : [
+            'Bagaimana ringkasan penjualan kemarin di cabang ini?',
+            'Menu apa yang paling laris di cabang kita?',
+            'Apakah ada bahan baku yang butuh restock?',
+            'Kapan jam paling ramai di cabang kita?',
+          ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -373,7 +515,7 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
           ),
           const SizedBox(height: 10),
           Column(
-            children: _quickPrompts.map((prompt) {
+            children: prompts.map((prompt) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: SizedBox(
@@ -810,6 +952,10 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
     AuthState authState,
     List<dynamic> outlets,
   ) {
+    final isOwner = authState.isOwner;
+    final activeOutletId = isOwner
+        ? _selectedOutletId
+        : (_selectedOutletId ?? (outlets.isNotEmpty ? (outlets.first as OutletSummary).id : null));
     final voiceState = ref.watch(voiceSessionProvider);
     final voiceNotifier = ref.read(voiceSessionProvider.notifier);
     const jadeTosca = AppTheme.jadeTosca;
@@ -994,8 +1140,8 @@ class _AiHomeScreenState extends ConsumerState<AiHomeScreen> {
               children: [
                 GestureDetector(
                   onTapDown: (_) => voiceNotifier.onPttPressDown(),
-                  onTapUp: (_) => voiceNotifier.onPttRelease(outletId: _selectedOutletId),
-                  onTapCancel: () => voiceNotifier.onPttRelease(outletId: _selectedOutletId),
+                  onTapUp: (_) => voiceNotifier.onPttRelease(outletId: activeOutletId),
+                  onTapCancel: () => voiceNotifier.onPttRelease(outletId: activeOutletId),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     width: 76,

@@ -1,5 +1,6 @@
 import { Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
+import { getStartOfDayInTimezone, getEndOfDayInTimezone } from '../../shared/timezone';
 
 export interface OutletInfo {
   id: string;
@@ -31,6 +32,15 @@ export interface EvaluatedBusinessFacts {
   is_comparison: boolean;
   target_outlets: OutletInfo[];
   forbidden_outlet_name?: string;
+  manager_notice?: string;
+  recent_activity?: {
+    last_tx_time: string | null;
+    last_tx_receipt: string | null;
+    last_tx_amount_idr: number;
+    last_tx_outlet: string | null;
+    lifetime_revenue_idr: number;
+    lifetime_tx_count: number;
+  };
   overview: {
     total_revenue_idr: number;
     completed_transactions: number;
@@ -94,6 +104,7 @@ export class AiBusinessEngine {
     isComparison: boolean;
     forbiddenOutletName?: string;
     matchedOutletName?: string;
+    managerNotice?: string;
   }> {
     let allOutlets: any[] = [];
     try {
@@ -107,7 +118,6 @@ export class AiBusinessEngine {
       allOutlets = [];
     }
 
-    // Filter berdasarkan RBAC
     const isOwner = userScope.role === Role.owner;
     const allowedIds = new Set(userScope.allowedOutletIds || []);
     const accessibleOutlets: OutletInfo[] = isOwner
@@ -116,7 +126,7 @@ export class AiBusinessEngine {
 
     const lower = userMessage.toLowerCase();
 
-    // Deteksi apakah pengguna menanyakan cabang tertentu di luar hak aksesnya
+    // 1. RBAC CHECK: Deteksi apakah pengguna NON-OWNER (Manager / Staff) meminta cabang di luar wewenangnya
     if (!isOwner) {
       for (const o of allOutlets) {
         if (!allowedIds.has(o.id)) {
@@ -132,9 +142,40 @@ export class AiBusinessEngine {
           }
         }
       }
+
+      // Jika Manager menanyakan "semua cabang", "seluruh cabang", atau komparasi antarcabang:
+      const managerAskingAll =
+        lower.includes('semua cabang') ||
+        lower.includes('seluruh cabang') ||
+        lower.includes('semua gerai') ||
+        lower.includes('antarcabang') ||
+        lower.includes('antar cabang') ||
+        lower.includes('komparasi') ||
+        lower.includes('banding');
+
+      let managerNotice: string | undefined;
+      if (managerAskingAll) {
+        const myOutletName = accessibleOutlets[0]?.name || 'cabang wewenang Anda';
+        managerNotice = `Sebagai Manager, wewenang akses Anda dibatasi khusus untuk cabang **${myOutletName}**. Data cabang lain berada di bawah wewenang Owner. Berikut adalah laporan performa untuk cabang Anda:`;
+      }
+
+      // Pastikan targetOutlets hanya cabang yang diizinkan untuk Manager
+      let targetForManager = accessibleOutlets;
+      if (queryOutletId) {
+        const found = accessibleOutlets.find((o) => o.id === queryOutletId);
+        if (found) targetForManager = [found];
+      }
+
+      return {
+        targetOutlets: targetForManager,
+        allAccessibleOutlets: accessibleOutlets,
+        isComparison: false,
+        matchedOutletName: targetForManager[0]?.name,
+        managerNotice,
+      };
     }
 
-    // Deteksi apakah intent membandingkan beberapa cabang
+    // 2. OWNER ACCESS: Owner berwenang atas seluruh cabang (Konsolidasian atau Spesifik)
     const isComparison =
       lower.includes('banding') ||
       lower.includes('komparasi') ||
@@ -144,34 +185,31 @@ export class AiBusinessEngine {
       lower.includes('paling ramai') ||
       lower.includes('paling tinggi') ||
       lower.includes('tertinggi') ||
+      lower.includes('terendah') ||
       lower.includes('mana yang') ||
       lower.includes('cabang mana') ||
       lower.includes('semua cabang') ||
       lower.includes('seluruh cabang') ||
+      lower.includes('semua gerai') ||
       lower.includes('rekap cabang');
-
-    // Jika user menentukan queryOutletId eksplisit
-    if (queryOutletId) {
-      const found = accessibleOutlets.find((o) => o.id === queryOutletId);
-      if (found) {
-        return {
-          targetOutlets: [found],
-          allAccessibleOutlets: accessibleOutlets,
-          isComparison: false,
-          matchedOutletName: found.name,
-        };
-      }
-    }
 
     // Cek apakah ada nama cabang spesifik yang disebut dalam pesan
     const mentioned: OutletInfo[] = [];
     for (const o of accessibleOutlets) {
       const nameLower = o.name.toLowerCase();
-      const parts = nameLower.split(/\s+/).filter((p) => p.length >= 4 && !['kopi', 'arus', 'coffee'].includes(p));
+      const parts = nameLower.split(/\s+/).filter((p) => p.length >= 3 && !['kopi', 'arus', 'coffee'].includes(p));
       const isMentioned = lower.includes(nameLower) || parts.some((p) => lower.includes(p));
       if (isMentioned) {
         mentioned.push(o);
       }
+    }
+
+    if (mentioned.length > 1) {
+      return {
+        targetOutlets: mentioned,
+        allAccessibleOutlets: accessibleOutlets,
+        isComparison: true,
+      };
     }
 
     if (mentioned.length === 1 && !isComparison) {
@@ -183,34 +221,39 @@ export class AiBusinessEngine {
       };
     }
 
-    if (mentioned.length > 1) {
-      return {
-        targetOutlets: mentioned,
-        allAccessibleOutlets: accessibleOutlets,
-        isComparison: true,
-      };
-    }
-
-    // Jika perbandingan atau pertanyaan umum oleh owner, libatkan seluruh cabang yang dapat diakses
-    if (isComparison || isOwner) {
+    if (isComparison) {
       return {
         targetOutlets: accessibleOutlets,
         allAccessibleOutlets: accessibleOutlets,
-        isComparison: accessibleOutlets.length > 1 && isComparison,
+        isComparison: accessibleOutlets.length > 1,
       };
     }
 
+    // Jika user menentukan queryOutletId eksplisit (filter spesifik cabang di UI)
+    if (queryOutletId && queryOutletId !== 'all') {
+      const found = accessibleOutlets.find((o) => o.id === queryOutletId);
+      if (found) {
+        return {
+          targetOutlets: [found],
+          allAccessibleOutlets: accessibleOutlets,
+          isComparison: false,
+          matchedOutletName: found.name,
+        };
+      }
+    }
+
+    // Default untuk Owner (Semua Cabang): Libatkan seluruh cabang yang aktif
     return {
       targetOutlets: accessibleOutlets,
       allAccessibleOutlets: accessibleOutlets,
-      isComparison: false,
+      isComparison: accessibleOutlets.length > 1,
     };
   }
 
   /**
-   * Mengidentifikasi jendela waktu yang dimaksud pengguna.
+   * Mengidentifikasi jendela waktu yang dimaksud pengguna dengan boundary zona waktu akurat.
    */
-  resolveTimeWindow(userMessage: string): {
+  resolveTimeWindow(userMessage: string, timezone: string = 'Asia/Jakarta'): {
     from?: Date;
     to?: Date;
     label: string;
@@ -219,25 +262,41 @@ export class AiBusinessEngine {
     const lower = userMessage.toLowerCase();
     const now = new Date();
 
-    if (lower.includes('hari ini') || lower.includes('today')) {
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    if (lower.includes('hari ini') || lower.includes('today') || lower.includes('tadi')) {
+      const start = getStartOfDayInTimezone(timezone, now);
       return { from: start, to: now, label: 'Hari Ini', isStrictPeriod: true };
     }
 
+    if (lower.includes('kemarin lusa') || lower.includes('2 hari lalu') || lower.includes('dua hari lalu')) {
+      const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const start = getStartOfDayInTimezone(timezone, twoDaysAgo);
+      const end = getEndOfDayInTimezone(timezone, twoDaysAgo);
+      return { from: start, to: end, label: 'Kemarin Lusa', isStrictPeriod: true };
+    }
+
     if (lower.includes('kemarin') || lower.includes('yesterday')) {
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const start = getStartOfDayInTimezone(timezone, yesterday);
+      const end = getEndOfDayInTimezone(timezone, yesterday);
       return { from: start, to: end, label: 'Kemarin', isStrictPeriod: true };
     }
 
-    if (lower.includes('7 hari') || lower.includes('minggu ini') || lower.includes('sepekan')) {
+    if (lower.includes('7 hari') || lower.includes('minggu ini') || lower.includes('pekan ini') || lower.includes('sepekan')) {
       const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       return { from: start, to: now, label: '7 Hari Terakhir', isStrictPeriod: true };
     }
 
-    if (lower.includes('30 hari') || lower.includes('bulan ini')) {
+    if (lower.includes('30 hari') || lower.includes('bulan ini') || lower.includes('sebulan')) {
       const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       return { from: start, to: now, label: '30 Hari Terakhir', isStrictPeriod: true };
+    }
+
+    if (lower.includes('bulan lalu') || lower.includes('sebulan lalu')) {
+      const firstDayPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const start = getStartOfDayInTimezone(timezone, firstDayPrevMonth);
+      const end = getEndOfDayInTimezone(timezone, lastDayPrevMonth);
+      return { from: start, to: end, label: 'Bulan Lalu', isStrictPeriod: true };
     }
 
     // Default: Semua catatan transaksi yang tersedia di database
@@ -618,11 +677,97 @@ export class AiBusinessEngine {
       );
     }
 
+    // 9. Riwayat Transaksi Terbaru & Konteks Historis jika Periode Spesifik Kosong
+    let recentActivity: EvaluatedBusinessFacts['recent_activity'] = undefined;
+    if (completedCount === 0) {
+      try {
+        const lastTx = await prisma.transaction.findFirst({
+          where: outletIds.length > 0 ? { outlet_id: { in: outletIds }, status: TxnStatus.completed } : { status: TxnStatus.completed },
+          orderBy: { created_at: 'desc' },
+          select: {
+            receipt_no: true,
+            total_idr: true,
+            created_at: true,
+            outlet: { select: { name: true } },
+          },
+        });
+
+        const lifetimeAgg = await prisma.transaction.aggregate({
+          where: outletIds.length > 0 ? { outlet_id: { in: outletIds }, status: TxnStatus.completed } : { status: TxnStatus.completed },
+          _sum: { total_idr: true },
+          _count: true,
+        });
+
+        if (lastTx || (lifetimeAgg._count ?? 0) > 0) {
+          recentActivity = {
+            last_tx_time: lastTx ? lastTx.created_at.toLocaleString('id-ID', { timeZone: targetOutlets[0]?.timezone || 'Asia/Jakarta' }) : null,
+            last_tx_receipt: lastTx?.receipt_no || null,
+            last_tx_amount_idr: lastTx?.total_idr || 0,
+            last_tx_outlet: lastTx?.outlet?.name || null,
+            lifetime_revenue_idr: lifetimeAgg._sum?.total_idr || 0,
+            lifetime_tx_count: lifetimeAgg._count || 0,
+          };
+        }
+      } catch (_) {}
+    }
+
+    // 10. Fallback Menu Terlaris Historis / Katalog jika Periode Spesifik Belum Ada Penjualan
+    if (topProducts.length === 0) {
+      try {
+        const historicalItems = await prisma.transactionItem.findMany({
+          where: outletIds.length > 0 ? { transaction: { outlet_id: { in: outletIds }, status: TxnStatus.completed } } : { transaction: { status: TxnStatus.completed } },
+          take: 50,
+          select: {
+            product_name_snapshot: true,
+            quantity: true,
+            unit_price_idr: true,
+            line_total_idr: true,
+          },
+        });
+
+        if (historicalItems.length > 0) {
+          const map = new Map<string, any>();
+          for (const item of historicalItems) {
+            const pName = item.product_name_snapshot || 'Menu';
+            const cur = map.get(pName) || {
+              name: pName,
+              quantity_sold: 0,
+              total_revenue_idr: 0,
+              unit_price_idr: item.unit_price_idr || 0,
+              estimated_cost_idr: 0,
+              margin_pct: 60,
+            };
+            cur.quantity_sold += item.quantity || 1;
+            cur.total_revenue_idr += item.line_total_idr || (item.unit_price_idr || 0) * (item.quantity || 1);
+            map.set(pName, cur);
+          }
+          topProducts.push(...Array.from(map.values()).sort((a, b) => b.quantity_sold - a.quantity_sold).slice(0, 5));
+        } else {
+          const catalogProducts = await prisma.product.findMany({
+            where: { is_active: true },
+            take: 5,
+            select: { name: true, price_idr: true },
+          });
+          for (const cp of catalogProducts) {
+            topProducts.push({
+              name: cp.name,
+              quantity_sold: 0,
+              total_revenue_idr: 0,
+              unit_price_idr: cp.price_idr,
+              estimated_cost_idr: Math.round(cp.price_idr * 0.4),
+              margin_pct: 60,
+            });
+          }
+        }
+      } catch (_) {}
+    }
+
     return {
       topic,
       period_label: timeWindow.label,
       is_comparison: isComparison,
       target_outlets: targetOutlets,
+      recent_activity: recentActivity,
       overview: {
         total_revenue_idr: totalRevenue,
         completed_transactions: completedCount,
@@ -665,6 +810,7 @@ export class AiBusinessEngine {
           void_rate_pct: facts.overview.void_rate_pct,
           period: facts.period_label,
           branches_analyzed: facts.target_outlets.map((o) => o.name),
+          recent_activity: facts.recent_activity,
         },
       });
       return list;
@@ -730,10 +876,12 @@ export class AiBusinessEngine {
       return list;
     }
 
-    // 6. Jika Multi-Branch Comparison atau Analisis Terpadu
+    // 6. Jika Multi-Branch Comparison atau Analisis Terpadu (Ringkasan / Business Overview)
     list.push({
       type: 'analytics_overview',
-      title: `Ringkasan Penjualan Seluruh Gerai (${facts.period_label})`,
+      title: facts.target_outlets.length > 1
+        ? `Ringkasan Penjualan Seluruh Gerai (${facts.period_label})`
+        : `Ringkasan Penjualan (${facts.period_label})`,
       value: {
         revenue_idr: facts.overview.total_revenue_idr,
         transaction_count: facts.overview.completed_transactions,
@@ -741,32 +889,37 @@ export class AiBusinessEngine {
         gross_margin_pct: facts.overview.gross_margin_pct,
         void_count: facts.overview.void_transactions,
         void_rate_pct: facts.overview.void_rate_pct,
+        period: facts.period_label,
         branches_count: facts.target_outlets.length,
+        branches_analyzed: facts.target_outlets.map((o) => o.name),
+        recent_activity: facts.recent_activity,
       },
     });
 
-    list.push({
-      type: 'branch_comparison',
-      title: 'Perbandingan Performa Antar Cabang',
-      value: {
-        branches: facts.branch_metrics.map((b) => ({
-          name: b.outlet_name,
-          revenue_idr: b.revenue_idr,
-          transaction_count: b.completed_tx_count,
-          avg_basket_idr: b.avg_basket_idr,
-          revenue_share_pct: b.revenue_share_pct,
-          low_stock_count: b.low_stock_count,
-          top_product: b.top_product || 'Belum ada data',
-        })),
-        top_branch: facts.branch_ranking?.top_branch_name,
-        zero_sales_branches: facts.branch_ranking?.zero_sales_branches || [],
-      },
-    });
+    if (facts.target_outlets.length > 1) {
+      list.push({
+        type: 'branch_comparison',
+        title: 'Perbandingan Performa Antar Cabang',
+        value: {
+          branches: facts.branch_metrics.map((b) => ({
+            name: b.outlet_name,
+            revenue_idr: b.revenue_idr,
+            transaction_count: b.completed_tx_count,
+            avg_basket_idr: b.avg_basket_idr,
+            revenue_share_pct: b.revenue_share_pct,
+            low_stock_count: b.low_stock_count,
+            top_product: b.top_product || 'Belum ada data',
+          })),
+          top_branch: facts.branch_ranking?.top_branch_name,
+          zero_sales_branches: facts.branch_ranking?.zero_sales_branches || [],
+        },
+      });
+    }
 
     if (facts.top_products.length > 0) {
       list.push({
         type: 'top_products',
-        title: 'Menu Terlaris Jaringan',
+        title: facts.target_outlets.length > 1 ? 'Menu Terlaris Jaringan' : 'Menu Unggulan Cabang',
         value: facts.top_products.map((p) => ({
           name: p.name,
           sold: p.quantity_sold,
@@ -779,7 +932,7 @@ export class AiBusinessEngine {
     if (facts.inventory_alerts.length > 0) {
       list.push({
         type: 'low_stock_items',
-        title: 'Peringatan Stok Menipis Antarcabang',
+        title: facts.target_outlets.length > 1 ? 'Peringatan Stok Menipis Antarcabang' : 'Peringatan Stok Menipis',
         value: facts.inventory_alerts.map((i) => ({
           product_name: i.ingredient_name,
           outlet_name: i.outlet_name,
@@ -787,6 +940,14 @@ export class AiBusinessEngine {
           reorder_level: i.reorder_level,
           unit: i.unit,
         })),
+      });
+    }
+
+    if (facts.recent_activity) {
+      list.push({
+        type: 'recent_activity',
+        title: 'Konteks Catatan Transaksi Terakhir di Database',
+        value: facts.recent_activity,
       });
     }
 
@@ -819,6 +980,10 @@ export class AiBusinessEngine {
     const revFormatted = `Rp ${Number(facts.overview.total_revenue_idr).toLocaleString('id-ID')}`;
     const avgFormatted = `Rp ${Number(facts.overview.avg_basket_idr).toLocaleString('id-ID')}`;
 
+    if (facts.manager_notice) {
+      sections.push(`ℹ️ **Pemberitahuan Peran (Manager):**\n${facts.manager_notice}`);
+    }
+
     sections.push(
       `Halo **${userName}**, berikut adalah laporan analitis berbasis data aktual dari database ARUS (${facts.period_label}):\n`
     );
@@ -829,15 +994,26 @@ export class AiBusinessEngine {
 • Total Omset Tercatat: **${revFormatted}**
 • Total Transaksi Selesai: **${facts.overview.completed_transactions} transaksi**
 • Rata-rata Nilai Belanja (Basket Size): **${avgFormatted}**
-• Estimasi Margin Laba Kotor: **${facts.overview.gross_margin_pct}%**`);
+• Estimasi Margin Laba Kotor: **~${facts.overview.gross_margin_pct}%**`);
     } else {
-      sections.push(`📌 **Status Penjualan:**
-Saat ini **belum ada transaksi selesai** yang tercatat pada database untuk periode **${facts.period_label}** pada cabang yang dianalisis.`);
+      const scopeDesc = facts.target_outlets.length > 1
+        ? 'seluruh cabang jaringan'
+        : facts.target_outlets[0]?.name || 'cabang yang dianalisis';
+      sections.push(`📌 **Status Penjualan (${facts.period_label}):**
+Saat ini **belum ada transaksi selesai** yang tercatat pada database untuk periode **${facts.period_label}** pada ${scopeDesc}.`);
+
+      if (facts.recent_activity) {
+        const lastTxAmount = `Rp ${Number(facts.recent_activity.last_tx_amount_idr).toLocaleString('id-ID')}`;
+        const lifetimeRev = `Rp ${Number(facts.recent_activity.lifetime_revenue_idr).toLocaleString('id-ID')}`;
+        sections.push(`📊 **Konteks Riwayat Data Terakhir:**
+• Transaksi Terakhir Tercatat: **${facts.recent_activity.last_tx_time || '-'}** (${facts.recent_activity.last_tx_outlet || 'Cabang'}, No. Struk: **${facts.recent_activity.last_tx_receipt || '-'}**, Nilai: **${lastTxAmount}**)
+• Akumulasi Omset Keseluruhan Sistem: **${lifetimeRev}** dari **${facts.recent_activity.lifetime_tx_count} transaksi**.`);
+      }
     }
 
-    // 2. Analisis Komparasi Antarcabang (Jika ada > 1 cabang atau diminta perbandingan)
+    // 2. Analisis Komparasi Antarcabang (Jika ada > 1 cabang untuk Owner)
     if (facts.branch_metrics.length > 1) {
-      sections.push(`📊 **Perbandingan Antarcabang (${facts.branch_metrics.length} Gerai):**`);
+      sections.push(`📊 **Perbandingan Antarcabang (${facts.branch_metrics.length} Gerai Aktif):**`);
       for (const [idx, b] of facts.branch_metrics.entries()) {
         const bRev = `Rp ${Number(b.revenue_idr).toLocaleString('id-ID')}`;
         const topProd = b.top_product ? ` | Unggulan: ${b.top_product}` : '';
@@ -858,12 +1034,15 @@ Saat ini **belum ada transaksi selesai** yang tercatat pada database untuk perio
       sections.push(`🏬 **Cakupan Gerai:** Laporan ini berfokus khusus pada **${facts.target_outlets[0].name}**.`);
     }
 
-    // 3. Menu Terlaris Aktual
+    // 3. Menu Terlaris & Unggulan Aktual
     if (facts.top_products.length > 0) {
-      sections.push(`☕ **Menu Terlaris Aktual (Database Query):**`);
+      sections.push(`☕ **Menu Terlaris & Unggulan (Database):**`);
       facts.top_products.slice(0, 3).forEach((p, idx) => {
         const pRev = `Rp ${Number(p.total_revenue_idr).toLocaleString('id-ID')}`;
-        sections.push(`${idx + 1}. **${p.name}** — Terjual **${p.quantity_sold} porsi** (Omset: ${pRev}, Margin: ~${p.margin_pct}%)`);
+        const soldInfo = p.quantity_sold > 0
+          ? `Terjual **${p.quantity_sold} porsi** (Omset: ${pRev})`
+          : `Harga Jual: Rp ${Number(p.unit_price_idr).toLocaleString('id-ID')}`;
+        sections.push(`${idx + 1}. **${p.name}** — ${soldInfo}`);
       });
     }
 
@@ -888,7 +1067,7 @@ Saat ini **belum ada transaksi selesai** yang tercatat pada database untuk perio
       });
     }
 
-    let suggestion = 'Tanyakan: "Bandingkan performa cabang Sudirman dan Bali"';
+    let suggestion = 'Tanyakan: "Bandingkan performa cabang Yogyakarta dan Denpasar"';
     if (facts.inventory_alerts.length > 0) {
       suggestion = 'Tanyakan: "Bahan apa saja yang perlu di-restock hari ini?"';
     } else if (facts.top_products.length > 0) {
@@ -907,6 +1086,9 @@ Saat ini **belum ada transaksi selesai** yang tercatat pada database untuk perio
       }
     } else {
       voiceSummary = `Belum ada transaksi penjualan yang tercatat pada periode ${facts.period_label}.`;
+      if (facts.recent_activity?.last_tx_time) {
+        voiceSummary += ` Transaksi terakhir tersimpan pada ${facts.recent_activity.last_tx_outlet || 'cabang'}.`;
+      }
     }
 
     return {

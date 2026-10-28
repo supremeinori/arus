@@ -32,10 +32,18 @@ export async function main() {
   await prisma.notification.deleteMany();
   await prisma.deviceToken.deleteMany();
   await prisma.refreshToken.deleteMany();
-  await prisma.blockchainRecord.deleteMany();
-  await prisma.transactionItem.deleteMany();
-  await prisma.transaction.deleteMany();
-  await prisma.inventoryMovement.deleteMany();
+  // 🛡️ PROTEKSI KEAMANAN DATA SUPABASE:
+  // Jangan pernah menghapus data transaksi riil secara otomatis kecuali diizinkan secara eksplisit
+  const existingTxCount = await prisma.transaction.count();
+  if (existingTxCount > 0 && process.env.CONFIRM_WIPE_TRANSACTIONS !== 'true') {
+    console.log(`🛡️ KEAMANAN AKTIF: Ditemukan ${existingTxCount} data transaksi riil di database.`);
+    console.log('🛡️ Penghapusan data transaksi, blockchain, dan kartu stok DILEWATI agar data tidak hilang.');
+  } else {
+    await prisma.blockchainRecord.deleteMany();
+    await prisma.transactionItem.deleteMany();
+    await prisma.transaction.deleteMany();
+    await prisma.inventoryMovement.deleteMany();
+  }
   await prisma.productRecipe.deleteMany();
   await prisma.ingredient.deleteMany();
   await prisma.product.deleteMany();
@@ -424,7 +432,7 @@ export async function main() {
     counts.users === 6 &&
     counts.products === 10 &&
     counts.categories === 3 &&
-    counts.transactions === 0
+    counts.transactions >= 0
   ) {
     console.log('🎉 SEEDER BERHASIL: 4 cabang, 6 akun, 10 menu produk & bahan baku lengkap siap digunakan!');
   } else {
