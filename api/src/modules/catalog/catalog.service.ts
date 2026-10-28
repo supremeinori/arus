@@ -77,11 +77,35 @@ export class CatalogService {
       return { estimated_portions: 0, cost_idr: defaultCost };
     }
 
-    const relevant = targetOutletId
-      ? recipes.filter((r) => r.ingredient && r.ingredient.outlet_id === targetOutletId)
-      : recipes;
+    if (!targetOutletId) {
+      const portions = recipes.map((r) => {
+        const stock = r.ingredient ? r.ingredient.stock_qty : 0;
+        if (r.amount_needed <= 0) return 0;
+        return Math.floor(stock / r.amount_needed);
+      });
+      const costIdr = recipes.reduce((sum, r) => {
+        const unitCost = r.ingredient ? r.ingredient.cost_per_unit : 0;
+        return sum + r.amount_needed * unitCost;
+      }, 0);
+      const minPortion = Math.max(0, Math.min(...portions));
+      return { estimated_portions: minPortion, cost_idr: costIdr > 0 ? costIdr : defaultCost };
+    }
 
-    if (!relevant || relevant.length === 0) {
+    const relevant = recipes.filter(
+      (r) => r.ingredient && r.ingredient.outlet_id === targetOutletId
+    );
+
+    const requiredIngredientNames = new Set(
+      recipes.map((r) => r.ingredient?.name).filter(Boolean)
+    );
+    const availableIngredientNames = new Set(
+      relevant.map((r) => r.ingredient?.name).filter(Boolean)
+    );
+    const hasMissingIngredient =
+      requiredIngredientNames.size > 0 &&
+      availableIngredientNames.size < requiredIngredientNames.size;
+
+    if (hasMissingIngredient || relevant.length === 0) {
       return { estimated_portions: 0, cost_idr: defaultCost };
     }
 
@@ -118,7 +142,9 @@ export class CatalogService {
     const skip = (page - 1) * pageSize;
 
     let effectiveOutletId = query.outlet_id;
-    if (!effectiveOutletId && allowedOutletIds.length > 0) {
+    if (userRole === Role.staff) {
+      effectiveOutletId = allowedOutletIds.length > 0 ? allowedOutletIds[0] : query.outlet_id;
+    } else if (!effectiveOutletId && allowedOutletIds.length > 0) {
       effectiveOutletId = allowedOutletIds[0];
     }
 

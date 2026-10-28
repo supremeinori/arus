@@ -23,7 +23,7 @@ const String kArusNotificationChannelDescription =
 /// berubah — importance dan sound channel tidak bisa diubah setelah channel
 /// dibuat, jadi channel versi lama dibuang lalu dibuat ulang dengan definisi
 /// baru.
-const int _channelDefinitionVersion = 1;
+const int _channelDefinitionVersion = 2;
 
 const String _channelVersionKey = 'notif_channel_definition_version';
 
@@ -119,9 +119,9 @@ class NotificationService {
   ///
   /// Hanya dijalankan saat aplikasi aktif: dialog permission butuh Activity
   /// yang terlampir, sedangkan isolate background tidak punya Activity.
-  Future<bool> requestPermission() async {
+  Future<bool> requestPermission({bool ignoreLifecycle = false}) async {
     try {
-      if (!_canShowPermissionDialog) return false;
+      if (!ignoreLifecycle && !_canShowPermissionDialog) return false;
       final android = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (android == null) return false;
@@ -180,6 +180,8 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             category: AndroidNotificationCategory.message,
+            ticker: title,
+            visibility: NotificationVisibility.public,
             styleInformation: BigTextStyleInformation(body),
           ),
         ),

@@ -42,7 +42,7 @@ class PosCartNotifier extends StateNotifier<PosCartState> {
 
     if (existingIndex >= 0) {
       final current = state.items[existingIndex];
-      if (cap > 0 && current.quantity + 1 > cap) return false;
+      if (cap <= 0 || current.quantity + 1 > cap) return false;
       final updatedList = List<PosCartItem>.from(state.items);
       updatedList[existingIndex] = current.copyWith(quantity: current.quantity + 1);
       state = state.copyWith(items: updatedList);
@@ -61,16 +61,36 @@ class PosCartNotifier extends StateNotifier<PosCartState> {
     }
   }
 
-  /// Increment dari sheet keranjang (tanpa objek produk) — butuh batas max.
-  bool incrementProduct(String productId, {required int maxPortions}) {
+  /// Validasi realtime penambahan porsi di keranjang berdasarkan sisa bahan baku cabang.
+  /// Mengembalikan pesan error (String) bila gagal, atau null bila sukses.
+  String? incrementProductWithValidation(
+    String productId, {
+    required int maxPortions,
+    String? productName,
+  }) {
     final existingIndex = state.items.indexWhere((item) => item.productId == productId);
-    if (existingIndex < 0) return false;
+    if (existingIndex < 0) return 'Item tidak ditemukan di keranjang.';
     final current = state.items[existingIndex];
-    if (maxPortions > 0 && current.quantity + 1 > maxPortions) return false;
+    final name = productName ?? current.productName;
+
+    if (maxPortions <= 0) {
+      return 'Bahan baku untuk menu "$name" habis di cabang ini (0 porsi). Tidak dapat menambah pesanan.';
+    }
+
+    if (current.quantity + 1 > maxPortions) {
+      return 'Maksimal estimasi porsi untuk "$name" tercapai (hanya tersedia $maxPortions porsi berdasarkan sisa bahan baku cabang).';
+    }
+
     final updatedList = List<PosCartItem>.from(state.items);
     updatedList[existingIndex] = current.copyWith(quantity: current.quantity + 1);
     state = state.copyWith(items: updatedList);
-    return true;
+    return null;
+  }
+
+  /// Increment dari sheet keranjang (tanpa objek produk) — butuh batas max.
+  bool incrementProduct(String productId, {required int maxPortions}) {
+    final err = incrementProductWithValidation(productId, maxPortions: maxPortions);
+    return err == null;
   }
 
   /// Alias untuk sheet keranjang lama.

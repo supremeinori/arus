@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import 'pos_provider.dart';
+import '../data/pos_catalog_repository.dart';
+import 'pos_catalog_provider.dart';
 import '../../settings/presentation/currency_provider.dart';
 
 /// Bottom sheet detail keranjang: daftar baris + tombol +, -, hapus per baris,
@@ -90,14 +92,39 @@ class PosCartSheet extends ConsumerWidget {
                 shrinkWrap: true,
                 itemCount: cart.items.length,
                 separatorBuilder: (_, _) => const Divider(height: 14, color: AppTheme.darkCardBorder),
-                itemBuilder: (_, i) {
+                itemBuilder: (context, i) {
                   final item = cart.items[i];
+                  final catalogItems = ref.watch(posCatalogProvider).valueOrNull ?? [];
+                  final catalogItem = catalogItems.cast<PosCatalogItem?>().firstWhere(
+                    (c) => c?.product.id == item.productId,
+                    orElse: () => null,
+                  );
+                  final maxPortions = catalogItem?.maxPortions ?? 0;
+                  final isMaxReached = maxPortions > 0 && item.quantity >= maxPortions;
+
                   return _CartLine(
                     name: item.productName,
                     unitPriceText: ref.money(item.unitPriceIdr),
                     lineTotalText: ref.money(item.lineTotalIdr),
                     quantity: item.quantity,
-                    onIncrement: () => notifier.addProductById(item.productId),
+                    isMaxReached: isMaxReached,
+                    onIncrement: () {
+                      final error = notifier.incrementProductWithValidation(
+                        item.productId,
+                        maxPortions: maxPortions,
+                        productName: item.productName,
+                      );
+                      if (error != null) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(error),
+                            backgroundColor: const Color(0xFFD97706),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
                     onDecrement: () => notifier.decrementProduct(item.productId),
                     onRemove: () => notifier.removeProduct(item.productId),
                   );
@@ -194,6 +221,7 @@ class _CartLine extends StatelessWidget {
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onRemove;
+  final bool isMaxReached;
 
   const _CartLine({
     required this.name,
@@ -203,6 +231,7 @@ class _CartLine extends StatelessWidget {
     required this.onIncrement,
     required this.onDecrement,
     required this.onRemove,
+    this.isMaxReached = false,
   });
 
   @override
@@ -238,6 +267,7 @@ class _CartLine extends StatelessWidget {
         const SizedBox(width: 8),
         _QtyStepper(
           quantity: quantity,
+          isMaxReached: isMaxReached,
           onIncrement: onIncrement,
           onDecrement: onDecrement,
         ),
@@ -258,11 +288,13 @@ class _QtyStepper extends StatelessWidget {
   final int quantity;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final bool isMaxReached;
 
   const _QtyStepper({
     required this.quantity,
     required this.onIncrement,
     required this.onDecrement,
+    this.isMaxReached = false,
   });
 
   @override
@@ -292,7 +324,7 @@ class _QtyStepper extends StatelessWidget {
         _StepperButton(
           icon: Icons.add_rounded,
           tooltip: 'Tambah',
-          isPrimary: true,
+          isPrimary: !isMaxReached,
           onTap: onIncrement,
         ),
       ],

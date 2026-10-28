@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../../../core/utils/datetime_utils.dart';
 
 class IngredientModel {
   final String id;
@@ -50,7 +51,7 @@ class IngredientModel {
       reorderLevel: reorder,
       costPerUnit: json['cost_per_unit'] as int? ?? json['cost_idr'] as int? ?? 0,
       status: status,
-      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? '') ?? DateTime.now(),
+      updatedAt: parseToDeviceLocal(json['updated_at']),
     );
   }
 
@@ -115,7 +116,7 @@ class InventoryStockItem {
       reorderLevel: reorder,
       avgLeadTimeDays: json['avg_lead_time_days'] as int? ?? 3,
       isLowStock: isLow,
-      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? '') ?? DateTime.now(),
+      updatedAt: parseToDeviceLocal(json['updated_at']),
     );
   }
 
@@ -175,7 +176,7 @@ class InventoryMovementItem {
       note: json['note'] as String?,
       creatorName: user?['name'] as String? ?? 'User',
       receiptNo: trx?['receipt_no'] as String?,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: parseToDeviceLocal(json['created_at']),
     );
   }
 

@@ -98,6 +98,12 @@ class PushService {
       debugPrint('[Push] Permission request gagal: $err');
     }
 
+    try {
+      await NotificationService.instance.requestPermission(ignoreLifecycle: true);
+    } catch (err) {
+      debugPrint('[Push] Android permission request gagal: $err');
+    }
+
     // Registration token FCM (bukan FID). Backend firebase-admin v13 memakai
     // field `tokens` pada sendEachForMulticast, jadi token klasik dipakai.
     // ignore: deprecated_member_use

@@ -1,4 +1,6 @@
 
+import '../../../core/utils/datetime_utils.dart';
+
 class PosCartItem {
   final String productId;
   final String productName;
@@ -104,7 +106,7 @@ class PosTransactionModel {
       changeIdr: json['change_idr'] as int? ?? 0,
       status: json['status'] as String? ?? 'completed',
       voidReason: json['void_reason'] as String?,
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: parseToDeviceLocal(json['created_at']),
       isOfflinePending: json['is_offline_pending'] as bool? ?? false,
       clientRequestId: json['client_request_id'] as String?,
       items: rawItems.map((item) {

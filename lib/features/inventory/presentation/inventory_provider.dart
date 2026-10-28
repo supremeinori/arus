@@ -35,8 +35,10 @@ final inventoryFilterProvider = StateProvider<InventoryFilterState>((ref) {
 final ingredientsListProvider = FutureProvider.autoDispose<List<IngredientModel>>((ref) async {
   final repo = ref.watch(inventoryRepositoryProvider);
   final authUser = ref.watch(authProvider).user;
-  // Khusus Manager: Terkunci ke cabang yang ditugaskan oleh Owner, tidak boleh memilih cabang lain
-  final outletId = (authUser != null && authUser.role == UserRole.manager && authUser.outlets.isNotEmpty)
+  // Khusus Manager & Staff (Kasir): Terkunci ke cabang yang ditugaskan oleh Owner
+  final outletId = (authUser != null &&
+          (authUser.role == UserRole.manager || authUser.role == UserRole.staff) &&
+          authUser.outlets.isNotEmpty)
       ? authUser.outlets.first.id
       : ref.watch(selectedOutletFilterProvider);
   final filter = ref.watch(inventoryFilterProvider);
@@ -52,7 +54,9 @@ final ingredientsListProvider = FutureProvider.autoDispose<List<IngredientModel>
 final inventoryListProvider = FutureProvider.autoDispose<List<InventoryStockItem>>((ref) async {
   final repo = ref.watch(inventoryRepositoryProvider);
   final authUser = ref.watch(authProvider).user;
-  final outletId = (authUser != null && authUser.role == UserRole.manager && authUser.outlets.isNotEmpty)
+  final outletId = (authUser != null &&
+          (authUser.role == UserRole.manager || authUser.role == UserRole.staff) &&
+          authUser.outlets.isNotEmpty)
       ? authUser.outlets.first.id
       : ref.watch(selectedOutletFilterProvider);
   final filter = ref.watch(inventoryFilterProvider);

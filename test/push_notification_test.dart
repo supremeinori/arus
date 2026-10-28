@@ -60,6 +60,22 @@ void main() {
       expect(model.type, 'ai_result');
     });
 
+    test('created_at dari UTC dikonversi ke waktu realtime lokal perangkat', () {
+      final model = NotificationModel.fromJson({
+        'id': 'notif-utc',
+        'user_id': 'u-1',
+        'type': 'low_stock',
+        'title': 'Stok Menipis',
+        'body': 'Biji kopi sisa 100g',
+        'is_read': false,
+        'created_at': '2026-10-28T09:06:00.000Z',
+      });
+
+      expect(model.createdAt.isUtc, isFalse);
+      final expectedHour = DateTime.parse('2026-10-28T09:06:00.000Z').toLocal().hour;
+      expect(model.createdAt.hour, expectedHour);
+    });
+
     test('Field yang tidak ada tidak membuat crash', () {
       final model = NotificationModel.fromJson({});
 

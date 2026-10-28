@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/push/notification_service.dart';
 import '../data/notifications_repository.dart';
 import '../domain/notification_models.dart';
 
@@ -43,6 +44,28 @@ class NotificationActionNotifier extends StateNotifier<bool> {
     try {
       final count = await _repo.evaluateNotifications();
       _ref.invalidate(notificationsListProvider);
+      if (count > 0) {
+        try {
+          final freshData = await _repo.getNotifications();
+          final unreadLowStocks = freshData.notifications
+              .where((n) => !n.isRead && n.type == 'low_stock')
+              .toList();
+          if (unreadLowStocks.isNotEmpty) {
+            final top = unreadLowStocks.first;
+            await NotificationService.instance.show(
+              title: top.title,
+              body: top.body,
+              payload: '/inventory',
+            );
+          } else {
+            await NotificationService.instance.show(
+              title: 'Peringatan Operasional ($count Baru)',
+              body: 'Sistem mendeteksi $count peringatan operasional baru yang memerlukan perhatian.',
+              payload: '/notifications',
+            );
+          }
+        } catch (_) {}
+      }
       return count;
     } finally {
       state = false;

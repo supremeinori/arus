@@ -70,6 +70,15 @@ export const pushService = {
           title: notification.title,
           body: notification.body,
         },
+        android: {
+          priority: 'high' as const,
+          notification: {
+            channelId: 'arus_push_high',
+            priority: 'high' as const,
+            defaultSound: true,
+            defaultVibrateTimings: true,
+          },
+        },
         data: notification.data || {},
         tokens,
       };

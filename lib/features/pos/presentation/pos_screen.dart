@@ -1080,6 +1080,13 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                     separatorBuilder: (_, _) => const Divider(height: 12, color: AppTheme.darkCardBorder),
                     itemBuilder: (context, i) {
                       final item = cartState.items[i];
+                      final catalogItems = ref.watch(posCatalogProvider).valueOrNull ?? [];
+                      final catalogItem = catalogItems.cast<PosCatalogItem?>().firstWhere(
+                        (c) => c?.product.id == item.productId,
+                        orElse: () => null,
+                      );
+                      final maxPortions = catalogItem?.maxPortions ?? 0;
+                      final isMaxReached = maxPortions > 0 && item.quantity >= maxPortions;
                       return Row(
                         children: [
                           Expanded(
@@ -1123,8 +1130,28 @@ class _PosCartDesktopPanel extends ConsumerWidget {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline, size: 18, color: AppTheme.jadeTosca),
-                            onPressed: () => notifier.addProductById(item.productId),
+                            icon: Icon(
+                              Icons.add_circle_outline,
+                              size: 18,
+                              color: isMaxReached ? AppTheme.textMutedDark : AppTheme.jadeTosca,
+                            ),
+                            onPressed: () {
+                              final error = notifier.incrementProductWithValidation(
+                                item.productId,
+                                maxPortions: maxPortions,
+                                productName: item.productName,
+                              );
+                              if (error != null) {
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(error),
+                                    backgroundColor: const Color(0xFFD97706),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
                             tooltip: 'Tambah',
                             visualDensity: VisualDensity.compact,
                           ),

@@ -8,6 +8,7 @@ import '../../features/catalog/domain/category_model.dart';
 import '../../features/catalog/domain/product_model.dart';
 import '../../features/pos/domain/pos_models.dart';
 import '../utils/money_formatter.dart';
+import '../utils/datetime_utils.dart';
 
 final localDbProvider = Provider<LocalDatabase>((ref) {
   return LocalDatabase.instance;
@@ -1142,7 +1143,7 @@ class LocalDatabase {
           paidIdr: m['total_idr'] as int? ?? 0,
           changeIdr: 0,
           status: m['status'] as String? ?? 'completed',
-          createdAt: DateTime.tryParse(m['created_at'] as String? ?? '') ?? DateTime.now(),
+          createdAt: parseToDeviceLocal(m['created_at']),
         );
       }).toList();
       if (outletId != null && outletId.isNotEmpty) {
@@ -1178,7 +1179,7 @@ class LocalDatabase {
             paidIdr: r['total_idr'] as int? ?? 0,
             changeIdr: 0,
             status: r['status'] as String? ?? 'completed',
-            createdAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+            createdAt: parseToDeviceLocal(r['created_at']),
           ));
         }
       } catch (_) {}
