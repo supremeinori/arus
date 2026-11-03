@@ -1,7 +1,7 @@
 # 🎮 ARUS Mini-Game Design — "Guess the Menu"
 
 **Nama Fitur:** Guess the Menu (Fitur #27 — MOD-5)  
-**Terkait Dokumen Utama:** `arus_srs_v2.md`  
+**Terkait Dokumen Utama:** `arus_srs_v3.md`  
 **Aktor yang Dapat Mengakses:** Semua Role (Owner, Manager, Staff/Kasir)  
 **Sumber Data Utama:** Tabel `products` (PostgreSQL POS Database) & Tabel `game_sessions`
 

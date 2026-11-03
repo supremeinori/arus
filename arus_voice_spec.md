@@ -140,6 +140,6 @@ Gunakan `GestureDetector` pada tombol Push-to-Talk:
 ### Cara Eksekusi di Antigravity:
 1. Buat file baru bernama `arus_voice_spec.md` di folder proyek lu, lalu *paste* seluruh kotak *markdown* di atas ke dalamnya.
 2. Buka chat Antigravity, lalu ketik perintah singkat ini:
-   > *"Baca spesifikasi lengkap di `@arus_voice_spec.md` dan aturan umum di `@arus_srs_v2.md`. Implementasikan fitur ARUS Voice & STT tersebut secara end-to-end (Backend Express & Frontend Flutter) sekarang."*
+   > *"Baca spesifikasi lengkap di `@arus_voice_spec.md` dan aturan umum di `@arus_srs_v3.md`. Implementasikan fitur ARUS Voice & STT tersebut secara end-to-end (Backend Express & Frontend Flutter) sekarang."*
 
 Dengan memisahkan spesifikasi ini ke file `.md` tersendiri, konteks Antigravity tidak ak
