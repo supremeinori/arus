@@ -4,6 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arus/features/ai_assistant/data/ai_repository.dart';
 import 'package:arus/features/ai_assistant/domain/ai_models.dart';
 import 'package:arus/features/ai_assistant/presentation/ai_home_screen.dart';
+import 'package:arus/features/auth/domain/user_model.dart';
+import 'package:arus/features/auth/presentation/auth_provider.dart';
+import 'package:arus/features/auth/presentation/auth_state.dart';
+import 'package:arus/features/auth/data/auth_repository.dart';
+import 'package:arus/core/storage/secure_store.dart';
+
+const ownerUser = UserModel(
+  id: 'u-owner-1',
+  name: 'Rina Owner',
+  email: 'owner@arus.demo',
+  role: UserRole.owner,
+);
 
 class FakeAiRepository implements AiRepository {
   @override
@@ -64,6 +76,14 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            authProvider.overrideWith((ref) {
+              final notifier = AuthNotifier(
+                ref.watch(authRepositoryProvider),
+                ref.watch(secureStoreProvider),
+              );
+              notifier.state = AuthState.authenticated(ownerUser);
+              return notifier;
+            }),
             aiRepositoryProvider.overrideWithValue(FakeAiRepository()),
           ],
           child: const MaterialApp(
@@ -76,14 +96,22 @@ void main() {
 
       expect(find.text('Asisten AI Bisnis'), findsOneWidget);
       expect(find.text('ARUS AI Decision Support'), findsOneWidget);
-      expect(find.text('Bagaimana ringkasan penjualan hari ini?'), findsOneWidget);
-      expect(find.text('Apakah ada produk yang butuh restock segera?'), findsOneWidget);
+      expect(find.text('Bagaimana ringkasan penjualan semua cabang kemarin?'), findsOneWidget);
+      expect(find.text('Bandingkan performa antarcabang saat ini'), findsOneWidget);
     });
 
     testWidgets('AiHomeScreen mengirim pesan prompt dan menampilkan respon asisten berbasis fakta grounded', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            authProvider.overrideWith((ref) {
+              final notifier = AuthNotifier(
+                ref.watch(authRepositoryProvider),
+                ref.watch(secureStoreProvider),
+              );
+              notifier.state = AuthState.authenticated(ownerUser);
+              return notifier;
+            }),
             aiRepositoryProvider.overrideWithValue(FakeAiRepository()),
           ],
           child: const MaterialApp(
@@ -94,15 +122,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Klik salah satu prompt cepat
-      final promptBtn = find.text('Bagaimana ringkasan penjualan hari ini?');
+      // Klik salah satu prompt cepat (Owner version)
+      final promptBtn = find.text('Bagaimana ringkasan penjualan semua cabang kemarin?');
       expect(promptBtn, findsOneWidget);
       await tester.tap(promptBtn);
 
       await tester.pumpAndSettle();
 
       // Memastikan pesan user dan pesan assistant muncul
-      expect(find.text('Bagaimana ringkasan penjualan hari ini?'), findsOneWidget);
+      expect(find.text('Bagaimana ringkasan penjualan semua cabang kemarin?'), findsOneWidget);
       expect(find.textContaining('Penjualan hari ini mencapai Rp 1.500.000'), findsOneWidget);
       expect(find.textContaining('Grounded Fact: 1 fakta database'), findsOneWidget);
       expect(find.textContaining('Tingkatkan stok espresso blend'), findsOneWidget);

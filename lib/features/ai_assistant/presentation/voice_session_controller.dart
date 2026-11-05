@@ -67,6 +67,7 @@ class VoiceSessionNotifier extends StateNotifier<VoiceSessionStateData> {
   ];
 
   final Map<String, String> _fillerCache = {};
+  static const int _maxFillerCacheSize = 10;
 
   VoiceSessionNotifier(this._ref, this._repository) : super(const VoiceSessionStateData()) {
     _init();
@@ -75,7 +76,10 @@ class VoiceSessionNotifier extends StateNotifier<VoiceSessionStateData> {
   Future<void> _init() async {
     // Listen to player completion
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted && state.sessionState == VoiceSessionState.speakingResult) {
+      if (!mounted) return;
+      final currentState = state.sessionState;
+      if (currentState == VoiceSessionState.speakingResult ||
+          currentState == VoiceSessionState.processingFiller) {
         state = state.copyWith(sessionState: VoiceSessionState.idle);
       }
     });
@@ -107,6 +111,10 @@ class VoiceSessionNotifier extends StateNotifier<VoiceSessionStateData> {
         try {
           final audio = await _repository.getTtsAudio(text);
           if (audio.isNotEmpty) {
+            if (_fillerCache.length >= _maxFillerCacheSize) {
+              final firstKey = _fillerCache.keys.first;
+              _fillerCache.remove(firstKey);
+            }
             _fillerCache[text] = audio;
           }
         } catch (_) {}
@@ -123,6 +131,11 @@ class VoiceSessionNotifier extends StateNotifier<VoiceSessionStateData> {
     if (state.sessionState == VoiceSessionState.speakingResult ||
         state.sessionState == VoiceSessionState.processingFiller) {
       await _audioPlayer.stop();
+      if (!mounted) return;
+      state = state.copyWith(
+        sessionState: VoiceSessionState.idle,
+        activeFillerText: null,
+      );
     }
 
     if (!mounted) return;
@@ -240,14 +253,20 @@ class VoiceSessionNotifier extends StateNotifier<VoiceSessionStateData> {
     final cached = _fillerCache[text];
     if (cached != null && cached.isNotEmpty) {
       try {
-        final bytes = base64Decode(cached);
-        await _audioPlayer.play(BytesSource(bytes));
+        if (mounted && state.sessionState == VoiceSessionState.processingFiller) {
+          final bytes = base64Decode(cached);
+          await _audioPlayer.play(BytesSource(bytes));
+        }
       } catch (_) {}
     } else {
       // Ambil dan putar jika belum di-cache
       try {
         final audio = await _repository.getTtsAudio(text);
         if (audio.isNotEmpty) {
+          if (_fillerCache.length >= _maxFillerCacheSize) {
+            final firstKey = _fillerCache.keys.first;
+            _fillerCache.remove(firstKey);
+          }
           _fillerCache[text] = audio;
           if (mounted && state.sessionState == VoiceSessionState.processingFiller) {
             final bytes = base64Decode(audio);

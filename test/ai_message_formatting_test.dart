@@ -5,6 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arus/features/ai_assistant/data/ai_repository.dart';
 import 'package:arus/features/ai_assistant/domain/ai_models.dart';
 import 'package:arus/features/ai_assistant/presentation/ai_home_screen.dart';
+import 'package:arus/features/auth/domain/user_model.dart';
+import 'package:arus/features/auth/presentation/auth_provider.dart';
+import 'package:arus/features/auth/presentation/auth_state.dart';
+import 'package:arus/features/auth/data/auth_repository.dart';
+import 'package:arus/core/storage/secure_store.dart';
+
+const ownerUser = UserModel(
+  id: 'u-owner-1',
+  name: 'Rina Owner',
+  email: 'owner@arus.demo',
+  role: UserRole.owner,
+);
 
 class FormattingFakeAiRepository implements AiRepository {
   @override
@@ -67,6 +79,14 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            authProvider.overrideWith((ref) {
+              final notifier = AuthNotifier(
+                ref.watch(authRepositoryProvider),
+                ref.watch(secureStoreProvider),
+              );
+              notifier.state = AuthState.authenticated(ownerUser);
+              return notifier;
+            }),
             aiRepositoryProvider.overrideWithValue(FormattingFakeAiRepository()),
           ],
           child: const MaterialApp(
@@ -77,8 +97,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Klik quick prompt untuk mentrigger pesan
-      final promptBtn = find.text('Bagaimana ringkasan penjualan hari ini?');
+      // Klik quick prompt untuk mentrigger pesan (Owner version)
+      final promptBtn = find.text('Bagaimana ringkasan penjualan semua cabang kemarin?');
       expect(promptBtn, findsOneWidget);
       await tester.tap(promptBtn);
 
