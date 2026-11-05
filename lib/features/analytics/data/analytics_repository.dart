@@ -944,7 +944,11 @@ class AnalyticsRepository {
       ewma = alpha * winValues[i] + (1 - alpha) * ewma;
     }
     final overallAvg = winDays > 0 ? winValues.fold<int>(0, (a, b) => a + b) / winDays : 0.0;
-    final baseLevel = math.max(1, ewma.round());
+    // Shrinkage: saat hari aktif masih sedikit, tarik base level ke rata-rata
+    // jendela agar satu hari spike tidak langsung dianggap tren permanen.
+    final baseCredibility = activeDays / (activeDays + 5.0);
+    final smoothedBase = baseCredibility * ewma + (1 - baseCredibility) * overallAvg;
+    final baseLevel = math.max(1, smoothedBase.round());
 
     // 2. Musiman day-of-week dengan Bayesian shrinkage (termasuk hari 0).
     final rawRetailPrior = <int, double>{
@@ -1062,7 +1066,8 @@ class AnalyticsRepository {
         ? modelEntries.sublist(modelEntries.length - effectiveHorizon)
         : modelEntries;
     final previousPeriodRevenue = recentWindow.fold<int>(0, (s, p) => s + p.revenueIdr);
-    final growthPct = previousPeriodRevenue > 0
+    final dataSufficient = activeDays >= 3;
+    final growthPct = dataSufficient && previousPeriodRevenue > 0
         ? ((projectedTotalRevenue - previousPeriodRevenue) / previousPeriodRevenue * 100)
         : 0.0;
     final avgDailyProjected = effectiveHorizon > 0 ? (projectedTotalRevenue ~/ effectiveHorizon) : 0;
@@ -1075,11 +1080,13 @@ class AnalyticsRepository {
     }
 
     final growthSign = growthPct >= 0 ? '+' : '';
-    final aiInsight = streakZero >= 2
-        ? 'Mode offline: $streakZero hari terakhir tanpa transaksi. Proyeksi omzet $effectiveHorizon hari ke depan diturunkan menjadi Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir).'
-        : activeDays < 7
-            ? 'Mode offline: Proyeksi dihitung dari data aktif $activeDays hari dengan pola musiman ritel (puncak ${peakDay.dayName}). Estimasi $effectiveHorizon hari ke depan Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir).'
-            : 'Mode offline: Proyeksi dihitung dari data aktif $activeDays hari. Estimasi omzet $effectiveHorizon hari ke depan Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir) dengan puncak ${peakDay.dayName} (Rp ${peakDay.revenueIdr}).';
+    final aiInsight = !dataSufficient
+        ? 'Mode offline: Data aktif baru $activeDays hari (minimal 3 hari untuk menilai tren). Proyeksi omzet $effectiveHorizon hari ke depan Rp $projectedTotalRevenue bersifat indikatif.'
+        : streakZero >= 2
+            ? 'Mode offline: $streakZero hari terakhir tanpa transaksi. Proyeksi omzet $effectiveHorizon hari ke depan diturunkan menjadi Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir).'
+            : activeDays < 7
+                ? 'Mode offline: Proyeksi dihitung dari data aktif $activeDays hari dengan pola musiman ritel (puncak ${peakDay.dayName}). Estimasi $effectiveHorizon hari ke depan Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir).'
+                : 'Mode offline: Proyeksi dihitung dari data aktif $activeDays hari. Estimasi omzet $effectiveHorizon hari ke depan Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir) dengan puncak ${peakDay.dayName} (Rp ${peakDay.revenueIdr}).';
 
     return SalesForecastModel(
       horizonDays: effectiveHorizon,
@@ -1098,7 +1105,7 @@ class AnalyticsRepository {
         aiInsight: aiInsight,
       ),
       evaluation: SalesForecastEvaluation(
-        status: 'offline_evaluated',
+        status: dataSufficient ? 'offline_evaluated' : 'offline_insufficient_history',
         trainDays: activeDays,
         testDays: 0,
         seasonalNaiveMae: 0.0,

@@ -99,12 +99,15 @@ Orang 3 memegang kendali atas fitur-fitur tercanggih sistem ARUS (*smart, hardwa
 ### 3.6 AI Sales & Stockout Forecasting (Model Deret Waktu Statistik)
 * **Lokasi Kode:** [`analytics.service.ts`](file:///c:/MyProjects/arus/api/src/modules/analytics/analytics.service.ts) (`getSalesForecast`, `getStockoutForecast`) & [`analytics_repository.dart`](file:///c:/MyProjects/arus/lib/features/analytics/data/analytics_repository.dart) (`_computeLocalSalesForecast`)
 * **Sales Forecast 7–30 Hari (online dan offline):**
+  - **Kalender bisnis mengikuti zona waktu outlet:** hari dimulai pukul 00:00 waktu cabang, bukan UTC, sehingga transaksi malam tidak dianggap hari parsial.
   - **Kalender kontinu:** jendela histori minimal 30 hari; hari tanpa transaksi tetap dihitung sebagai Rp 0, bukan dibuang.
   - **Base level EWMA** dengan $\alpha = 0.35$: hari terbaru berbobot lebih besar, sehingga penurunan omzet langsung terasa.
+  - **Shrinkage data minim:** base level ditarik ke rata-rata jendela dengan bobot $activeDays/(activeDays+5)$, agar satu hari spike tidak langsung dianggap tren permanen.
   - **Tren linear 14 hari** pada indeks kalender, dihaluskan dengan peredaman Holt ($\phi = 0.92$) dan dibatasi maksimum $\pm 6\%$ dari base level.
   - **Musiman hari-dalam-minggu** memakai *Bayesian shrinkage*: kredibilitas data $= \frac{count}{count + 5}$, sehingga pola ritel tidak mendominasi saat data masih sedikit.
   - **Faktor kekeringan (drought):** jika $N$ hari terakhir berturut-turut tanpa transaksi, proyeksi dikali $0.7^{\min(N-1, 6)}$. Contoh: 4 hari sepi membuat proyeksi turun sekitar 76%.
   - **Growth %** dibandingkan dengan horizon hari selesai terakhir. Jika periode pembanding Rp 0, growth ditetapkan 0% agar tidak muncul angka palsu.
+  - **Guard data minim:** minimal 3 hari aktif; di bawah itu status `insufficient_history`, growth 0%, dan proyeksi ditandai indikatif.
   - **Fallback offline:** algoritma yang sama dihitung dari `backup_transactions` SQLite, dengan status `offline_evaluated` atau `offline_insufficient_history`.
 * **Stockout Forecast:**
   - **Kecepatan konsumsi harian** = total pemakaian bahan 14 hari terakhir $\div$ 14.

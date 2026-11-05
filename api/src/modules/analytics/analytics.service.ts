@@ -1,7 +1,7 @@
 import { PrismaClient, Role, TxnStatus, PaymentMethod } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
-import { getStartOfDayInTimezone, getEndOfDayInTimezone } from '../../shared/timezone';
+import { getStartOfDayInTimezone, getEndOfDayInTimezone, getTodayDateStrInTimezone } from '../../shared/timezone';
 
 export class AnalyticsService {
   /**
@@ -325,16 +325,34 @@ export class AnalyticsService {
     const historyDays = Math.max(horizonDays * 2, 30);
 
     const now = new Date();
-    const toUtcDateStr = (d: Date): string => {
-      const y = d.getUTCFullYear();
-      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(d.getUTCDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
 
-    const endDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
-    const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
-    startDate.setUTCDate(startDate.getUTCDate() - (historyDays - 1));
+    // Kalender bisnis mengikuti zona waktu outlet, bukan UTC. Tanpa ini, transaksi
+    // malam hari bisa dianggap "hari parsial" dan dibuang dari pemodelan.
+    let tz = 'Asia/Jakarta';
+    try {
+      const tzOutletId = query.outlet_id || (userScope.role !== Role.owner ? userScope.allowedOutletIds[0] : undefined);
+      if (tzOutletId) {
+        const outlet = await prisma.outlet.findUnique({
+          where: { id: tzOutletId },
+          select: { timezone: true },
+        });
+        if (outlet?.timezone) tz = outlet.timezone;
+      }
+    } catch {
+      // Fallback ke WIB.
+    }
+
+    const todayStr = getTodayDateStrInTimezone(tz, now);
+    const shiftDateStr = (base: string, delta: number): string => {
+      const d = new Date(`${base}T12:00:00.000Z`);
+      d.setUTCDate(d.getUTCDate() + delta);
+      return d.toISOString().slice(0, 10);
+    };
+    const dayOfWeek = (dateStr: string): number => new Date(`${dateStr}T12:00:00.000Z`).getUTCDay();
+    const startStr = shiftDateStr(todayStr, -(historyDays - 1));
+
+    const endDate = getEndOfDayInTimezone(tz, now);
+    const startDate = getStartOfDayInTimezone(tz, new Date(`${startStr}T12:00:00.000Z`));
 
     const where: any = {
       status: TxnStatus.completed,
@@ -356,14 +374,12 @@ export class AnalyticsService {
 
       // Kalender kontinu: setiap hari di jendela riwayat selalu ada, termasuk hari bernilai 0.
       const historicalMap = new Map<string, number>();
-      const curr = new Date(startDate);
-      while (curr <= endDate) {
-        historicalMap.set(toUtcDateStr(curr), 0);
-        curr.setUTCDate(curr.getUTCDate() + 1);
+      for (let i = 0; i < historyDays; i++) {
+        historicalMap.set(shiftDateStr(startStr, i), 0);
       }
 
       for (const tx of transactions) {
-        const dStr = toUtcDateStr(new Date(tx.created_at));
+        const dStr = getTodayDateStrInTimezone(tz, new Date(tx.created_at));
         if (historicalMap.has(dStr)) {
           historicalMap.set(dStr, (historicalMap.get(dStr) ?? 0) + tx.total_idr);
         }
@@ -393,10 +409,8 @@ export class AnalyticsService {
         }> = [];
 
         for (let h = 1; h <= horizonDays; h++) {
-          const futureDate = new Date(endDate);
-          futureDate.setUTCDate(futureDate.getUTCDate() + h);
-          const dateStr = toUtcDateStr(futureDate);
-          const dow = futureDate.getUTCDay();
+          const dateStr = shiftDateStr(todayStr, h);
+          const dow = dayOfWeek(dateStr);
 
           forecast.push({
             date: dateStr,
@@ -453,7 +467,11 @@ export class AnalyticsService {
         ewma = alpha * winValues[i] + (1 - alpha) * ewma;
       }
       const overallAvg = winDays > 0 ? winValues.reduce((a, b) => a + b, 0) / winDays : 0;
-      const baseLevel = Math.max(1, Math.round(ewma));
+      // Shrinkage: saat hari aktif masih sedikit, tarik base level ke rata-rata
+      // jendela agar satu hari spike tidak langsung dianggap tren permanen.
+      const baseCredibility = activeDays / (activeDays + 5.0);
+      const smoothedBase = baseCredibility * ewma + (1.0 - baseCredibility) * overallAvg;
+      const baseLevel = Math.max(1, Math.round(smoothedBase));
 
       // 2. Musiman day-of-week dengan Bayesian shrinkage (termasuk hari 0).
       const rawRetailPrior = [1.25, 0.82, 0.87, 0.92, 0.97, 1.16, 1.35]; // Minggu..Sabtu
@@ -527,6 +545,7 @@ export class AnalyticsService {
       const baseStdDev = Math.max(baseLevel * 0.12, sampleStdDev);
 
       const confidence = activeDays < 3 ? 'low' : activeDays < 7 ? 'medium' : 'normal';
+      const dataSufficient = activeDays >= 3;
 
       const forecast: Array<{
         date: string;
@@ -542,10 +561,8 @@ export class AnalyticsService {
       const phi = 0.92; // Faktor peredaman tren Holt
 
       for (let h = 1; h <= horizonDays; h++) {
-        const futureDate = new Date(endDate);
-        futureDate.setUTCDate(futureDate.getUTCDate() + h);
-        const dateStr = toUtcDateStr(futureDate);
-        const dow = futureDate.getUTCDay();
+        const dateStr = shiftDateStr(todayStr, h);
+        const dow = dayOfWeek(dateStr);
 
         const dampenedTrend = slope * ((phi * (1.0 - Math.pow(phi, h))) / (1.0 - phi));
         const trendBase = Math.max(baseLevel * 0.4, baseLevel + dampenedTrend);
@@ -581,14 +598,16 @@ export class AnalyticsService {
         .slice(-horizonDays)
         .reduce((acc, e) => acc + e.revenue_idr, 0);
       const growthPct =
-        prevPeriodRevenue > 0
+        dataSufficient && prevPeriodRevenue > 0
           ? Math.round(((projectedTotal - prevPeriodRevenue) / prevPeriodRevenue) * 1000) / 10
           : 0.0;
       const avgDailyProjected = Math.round(projectedTotal / horizonDays);
       const growthSign = growthPct >= 0 ? '+' : '';
 
       let aiInsight: string;
-      if (streakZero >= 2) {
+      if (!dataSufficient) {
+        aiInsight = `Data aktif baru ${activeDays} hari (minimal 3 hari untuk menilai tren). Proyeksi omzet ${horizonDays} hari ke depan Rp ${projectedTotal.toLocaleString('id-ID')} bersifat indikatif dan perlu ditambah data transaksi.`;
+      } else if (streakZero >= 2) {
         aiInsight = `${streakZero} hari terakhir tanpa transaksi. Model menurunkan proyeksi omzet ${horizonDays} hari ke depan menjadi Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs ${horizonDays} hari terakhir).`;
       } else if (activeDays < 7) {
         aiInsight = `Model memadukan data aktif ${activeDays} hari dengan pola musiman ritel (puncak ${peakProjected.day_name}). Estimasi omzet ${horizonDays} hari ke depan Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs ${horizonDays} hari terakhir).`;
@@ -609,7 +628,7 @@ export class AnalyticsService {
           ai_insight: aiInsight,
         },
         evaluation: {
-          status: 'evaluated',
+          status: dataSufficient ? 'evaluated' : 'insufficient_history',
           data_points_count: activeDays,
           required_points_count: 1,
           model_name: 'ewma_bayesian_seasonal_dampened',
