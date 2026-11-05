@@ -184,8 +184,9 @@ export class NotificationsService {
 
   /**
    * Evaluasi otomatis untuk men-generate notifikasi stok kritis & pencapaian target.
+   * actorId opsional: untuk job background bisa tidak dikirim.
    */
-  async evaluateAndTrigger(actorId: string) {
+  async evaluateAndTrigger(actorId?: string) {
     const todayStr = new Date().toISOString().slice(0, 10);
     let triggeredCount = 0;
 
@@ -234,19 +235,25 @@ export class NotificationsService {
       const recipients = await resolveInventoryRecipients(prisma, item.outlet.id);
       if (recipients.length === 0) continue;
 
-      const title = `Peringatan Stok: ${item.name} Menipis`;
-      const body = `Sisa stok di ${item.outlet.name} tersisa ${item.stock_qty} ${item.unit} (batas aman minimum: ${item.reorder_level}). Segera lakukan pengadaan.`;
+      // Pisahkan tipe: out_of_stock (0) vs low_stock (<= reorder_level tapi > 0)
+      const isOutOfStock = item.stock_qty === 0;
+      const notifType = isOutOfStock ? 'out_of_stock' : 'low_stock';
+      const title = isOutOfStock
+        ? `KRITIS: Stok ${item.name} HABIS`
+        : `Peringatan Stok: ${item.name} Menipis`;
+      const body = isOutOfStock
+        ? `Stok ${item.name} di ${item.outlet.name} sudah HABIS (0 ${item.unit}). Tindakan darurat diperlukan.`
+        : `Sisa stok di ${item.outlet.name} tersisa ${item.stock_qty} ${item.unit} (batas aman minimum: ${item.reorder_level}). Segera lakukan pengadaan.`;
 
       const drafts: NotificationDraft[] = recipients.map((userId) => ({
         user_id: userId,
-        type: 'low_stock',
+        type: notifType,
         title,
         body,
-        // Identifier record: bahan baku + cabang + periode. Sama dengan path POS,
-        // sehingga notifikasi tidak dobel antar trigger.
-        dedup_key: `low_stock:${item.id}:${item.outlet.id}:${todayStr}`,
+        // Identifier record: bahan baku + cabang + periode + tipe. Beda tipe = notif beda.
+        dedup_key: `${notifType}:${item.id}:${item.outlet.id}:${todayStr}`,
         data: {
-          type: 'low_stock',
+          type: notifType,
           outlet_id: item.outlet.id,
           ingredient_id: String(item.id),
         },

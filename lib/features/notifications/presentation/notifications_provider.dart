@@ -47,11 +47,13 @@ class NotificationActionNotifier extends StateNotifier<bool> {
       if (count > 0) {
         try {
           final freshData = await _repo.getNotifications();
-          final unreadLowStocks = freshData.notifications
-              .where((n) => !n.isRead && n.type == 'low_stock')
+          final unreadCriticalStocks = freshData.notifications
+              .where((n) => !n.isRead && (n.type == 'low_stock' || n.type == 'out_of_stock'))
               .toList();
-          if (unreadLowStocks.isNotEmpty) {
-            final top = unreadLowStocks.first;
+          if (unreadCriticalStocks.isNotEmpty) {
+            // Prioritaskan out_of_stock (lebih kritis)
+            unreadCriticalStocks.sort((a, b) => b.type == 'out_of_stock' ? 1 : -1);
+            final top = unreadCriticalStocks.first;
             await NotificationService.instance.show(
               title: top.title,
               body: top.body,

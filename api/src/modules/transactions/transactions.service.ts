@@ -294,16 +294,25 @@ export class TransactionsService {
           const recipients = await resolveInventoryRecipients(tx, targetOutletId);
           const todayStr = new Date().toISOString().slice(0, 10);
 
+          // Tentukan tipe notifikasi: "out_of_stock" kalau habis (0), "low_stock" kalau menipis
+          const isOutOfStock = update.new_quantity === 0;
+          const notifType = isOutOfStock ? 'out_of_stock' : 'low_stock';
+          const notifTitle = isOutOfStock
+            ? `Kritis: Stok ${update.ingredient_name} HABIS`
+            : `Peringatan: Stok ${update.ingredient_name} Menipis`;
+          const notifBody = isOutOfStock
+            ? `Stok bahan baku ${update.ingredient_name} di ${update.outlet_name || 'cabang'} sudah HABIS (0 ${update.unit}). Segera lakukan pengadaan darurat.`
+            : `Sisa bahan baku ${update.ingredient_name} di cabang kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`;
+
           const drafts: NotificationDraft[] = recipients.map((userId) => ({
             user_id: userId,
-            type: 'low_stock',
-            title: `Peringatan: Stok ${update.ingredient_name} Menipis`,
-            body: `Sisa bahan baku ${update.ingredient_name} di cabang kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`,
-            // Identifier record: bahan baku + cabang + periode. Sama dengan path
-            // evaluate sehingga notifikasi tidak dobel antar trigger.
-            dedup_key: `low_stock:${update.ingredient_id}:${targetOutletId}:${todayStr}`,
+            type: notifType,
+            title: notifTitle,
+            body: notifBody,
+            // Identifier record: bahan baku + cabang + periode + tipe. Beda tipe = notif beda.
+            dedup_key: `${notifType}:${update.ingredient_id}:${targetOutletId}:${todayStr}`,
             data: {
-              type: 'low_stock',
+              type: notifType,
               outlet_id: targetOutletId,
               ingredient_id: update.ingredient_id,
             },

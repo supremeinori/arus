@@ -190,7 +190,7 @@ class PushService {
       return;
     }
 
-    if (type == 'low_stock') {
+    if (type == 'low_stock' || type == 'out_of_stock') {
       _ref.read(routerProvider).go('/inventory');
       return;
     }
