@@ -234,11 +234,39 @@ describe('Analytics Module (Milestone 7)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.evaluation.status).toBe('evaluated');
-    expect(res.body.data.evaluation).toHaveProperty('model_mae_idr');
-    expect(res.body.data.evaluation).toHaveProperty('baseline_mae_idr');
+    expect(res.body.data.evaluation).toHaveProperty('model_name', 'ewma_bayesian_seasonal_dampened');
+    expect(res.body.data.evaluation).toHaveProperty('active_history_days');
+    expect(res.body.data.evaluation).toHaveProperty('trailing_zero_days');
     expect(res.body.data.forecast).toHaveLength(7);
     expect(res.body.data.summary.projected_total_revenue_idr).toBeGreaterThan(0);
-    expect(res.body.data.summary.ai_insight).toContain('Evaluasi holdout MAE');
+    expect(res.body.data.summary.ai_insight).toContain('Model memproyeksikan');
+  });
+
+  it('T-ANA-11: Sales forecasting menurunkan proyeksi ketika beberapa hari terakhir tanpa transaksi', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([]);
+
+    const now = new Date();
+    const mockTxList = [];
+    // 20 hari berisi omzet (25..6 hari lalu), lalu 5 hari terakhir (5..1) kosong.
+    for (let i = 25; i >= 6; i--) {
+      const d = new Date(now);
+      d.setUTCDate(now.getUTCDate() - i);
+      mockTxList.push({ total_idr: 200000, created_at: d });
+    }
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue(mockTxList as any);
+
+    const res = await request(app)
+      .get('/api/analytics/forecast/sales?horizon=7')
+      .set('Authorization', `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.evaluation.status).toBe('evaluated');
+    expect(res.body.data.evaluation.trailing_zero_days).toBeGreaterThanOrEqual(4);
+    // 20 hari x Rp 200.000 tanpa penurunan akan menghasilkan proyeksi besar.
+    // Dengan drought factor, total 7 hari harus jauh di bawah baseline tersebut.
+    expect(res.body.data.summary.projected_total_revenue_idr).toBeLessThan(20 * 200000);
+    expect(res.body.data.summary.ai_insight).toContain('hari terakhir tanpa transaksi');
   });
 
   it('T-ANA-09: Stockout forecasting mengembalikan daftar kosong jika outlet belum memiliki bahan baku tanpa data sintetis', async () => {

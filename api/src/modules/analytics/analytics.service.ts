@@ -321,7 +321,7 @@ export class AnalyticsService {
     }
 
     const horizonDays = query.horizon_days === 30 ? 30 : 7;
-    // Jendela riwayat: 30 hari untuk horizon 7 hari, 60 hari untuk horizon 30 hari
+    // Jendela riwayat cukup panjang agar tren dan musiman punya konteks.
     const historyDays = Math.max(horizonDays * 2, 30);
 
     const now = new Date();
@@ -354,7 +354,7 @@ export class AnalyticsService {
         orderBy: { created_at: 'asc' },
       });
 
-      // Siapkan Map tanggal riwayat kontinyu tanpa pemotongan tersembunyi
+      // Kalender kontinu: setiap hari di jendela riwayat selalu ada, termasuk hari bernilai 0.
       const historicalMap = new Map<string, number>();
       const curr = new Date(startDate);
       while (curr <= endDate) {
@@ -378,11 +378,10 @@ export class AnalyticsService {
         }));
 
       const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-      const activeEntries = historicalEntries.filter((e) => e.revenue_idr > 0);
-      const activeDays = activeEntries.length;
       const totalHistoricalRev = historicalEntries.reduce((sum, e) => sum + e.revenue_idr, 0);
+      const activeDays = historicalEntries.filter((e) => e.revenue_idr > 0).length;
 
-      // KASUS 1: Belum ada transaksi sama sekali
+      // KASUS 1: Belum ada transaksi sama sekali. Tidak ada angka sintetis.
       if (activeDays === 0 || totalHistoricalRev === 0) {
         const forecast: Array<{
           date: string;
@@ -420,82 +419,114 @@ export class AnalyticsService {
             avg_daily_projected_idr: 0,
             peak_projected_day: forecast[0] ?? { date: '', day_name: '', revenue_idr: 0 },
             ai_insight:
-              'Belum ada data transaksi penjualan pada outlet ini. Lakukan transaksi kasir untuk mengaktifkan peramalan deret waktu AI.',
+              'Belum ada data transaksi penjualan pada outlet ini. Lakukan transaksi kasir untuk mengaktifkan peramalan deret waktu.',
           },
           evaluation: {
-            status: 'no_history',
+            status: 'insufficient_history',
             data_points_count: 0,
             required_points_count: 1,
             model_name: 'zero_baseline',
+            active_history_days: 0,
+            trailing_zero_days: 0,
+            confidence: 'low',
           },
         };
       }
 
-      // KASUS 2: Model Prediktif AI Adaptif (Bayesian Day-of-Week Seasonality + Dampened Holt Trend)
-      // Menghindari nilai statis konstan ("sama mulu"), memadukan prior ritel empiris dengan data riil toko
-      const activeAvg = totalHistoricalRev / activeDays;
-      let weightSum = 0;
-      let weightedRevSum = 0;
-      activeEntries.forEach((entry, idx) => {
-        const w = idx + 1; // Prioritas ke hari-hari yang lebih baru
-        weightedRevSum += entry.revenue_idr * w;
-        weightSum += w;
-      });
-      const wma = weightSum > 0 ? weightedRevSum / weightSum : activeAvg;
-      const baseLevel = Math.max(1, Math.round(0.65 * wma + 0.35 * activeAvg));
+      // Hari berjalan (parsial) dikeluarkan dari pemodelan agar omzet setengah hari
+      // tidak menekan baseline. Hari selesai tetap dipakai, termasuk yang bernilai 0.
+      let modelEntries = historicalEntries.slice(0, historicalEntries.length - 1);
+      if (modelEntries.length === 0 || modelEntries.every((e) => e.revenue_idr === 0)) {
+        modelEntries = historicalEntries.slice();
+      }
 
-      // Prior Musiman Ritel / F&B (Minggu=0, Senin=1, ..., Sabtu=6)
-      // Akhir pekan (Jumat, Sabtu, Minggu) mencatat lonjakan aktivitas, awal pekan lebih tenang
-      const rawRetailPrior = [1.25, 0.82, 0.87, 0.92, 0.97, 1.16, 1.35];
+      // Mulai dari hari penjualan pertama agar nol sebelum toko buka tidak menggeser tren.
+      const firstActiveIdx = modelEntries.findIndex((e) => e.revenue_idr > 0);
+      const win = modelEntries.slice(Math.max(0, firstActiveIdx));
+      const winValues = win.map((e) => e.revenue_idr);
+      const winDays = winValues.length;
+
+      // 1. Base level recency-aware: EWMA (alpha 0.35). Hari 0 ikut menurunkan baseline.
+      const alpha = 0.35;
+      let ewma = winValues[0] ?? 0;
+      for (let i = 1; i < winDays; i++) {
+        ewma = alpha * winValues[i] + (1 - alpha) * ewma;
+      }
+      const overallAvg = winDays > 0 ? winValues.reduce((a, b) => a + b, 0) / winDays : 0;
+      const baseLevel = Math.max(1, Math.round(ewma));
+
+      // 2. Musiman day-of-week dengan Bayesian shrinkage (termasuk hari 0).
+      const rawRetailPrior = [1.25, 0.82, 0.87, 0.92, 0.97, 1.16, 1.35]; // Minggu..Sabtu
       const sumPrior = rawRetailPrior.reduce((a, b) => a + b, 0);
       const retailPrior = rawRetailPrior.map((p) => p / (sumPrior / 7.0));
-
-      // Multiplier Tiap Hari dalam Seminggu dengan Bayesian Shrinkage
-      const dowMultipliers: number[] = [];
+      const dowMultipliers: number[] = new Array<number>(7).fill(1);
       for (let d = 0; d < 7; d++) {
-        const dowEntries = activeEntries.filter((e) => new Date(e.date).getUTCDay() === d);
-        const count = dowEntries.length;
-        const dowAvg = count > 0 ? dowEntries.reduce((acc, c) => acc + c.revenue_idr, 0) / count : baseLevel;
-        const empMult = baseLevel > 0 ? dowAvg / baseLevel : 1.0;
-
-        // Bobot kredibilitas empiris: semakin banyak data hari d, semakin percaya ke data aktual
-        const credibility = count / (count + 3.0);
+        let sum = 0;
+        let count = 0;
+        win.forEach((entry) => {
+          if (new Date(entry.date).getUTCDay() === d) {
+            sum += entry.revenue_idr;
+            count += 1;
+          }
+        });
+        const dowAvg = count > 0 ? sum / count : overallAvg;
+        const empMult = overallAvg > 0 ? dowAvg / overallAvg : 1.0;
+        const credibility = count / (count + 5.0);
         const blended = credibility * empMult + (1.0 - credibility) * retailPrior[d];
-        // Batasi rentang aman multiplier antara 0.60 dan 1.80
         dowMultipliers[d] = Math.min(1.8, Math.max(0.6, blended));
       }
 
-      // Estimasi Tren Linear Terkendali (Dampened Trend)
+      // 3. Tren linear pada indeks kalender (14 hari selesai terakhir, hari 0 ikut).
+      const regWindow = Math.min(winDays, 14);
+      const regStart = winDays - regWindow;
       let slope = 0;
-      if (activeDays >= 3) {
-        let sumIdx = 0;
+      if (regWindow >= 3) {
+        let sumX = 0;
         let sumY = 0;
-        let sumIdxY = 0;
-        let sumIdx2 = 0;
-        activeEntries.forEach((entry, idx) => {
-          sumIdx += idx;
-          sumY += entry.revenue_idr;
-          sumIdxY += idx * entry.revenue_idr;
-          sumIdx2 += idx * idx;
-        });
-        const denom = activeDays * sumIdx2 - sumIdx * sumIdx;
-        const rawSlope = denom !== 0 ? (activeDays * sumIdxY - sumIdx * sumY) / denom : 0;
-        // Batasi slope agar tidak terjadi divergensi ekstrem (maksimal +-6% base per hari aktif)
+        let sumXY = 0;
+        let sumXX = 0;
+        for (let i = 0; i < regWindow; i++) {
+          const v = winValues[regStart + i];
+          sumX += i;
+          sumY += v;
+          sumXY += i * v;
+          sumXX += i * i;
+        }
+        const denom = regWindow * sumXX - sumX * sumX;
+        const rawSlope = denom !== 0 ? (regWindow * sumXY - sumX * sumY) / denom : 0;
         const maxSlope = 0.06 * baseLevel;
         slope = Math.min(maxSlope, Math.max(-maxSlope, rawSlope));
       }
 
-      // Estimasi Volatilitas & Deviasi Residual untuk Confidence Interval yang Akurat
+      // 4. Drought factor: makin lama 0 berturut-turut, proyeksi makin ditekan.
+      let streakZero = 0;
+      for (let i = winValues.length - 1; i >= 0; i--) {
+        if (winValues[i] === 0) {
+          streakZero += 1;
+        } else {
+          break;
+        }
+      }
+      let drought = 1.0;
+      if (streakZero >= 2) {
+        drought = Math.pow(0.7, Math.min(streakZero - 1, 6));
+      } else if (streakZero === 1) {
+        drought = 0.85;
+      }
+
+      // 5. Volatilitas residual untuk confidence interval (kalender, hari 0 ikut).
       let residualSumSq = 0;
-      activeEntries.forEach((entry, idx) => {
+      for (let i = 0; i < regWindow; i++) {
+        const entry = win[regStart + i];
         const dow = new Date(entry.date).getUTCDay();
-        const expected = (baseLevel + slope * (idx - (activeDays - 1) / 2)) * dowMultipliers[dow];
+        const expected = (baseLevel + slope * (i - (regWindow - 1) / 2)) * dowMultipliers[dow];
         const diff = entry.revenue_idr - expected;
         residualSumSq += diff * diff;
-      });
-      const activeVariance = residualSumSq / Math.max(1, activeDays - 1);
-      const sampleStdDev = Math.sqrt(activeVariance);
+      }
+      const sampleStdDev = Math.sqrt(residualSumSq / Math.max(1, regWindow - 1));
       const baseStdDev = Math.max(baseLevel * 0.12, sampleStdDev);
+
+      const confidence = activeDays < 3 ? 'low' : activeDays < 7 ? 'medium' : 'normal';
 
       const forecast: Array<{
         date: string;
@@ -516,12 +547,10 @@ export class AnalyticsService {
         const dateStr = toUtcDateStr(futureDate);
         const dow = futureDate.getUTCDay();
 
-        // Akumulasi tren teredam (dampened cumulative trend)
-        const dampenedTrend = slope * (phi * (1.0 - Math.pow(phi, h)) / (1.0 - phi));
+        const dampenedTrend = slope * ((phi * (1.0 - Math.pow(phi, h))) / (1.0 - phi));
         const trendBase = Math.max(baseLevel * 0.4, baseLevel + dampenedTrend);
-        const projectedRev = Math.max(0, Math.round(trendBase * dowMultipliers[dow]));
+        const projectedRev = Math.max(0, Math.round(trendBase * dowMultipliers[dow] * drought));
 
-        // Rentang ketidakpastian membesar secara realistis seiring jauhnya horizon waktu
         const horizonUncertainty = Math.sqrt(1.0 + 0.05 * (h - 1));
         const marginOfError = Math.round(Math.max(projectedRev * 0.12, 1.28 * baseStdDev * horizonUncertainty));
         const lowerBound = Math.max(0, projectedRev - marginOfError);
@@ -547,21 +576,25 @@ export class AnalyticsService {
         });
       }
 
-      // Hitung pertumbuhan terhadap periode lalu
-      const prevPeriodRevenue = historicalEntries.slice(-horizonDays).reduce((acc, curr) => acc + curr.revenue_idr, 0);
+      // Growth dibandingkan dengan horizon hari selesai terakhir (bukan angka sintetis).
+      const prevPeriodRevenue = modelEntries
+        .slice(-horizonDays)
+        .reduce((acc, e) => acc + e.revenue_idr, 0);
       const growthPct =
         prevPeriodRevenue > 0
           ? Math.round(((projectedTotal - prevPeriodRevenue) / prevPeriodRevenue) * 1000) / 10
           : 0.0;
-
       const avgDailyProjected = Math.round(projectedTotal / horizonDays);
-      const isPos = growthPct >= 0;
-      const growthSign = isPos ? '+' : '';
+      const growthSign = growthPct >= 0 ? '+' : '';
 
-      const aiInsight =
-        activeDays < 7
-          ? `Model AI memadukan tren awal ${activeDays} hari aktif dengan pola musiman ritel (puncak di ${peakProjected.day_name}). Estimasi omzet ${horizonDays} hari ke depan mencapai Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs periode lalu).`
-          : `Model AI memproyeksikan omzet ${horizonDays} hari ke depan sebesar Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs periode lalu) dengan puncak penjualan pada ${peakProjected.day_name} (Rp ${peakProjected.revenue_idr.toLocaleString('id-ID')}). Persiapkan kapasitas stok dan operasional kasir untuk lonjakan akhir pekan.`;
+      let aiInsight: string;
+      if (streakZero >= 2) {
+        aiInsight = `${streakZero} hari terakhir tanpa transaksi. Model menurunkan proyeksi omzet ${horizonDays} hari ke depan menjadi Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs ${horizonDays} hari terakhir).`;
+      } else if (activeDays < 7) {
+        aiInsight = `Model memadukan data aktif ${activeDays} hari dengan pola musiman ritel (puncak ${peakProjected.day_name}). Estimasi omzet ${horizonDays} hari ke depan Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs ${horizonDays} hari terakhir).`;
+      } else {
+        aiInsight = `Model memproyeksikan omzet ${horizonDays} hari ke depan Rp ${projectedTotal.toLocaleString('id-ID')} (${growthSign}${growthPct}% vs ${horizonDays} hari terakhir) dengan puncak pada ${peakProjected.day_name} (Rp ${peakProjected.revenue_idr.toLocaleString('id-ID')}).`;
+      }
 
       return {
         horizon_days: horizonDays,
@@ -578,9 +611,12 @@ export class AnalyticsService {
         evaluation: {
           status: 'evaluated',
           data_points_count: activeDays,
-          model_name: 'bayesian_seasonal_holt_dampened',
+          required_points_count: 1,
+          model_name: 'ewma_bayesian_seasonal_dampened',
           active_history_days: activeDays,
           estimated_base_level_idr: baseLevel,
+          trailing_zero_days: streakZero,
+          confidence,
         },
       };
     } catch (err: unknown) {

@@ -31,7 +31,7 @@ Orang 3 memegang kendali atas fitur-fitur tercanggih sistem ARUS (*smart, hardwa
 | **Fitur 5** | Form Umpan Balik Kesan & Saran PAM | Bottom Nav: Menu Saran PAM | `lib/features/feedback/presentation/feedback_screen.dart` |
 | **Fitur 19** | Dashboard Analitik & Grafik fl_chart | Business Analytics & Charts | `lib/features/dashboard/presentation/dashboard_screen.dart` |
 | **Fitur 22** | Sensor 1: Accelerometer (*Shake to Refresh*) | Sensor 1: Accelerometer | `lib/features/sensors/presentation/sensor_provider.dart` |
-| **Fitur 23** | Sensor 2: Gyroscope (*Tilt Chart Switch*) | Sensor 2: Gyroscope | `lib/features/sensors/presentation/sensor_test_screen.dart` |
+| **Fitur 23** | Sensor 2: Gyroscope (*Mini Game Tilt Control*) | Sensor 2: Gyroscope | `lib/features/game/presentation/game_home_screen.dart` |
 | **Fitur 24** | Peta Cabang OpenStreetMap & GPS Haversine | Fasilitas LBS & Web Service | `lib/features/outlets/presentation/widgets/outlet_map_widget.dart` |
 | **Fitur 25** | Rule-Based Decision Support (Insights) | Fitur AI Sesuai Tema | `api/src/modules/insights/insights.service.ts` |
 | **Fitur 26** | ARUS AI Copilot (Gemini LLM & Voice) | Fitur AI & LLM Sesuai Tema | `api/src/modules/ai/ai.service.ts` |
@@ -51,8 +51,8 @@ Orang 3 memegang kendali atas fitur-fitur tercanggih sistem ARUS (*smart, hardwa
   - **Efisiensi Daya:** Menggunakan filter debouncing (jeda 500 ms) agar guncangan tidak memicu *re-fetch* API secara beruntun dan mencegah boros baterai. Pada Dashboard, guncangan memicu pembaruan data omzet secara interaktif.
 * **Sensor 2 — Gyroscope (Kemiringan / Tilt):**
   - Mengukur kecepatan sudut rotasi perangkat (rad/s) pada sumbu pitch dan roll.
-  - Saat berada di layar grafik analitik, memiringkan perangkat ke kiri atau ke kanan akan memicu pergantian interval rentang waktu grafik: **Harian $\rightarrow$ Mingguan $\rightarrow$ Bulanan** tanpa perlu menyentuh layar.
-  - Sensor Gyroscope juga diintegrasikan ke dalam Mini Game dengan mekanisme *Hold-to-Answer* (miringkan dan tahan 3 detik untuk memilih opsi jawaban A/B/C/D).
+  - **Diintegrasikan ke Mini Game** dengan mekanisme **Instant Tilt Answer**: memiringkan perangkat ke kiri/kanan melewati ambang **22°** → jawab terpilih **seketika** tanpa tahan/tap layar.
+  - Implementasi: [`lib/features/game/presentation/game_home_screen.dart`](file:///c:/MyProjects/arus/lib/features/game/presentation/game_home_screen.dart) menggunakan `TiltInstantTrigger` + `detect2WayTilt` (threshold 22°, auto-lock per soal via `_isTriggered` + `_isAnswerChecked`).
 
 ### 3.2 Location-Based Services (LBS) & Formula Haversine
 * **Lokasi Kode:** [`lib/features/outlets/presentation/widgets/outlet_map_widget.dart`](file:///c:/MyProjects/arus/lib/features/outlets/presentation/widgets/outlet_map_widget.dart) & [`outlets_repository.dart`](file:///c:/MyProjects/arus/lib/features/outlets/data/outlets_repository.dart)
@@ -96,15 +96,32 @@ Orang 3 memegang kendali atas fitur-fitur tercanggih sistem ARUS (*smart, hardwa
     2. `guess_price`: Diberikan nama dan foto menu, tebak harga jual aslinya.
   - Setiap ronde berisi 5 soal dengan batas waktu 10 detik per soal, bonus kecepatan waktu, dan skor akhir dicatat ke tabel `game_sessions`.
 
+### 3.6 AI Sales & Stockout Forecasting (Model Deret Waktu Statistik)
+* **Lokasi Kode:** [`analytics.service.ts`](file:///c:/MyProjects/arus/api/src/modules/analytics/analytics.service.ts) (`getSalesForecast`, `getStockoutForecast`) & [`analytics_repository.dart`](file:///c:/MyProjects/arus/lib/features/analytics/data/analytics_repository.dart) (`_computeLocalSalesForecast`)
+* **Sales Forecast 7–30 Hari (online dan offline):**
+  - **Kalender kontinu:** jendela histori minimal 30 hari; hari tanpa transaksi tetap dihitung sebagai Rp 0, bukan dibuang.
+  - **Base level EWMA** dengan $\alpha = 0.35$: hari terbaru berbobot lebih besar, sehingga penurunan omzet langsung terasa.
+  - **Tren linear 14 hari** pada indeks kalender, dihaluskan dengan peredaman Holt ($\phi = 0.92$) dan dibatasi maksimum $\pm 6\%$ dari base level.
+  - **Musiman hari-dalam-minggu** memakai *Bayesian shrinkage*: kredibilitas data $= \frac{count}{count + 5}$, sehingga pola ritel tidak mendominasi saat data masih sedikit.
+  - **Faktor kekeringan (drought):** jika $N$ hari terakhir berturut-turut tanpa transaksi, proyeksi dikali $0.7^{\min(N-1, 6)}$. Contoh: 4 hari sepi membuat proyeksi turun sekitar 76%.
+  - **Growth %** dibandingkan dengan horizon hari selesai terakhir. Jika periode pembanding Rp 0, growth ditetapkan 0% agar tidak muncul angka palsu.
+  - **Fallback offline:** algoritma yang sama dihitung dari `backup_transactions` SQLite, dengan status `offline_evaluated` atau `offline_insufficient_history`.
+* **Stockout Forecast:**
+  - **Kecepatan konsumsi harian** = total pemakaian bahan 14 hari terakhir $\div$ 14.
+  - **Hari habis stok** = $\lfloor stok \div velocity \rfloor$; status `critical` jika $\leq 2$ hari, `warning` jika $\leq 6$ hari atau stok $\leq$ `reorder_level`.
+  - **Rekomendasi restock** = $\max(velocity \times 7 + reorder\_level - stok,\ velocity \times 5)$, lalu dikalikan `cost_per_unit` untuk estimasi biaya.
+* **Kejujuran teknis:** modul ini **bukan** panggilan Google Gemini. Ini model statistik deterministik yang bisa dihitung ulang dan diuji. Gemini hanya dipakai pada AI Copilot percakapan.
+
 ---
 
 ## 4. Batasan Narasi Presentasi (Scope Boundaries)
 
 ### Yang HARUS Dijelaskan oleh Orang 3:
 - Visualisasi metrik bisnis pada Dashboard & grafik tren fl_chart.
-- Integrasi sensor hardware mobile: Accelerometer (Shake) dan Gyroscope (Tilt).
+- Integrasi sensor hardware mobile: Accelerometer (Shake to Refresh) dan Gyroscope (Mini Game Tilt Control).
 - Layanan peta LBS, integrasi OpenStreetMap, dan perhitungan matematis rumus Haversine GPS.
 - Kecerdasan buatan: Rule-based Decision Support dan AI Gemini Copilot dengan Context Grounding fakta database nyata.
+- AI Sales & Stockout Forecasting: EWMA, tren kalender, musiman Bayesian, faktor drought, dan velocity konsumsi 14 hari.
 - Fitur Voice Asisten audio TTS suara GadisNeural.
 - Gamifikasi kuis operasional bisnis (*Guess the Menu*).
 - Penutup resmi presentasi dengan formulir Kesan & Saran Mata Kuliah PAM.
@@ -125,10 +142,10 @@ Ikuti urutan langkah demo ini agar presentasi diakhiri dengan tepuk tangan meria
 2. Goyangkan HP secara fisik (atau kirim perintah shake di emulator).
 3. Tunjukkan indikator refresh memutar di layar dan data analitik ter-update secara otomatis tanpa menekan tombol apapun.
 
-[Langkah 2: Demo Sensor Gyroscope (Tilt Switch)]
-1. Buka layar Analitik / Grafik Penjualan.
-2. Miringkan HP ke kiri atau ke kanan.
-3. Tunjukkan filter rentang grafik berpindah otomatis antara Harian, Mingguan, dan Bulanan secara reaktif.
+[Langkah 2: Demo Sensor Gyroscope (Mini Game Instant Tilt Answer)]
+1. Masuk ke menu "Lainnya" -> pilih "Mini Game" -> Mode "Tebak Nama Menu".
+2. Saat soal muncul, miringkan HP ke **kiri** (opsi A) atau **kanan** (opsi B) **melewati 22°**.
+3. Jawaban terpilih **seketika** (tanpa tahan 3 detik), visual highlight real-time di tombol opsi, lalu lanjut soal berikutnya.
 
 [Langkah 3: Demo Peta LBS & Haversine GPS]
 1. Buka menu "Peta Cabang" di navigasi.
@@ -143,13 +160,19 @@ Ikuti urutan langkah demo ini agar presentasi diakhiri dengan tepuk tangan meria
 3. Tunjukkan AI menjawab dengan struktur rapi (Data Riil dari database, Analisis Masalah, dan Rekomendasi).
 4. Biarkan suara Microsoft Edge TTS (id-ID-GadisNeural) membacakan ringkasan jawaban melalui speaker HP.
 
-[Langkah 5: Demo Mini Game "Guess the Menu"]
+[Langkah 5: Demo AI Sales & Stockout Forecast]
+1. Buka tab "Analitik" -> bagian "Prediksi Penjualan".
+2. Tunjukkan grafik histori 30 hari dan proyeksi 7 hari ke depan beserta rentang keyakinan.
+3. Jelaskan bahwa hari tanpa transaksi tetap dihitung Rp 0, dan proyeksi otomatis turun saat beberapa hari terakhir sepi (drought factor).
+4. Buka bagian "Peramalan Stok" -> tunjukkan status critical/warning/safe dan tanggal perkiraan bahan habis.
+
+[Langkah 6: Demo Mini Game "Guess the Menu"]
 1. Masuk ke menu "Lainnya" -> pilih "Mini Game".
 2. Pilih Mode "Tebak Nama Menu" -> mulai permainan (5 soal).
 3. Jawab 1-2 soal kuis tebak foto produk POS -> tunjukkan timer hitung mundur dan pertambahan skor.
 4. Selesaikan sesi game hingga skor akhir muncul.
 
-[Langkah 6: Penutup Resmi — Form Kesan & Saran PAM]
+[Langkah 7: Penutup Resmi — Form Kesan & Saran PAM]
 1. Kembali ke menu "Lainnya" -> klik "Kesan & Saran PAM".
 2. Tunjukkan form testimoni perkuliahan Pemrograman Aplikasi Mobile.
 3. Sampaikan ucapan terima kasih kepada dosen pembimbing dan tutup presentasi tim.
@@ -161,6 +184,12 @@ Ikuti urutan langkah demo ini agar presentasi diakhiri dengan tepuk tangan meria
 
 * **Dosen:** *"Apakah AI Gemini kalian tidak mengarang bebas (*halusinasi*) saat ditanya kondisi omzet dan stok toko?"*
   * **Jawaban:** *"Tidak, Bu/Pak. Kami menerapkan teknik arsitektur **Context Grounding**. Sebelum prompt pengguna diteruskan ke Google Gemini API, backend Express kami terlebih dahulu mengeksekusi kueri SQL ke PostgreSQL untuk mengumpulkan fakta angka aktual (omzet hari ini, produk paling laris, dan sisa stok bahan baku). Angka-angka faktual ini kemudian disuntikkan ke dalam system prompt Gemini sebagai satu-satunya rujukan data. Model diinstruksikan secara ketat untuk menyajikan analisis berdasarkan fakta tersebut dengan struktur: Data Riil, Dugaan Analisis, dan Rekomendasi Solusi."*
+
+* **Dosen:** *"Apakah modul AI Forecasting juga memakai Gemini dan bisa berhalusinasi?"*
+  * **Jawaban:** *"Tidak, Bu/Pak. Modul Forecasting sengaja kami buat sebagai **model statistik deterministik**, bukan panggilan LLM. Penjualan dihitung dengan EWMA, tren kalender, musiman hari-dalam-minggu, dan faktor drought; stok dihitung dari velocity pemakaian 14 hari terakhir. Karena input dan rumusnya tetap, hasilnya dapat dihitung ulang dan diuji otomatis. Gemini hanya kami pakai di AI Copilot percakapan, itu pun dengan Context Grounding ke database."*
+
+* **Dosen:** *"Kenapa proyeksi penjualan turun saat toko sedang sepi, bukan justru naik terus?"*
+  * **Jawaban:** *"Kami tidak membuang hari tanpa transaksi. Hari bernilai Rp 0 tetap masuk kalender dan ikut menurunkan EWMA serta tren. Selain itu ada **drought factor**: bila N hari terakhir berturut-turut tanpa transaksi, proyeksi dikali 0.7^(N-1) dengan batas 6 tingkat. Jadi model bereaksi terhadap performa terbaru, bukan menaikkan angka secara palsu."*
 
 * **Dosen:** *"Bagaimana cara kerja penghitungan jarak di peta cabang LBS dan kenapa pakai rumus Haversine?"*
   * **Jawaban:** *"Kami mengambil koordinat GPS perangkat secara realtime menggunakan package `geolocator`, kemudian membandingkannya dengan koordinat `latitude` dan `longitude` cabang yang ada di tabel `outlets`. Kami menggunakan **Formula Haversine** karena permukaan bumi tidak datar melainkan speroid melengkung. Rumus ini menghitung jarak lingkaran besar (*great-circle distance*) berdasarkan sudut trigonometri lintang dan bujur, sehingga jarak dalam kilometer yang dihasilkan sangat akurat untuk navigasi kasir maupun pelanggan."*

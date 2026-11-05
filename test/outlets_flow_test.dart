@@ -132,7 +132,7 @@ void main() {
       expect(find.text('Simulasi Posisi Pengguna (LBS GPS)'), findsOneWidget);
       expect(find.text('CABANG TERDEKAT (LBS)'), findsOneWidget);
       expect(find.textContaining('0.8 km'), findsAtLeastNWidgets(1));
-      expect(find.text('Buka Detail Cabang Terdekat'), findsOneWidget);
+      expect(find.text('Detail Cabang'), findsOneWidget);
     });
 
     testWidgets('OutletDetailScreen menampilkan koordinat GPS, live jam lokal, dan staf bertugas', (tester) async {

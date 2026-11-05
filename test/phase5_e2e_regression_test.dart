@@ -746,7 +746,7 @@ void main() {
 
       // Forecast fallback on outage
       final forecast = await analyticsRepo.getSalesForecast(horizon: 7);
-      expect(forecast.evaluation?.status, 'offline_insufficient');
+      expect(forecast.evaluation?.status, 'offline_insufficient_history');
       expect(forecast.summary.aiInsight, contains('Mode offline'));
 
       // Stockout fallback on outage

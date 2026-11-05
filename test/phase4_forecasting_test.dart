@@ -228,10 +228,10 @@ void main() {
       final forecast = await repo.getSalesForecast(horizon: 7);
 
       expect(forecast.horizonDays, 7);
-      expect(forecast.historical.length, 7);
+      expect(forecast.historical.length, 30);
       expect(forecast.forecast.length, 7);
       expect(forecast.summary.projectedTotalRevenueIdr, 0);
-      expect(forecast.evaluation?.status, 'offline_insufficient');
+      expect(forecast.evaluation?.status, 'offline_insufficient_history');
       expect(forecast.summary.aiInsight, contains('Mode offline'));
     });
 
@@ -259,8 +259,37 @@ void main() {
       expect(forecast.forecast.length, 7);
       expect(forecast.summary.previousPeriodRevenueIdr, 300000);
       expect(forecast.summary.projectedTotalRevenueIdr, greaterThan(0));
-      expect(forecast.evaluation?.status, 'offline_local_dow');
+      expect(forecast.evaluation?.status, 'offline_evaluated');
       expect(forecast.summary.aiInsight, contains('Mode offline: Proyeksi dihitung'));
+    });
+
+    test('Skenario 5b: Offline forecast menurunkan proyeksi saat beberapa hari terakhir tanpa transaksi', () async {
+      final now = DateTime.now();
+      // 15 hari beromzet (8..22 hari lalu), lalu 7 hari terakhir kosong.
+      for (int i = 8; i <= 22; i++) {
+        final txDate = now.subtract(Duration(days: i));
+        await localDb.backupTransaction({
+          'transaction_id': 'tx-drought-$i',
+          'outlet_id': 'out-1',
+          'payment_method': 'cash',
+          'total_idr': 100000,
+          'status': 'completed',
+          'created_at': txDate.toIso8601String(),
+        });
+      }
+
+      final offlineClient = MockApiClient(onGet: (path, {queryParameters}) => null);
+      final repo = AnalyticsRepository(offlineClient, localDb);
+
+      final forecast = await repo.getSalesForecast(outletId: 'out-1', horizon: 7);
+
+      expect(forecast.evaluation?.status, 'offline_evaluated');
+      // 7 hari terakhir semuanya nol: growth guard tidak boleh meledak.
+      expect(forecast.summary.previousPeriodRevenueIdr, 0);
+      expect(forecast.summary.growthPct, 0.0);
+      // Tanpa drought, baseline 7 hari x Rp 100.000 = Rp 700.000.
+      expect(forecast.summary.projectedTotalRevenueIdr, lessThan(700000));
+      expect(forecast.summary.aiInsight, contains('hari terakhir tanpa transaksi'));
     });
 
     test('Skenario 6: Offline fallback for Stockout Forecast returns safe empty state', () async {

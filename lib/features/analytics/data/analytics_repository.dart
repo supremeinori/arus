@@ -801,14 +801,15 @@ class AnalyticsRepository {
     int horizonDays = 7,
   }) async {
     final effectiveHorizon = horizonDays > 0 ? horizonDays : 7;
+    final historyDays = math.max(effectiveHorizon * 2, 30);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final histStart = today.subtract(Duration(days: effectiveHorizon));
+    final histStart = today.subtract(Duration(days: historyDays - 1));
 
-    // Siapkan kalender histori kontinu
+    // Kalender histori kontinu: setiap hari selalu ada, termasuk yang bernilai 0.
     final historicalMap = <String, int>{};
     var currHist = DateTime(histStart.year, histStart.month, histStart.day);
-    while (currHist.isBefore(today)) {
+    while (!currHist.isAfter(today)) {
       final key = '${currHist.year.toString().padLeft(4, '0')}-${currHist.month.toString().padLeft(2, '0')}-${currHist.day.toString().padLeft(2, '0')}';
       historicalMap[key] = 0;
       currHist = currHist.add(const Duration(days: 1));
@@ -875,9 +876,8 @@ class AnalyticsRepository {
       );
     }).toList();
 
-    final activePoints = historicalPoints.where((p) => p.revenueIdr > 0).toList();
-    final activeDays = activePoints.length;
     final totalHistRev = historicalPoints.fold<int>(0, (s, p) => s + p.revenueIdr);
+    final activeDays = historicalPoints.where((p) => p.revenueIdr > 0).length;
 
     if (activeDays == 0 || totalHistRev == 0) {
       final forecastPoints = <ForecastPoint>[];
@@ -914,7 +914,7 @@ class AnalyticsRepository {
               'Mode offline: Belum ada transaksi penjualan lokal. Catat transaksi di kasir untuk mengaktifkan peramalan deret waktu AI.',
         ),
         evaluation: const SalesForecastEvaluation(
-          status: 'offline_no_history',
+          status: 'offline_insufficient_history',
           trainDays: 0,
           testDays: 0,
           seasonalNaiveMae: 0.0,
@@ -924,19 +924,29 @@ class AnalyticsRepository {
       );
     }
 
-    // Model Prediktif AI Adaptif (Bayesian Day-of-Week Seasonality + Dampened Holt Trend)
-    final activeAvg = totalHistRev / activeDays;
-    double weightSum = 0;
-    double weightedRevSum = 0;
-    for (int idx = 0; idx < activeDays; idx++) {
-      final w = (idx + 1).toDouble();
-      weightedRevSum += activePoints[idx].revenueIdr * w;
-      weightSum += w;
+    // Hari berjalan (parsial) dikeluarkan dari pemodelan agar omzet setengah hari
+    // tidak menekan baseline. Hari selesai tetap dipakai, termasuk yang bernilai 0.
+    var modelEntries = historicalPoints.sublist(0, historicalPoints.length - 1);
+    if (modelEntries.isEmpty || modelEntries.every((p) => p.revenueIdr == 0)) {
+      modelEntries = List<ForecastPoint>.from(historicalPoints);
     }
-    final wma = weightSum > 0 ? (weightedRevSum / weightSum) : activeAvg;
-    final baseLevel = math.max(1, (0.65 * wma + 0.35 * activeAvg).round());
 
-    // Prior ritel empiris (1=Senin ... 7=Minggu di Dart DateTime)
+    // Mulai dari hari penjualan pertama agar nol sebelum toko buka tidak menggeser tren.
+    final firstActiveIdx = modelEntries.indexWhere((p) => p.revenueIdr > 0);
+    final win = modelEntries.sublist(firstActiveIdx >= 0 ? firstActiveIdx : 0);
+    final winValues = win.map((p) => p.revenueIdr).toList();
+    final winDays = winValues.length;
+
+    // 1. Base level recency-aware: EWMA (alpha 0.35). Hari 0 ikut menurunkan baseline.
+    const double alpha = 0.35;
+    double ewma = winValues.isNotEmpty ? winValues.first.toDouble() : 0.0;
+    for (int i = 1; i < winDays; i++) {
+      ewma = alpha * winValues[i] + (1 - alpha) * ewma;
+    }
+    final overallAvg = winDays > 0 ? winValues.fold<int>(0, (a, b) => a + b) / winDays : 0.0;
+    final baseLevel = math.max(1, ewma.round());
+
+    // 2. Musiman day-of-week dengan Bayesian shrinkage (termasuk hari 0).
     final rawRetailPrior = <int, double>{
       1: 0.82, // Senin
       2: 0.87, // Selasa
@@ -947,57 +957,77 @@ class AnalyticsRepository {
       7: 1.25, // Minggu
     };
 
-    // Hitung rata-rata tiap weekday dari histori dengan Bayesian Shrinkage
     final dowMultipliers = <int, double>{};
     for (int w = 1; w <= 7; w++) {
-      final matching = activePoints.where((p) {
+      double sum = 0;
+      int count = 0;
+      for (final p in win) {
         final dt = DateTime.tryParse(p.date);
-        return dt != null && dt.weekday == w;
-      }).toList();
-      final count = matching.length;
-      final sum = matching.fold<int>(0, (acc, p) => acc + p.revenueIdr);
-      final dowAvg = count > 0 ? (sum / count) : baseLevel.toDouble();
-      final empMult = baseLevel > 0 ? (dowAvg / baseLevel) : 1.0;
-
-      final credibility = count / (count + 3.0);
+        if (dt != null && dt.weekday == w) {
+          sum += p.revenueIdr;
+          count++;
+        }
+      }
+      final dowAvg = count > 0 ? sum / count : overallAvg;
+      final empMult = overallAvg > 0 ? dowAvg / overallAvg : 1.0;
+      final credibility = count / (count + 5.0);
       final blended = credibility * empMult + (1.0 - credibility) * (rawRetailPrior[w] ?? 1.0);
       dowMultipliers[w] = blended.clamp(0.60, 1.80);
     }
 
-    // Estimasi slope tren terkendali jika histori aktif >= 3
+    // 3. Tren linear pada indeks kalender (14 hari selesai terakhir, hari 0 ikut).
+    final regWindow = math.min(winDays, 14);
+    final regStart = winDays - regWindow;
     double slope = 0.0;
-    if (activeDays >= 3) {
-      double sumIdx = 0;
+    if (regWindow >= 3) {
+      double sumX = 0;
       double sumY = 0;
-      double sumIdxY = 0;
-      double sumIdx2 = 0;
-      for (int i = 0; i < activeDays; i++) {
-        sumIdx += i;
-        sumY += activePoints[i].revenueIdr;
-        sumIdxY += i * activePoints[i].revenueIdr;
-        sumIdx2 += i * i;
+      double sumXY = 0;
+      double sumXX = 0;
+      for (int i = 0; i < regWindow; i++) {
+        final v = winValues[regStart + i].toDouble();
+        sumX += i;
+        sumY += v;
+        sumXY += i * v;
+        sumXX += i * i;
       }
-      final denom = activeDays * sumIdx2 - sumIdx * sumIdx;
-      final rawSlope = denom != 0 ? (activeDays * sumIdxY - sumIdx * sumY) / denom : 0.0;
+      final denom = regWindow * sumXX - sumX * sumX;
+      final rawSlope = denom != 0 ? (regWindow * sumXY - sumX * sumY) / denom : 0.0;
       final maxSlope = 0.06 * baseLevel;
       slope = rawSlope.clamp(-maxSlope, maxSlope);
     }
 
-    // Deviasi residual untuk Confidence Interval yang Akurat
+    // 4. Drought factor: makin lama 0 berturut-turut, proyeksi makin ditekan.
+    int streakZero = 0;
+    for (int i = winValues.length - 1; i >= 0; i--) {
+      if (winValues[i] == 0) {
+        streakZero++;
+      } else {
+        break;
+      }
+    }
+    double drought = 1.0;
+    if (streakZero >= 2) {
+      drought = math.pow(0.7, math.min(streakZero - 1, 6)).toDouble();
+    } else if (streakZero == 1) {
+      drought = 0.85;
+    }
+
+    // 5. Volatilitas residual untuk confidence interval (kalender, hari 0 ikut).
     double residualSumSq = 0;
-    for (int i = 0; i < activeDays; i++) {
-      final dt = DateTime.tryParse(activePoints[i].date);
+    for (int i = 0; i < regWindow; i++) {
+      final p = win[regStart + i];
+      final dt = DateTime.tryParse(p.date);
       final w = dt?.weekday ?? 1;
       final mult = dowMultipliers[w] ?? 1.0;
-      final expected = (baseLevel + slope * (i - (activeDays - 1) / 2)) * mult;
-      final diff = activePoints[i].revenueIdr - expected;
+      final expected = (baseLevel + slope * (i - (regWindow - 1) / 2)) * mult;
+      final diff = p.revenueIdr - expected;
       residualSumSq += diff * diff;
     }
-    final activeVariance = residualSumSq / math.max(1, activeDays - 1);
-    final sampleStdDev = math.sqrt(activeVariance);
+    final sampleStdDev = math.sqrt(residualSumSq / math.max(1, regWindow - 1));
     final baseStdDev = math.max(baseLevel * 0.12, sampleStdDev);
 
-    const phi = 0.92;
+    const double phi = 0.92;
     final forecastPoints = <ForecastPoint>[];
     var currFcst = DateTime(today.year, today.month, today.day);
 
@@ -1007,9 +1037,9 @@ class AnalyticsRepository {
       final w = currFcst.weekday;
       final mult = dowMultipliers[w] ?? 1.0;
 
-      final dampenedTrend = slope * (phi * (1.0 - math.pow(phi, h)) / (1.0 - phi));
+      final dampenedTrend = slope * (phi * (1 - math.pow(phi, h)) / (1 - phi));
       final trendBase = math.max(baseLevel * 0.4, baseLevel + dampenedTrend);
-      final predicted = math.max(0, (trendBase * mult).round());
+      final predicted = math.max(0, (trendBase * mult * drought).round());
 
       final horizonUncertainty = math.sqrt(1.0 + 0.05 * (h - 1));
       final marginOfError = math.max((predicted * 0.12).round(), (1.28 * baseStdDev * horizonUncertainty).round());
@@ -1028,7 +1058,10 @@ class AnalyticsRepository {
     }
 
     final projectedTotalRevenue = forecastPoints.fold<int>(0, (s, p) => s + p.revenueIdr);
-    final previousPeriodRevenue = totalHistRev;
+    final recentWindow = modelEntries.length > effectiveHorizon
+        ? modelEntries.sublist(modelEntries.length - effectiveHorizon)
+        : modelEntries;
+    final previousPeriodRevenue = recentWindow.fold<int>(0, (s, p) => s + p.revenueIdr);
     final growthPct = previousPeriodRevenue > 0
         ? ((projectedTotalRevenue - previousPeriodRevenue) / previousPeriodRevenue * 100)
         : 0.0;
@@ -1041,11 +1074,12 @@ class AnalyticsRepository {
       }
     }
 
-    final isPos = growthPct >= 0;
-    final growthSign = isPos ? '+' : '';
-    final aiInsight = activeDays < 7
-        ? 'Mode offline: Model AI memadukan data awal ($activeDays hari) dengan dekomposisi ritel (puncak di ${peakDay.dayName}). Proyeksi omzet $effectiveHorizon hari ke depan mencapai Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs lalu).'
-        : 'Mode offline: Model AI memproyeksikan omzet $effectiveHorizon hari ke depan sebesar Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs lalu) dengan puncak pada ${peakDay.dayName} (Rp ${peakDay.revenueIdr}).';
+    final growthSign = growthPct >= 0 ? '+' : '';
+    final aiInsight = streakZero >= 2
+        ? 'Mode offline: $streakZero hari terakhir tanpa transaksi. Proyeksi omzet $effectiveHorizon hari ke depan diturunkan menjadi Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir).'
+        : activeDays < 7
+            ? 'Mode offline: Proyeksi dihitung dari data aktif $activeDays hari dengan pola musiman ritel (puncak ${peakDay.dayName}). Estimasi $effectiveHorizon hari ke depan Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir).'
+            : 'Mode offline: Proyeksi dihitung dari data aktif $activeDays hari. Estimasi omzet $effectiveHorizon hari ke depan Rp $projectedTotalRevenue ($growthSign${growthPct.toStringAsFixed(1)}% vs $effectiveHorizon hari terakhir) dengan puncak ${peakDay.dayName} (Rp ${peakDay.revenueIdr}).';
 
     return SalesForecastModel(
       horizonDays: effectiveHorizon,
@@ -1064,12 +1098,12 @@ class AnalyticsRepository {
         aiInsight: aiInsight,
       ),
       evaluation: SalesForecastEvaluation(
-        status: 'offline_bayesian_holt_dampened',
-        trainDays: historicalPoints.length,
+        status: 'offline_evaluated',
+        trainDays: activeDays,
         testDays: 0,
         seasonalNaiveMae: 0.0,
         modelMae: 0.0,
-        chosenModel: 'bayesian_seasonal_holt_dampened',
+        chosenModel: 'ewma_bayesian_seasonal_dampened',
       ),
     );
   }

@@ -1102,8 +1102,22 @@ class LocalDatabase {
   // ========================================================
   Future<void> backupTransaction(Map<String, dynamic> tx) async {
     final db = await database;
+
+    // Simpan timestamp dalam UTC agar round-trip baca tidak menggeser hari.
+    final stored = Map<String, dynamic>.from(tx);
+    final createdAtUtc = toStorageUtcIso(stored['created_at']);
+    stored['created_at'] = createdAtUtc;
+    final rawJson = stored['raw_json'];
+    if (rawJson is String && rawJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawJson) as Map<String, dynamic>;
+        decoded['created_at'] = createdAtUtc;
+        stored['raw_json'] = jsonEncode(decoded);
+      } catch (_) {}
+    }
+
     if (db == null) {
-      _webTransactionsStore.insert(0, tx);
+      _webTransactionsStore.insert(0, stored);
       if (_webTransactionsStore.length > 50) {
         _webTransactionsStore.removeLast();
       }
@@ -1112,7 +1126,7 @@ class LocalDatabase {
 
     await db.insert(
       'backup_transactions',
-      tx,
+      stored,
       conflictAlgorithm: sql.ConflictAlgorithm.replace,
     );
 
