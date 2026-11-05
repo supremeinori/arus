@@ -3,6 +3,7 @@ import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/db';
 import { signAccessToken } from '../src/shared/jwt';
+import { AiBusinessEngine } from '../src/modules/ai/ai_business_engine';
 import { Role } from '@prisma/client';
 
 vi.mock('../src/config/db', () => {
@@ -390,4 +391,64 @@ describe('AI Assistant Module (Milestone 9)', () => {
     },
     15000
   );
+
+  it('T-AI-09: resolveTimeWindow memahami tanggal eksplisit, rentang, dan periode kalender', () => {
+    const engine = new AiBusinessEngine();
+
+    const explicitDay = engine.resolveTimeWindow('omset tanggal 1 november 2026', 'Asia/Jakarta');
+    expect(explicitDay.label).toBe('1 November 2026');
+    expect(explicitDay.isStrictPeriod).toBe(true);
+    expect(explicitDay.from?.toISOString()).toBe('2026-10-31T17:00:00.000Z');
+    expect(explicitDay.to?.toISOString()).toBe('2026-11-01T16:59:59.999Z');
+
+    const range = engine.resolveTimeWindow('omset 1-5 november 2026', 'Asia/Jakarta');
+    expect(range.label).toBe('1 November 2026 – 5 November 2026');
+    expect(range.from?.toISOString()).toBe('2026-10-31T17:00:00.000Z');
+    expect(range.to?.toISOString()).toBe('2026-11-05T16:59:59.999Z');
+
+    const isoDate = engine.resolveTimeWindow('omset 2026-10-28', 'Asia/Jakarta');
+    expect(isoDate.label).toBe('28 Oktober 2026');
+
+    const numeric = engine.resolveTimeWindow('omset 28/10/2026', 'Asia/Jakarta');
+    expect(numeric.label).toBe('28 Oktober 2026');
+
+    const yesterday = engine.resolveTimeWindow('omset kemarin', 'Asia/Jakarta');
+    expect(yesterday.label).toBe('Kemarin');
+
+    const allPeriod = engine.resolveTimeWindow('omset semua periode', 'Asia/Jakarta');
+    expect(allPeriod.label).toBe('Seluruh Periode Tercatat');
+    expect(allPeriod.from).toBeUndefined();
+  });
+
+  it('T-AI-10: AI menjawab omset tanggal eksplisit dengan periode yang benar, bukan seluruh periode', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([
+      { id: 'out-1', name: 'Yogyakarta', timezone: 'Asia/Jakarta' },
+    ] as any);
+    vi.mocked(prisma.transaction.aggregate).mockResolvedValue({
+      _sum: { total_idr: 750000, subtotal_idr: 750000, discount_idr: 0 },
+    } as any);
+    vi.mocked(prisma.transaction.count).mockResolvedValue(3);
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+      { id: 'tx-1', outlet_id: 'out-1', total_idr: 750000, subtotal_idr: 750000, discount_idr: 0, created_at: new Date('2026-11-01T05:00:00.000Z') },
+    ] as any);
+    vi.mocked(prisma.transactionItem.findMany).mockResolvedValue([]);
+
+    const res = await request(app)
+      .post('/api/ai/chat')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ message: 'gimana omset tanggal 1 november 2026?' });
+
+    expect(res.status).toBe(200);
+    const overviewFact = res.body.data.facts.find((f: any) => f.type === 'analytics_overview');
+    expect(overviewFact).toBeDefined();
+    expect(overviewFact.value.period).toBe('1 November 2026');
+    expect(overviewFact.value.revenue_idr).toBe(750000);
+    expect(res.body.data.reply_text).toContain('1 November 2026');
+    expect(res.body.data.reply_text).not.toContain('Seluruh Periode Tercatat');
+
+    const periodWhere = vi.mocked(prisma.transaction.aggregate).mock.calls[0][0] as any;
+    expect(periodWhere.where.created_at.gte.toISOString()).toBe('2026-10-31T17:00:00.000Z');
+    expect(periodWhere.where.created_at.lte.toISOString()).toBe('2026-11-01T16:59:59.999Z');
+  });
 });

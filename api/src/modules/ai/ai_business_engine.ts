@@ -1,6 +1,50 @@
 import { Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
-import { getStartOfDayInTimezone, getEndOfDayInTimezone } from '../../shared/timezone';
+import {
+  getStartOfDayInTimezone,
+  getEndOfDayInTimezone,
+  getTodayDateStrInTimezone,
+} from '../../shared/timezone';
+
+const MONTH_NAMES_ID = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
+const MONTH_LOOKUP: Record<string, number> = {
+  januari: 1, jan: 1,
+  februari: 2, feb: 2,
+  maret: 3, mar: 3,
+  april: 4, apr: 4,
+  mei: 5,
+  juni: 6, jun: 6,
+  juli: 7, jul: 7,
+  agustus: 8, agu: 8, ags: 8,
+  september: 9, sep: 9, sept: 9,
+  oktober: 10, okt: 10,
+  november: 11, nov: 11,
+  desember: 12, des: 12,
+};
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const isoOf = (y: number, m: number, d: number) => `${y}-${pad2(m)}-${pad2(d)}`;
+
+const daysInMonth = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+
+const shiftIsoDate = (iso: string, delta: number): string => {
+  const d = new Date(`${iso}T12:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+};
+
+const weekdayOfIso = (iso: string): number => new Date(`${iso}T12:00:00.000Z`).getUTCDay();
+
+const previousMonth = (y: number, m: number): { y: number; m: number } =>
+  m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 };
+
+const nextMonth = (y: number, m: number): { y: number; m: number } =>
+  m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
 
 export interface OutletInfo {
   id: string;
@@ -261,42 +305,189 @@ export class AiBusinessEngine {
   } {
     const lower = userMessage.toLowerCase();
     const now = new Date();
+    const todayStr = getTodayDateStrInTimezone(timezone, now);
+    const [ty, tm, td] = todayStr.split('-').map(Number);
 
+    const utcNoon = (iso: string) => new Date(`${iso}T12:00:00.000Z`);
+    const startOf = (iso: string) => getStartOfDayInTimezone(timezone, utcNoon(iso));
+    const endOf = (iso: string) => getEndOfDayInTimezone(timezone, utcNoon(iso));
+    const labelOf = (iso: string) => {
+      const [y, m, d] = iso.split('-').map(Number);
+      return `${d} ${MONTH_NAMES_ID[m - 1]} ${y}`;
+    };
+    const singleDay = (iso: string) => ({
+      from: startOf(iso),
+      to: endOf(iso),
+      label: labelOf(iso),
+      isStrictPeriod: true,
+    });
+    const rangeOf = (fromIso: string, toIso: string) => ({
+      from: startOf(fromIso),
+      to: endOf(toIso),
+      label: fromIso === toIso ? labelOf(fromIso) : `${labelOf(fromIso)} – ${labelOf(toIso)}`,
+      isStrictPeriod: true,
+    });
+
+    // Tanggal tanpa bulan: pakai bulan berjalan jika sudah lewat, kalau belum
+    // lewat pakai bulan sebelumnya. "tanggal 1 kemarin" saat ini = 1 bulan ini.
+    const inferDayOfMonth = (day: number, forcePreviousMonth = false): string => {
+      const safeDayThis = Math.min(day, daysInMonth(ty, tm));
+      const usePrevious = forcePreviousMonth || day > td || (day === td && /kemarin|lalu/.test(lower));
+      if (!usePrevious) return isoOf(ty, tm, safeDayThis);
+      const prev = previousMonth(ty, tm);
+      return isoOf(prev.y, prev.m, Math.min(day, daysInMonth(prev.y, prev.m)));
+    };
+
+    const resolveMonthName = (name: string): number | undefined => MONTH_LOOKUP[name.toLowerCase()];
+
+    // 1. Format ISO: 2026-11-01
+    const isoMatch = lower.match(/(?:^|\D)(\d{4})-(\d{1,2})-(\d{1,2})(?:\D|$)/);
+    if (isoMatch) {
+      const y = Number(isoMatch[1]);
+      const m = Number(isoMatch[2]);
+      const d = Number(isoMatch[3]);
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return singleDay(isoOf(y, m, Math.min(d, daysInMonth(y, m))));
+    }
+
+    // 2. Rentang dengan nama bulan yang sama: "1-5 November" / "1 s/d 5 Nov 2026"
+    const sameMonthRange = lower.match(
+      /(\d{1,2})\s*(?:-|–|s\/d|sampai|hingga)\s*(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?/
+    );
+    if (sameMonthRange) {
+      const month = resolveMonthName(sameMonthRange[3]);
+      if (month) {
+        let year = sameMonthRange[4] ? Number(sameMonthRange[4]) : ty;
+        if (!sameMonthRange[4] && (month > tm || (month === tm && Number(sameMonthRange[1]) > td))) year -= 1;
+        const startDay = Math.min(Number(sameMonthRange[1]), daysInMonth(year, month));
+        const endDay = Math.min(Number(sameMonthRange[2]), daysInMonth(year, month));
+        return rangeOf(isoOf(year, month, startDay), isoOf(year, month, endDay));
+      }
+    }
+
+    // 3. Rentang dua tanggal lengkap: "1 November sampai 5 November 2026"
+    const explicitRange = lower.match(
+      /(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?\s*(?:-|–|s\/d|sampai|hingga)\s*(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}))?/
+    );
+    if (explicitRange) {
+      const month1 = resolveMonthName(explicitRange[2]);
+      const month2 = resolveMonthName(explicitRange[5]);
+      if (month1 && month2) {
+        const year1 = explicitRange[3] ? Number(explicitRange[3]) : ty;
+        const year2 = explicitRange[6] ? Number(explicitRange[6]) : year1;
+        const day1 = Math.min(Number(explicitRange[1]), daysInMonth(year1, month1));
+        const day2 = Math.min(Number(explicitRange[4]), daysInMonth(year2, month2));
+        return rangeOf(isoOf(year1, month1, day1), isoOf(year2, month2, day2));
+      }
+    }
+
+    // 4. Tanggal + nama bulan: "1 November", "tgl 5 nov 2026"
+    const dayMonth = lower.match(/(?:tanggal|tgl\.?)?\s*(\d{1,2})\s+([a-z]+)(?:\s+(\d{4}|\d{2}))?/);
+    if (dayMonth) {
+      const month = resolveMonthName(dayMonth[2]);
+      if (month) {
+        const day = Number(dayMonth[1]);
+        let year = dayMonth[3]
+          ? (dayMonth[3].length === 2 ? 2000 + Number(dayMonth[3]) : Number(dayMonth[3]))
+          : ty;
+        if (!dayMonth[3] && (month > tm || (month === tm && day > td))) year -= 1;
+        return singleDay(isoOf(year, month, Math.min(day, daysInMonth(year, month))));
+      }
+    }
+
+    // 5. Format angka: 01/11/2026 atau 1/11 (hari/bulan/tahun)
+    const numericDate = lower.match(/(?:^|\D)(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:\D|$)/);
+    if (numericDate) {
+      const day = Number(numericDate[1]);
+      const month = Number(numericDate[2]);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        let year = numericDate[3]
+          ? (numericDate[3].length === 2 ? 2000 + Number(numericDate[3]) : Number(numericDate[3]))
+          : ty;
+        if (!numericDate[3] && (month > tm || (month === tm && day > td))) year -= 1;
+        return singleDay(isoOf(year, month, Math.min(day, daysInMonth(year, month))));
+      }
+    }
+
+    // 6. Rentang hari tanpa nama bulan: "tanggal 1 sampai 5"
+    const dayRange = lower.match(
+      /(?:tanggal|tgl\.?)\s*(\d{1,2})\s*(?:-|–|s\/d|sampai|hingga)\s*(?:tanggal\s*)?(\d{1,2})\b/
+    );
+    if (dayRange) {
+      const startDay = Number(dayRange[1]);
+      const endDay = Number(dayRange[2]);
+      const startIso = inferDayOfMonth(startDay);
+      const [sy, sm] = startIso.split('-').map(Number);
+      const endIso = endDay >= startDay
+        ? isoOf(sy, sm, Math.min(endDay, daysInMonth(sy, sm)))
+        : (() => {
+            const nm = nextMonth(sy, sm);
+            return isoOf(nm.y, nm.m, Math.min(endDay, daysInMonth(nm.y, nm.m)));
+          })();
+      return rangeOf(startIso, endIso);
+    }
+
+    // 7. Satu tanggal: "tanggal 1", "tgl 15 kemarin"
+    const dayOnly = lower.match(/(?:tanggal|tgl\.?)\s*(\d{1,2})\b/);
+    if (dayOnly) {
+      const day = Number(dayOnly[1]);
+      if (day >= 1 && day <= 31) return singleDay(inferDayOfMonth(day));
+    }
+
+    // 8. Periode relatif
     if (lower.includes('hari ini') || lower.includes('today') || lower.includes('tadi')) {
-      const start = getStartOfDayInTimezone(timezone, now);
-      return { from: start, to: now, label: 'Hari Ini', isStrictPeriod: true };
+      return { from: startOf(todayStr), to: now, label: 'Hari Ini', isStrictPeriod: true };
     }
 
     if (lower.includes('kemarin lusa') || lower.includes('2 hari lalu') || lower.includes('dua hari lalu')) {
-      const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-      const start = getStartOfDayInTimezone(timezone, twoDaysAgo);
-      const end = getEndOfDayInTimezone(timezone, twoDaysAgo);
-      return { from: start, to: end, label: 'Kemarin Lusa', isStrictPeriod: true };
+      const iso = shiftIsoDate(todayStr, -2);
+      return { ...singleDay(iso), label: 'Kemarin Lusa' };
     }
 
     if (lower.includes('kemarin') || lower.includes('yesterday')) {
-      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const start = getStartOfDayInTimezone(timezone, yesterday);
-      const end = getEndOfDayInTimezone(timezone, yesterday);
-      return { from: start, to: end, label: 'Kemarin', isStrictPeriod: true };
+      const iso = shiftIsoDate(todayStr, -1);
+      return { ...singleDay(iso), label: 'Kemarin' };
     }
 
-    if (lower.includes('7 hari') || lower.includes('minggu ini') || lower.includes('pekan ini') || lower.includes('sepekan')) {
-      const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return { from: start, to: now, label: '7 Hari Terakhir', isStrictPeriod: true };
+    if (lower.includes('minggu lalu') || lower.includes('pekan lalu') || lower.includes('minggu kemarin')) {
+      const mondayOffset = (weekdayOfIso(todayStr) + 6) % 7;
+      const thisMonday = shiftIsoDate(todayStr, -mondayOffset);
+      const startIso = shiftIsoDate(thisMonday, -7);
+      const endIso = shiftIsoDate(thisMonday, -1);
+      return { from: startOf(startIso), to: endOf(endIso), label: 'Minggu Lalu', isStrictPeriod: true };
     }
 
-    if (lower.includes('30 hari') || lower.includes('bulan ini') || lower.includes('sebulan')) {
-      const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      return { from: start, to: now, label: '30 Hari Terakhir', isStrictPeriod: true };
+    if (lower.includes('minggu ini') || lower.includes('pekan ini')) {
+      const mondayOffset = (weekdayOfIso(todayStr) + 6) % 7;
+      const startIso = shiftIsoDate(todayStr, -mondayOffset);
+      return { from: startOf(startIso), to: now, label: 'Minggu Ini', isStrictPeriod: true };
+    }
+
+    if (lower.includes('bulan ini')) {
+      return { from: startOf(isoOf(ty, tm, 1)), to: now, label: 'Bulan Ini', isStrictPeriod: true };
     }
 
     if (lower.includes('bulan lalu') || lower.includes('sebulan lalu')) {
-      const firstDayPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      const start = getStartOfDayInTimezone(timezone, firstDayPrevMonth);
-      const end = getEndOfDayInTimezone(timezone, lastDayPrevMonth);
-      return { from: start, to: end, label: 'Bulan Lalu', isStrictPeriod: true };
+      const prev = previousMonth(ty, tm);
+      return {
+        from: startOf(isoOf(prev.y, prev.m, 1)),
+        to: endOf(isoOf(prev.y, prev.m, daysInMonth(prev.y, prev.m))),
+        label: 'Bulan Lalu',
+        isStrictPeriod: true,
+      };
+    }
+
+    if (lower.includes('tahun ini')) {
+      return { from: startOf(isoOf(ty, 1, 1)), to: now, label: 'Tahun Ini', isStrictPeriod: true };
+    }
+
+    if (lower.includes('7 hari') || lower.includes('sepekan')) {
+      const iso = shiftIsoDate(todayStr, -6);
+      return { from: startOf(iso), to: now, label: '7 Hari Terakhir', isStrictPeriod: true };
+    }
+
+    if (lower.includes('30 hari') || lower.includes('sebulan')) {
+      const iso = shiftIsoDate(todayStr, -29);
+      return { from: startOf(iso), to: now, label: '30 Hari Terakhir', isStrictPeriod: true };
     }
 
     // Default: Semua catatan transaksi yang tersedia di database

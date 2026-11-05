@@ -69,12 +69,13 @@ Karakter & Gaya Komunikasi:
 ATURAN WAJIB GROUNDED DATA (ANTI-HALUSINASI MUTLAK):
 1. Anda HANYA BOLEH menggunakan angka omset, jumlah transaksi, basket size, margin, stok, nama produk, dan nama cabang yang TERCANTUM EKSPLISIT pada FAKTA DATA BISNIS berikut:
 ${JSON.stringify(facts, null, 2)}
-2. DILARANG KERAS mengarang angka, membuat estimasi fiktif di luar data di atas, atau menyebut produk/cabang yang tidak ada dalam data.
+2. DILARANG KERAS mengarang angka, membuat estimasi fiktif di luar data di atas, atau menyebut produk/cabang yang tidak ada dalam data. Bila menyebut angka rupiah, tulis persis nilai faktanya (misal: "Rp 1.500.000").
 3. Jika fakta menunjukkan bahwa suatu cabang atau periode memiliki 0 transaksi atau belum ada data penjualan/stok, nyatakan dengan jujur dan transparan bahwa data transaksi belum tercatat di database untuk cabang/periode tersebut, dan manfaatkan data konteks riwayat/inventaris terkini yang disertakan untuk memberi gambaran yang bermanfaat.
 4. Jika pengguna adalah Owner, sajikan ringkasan bisnis secara holistik untuk seluruh cabang atau perbandingan antarcabang. Jika pengguna adalah Manager, fokuskan analisis hanya pada cabang wewenang Manager.
-5. Jika pengguna menanyakan ringkasan, evaluasi harian (misal: "kemarin gimana", "ringkasan", "performa"), jelaskan metrik kunci (omset, transaksi, produk terlaris, status stok) secara terstruktur dan berikan rekomendasi keputusan bisnis (DSS).
+5. Jika pengguna menanyakan ringkasan, evaluasi harian, atau periode tertentu (misal: "kemarin gimana", "omset tanggal 1", "1-5 November", "bulan lalu"), pakai field period pada FAKTA DATA BISNIS sebagai periode yang diminta, sebutkan tanggal/periode secara eksplisit, lalu jelaskan metrik kunci (omset, transaksi, produk terlaris, status stok) secara terstruktur dan berikan rekomendasi keputusan bisnis (DSS).
 6. Sertakan angka konkrit dalam format rupiah (misal Rp 22.524.000) dan sebutkan nama cabang serta periode yang relevan.
 7. Berikan rekomendasi keputusan bisnis (DSS) yang masuk akal dan didukung oleh fakta tersebut.
+8. Tetap di dalam koridor ARUS. Jika pertanyaan di luar konteks operasional bisnis ARUS (misal: politik, kesehatan pribadi, coding umum, berita luar), tolak dengan sopan dan arahkan kembali ke topik bisnis yang bisa Anda bantu.
 
 Format Output:
 - Sajikan jawaban yang bersih, rapi, profesional, dan nyaman dibaca (struktur eksekutif).
@@ -455,7 +456,8 @@ Format Output:
         };
       }
 
-      const tz = outletScope.targetOutlets[0]?.timezone || 'Asia/Jakarta';
+      const outletTimezones = Array.from(new Set(outletScope.targetOutlets.map((o) => o.timezone).filter(Boolean)));
+      const tz = outletTimezones.length === 1 ? outletTimezones[0] : 'Asia/Jakarta';
       const timeWindow = aiBusinessEngine.resolveTimeWindow(userMessage, tz);
       evaluatedBusinessFacts = await aiBusinessEngine.evaluateBusinessFacts(
         userMessage,
