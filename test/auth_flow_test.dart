@@ -12,6 +12,8 @@ import 'package:arus/features/analytics/presentation/analytics_provider.dart';
 import 'package:arus/features/catalog/presentation/catalog_provider.dart';
 import 'package:arus/features/inventory/presentation/inventory_provider.dart';
 import 'package:arus/features/shell/presentation/main_shell.dart';
+import 'package:arus/core/theme/app_theme.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
 void main() {
   group('Auth & Role Shell Widget Tests (Milestone 3)', () {
@@ -36,6 +38,30 @@ void main() {
       await tester.pump();
 
       expect(find.text('kasir1@arus.com'), findsOneWidget);
+    });
+
+    testWidgets('Dialog alamat server terbuka tanpa error "No Material widget found"', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: ShadTheme(
+            data: AppTheme.shadcnThemeLight,
+            child: const MaterialApp(
+              home: LoginScreen(),
+            ),
+          ),
+        ),
+      );
+
+      final serverLink = find.textContaining('Server:');
+      await tester.ensureVisible(serverLink);
+      await tester.pumpAndSettle();
+      await tester.tap(serverLink);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Alamat Web Service'), findsOneWidget);
+      // Email, password, dan URL server.
+      expect(find.byType(TextFormField), findsNWidgets(3));
     });
 
     testWidgets('MainShell untuk Staff menampilkan 4 tab (Beranda, Kasir, Stok, Profil)', (tester) async {

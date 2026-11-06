@@ -484,7 +484,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     showDialog(
       context: context,
       builder: (dialogCtx) {
-        return ShadDialog(
+        // ShadDialog dirender lewat Overlay shadcn tanpa ancestor Material.
+        // AppTextField memakai TextFormField, yang melempar
+        // "No Material widget found" bila tidak dibungkus Material.
+        final dialog = ShadDialog(
           title: Row(
             children: [
               const Icon(
@@ -567,7 +570,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         );
+        return _materialDialog(dialog);
       },
     );
+  }
+
+  /// Membungkus dialog shadcn dengan ancestor Material.
+  ///
+  /// Widget Material (mis. [TextFormField] di dalam AppTextField) melempar
+  /// "No Material widget found" bila dirender di Overlay shadcn tanpa
+  /// ancestor Material.
+  Widget _materialDialog(Widget dialog) {
+    return Material(type: MaterialType.transparency, child: dialog);
   }
 }
