@@ -1,3 +1,5 @@
+// Beranda dashboard: ringkasan omzet, transaksi, grafik tren, menu terlaris,
+// dan notifikasi. Data dimuat ulang saat perangkat diguncang.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

@@ -1,3 +1,10 @@
+/**
+ * ARUS Business Copilot.
+ *
+ * Alur: klasifikasi intent -> ambil fakta dari database lewat ai_business_engine
+ * -> kirim prompt + fakta ke Gemini -> fallback rule engine jika Gemini gagal
+ * -> simpan log -> buat audio TTS.
+ */
 import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';

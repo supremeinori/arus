@@ -1,3 +1,10 @@
+/**
+ * Analitik dashboard dan forecasting.
+ *
+ * Sales forecast memakai model statistik (EWMA, musiman, drought), bukan LLM.
+ * Stockout forecast memakai laju pemakaian 14 hari terakhir.
+ * Perhitungan hari mengikuti zona waktu outlet.
+ */
 import { PrismaClient, Role, TxnStatus, PaymentMethod } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';

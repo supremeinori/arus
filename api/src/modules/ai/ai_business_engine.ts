@@ -1,3 +1,9 @@
+/**
+ * Penerjemah pertanyaan bahasa natural menjadi query database untuk AI Copilot.
+ *
+ * Menentukan cabang target (dengan batas akses per role), rentang tanggal,
+ * lalu mengagregasi omzet, produk, stok, jam ramai, dan anomali menjadi facts.
+ */
 import { Role, TxnStatus } from '@prisma/client';
 import { prisma } from '../../config/db';
 import {

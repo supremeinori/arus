@@ -1,3 +1,8 @@
+/**
+ * Rule engine rekomendasi bisnis (tanpa LLM).
+ *
+ * Aturan: stok <= reorder_level, stok habis (0), dan menu tanpa penjualan 14 hari.
+ */
 import { Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';

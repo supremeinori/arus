@@ -1,3 +1,5 @@
+// Peta cabang: OpenStreetMap + posisi GPS pengguna. Jarak tiap cabang
+// dihitung memakai Haversine lalu diurutkan dari yang terdekat.
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,3 +1,7 @@
+// Pembacaan sensor perangkat: accelerometer untuk deteksi guncangan
+// (shake to refresh) dan sudut pitch/roll untuk kontrol kemiringan.
+// Gyroscope dipakai untuk yaw, sedangkan pitch/roll dihitung dari vektor
+// gravitasi accelerometer supaya tidak drift.
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;

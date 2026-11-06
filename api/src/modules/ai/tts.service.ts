@@ -1,3 +1,7 @@
+/**
+ * Text-to-speech memakai Microsoft Edge TTS (id-ID-GadisNeural).
+ * Hasil audio MP3 dikirim sebagai Base64 agar bisa diputar di Flutter.
+ */
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
 export class TtsService {

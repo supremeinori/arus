@@ -1,3 +1,5 @@
+// Halaman analitik: KPI, tren penjualan, jam ramai, prediksi penjualan,
+// dan peramalan stok bahan baku.
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';

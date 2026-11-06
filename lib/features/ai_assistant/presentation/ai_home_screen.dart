@@ -1,3 +1,5 @@
+// Halaman AI Copilot: chat teks dengan Gemini, input suara (STT),
+// dan pemutaran jawaban sebagai audio (TTS).
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

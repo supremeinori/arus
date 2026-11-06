@@ -1,3 +1,5 @@
+// Mini game "Guess the Menu": soal diambil dari tabel products,
+// 5 soal per sesi, 10 detik per soal, jawaban lewat tap atau kemiringan HP.
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
