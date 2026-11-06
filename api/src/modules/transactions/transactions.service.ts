@@ -297,12 +297,13 @@ export class TransactionsService {
           // Tentukan tipe notifikasi: "out_of_stock" kalau habis (0), "low_stock" kalau menipis
           const isOutOfStock = update.new_quantity === 0;
           const notifType = isOutOfStock ? 'out_of_stock' : 'low_stock';
+          const outletName = newTransaction.outlet?.name || 'cabang';
           const notifTitle = isOutOfStock
             ? `Kritis: Stok ${update.ingredient_name} HABIS`
             : `Peringatan: Stok ${update.ingredient_name} Menipis`;
           const notifBody = isOutOfStock
-            ? `Stok bahan baku ${update.ingredient_name} di ${update.outlet_name || 'cabang'} sudah HABIS (0 ${update.unit}). Segera lakukan pengadaan darurat.`
-            : `Sisa bahan baku ${update.ingredient_name} di cabang kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`;
+            ? `Stok bahan baku ${update.ingredient_name} di ${outletName} sudah HABIS (0 ${update.unit}). Segera lakukan pengadaan darurat.`
+            : `Sisa bahan baku ${update.ingredient_name} di ${outletName} kini tinggal ${update.new_quantity} ${update.unit} (batas aman minimum: ${update.reorder_level}). Segera lakukan restock.`;
 
           const drafts: NotificationDraft[] = recipients.map((userId) => ({
             user_id: userId,

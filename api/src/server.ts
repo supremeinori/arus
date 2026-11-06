@@ -23,7 +23,7 @@ const server = app.listen(env.PORT, () => {
         logger.info(`[Scheduler] Notifikasi stok terpicu: ${result.triggered_count}`);
       }
     } catch (err) {
-      logger.warn('[Scheduler] Evaluasi notifikasi stok gagal:', err);
+      logger.warn({ err }, '[Scheduler] Evaluasi notifikasi stok gagal');
     }
   }, EVAL_INTERVAL_MS);
 
@@ -37,7 +37,7 @@ const server = app.listen(env.PORT, () => {
         logger.info(`[Startup] Notifikasi stok terpicu: ${result.triggered_count}`);
       }
     } catch (err) {
-      logger.warn('[Startup] Evaluasi notifikasi stok gagal:', err);
+      logger.warn({ err }, '[Startup] Evaluasi notifikasi stok gagal');
     }
   }, 5000);
 });

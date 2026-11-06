@@ -68,7 +68,7 @@ export class CatalogService {
   private computeProductPortions(
     recipes?: Array<{
       amount_needed: number;
-      ingredient?: { outlet_id: string; stock_qty: number; cost_per_unit: number };
+      ingredient?: { outlet_id: string; stock_qty: number; cost_per_unit: number; name?: string };
     }>,
     targetOutletId?: string,
     defaultCost: number = 0
