@@ -13,6 +13,99 @@ export interface NotificationDraft {
   data?: Record<string, string>;
 }
 
+let pushDisabledWarned = false;
+
+/**
+ * Kirim push FCM untuk draft notifikasi yang baru dibuat.
+ *
+ * Kegagalan push selalu ditelan supaya tidak menggagalkan operasi bisnis.
+ * Bila kredensial FCM belum diset, peringatan hanya dicetak sekali agar log
+ * tidak banjir saat cron berjalan berkala.
+ */
+export async function dispatchPushNotifications(drafts: NotificationDraft[]) {
+  if (!drafts || drafts.length === 0) return;
+
+  if (!pushService.isEnabled()) {
+    if (!pushDisabledWarned) {
+      pushDisabledWarned = true;
+      console.warn(
+        '[NotificationsService] Push nonaktif: FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY belum diset.'
+      );
+    }
+    return;
+  }
+
+  for (const draft of drafts) {
+    try {
+      await pushService.sendToUser(draft.user_id, {
+        title: draft.title,
+        body: draft.body,
+        data: draft.data || { type: draft.type },
+      });
+    } catch (err) {
+      console.warn('[NotificationsService] Push gagal (diabaikan):', err);
+    }
+  }
+}
+
+/**
+ * Membuat notifikasi stok kritis untuk satu bahan baku.
+ *
+ * Dipakai hook Inventory dan Transactions supaya semua jalur perubahan stok
+ * memakai aturan yang sama: penerima per cabang, tipe out_of_stock/low_stock,
+ * dan dedup harian per bahan baku + cabang.
+ */
+export async function notifyCriticalStock(
+  client: any,
+  params: {
+    ingredientId: string;
+    ingredientName: string;
+    outletId: string;
+    outletName: string;
+    stockQty: number;
+    reorderLevel: number;
+    unit: string;
+  }
+): Promise<NotificationDraft[]> {
+  const {
+    ingredientId,
+    ingredientName,
+    outletId,
+    outletName,
+    stockQty,
+    reorderLevel,
+    unit,
+  } = params;
+
+  const recipients = await resolveInventoryRecipients(client, outletId);
+  if (recipients.length === 0) return [];
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const isOutOfStock = stockQty === 0;
+  const notifType = isOutOfStock ? 'out_of_stock' : 'low_stock';
+  const title = isOutOfStock
+    ? `KRITIS: Stok ${ingredientName} HABIS`
+    : `Peringatan Stok: ${ingredientName} Menipis`;
+  const body = isOutOfStock
+    ? `Stok ${ingredientName} di ${outletName} sudah HABIS (0 ${unit}). Tindakan darurat diperlukan.`
+    : `Sisa stok di ${outletName} tersisa ${stockQty} ${unit} (batas aman minimum: ${reorderLevel}). Segera lakukan pengadaan.`;
+
+  const drafts: NotificationDraft[] = recipients.map((userId) => ({
+    user_id: userId,
+    type: notifType,
+    title,
+    body,
+    dedup_key: `${notifType}:${ingredientId}:${outletId}:${todayStr}`,
+    data: {
+      type: notifType,
+      outlet_id: outletId,
+      ingredient_id: String(ingredientId),
+    },
+  }));
+
+  return createNotificationsWithDedup(client, drafts);
+}
+
 /**
  * Resolusi penerima notifikasi inventori.
  * - Owner: berhak atas seluruh cabang (sesuai aturan otorisasi di middleware auth).
@@ -311,19 +404,6 @@ export class NotificationsService {
    * Kegagalan FCM selalu ditelan: tidak boleh menggagalkan operasi bisnis.
    */
   async dispatchPush(drafts: NotificationDraft[]) {
-    if (!drafts || drafts.length === 0) return;
-    if (!pushService.isEnabled()) return;
-
-    for (const draft of drafts) {
-      try {
-        await pushService.sendToUser(draft.user_id, {
-          title: draft.title,
-          body: draft.body,
-          data: draft.data || { type: draft.type },
-        });
-      } catch (err) {
-        console.warn('[NotificationsService] Push gagal (diabaikan):', err);
-      }
-    }
+    await dispatchPushNotifications(drafts);
   }
 }

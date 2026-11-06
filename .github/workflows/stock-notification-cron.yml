@@ -1,0 +1,44 @@
+name: Stock Notification Cron
+
+# Evaluasi stok kritis tiap 15 menit.
+#
+# Vercel Hobby hanya mengizinkan cron sekali sehari, jadi jadwal 15 menit
+# dijalankan dari GitHub Actions. Vercel Cron tetap ada sebagai safety net
+# harian (lihat api/vercel.json).
+#
+# Setup sekali:
+#   1. GitHub repo > Settings > Secrets and variables > Actions
+#   2. New repository secret: CRON_SECRET = nilai yang sama dengan env
+#      CRON_SECRET di Vercel.
+#   3. (Opsional) New repository variable: API_BASE_URL
+#      Default: https://arus-lime.vercel.app/api
+#
+# Catatan: GitHub menonaktifkan scheduled workflow setelah 60 hari tanpa
+# aktivitas repo. Buka tab Actions dan klik "Enable" bila itu terjadi.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: stock-notification-cron
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger stock notification evaluation
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          API_BASE_URL: ${{ vars.API_BASE_URL || 'https://arus-lime.vercel.app/api' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET belum diset di repository secrets."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$API_BASE_URL/cron/evaluate-notifications"

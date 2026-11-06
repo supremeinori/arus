@@ -2,6 +2,10 @@ import { MovementType, Role } from '@prisma/client';
 import { prisma } from '../../config/db';
 import { AppError } from '../../shared/errors';
 import { integrityService } from '../integrity/blockchain.service';
+import {
+  dispatchPushNotifications,
+  notifyCriticalStock,
+} from '../notifications/notifications.service';
 
 export interface IngredientItem {
   id: string;
@@ -25,6 +29,52 @@ export class InventoryService {
     if (stockQty <= 0) return 'out';
     if (stockQty <= reorderLevel) return 'low';
     return 'ok';
+  }
+
+  /**
+   * Notifikasi hanya dikirim saat status stok BERUBAH menjadi kritis.
+   *
+   * - ok -> low/out: kirim.
+   * - low -> out: kirim (eskalasi).
+   * - sudah kritis dan tetap kritis: jangan kirim ulang (hindari spam).
+   */
+  private shouldNotifyCritical(
+    previousQty: number,
+    previousReorderLevel: number,
+    nextQty: number,
+    nextReorderLevel: number
+  ): boolean {
+    const wasCritical = previousQty <= previousReorderLevel;
+    const isCritical = nextQty <= nextReorderLevel;
+    const wasOut = previousQty === 0;
+    const isOut = nextQty === 0;
+
+    if (!isCritical) return false;
+    if (!wasCritical) return true;
+    return isOut && !wasOut;
+  }
+
+  /**
+   * Buat notifikasi stok kritis lalu kirim push. Kegagalan notifikasi/push
+   * tidak boleh menggagalkan operasi stok yang sudah tersimpan.
+   */
+  private async dispatchCriticalStockNotification(params: {
+    ingredientId: string;
+    ingredientName: string;
+    outletId: string;
+    outletName: string;
+    stockQty: number;
+    reorderLevel: number;
+    unit: string;
+  }) {
+    try {
+      const fresh = await notifyCriticalStock(prisma, params);
+      if (fresh.length > 0) {
+        await dispatchPushNotifications(fresh);
+      }
+    } catch (err) {
+      console.warn('[InventoryService] Gagal mengirim notifikasi stok kritis:', err);
+    }
   }
 
   /**
@@ -261,6 +311,27 @@ export class InventoryService {
         },
       });
 
+      // Hook notifikasi: perubahan reorder_level bisa membuat stok yang
+      // sebelumnya aman menjadi kritis.
+      if (
+        this.shouldNotifyCritical(
+          existing.stock_qty,
+          existing.reorder_level,
+          updated.stock_qty,
+          updated.reorder_level
+        )
+      ) {
+        await this.dispatchCriticalStockNotification({
+          ingredientId: updated.id,
+          ingredientName: updated.name,
+          outletId: updated.outlet_id,
+          outletName: updated.outlet?.name ?? 'cabang',
+          stockQty: updated.stock_qty,
+          reorderLevel: updated.reorder_level,
+          unit: updated.unit,
+        });
+      }
+
       return {
         ...updated,
         status: this.calculateStatus(updated.stock_qty, updated.reorder_level),
@@ -408,6 +479,28 @@ export class InventoryService {
           movement,
         };
       });
+
+      // Hook notifikasi: kirim hanya saat stok melewati batas kritis.
+      // Dijalankan SETELAH commit supaya kegagalan push tidak membatalkan stok.
+      const previousQty = adjustment.ingredient.stock_qty - data.quantity_delta;
+      if (
+        this.shouldNotifyCritical(
+          previousQty,
+          adjustment.ingredient.reorder_level,
+          adjustment.ingredient.stock_qty,
+          adjustment.ingredient.reorder_level
+        )
+      ) {
+        await this.dispatchCriticalStockNotification({
+          ingredientId: adjustment.ingredient.id,
+          ingredientName: adjustment.ingredient.name,
+          outletId: data.outlet_id,
+          outletName: adjustment.ingredient.outlet?.name ?? 'cabang',
+          stockQty: adjustment.ingredient.stock_qty,
+          reorderLevel: adjustment.ingredient.reorder_level,
+          unit: adjustment.ingredient.unit,
+        });
+      }
 
       return adjustment;
     } catch (err: any) {

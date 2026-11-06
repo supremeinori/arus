@@ -59,3 +59,6 @@ skill/
 graphify-out/
 118,088,230124_PPT PROJECT MOBILE TEORI.pdf*
 mpti/
+
+# Local API manual testing (Thunder Client)
+api/manual-tests/

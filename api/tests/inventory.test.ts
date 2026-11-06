@@ -10,6 +10,14 @@ vi.mock('../src/config/db', () => {
     prisma: {
       user: {
         findUnique: vi.fn(),
+        findMany: vi.fn(),
+      },
+      notification: {
+        findMany: vi.fn(),
+        createMany: vi.fn(),
+      },
+      deviceToken: {
+        findMany: vi.fn(),
       },
       outlet: {
         findMany: vi.fn(),
@@ -183,5 +191,73 @@ describe('Inventory Module (Milestone 5 / Modul 2)', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('INSUFFICIENT_STOCK');
+  });
+
+  it('T-INV-04: Penyesuaian yang membuat stok kritis memicu notifikasi & push', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockOwner as any);
+    vi.mocked(prisma.outlet.findMany).mockResolvedValue([{ id: 'out-1' }] as any);
+    vi.mocked(prisma.ingredient.findUnique).mockResolvedValue({
+      id: 'ing-1',
+      outlet_id: 'out-1',
+      name: 'Biji Kopi Espresso',
+      unit: 'gram',
+      stock_qty: 60,
+      reorder_level: 50,
+      cost_per_unit: 150,
+    } as any);
+
+    vi.mocked(prisma.ingredient.update).mockResolvedValue({
+      id: 'ing-1',
+      outlet_id: 'out-1',
+      name: 'Biji Kopi Espresso',
+      unit: 'gram',
+      stock_qty: 40,
+      reorder_level: 50,
+      cost_per_unit: 150,
+      updated_at: new Date(),
+      outlet: { id: 'out-1', name: 'Outlet Tebet' },
+    } as any);
+
+    vi.mocked(prisma.inventoryMovement.create).mockResolvedValue({
+      id: 'mov-2',
+      outlet_id: 'out-1',
+      ingredient_id: 'ing-1',
+      movement_type: 'waste',
+      quantity_delta: -20,
+      quantity_after: 40,
+      note: 'Susut',
+      created_by: mockOwner.id,
+    } as any);
+
+    vi.mocked(prisma.user.findMany).mockResolvedValue([
+      { id: mockOwner.id },
+    ] as any);
+    vi.mocked(prisma.notification.findMany).mockResolvedValue([] as any);
+    vi.mocked(prisma.notification.createMany).mockResolvedValue({ count: 1 } as any);
+    // Tidak ada device token -> pembuatan notifikasi tetap dicatat.
+    vi.mocked(prisma.deviceToken.findMany).mockResolvedValue([] as any);
+
+    const res = await request(app)
+      .post('/api/inventory/adjustments')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        outlet_id: 'out-1',
+        ingredient_id: 'ing-1',
+        movement_type: 'waste',
+        quantity_delta: -20,
+        note: 'Susut',
+      });
+
+    expect(res.status).toBe(201);
+    expect(prisma.notification.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            user_id: mockOwner.id,
+            type: 'low_stock',
+          }),
+        ]),
+      })
+    );
   });
 });

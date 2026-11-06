@@ -30,4 +30,11 @@ router.post('/notifications/device-token', (req, res, next) =>
   controller.registerToken(req, res, next)
 );
 
+// 6. GET /api/cron/evaluate-notifications - dipanggil scheduler (GitHub Actions
+//    tiap 15 menit, Vercel Cron harian sebagai safety net).
+//    Bukan endpoint user: tidak memakai requireAuth, diamankan CRON_SECRET.
+router.get('/cron/evaluate-notifications', (req, res, next) =>
+  controller.evaluateCron(req, res, next)
+);
+
 export default router;

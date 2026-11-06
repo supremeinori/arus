@@ -333,4 +333,49 @@ describe('Notifications Module (Milestone 12)', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
+
+  it('T-NOT-11: Endpoint cron menolak request bila CRON_SECRET belum diset', async () => {
+    const original = process.env.CRON_SECRET;
+    delete process.env.CRON_SECRET;
+
+    const res = await request(app).get('/api/cron/evaluate-notifications');
+
+    expect(res.status).toBe(503);
+    expect(res.body.success).toBe(false);
+
+    if (original !== undefined) process.env.CRON_SECRET = original;
+  });
+
+  it('T-NOT-12: Endpoint cron menolak Authorization yang salah', async () => {
+    const original = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = 'cron-secret-test';
+
+    const res = await request(app)
+      .get('/api/cron/evaluate-notifications')
+      .set('Authorization', 'Bearer secret-salah');
+
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+
+    if (original === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = original;
+  });
+
+  it('T-NOT-13: Endpoint cron dengan secret benar menjalankan evaluasi stok', async () => {
+    const original = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = 'cron-secret-test';
+
+    vi.mocked(prisma.ingredient.findMany).mockResolvedValue([] as any);
+
+    const res = await request(app)
+      .get('/api/cron/evaluate-notifications')
+      .set('Authorization', 'Bearer cron-secret-test');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveProperty('triggered_count');
+
+    if (original === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = original;
+  });
 });

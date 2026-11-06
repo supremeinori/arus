@@ -84,6 +84,21 @@ export const pushService = {
       };
 
       const response = await admin.messaging().sendEachForMulticast(message);
+      if (response.failureCount > 0) {
+        const failures = response.responses
+          .map((resp, idx) => ({
+            token: tokens[idx],
+            code: resp.error?.code,
+          }))
+          .filter((item) => item.code);
+        console.warn(
+          `[PushService] Push terkirim=${response.successCount} gagal=${response.failureCount}`,
+          failures.map((f) => `${f.code} (${String(f.token).slice(-6)})`)
+        );
+      } else {
+        console.log(`[PushService] Push terkirim=${response.successCount}`);
+      }
+
       if (response.failureCount > 0 && invalidTokenCallback) {
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {

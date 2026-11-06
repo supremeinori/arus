@@ -6,6 +6,12 @@
       "use": "@vercel/node"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/evaluate-notifications",
+      "schedule": "0 1 * * *"
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",

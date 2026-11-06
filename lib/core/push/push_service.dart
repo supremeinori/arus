@@ -70,6 +70,7 @@ class PushService {
 
   final Ref _ref;
   bool _enabled = false;
+  AppLifecycleListener? _lifecycleListener;
 
   bool get isEnabled => _enabled;
 
@@ -114,6 +115,12 @@ class PushService {
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
 
+    // Daftarkan ulang token setiap app kembali ke foreground. Token bisa
+    // berubah/di-refresh saat app tidak aktif; endpoint backend idempotent.
+    _lifecycleListener ??= AppLifecycleListener(
+      onResume: () => unawaited(registerDeviceToken()),
+    );
+
     try {
       final initial = await messaging.getInitialMessage();
       if (initial != null) {
@@ -147,6 +154,7 @@ class PushService {
         '/notifications/device-token',
         data: {'token': token, 'platform': 'android'},
       );
+      debugPrint('[Push] Device token terdaftar.');
     } catch (err) {
       debugPrint('[Push] Registrasi device token gagal: $err');
     }
